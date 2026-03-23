@@ -20,4 +20,15 @@
 - DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
+---
+
+## Project Development Rules
+
+1. **Requirements-driven development** — All work must be based on explicit requirements
+2. **Plan first, code second** — Always create a plan before any code generation
+3. **Two-way discussion required** — Ask clarifying questions, confirm understanding, discuss trade-offs
+4. **Iterative refinement** — User provides feedback → plan is updated → repeat until approved
+5. **No code without confirmation** — NEVER generate code until user explicitly confirms the plan
+6. **All rules in English** — Documentation and rules must be written in English
+
 <!-- nx configuration end-->

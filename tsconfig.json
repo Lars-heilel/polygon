@@ -2,5 +2,87 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/backend/gateway-e2e"
+    },
+    {
+      "path": "./apps/backend/gateway"
+    },
+    {
+      "path": "./apps/client/messenger-e2e"
+    },
+    {
+      "path": "./apps/client/messenger"
+    },
+    {
+      "path": "./apps/backend/auth-service-e2e"
+    },
+    {
+      "path": "./apps/backend/auth-service"
+    },
+    {
+      "path": "./apps/backend/user-service-e2e"
+    },
+    {
+      "path": "./apps/backend/user-service"
+    },
+    {
+      "path": "./apps/backend/chat-service-e2e"
+    },
+    {
+      "path": "./apps/backend/chat-service"
+    },
+    {
+      "path": "./apps/backend/notification-service-e2e"
+    },
+    {
+      "path": "./apps/backend/notification-service"
+    },
+    {
+      "path": "./apps/backend/media-service-e2e"
+    },
+    {
+      "path": "./apps/backend/media-service"
+    },
+    {
+      "path": "./libs/common"
+    },
+    {
+      "path": "./libs/backend/core"
+    },
+    {
+      "path": "./libs/backend/auth"
+    },
+    {
+      "path": "./libs/backend/user"
+    },
+    {
+      "path": "./libs/backend/chat"
+    },
+    {
+      "path": "./libs/backend/notification"
+    },
+    {
+      "path": "./libs/backend/media"
+    },
+    {
+      "path": "./libs/client/shared"
+    },
+    {
+      "path": "./libs/client/entities"
+    },
+    {
+      "path": "./libs/client/features"
+    },
+    {
+      "path": "./libs/client/widgets"
+    },
+    {
+      "path": "./libs/client/layouts"
+    },
+    {
+      "path": "./libs/client/pages"
+    }
+  ]
 }

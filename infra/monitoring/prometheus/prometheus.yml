@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus сам себя
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Backend сервисы (будут добавлены после запуска)
+  - job_name: 'backend-services'
+    static_configs:
+      - targets: 
+          - 'host.docker.internal:3000'  # gateway
+          - 'host.docker.internal:3001'  # auth-service
+          - 'host.docker.internal:3002'  # user-service
+          - 'host.docker.internal:3003'  # chat-service
+          - 'host.docker.internal:3004'  # notification-service
+          - 'host.docker.internal:3005'  # media-service
+    metrics_path: '/metrics'
+
+  # Инфраструктура
+  - job_name: 'infrastructure'
+    static_configs:
+      - targets:
+          - 'postgres:5432'
+          - 'redis:6379'
+          - 'rabbitmq:15672'
