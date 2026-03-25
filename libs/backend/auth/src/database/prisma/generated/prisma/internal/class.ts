@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.5.0",
   "engineVersion": "280c870be64f457428992c43c1f6d557fab6e29e",
   "activeProvider": "postgresql",
-  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"./generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nenum Role {\n  ADMIN\n  MODERATOR\n  USER\n}\n\nmodel Credentials {\n  id           String    @id @default(uuid()) @map(\"id\")\n  email        String    @unique @map(\"email\")\n  role         Role      @default(USER) @map(\"role\")\n  passwordHash String    @map(\"password_hash\")\n  isVerified   Boolean   @default(false) @map(\"is_verified\")\n  lockedAt     DateTime? @map(\"locked_at\")\n  lockedUntil  DateTime? @map(\"locked_until\")\n  createdAt    DateTime  @map(\"created_at\")\n  updatedAt    DateTime  @updatedAt @map(\"updated_at\")\n\n  @@index([email])\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -32,10 +32,10 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Credentials\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"id\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"email\"},{\"name\":\"role\",\"kind\":\"enum\",\"type\":\"Role\",\"dbName\":\"role\"},{\"name\":\"passwordHash\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"password_hash\"},{\"name\":\"isVerified\",\"kind\":\"scalar\",\"type\":\"Boolean\",\"dbName\":\"is_verified\"},{\"name\":\"lockedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"locked_at\"},{\"name\":\"lockedUntil\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"locked_until\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 config.parameterizationSchema = {
-  strings: JSON.parse("[]"),
-  graph: "AAAA"
+  strings: JSON.parse("[\"where\",\"Credentials.findUnique\",\"Credentials.findUniqueOrThrow\",\"orderBy\",\"cursor\",\"Credentials.findFirst\",\"Credentials.findFirstOrThrow\",\"Credentials.findMany\",\"data\",\"Credentials.createOne\",\"Credentials.createMany\",\"Credentials.createManyAndReturn\",\"Credentials.updateOne\",\"Credentials.updateMany\",\"Credentials.updateManyAndReturn\",\"create\",\"update\",\"Credentials.upsertOne\",\"Credentials.deleteOne\",\"Credentials.deleteMany\",\"having\",\"_count\",\"_min\",\"_max\",\"Credentials.groupBy\",\"Credentials.aggregate\",\"AND\",\"OR\",\"NOT\",\"id\",\"email\",\"Role\",\"role\",\"passwordHash\",\"isVerified\",\"lockedAt\",\"lockedUntil\",\"createdAt\",\"updatedAt\",\"equals\",\"in\",\"notIn\",\"lt\",\"lte\",\"gt\",\"gte\",\"not\",\"contains\",\"startsWith\",\"endsWith\",\"set\"]"),
+  graph: "OgkQDBoAACwAMBsAAAQAEBwAACwAMB0BAAAAAR4BAAAAASAAAC4gIiEBAC0AISIgAC8AISNAADAAISRAADAAISVAADEAISZAADEAIQEAAAABACABAAAAAQAgDBoAACwAMBsAAAQAEBwAACwAMB0BAC0AIR4BAC0AISAAAC4gIiEBAC0AISIgAC8AISNAADAAISRAADAAISVAADEAISZAADEAIQIjAAAyACAkAAAyACADAAAABAAgAwAABQAwBAAAAQAgAwAAAAQAIAMAAAUAMAQAAAEAIAMAAAAEACADAAAFADAEAAABACAJHQEAAAABHgEAAAABIAAAACACIQEAAAABIiAAAAABI0AAAAABJEAAAAABJUAAAAABJkAAAAABAQgAAAkAIAkdAQAAAAEeAQAAAAEgAAAAIAIhAQAAAAEiIAAAAAEjQAAAAAEkQAAAAAElQAAAAAEmQAAAAAEBCAAACwAwAQgAAAsAMAkdAQA2ACEeAQA2ACEgAAA3ICIhAQA2ACEiIAA4ACEjQAA5ACEkQAA5ACElQAA6ACEmQAA6ACECAAAAAQAgCAAADgAgCR0BADYAIR4BADYAISAAADcgIiEBADYAISIgADgAISNAADkAISRAADkAISVAADoAISZAADoAIQIAAAAEACAIAAAQACACAAAABAAgCAAAEAAgAwAAAAEAIA8AAAkAIBAAAA4AIAEAAAABACABAAAABAAgBRUAADMAIBYAADUAIBcAADQAICMAADIAICQAADIAIAwaAAAaADAbAAAXABAcAAAaADAdAQAbACEeAQAbACEgAAAcICIhAQAbACEiIAAdACEjQAAeACEkQAAeACElQAAfACEmQAAfACEDAAAABAAgAwAAFgAwFAAAFwAgAwAAAAQAIAMAAAUAMAQAAAEAIAwaAAAaADAbAAAXABAcAAAaADAdAQAbACEeAQAbACEgAAAcICIhAQAbACEiIAAdACEjQAAeACEkQAAeACElQAAfACEmQAAfACEOFQAAIQAgFgAAKwAgFwAAKwAgJwEAAAABKAEAAAAEKQEAAAAEKgEAAAABKwEAAAABLAEAAAABLQEAAAABLgEAKgAhLwEAAAABMAEAAAABMQEAAAABBxUAACEAIBYAACkAIBcAACkAICcAAAAgAigAAAAgCCkAAAAgCC4AACggIgUVAAAhACAWAAAnACAXAAAnACAnIAAAAAEuIAAmACELFQAAJAAgFgAAJQAgFwAAJQAgJ0AAAAABKEAAAAAFKUAAAAAFKkAAAAABK0AAAAABLEAAAAABLUAAAAABLkAAIwAhCxUAACEAIBYAACIAIBcAACIAICdAAAAAAShAAAAABClAAAAABCpAAAAAAStAAAAAASxAAAAAAS1AAAAAAS5AACAAIQsVAAAhACAWAAAiACAXAAAiACAnQAAAAAEoQAAAAAQpQAAAAAQqQAAAAAErQAAAAAEsQAAAAAEtQAAAAAEuQAAgACEIJwIAAAABKAIAAAAEKQIAAAAEKgIAAAABKwIAAAABLAIAAAABLQIAAAABLgIAIQAhCCdAAAAAAShAAAAABClAAAAABCpAAAAAAStAAAAAASxAAAAAAS1AAAAAAS5AACIAIQsVAAAkACAWAAAlACAXAAAlACAnQAAAAAEoQAAAAAUpQAAAAAUqQAAAAAErQAAAAAEsQAAAAAEtQAAAAAEuQAAjACEIJwIAAAABKAIAAAAFKQIAAAAFKgIAAAABKwIAAAABLAIAAAABLQIAAAABLgIAJAAhCCdAAAAAAShAAAAABSlAAAAABSpAAAAAAStAAAAAASxAAAAAAS1AAAAAAS5AACUAIQUVAAAhACAWAAAnACAXAAAnACAnIAAAAAEuIAAmACECJyAAAAABLiAAJwAhBxUAACEAIBYAACkAIBcAACkAICcAAAAgAigAAAAgCCkAAAAgCC4AACggIgQnAAAAIAIoAAAAIAgpAAAAIAguAAApICIOFQAAIQAgFgAAKwAgFwAAKwAgJwEAAAABKAEAAAAEKQEAAAAEKgEAAAABKwEAAAABLAEAAAABLQEAAAABLgEAKgAhLwEAAAABMAEAAAABMQEAAAABCycBAAAAASgBAAAABCkBAAAABCoBAAAAASsBAAAAASwBAAAAAS0BAAAAAS4BACsAIS8BAAAAATABAAAAATEBAAAAAQwaAAAsADAbAAAEABAcAAAsADAdAQAtACEeAQAtACEgAAAuICIhAQAtACEiIAAvACEjQAAwACEkQAAwACElQAAxACEmQAAxACELJwEAAAABKAEAAAAEKQEAAAAEKgEAAAABKwEAAAABLAEAAAABLQEAAAABLgEAKwAhLwEAAAABMAEAAAABMQEAAAABBCcAAAAgAigAAAAgCCkAAAAgCC4AACkgIgInIAAAAAEuIAAnACEIJ0AAAAABKEAAAAAFKUAAAAAFKkAAAAABK0AAAAABLEAAAAABLUAAAAABLkAAJQAhCCdAAAAAAShAAAAABClAAAAABCpAAAAAAStAAAAAASxAAAAAAS1AAAAAAS5AACIAIQAAAAABMgEAAAABATIAAAAgAgEyIAAAAAEBMkAAAAABATJAAAAAAQAAAAADFQAGFgAHFwAIAAAAAxUABhYABxcACAECAQIDAQUGAQYHAQcIAQkKAQoMAgsNAwwPAQ0RAg4SBBETARIUARMVAhgYBRkZCQ"
 }
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
@@ -70,8 +70,8 @@ export interface PrismaClientConstructor {
    * const prisma = new PrismaClient({
    *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
    * })
-   * // Fetch zero or more Users
-   * const users = await prisma.user.findMany()
+   * // Fetch zero or more Credentials
+   * const credentials = await prisma.credentials.findMany()
    * ```
    * 
    * Read more in our [docs](https://pris.ly/d/client).
@@ -94,8 +94,8 @@ export interface PrismaClientConstructor {
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more Users
- * const users = await prisma.user.findMany()
+ * // Fetch zero or more Credentials
+ * const credentials = await prisma.credentials.findMany()
  * ```
  * 
  * Read more in our [docs](https://pris.ly/d/client).
@@ -188,7 +188,15 @@ export interface PrismaClient<
     extArgs: ExtArgs
   }>>
 
-    
+      /**
+   * `prisma.credentials`: Exposes CRUD operations for the **Credentials** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Credentials
+    * const credentials = await prisma.credentials.findMany()
+    * ```
+    */
+  get credentials(): Prisma.CredentialsDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(): PrismaClientConstructor {

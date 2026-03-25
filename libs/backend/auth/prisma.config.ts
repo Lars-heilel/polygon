@@ -7,9 +7,9 @@ var envFile = path.resolve(join(__dirname, "../../../.env"));
 dotenv.config({ path: envFile });
 
 export default defineConfig({
-  schema: "libs/backend/auth/src/database/prisma/schema.prisma",
+  schema: "src/database/prisma/schema.prisma",
   migrations: {
-    path: "libs/backend/auth/src/database/prisma/migrations",
+    path: "src/database/prisma/migrations",
   },
   datasource: {
     url: process.env["DATABASE_URL_AUTH"],

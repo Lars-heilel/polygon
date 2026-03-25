@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.5.0",
   "engineVersion": "280c870be64f457428992c43c1f6d557fab6e29e",
   "activeProvider": "postgresql",
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Get a free hosted Postgres database in seconds: `npx create-db`\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nenum ChatType {\n  DIRECT\n  GROUP\n  CHANNEL\n}\n\nenum ChatRole {\n  ADMIN\n  MODERATOR\n  MEMBER\n}\n\nmodel Chat {\n  id        String   @id @default(uuid())\n  type      ChatType @map(\"type\")\n  name      String?  @map(\"name\")\n  avatarUrl String?  @map(\"avatar_url\")\n  createdAt DateTime @map(\"created_at\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  members  ChatMember[]\n  messages Message[]\n\n  @@index([type])\n}\n\nmodel ChatMember {\n  chatId   String   @map(\"chat_id\")\n  userId   String   @map(\"user_id\")\n  role     ChatRole @default(MEMBER) @map(\"role\")\n  joinedAt DateTime @default(now()) @map(\"joined_at\")\n\n  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)\n\n  @@id([chatId, userId])\n  @@index([userId])\n}\n\nmodel Message {\n  id        String   @id @default(uuid())\n  chatId    String   @map(\"chat_id\")\n  senderId  String   @map(\"sender_id\")\n  text      String?  @map(\"text\")\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)\n\n  @@index([chatId, createdAt])\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -32,10 +32,10 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Chat\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"enum\",\"type\":\"ChatType\",\"dbName\":\"type\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"name\"},{\"name\":\"avatarUrl\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"avatar_url\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"},{\"name\":\"members\",\"kind\":\"object\",\"type\":\"ChatMember\",\"relationName\":\"ChatToChatMember\"},{\"name\":\"messages\",\"kind\":\"object\",\"type\":\"Message\",\"relationName\":\"ChatToMessage\"}],\"dbName\":null},\"ChatMember\":{\"fields\":[{\"name\":\"chatId\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"chat_id\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"user_id\"},{\"name\":\"role\",\"kind\":\"enum\",\"type\":\"ChatRole\",\"dbName\":\"role\"},{\"name\":\"joinedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"joined_at\"},{\"name\":\"chat\",\"kind\":\"object\",\"type\":\"Chat\",\"relationName\":\"ChatToChatMember\"}],\"dbName\":null},\"Message\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"chatId\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"chat_id\"},{\"name\":\"senderId\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"sender_id\"},{\"name\":\"text\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"text\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"},{\"name\":\"chat\",\"kind\":\"object\",\"type\":\"Chat\",\"relationName\":\"ChatToMessage\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 config.parameterizationSchema = {
-  strings: JSON.parse("[]"),
-  graph: "AAAA"
+  strings: JSON.parse("[\"where\",\"orderBy\",\"cursor\",\"chat\",\"members\",\"messages\",\"_count\",\"Chat.findUnique\",\"Chat.findUniqueOrThrow\",\"Chat.findFirst\",\"Chat.findFirstOrThrow\",\"Chat.findMany\",\"data\",\"Chat.createOne\",\"Chat.createMany\",\"Chat.createManyAndReturn\",\"Chat.updateOne\",\"Chat.updateMany\",\"Chat.updateManyAndReturn\",\"create\",\"update\",\"Chat.upsertOne\",\"Chat.deleteOne\",\"Chat.deleteMany\",\"having\",\"_min\",\"_max\",\"Chat.groupBy\",\"Chat.aggregate\",\"ChatMember.findUnique\",\"ChatMember.findUniqueOrThrow\",\"ChatMember.findFirst\",\"ChatMember.findFirstOrThrow\",\"ChatMember.findMany\",\"ChatMember.createOne\",\"ChatMember.createMany\",\"ChatMember.createManyAndReturn\",\"ChatMember.updateOne\",\"ChatMember.updateMany\",\"ChatMember.updateManyAndReturn\",\"ChatMember.upsertOne\",\"ChatMember.deleteOne\",\"ChatMember.deleteMany\",\"ChatMember.groupBy\",\"ChatMember.aggregate\",\"Message.findUnique\",\"Message.findUniqueOrThrow\",\"Message.findFirst\",\"Message.findFirstOrThrow\",\"Message.findMany\",\"Message.createOne\",\"Message.createMany\",\"Message.createManyAndReturn\",\"Message.updateOne\",\"Message.updateMany\",\"Message.updateManyAndReturn\",\"Message.upsertOne\",\"Message.deleteOne\",\"Message.deleteMany\",\"Message.groupBy\",\"Message.aggregate\",\"AND\",\"OR\",\"NOT\",\"id\",\"chatId\",\"senderId\",\"text\",\"createdAt\",\"updatedAt\",\"equals\",\"in\",\"notIn\",\"lt\",\"lte\",\"gt\",\"gte\",\"not\",\"contains\",\"startsWith\",\"endsWith\",\"userId\",\"ChatRole\",\"role\",\"joinedAt\",\"ChatType\",\"type\",\"name\",\"avatarUrl\",\"every\",\"some\",\"none\",\"chatId_userId\",\"is\",\"isNot\",\"connectOrCreate\",\"upsert\",\"createMany\",\"set\",\"disconnect\",\"delete\",\"connect\",\"updateMany\",\"deleteMany\"]"),
+  graph: "rQEaMAsEAABpACAFAABqACA9AABkADA-AAAOABA_AABkADBAAQAAAAFEQABoACFFQABoACFWAABmViJXAQBnACFYAQBnACEBAAAAAQAgCAMAAGwAID0AAG4AMD4AAAMAED8AAG4AMEEBAGUAIVEBAGUAIVMAAG9TIlRAAGgAIQEDAAChAQAgCQMAAGwAID0AAG4AMD4AAAMAED8AAG4AMEEBAGUAIVEBAGUAIVMAAG9TIlRAAGgAIVwAAG0AIAMAAAADACABAAAEADACAAAFACAKAwAAbAAgPQAAawAwPgAABwAQPwAAawAwQAEAZQAhQQEAZQAhQgEAZQAhQwEAZwAhREAAaAAhRUAAaAAhAgMAAKEBACBDAABwACAKAwAAbAAgPQAAawAwPgAABwAQPwAAawAwQAEAAAABQQEAZQAhQgEAZQAhQwEAZwAhREAAaAAhRUAAaAAhAwAAAAcAIAEAAAgAMAIAAAkAIAEAAAADACABAAAABwAgAQAAAAEAIAsEAABpACAFAABqACA9AABkADA-AAAOABA_AABkADBAAQBlACFEQABoACFFQABoACFWAABmViJXAQBnACFYAQBnACEEBAAAnwEAIAUAAKABACBXAABwACBYAABwACADAAAADgAgAQAADwAwAgAAAQAgAwAAAA4AIAEAAA8AMAIAAAEAIAMAAAAOACABAAAPADACAAABACAIBAAAnQEAIAUAAJ4BACBAAQAAAAFEQAAAAAFFQAAAAAFWAAAAVgJXAQAAAAFYAQAAAAEBDAAAEwAgBkABAAAAAURAAAAAAUVAAAAAAVYAAABWAlcBAAAAAVgBAAAAAQEMAAAVADABDAAAFQAwCAQAAIMBACAFAACEAQAgQAEAdAAhREAAdgAhRUAAdgAhVgAAggFWIlcBAHUAIVgBAHUAIQIAAAABACAMAAAYACAGQAEAdAAhREAAdgAhRUAAdgAhVgAAggFWIlcBAHUAIVgBAHUAIQIAAAAOACAMAAAaACACAAAADgAgDAAAGgAgAwAAAAEAIBMAABMAIBQAABgAIAEAAAABACABAAAADgAgBQYAAH8AIBkAAIEBACAaAACAAQAgVwAAcAAgWAAAcAAgCT0AAGAAMD4AACEAED8AAGAAMEABAFEAIURAAFMAIUVAAFMAIVYAAGFWIlcBAFIAIVgBAFIAIQMAAAAOACABAAAgADAYAAAhACADAAAADgAgAQAADwAwAgAAAQAgAQAAAAUAIAEAAAAFACADAAAAAwAgAQAABAAwAgAABQAgAwAAAAMAIAEAAAQAMAIAAAUAIAMAAAADACABAAAEADACAAAFACAFAwAAfgAgQQEAAAABUQEAAAABUwAAAFMCVEAAAAABAQwAACkAIARBAQAAAAFRAQAAAAFTAAAAUwJUQAAAAAEBDAAAKwAwAQwAACsAMAUDAAB9ACBBAQB0ACFRAQB0ACFTAAB8UyJUQAB2ACECAAAABQAgDAAALgAgBEEBAHQAIVEBAHQAIVMAAHxTIlRAAHYAIQIAAAADACAMAAAwACACAAAAAwAgDAAAMAAgAwAAAAUAIBMAACkAIBQAAC4AIAEAAAAFACABAAAAAwAgAwYAAHkAIBkAAHsAIBoAAHoAIAc9AABcADA-AAA3ABA_AABcADBBAQBRACFRAQBRACFTAABdUyJUQABTACEDAAAAAwAgAQAANgAwGAAANwAgAwAAAAMAIAEAAAQAMAIAAAUAIAEAAAAJACABAAAACQAgAwAAAAcAIAEAAAgAMAIAAAkAIAMAAAAHACABAAAIADACAAAJACADAAAABwAgAQAACAAwAgAACQAgBwMAAHgAIEABAAAAAUEBAAAAAUIBAAAAAUMBAAAAAURAAAAAAUVAAAAAAQEMAAA_ACAGQAEAAAABQQEAAAABQgEAAAABQwEAAAABREAAAAABRUAAAAABAQwAAEEAMAEMAABBADAHAwAAdwAgQAEAdAAhQQEAdAAhQgEAdAAhQwEAdQAhREAAdgAhRUAAdgAhAgAAAAkAIAwAAEQAIAZAAQB0ACFBAQB0ACFCAQB0ACFDAQB1ACFEQAB2ACFFQAB2ACECAAAABwAgDAAARgAgAgAAAAcAIAwAAEYAIAMAAAAJACATAAA_ACAUAABEACABAAAACQAgAQAAAAcAIAQGAABxACAZAABzACAaAAByACBDAABwACAJPQAAUAAwPgAATQAQPwAAUAAwQAEAUQAhQQEAUQAhQgEAUQAhQwEAUgAhREAAUwAhRUAAUwAhAwAAAAcAIAEAAEwAMBgAAE0AIAMAAAAHACABAAAIADACAAAJACAJPQAAUAAwPgAATQAQPwAAUAAwQAEAUQAhQQEAUQAhQgEAUQAhQwEAUgAhREAAUwAhRUAAUwAhDgYAAFUAIBkAAFsAIBoAAFsAIEYBAAAAAUcBAAAABEgBAAAABEkBAAAAAUoBAAAAAUsBAAAAAUwBAAAAAU0BAFoAIU4BAAAAAU8BAAAAAVABAAAAAQ4GAABYACAZAABZACAaAABZACBGAQAAAAFHAQAAAAVIAQAAAAVJAQAAAAFKAQAAAAFLAQAAAAFMAQAAAAFNAQBXACFOAQAAAAFPAQAAAAFQAQAAAAELBgAAVQAgGQAAVgAgGgAAVgAgRkAAAAABR0AAAAAESEAAAAAESUAAAAABSkAAAAABS0AAAAABTEAAAAABTUAAVAAhCwYAAFUAIBkAAFYAIBoAAFYAIEZAAAAAAUdAAAAABEhAAAAABElAAAAAAUpAAAAAAUtAAAAAAUxAAAAAAU1AAFQAIQhGAgAAAAFHAgAAAARIAgAAAARJAgAAAAFKAgAAAAFLAgAAAAFMAgAAAAFNAgBVACEIRkAAAAABR0AAAAAESEAAAAAESUAAAAABSkAAAAABS0AAAAABTEAAAAABTUAAVgAhDgYAAFgAIBkAAFkAIBoAAFkAIEYBAAAAAUcBAAAABUgBAAAABUkBAAAAAUoBAAAAAUsBAAAAAUwBAAAAAU0BAFcAIU4BAAAAAU8BAAAAAVABAAAAAQhGAgAAAAFHAgAAAAVIAgAAAAVJAgAAAAFKAgAAAAFLAgAAAAFMAgAAAAFNAgBYACELRgEAAAABRwEAAAAFSAEAAAAFSQEAAAABSgEAAAABSwEAAAABTAEAAAABTQEAWQAhTgEAAAABTwEAAAABUAEAAAABDgYAAFUAIBkAAFsAIBoAAFsAIEYBAAAAAUcBAAAABEgBAAAABEkBAAAAAUoBAAAAAUsBAAAAAUwBAAAAAU0BAFoAIU4BAAAAAU8BAAAAAVABAAAAAQtGAQAAAAFHAQAAAARIAQAAAARJAQAAAAFKAQAAAAFLAQAAAAFMAQAAAAFNAQBbACFOAQAAAAFPAQAAAAFQAQAAAAEHPQAAXAAwPgAANwAQPwAAXAAwQQEAUQAhUQEAUQAhUwAAXVMiVEAAUwAhBwYAAFUAIBkAAF8AIBoAAF8AIEYAAABTAkcAAABTCEgAAABTCE0AAF5TIgcGAABVACAZAABfACAaAABfACBGAAAAUwJHAAAAUwhIAAAAUwhNAABeUyIERgAAAFMCRwAAAFMISAAAAFMITQAAX1MiCT0AAGAAMD4AACEAED8AAGAAMEABAFEAIURAAFMAIUVAAFMAIVYAAGFWIlcBAFIAIVgBAFIAIQcGAABVACAZAABjACAaAABjACBGAAAAVgJHAAAAVghIAAAAVghNAABiViIHBgAAVQAgGQAAYwAgGgAAYwAgRgAAAFYCRwAAAFYISAAAAFYITQAAYlYiBEYAAABWAkcAAABWCEgAAABWCE0AAGNWIgsEAABpACAFAABqACA9AABkADA-AAAOABA_AABkADBAAQBlACFEQABoACFFQABoACFWAABmViJXAQBnACFYAQBnACELRgEAAAABRwEAAAAESAEAAAAESQEAAAABSgEAAAABSwEAAAABTAEAAAABTQEAWwAhTgEAAAABTwEAAAABUAEAAAABBEYAAABWAkcAAABWCEgAAABWCE0AAGNWIgtGAQAAAAFHAQAAAAVIAQAAAAVJAQAAAAFKAQAAAAFLAQAAAAFMAQAAAAFNAQBZACFOAQAAAAFPAQAAAAFQAQAAAAEIRkAAAAABR0AAAAAESEAAAAAESUAAAAABSkAAAAABS0AAAAABTEAAAAABTUAAVgAhA1kAAAMAIFoAAAMAIFsAAAMAIANZAAAHACBaAAAHACBbAAAHACAKAwAAbAAgPQAAawAwPgAABwAQPwAAawAwQAEAZQAhQQEAZQAhQgEAZQAhQwEAZwAhREAAaAAhRUAAaAAhDQQAAGkAIAUAAGoAID0AAGQAMD4AAA4AED8AAGQAMEABAGUAIURAAGgAIUVAAGgAIVYAAGZWIlcBAGcAIVgBAGcAIV0AAA4AIF4AAA4AIAJBAQAAAAFRAQAAAAEIAwAAbAAgPQAAbgAwPgAAAwAQPwAAbgAwQQEAZQAhUQEAZQAhUwAAb1MiVEAAaAAhBEYAAABTAkcAAABTCEgAAABTCE0AAF9TIgAAAAABYgEAAAABAWIBAAAAAQFiQAAAAAEFEwAAqQEAIBQAAKwBACBfAACqAQAgYAAAqwEAIGUAAAEAIAMTAACpAQAgXwAAqgEAIGUAAAEAIAAAAAFiAAAAUwIFEwAApAEAIBQAAKcBACBfAAClAQAgYAAApgEAIGUAAAEAIAMTAACkAQAgXwAApQEAIGUAAAEAIAAAAAFiAAAAVgILEwAAkQEAMBQAAJYBADBfAACSAQAwYAAAkwEAMGEAAJQBACBiAACVAQAwYwAAlQEAMGQAAJUBADBlAACVAQAwZgAAlwEAMGcAAJgBADALEwAAhQEAMBQAAIoBADBfAACGAQAwYAAAhwEAMGEAAIgBACBiAACJAQAwYwAAiQEAMGQAAIkBADBlAACJAQAwZgAAiwEAMGcAAIwBADAFQAEAAAABQgEAAAABQwEAAAABREAAAAABRUAAAAABAgAAAAkAIBMAAJABACADAAAACQAgEwAAkAEAIBQAAI8BACABDAAAowEAMAoDAABsACA9AABrADA-AAAHABA_AABrADBAAQAAAAFBAQBlACFCAQBlACFDAQBnACFEQABoACFFQABoACECAAAACQAgDAAAjwEAIAIAAACNAQAgDAAAjgEAIAk9AACMAQAwPgAAjQEAED8AAIwBADBAAQBlACFBAQBlACFCAQBlACFDAQBnACFEQABoACFFQABoACEJPQAAjAEAMD4AAI0BABA_AACMAQAwQAEAZQAhQQEAZQAhQgEAZQAhQwEAZwAhREAAaAAhRUAAaAAhBUABAHQAIUIBAHQAIUMBAHUAIURAAHYAIUVAAHYAIQVAAQB0ACFCAQB0ACFDAQB1ACFEQAB2ACFFQAB2ACEFQAEAAAABQgEAAAABQwEAAAABREAAAAABRUAAAAABA1EBAAAAAVMAAABTAlRAAAAAAQIAAAAFACATAACcAQAgAwAAAAUAIBMAAJwBACAUAACbAQAgAQwAAKIBADAJAwAAbAAgPQAAbgAwPgAAAwAQPwAAbgAwQQEAZQAhUQEAZQAhUwAAb1MiVEAAaAAhXAAAbQAgAgAAAAUAIAwAAJsBACACAAAAmQEAIAwAAJoBACAHPQAAmAEAMD4AAJkBABA_AACYAQAwQQEAZQAhUQEAZQAhUwAAb1MiVEAAaAAhBz0AAJgBADA-AACZAQAQPwAAmAEAMEEBAGUAIVEBAGUAIVMAAG9TIlRAAGgAIQNRAQB0ACFTAAB8UyJUQAB2ACEDUQEAdAAhUwAAfFMiVEAAdgAhA1EBAAAAAVMAAABTAlRAAAAAAQQTAACRAQAwXwAAkgEAMGEAAJQBACBlAACVAQAwBBMAAIUBADBfAACGAQAwYQAAiAEAIGUAAIkBADAAAAQEAACfAQAgBQAAoAEAIFcAAHAAIFgAAHAAIANRAQAAAAFTAAAAUwJUQAAAAAEFQAEAAAABQgEAAAABQwEAAAABREAAAAABRUAAAAABBwUAAJ4BACBAAQAAAAFEQAAAAAFFQAAAAAFWAAAAVgJXAQAAAAFYAQAAAAECAAAAAQAgEwAApAEAIAMAAAAOACATAACkAQAgFAAAqAEAIAkAAAAOACAFAACEAQAgDAAAqAEAIEABAHQAIURAAHYAIUVAAHYAIVYAAIIBViJXAQB1ACFYAQB1ACEHBQAAhAEAIEABAHQAIURAAHYAIUVAAHYAIVYAAIIBViJXAQB1ACFYAQB1ACEHBAAAnQEAIEABAAAAAURAAAAAAUVAAAAAAVYAAABWAlcBAAAAAVgBAAAAAQIAAAABACATAACpAQAgAwAAAA4AIBMAAKkBACAUAACtAQAgCQAAAA4AIAQAAIMBACAMAACtAQAgQAEAdAAhREAAdgAhRUAAdgAhVgAAggFWIlcBAHUAIVgBAHUAIQcEAACDAQAgQAEAdAAhREAAdgAhRUAAdgAhVgAAggFWIlcBAHUAIVgBAHUAIQMEBgIFCgMGAAQBAwABAQMAAQIECwAFDAAAAAADBgAJGQAKGgALAAAAAwYACRkAChoACwEDAAEBAwABAwYAEBkAERoAEgAAAAMGABAZABEaABIBAwABAQMAAQMGABcZABgaABkAAAADBgAXGQAYGgAZBwIBCA0BCRABChEBCxIBDRQBDhYFDxcGEBkBERsFEhwHFR0BFh4BFx8FGyIIHCMMHSQCHiUCHyYCICcCISgCIioCIywFJC0NJS8CJjEFJzIOKDMCKTQCKjUFKzgPLDkTLToDLjsDLzwDMD0DMT4DMkADM0IFNEMUNUUDNkcFN0gVOEkDOUoDOksFO04WPE8a"
 }
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
@@ -70,8 +70,8 @@ export interface PrismaClientConstructor {
    * const prisma = new PrismaClient({
    *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
    * })
-   * // Fetch zero or more Users
-   * const users = await prisma.user.findMany()
+   * // Fetch zero or more Chats
+   * const chats = await prisma.chat.findMany()
    * ```
    * 
    * Read more in our [docs](https://pris.ly/d/client).
@@ -94,8 +94,8 @@ export interface PrismaClientConstructor {
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more Users
- * const users = await prisma.user.findMany()
+ * // Fetch zero or more Chats
+ * const chats = await prisma.chat.findMany()
  * ```
  * 
  * Read more in our [docs](https://pris.ly/d/client).
@@ -188,7 +188,35 @@ export interface PrismaClient<
     extArgs: ExtArgs
   }>>
 
-    
+      /**
+   * `prisma.chat`: Exposes CRUD operations for the **Chat** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Chats
+    * const chats = await prisma.chat.findMany()
+    * ```
+    */
+  get chat(): Prisma.ChatDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.chatMember`: Exposes CRUD operations for the **ChatMember** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ChatMembers
+    * const chatMembers = await prisma.chatMember.findMany()
+    * ```
+    */
+  get chatMember(): Prisma.ChatMemberDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.message`: Exposes CRUD operations for the **Message** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Messages
+    * const messages = await prisma.message.findMany()
+    * ```
+    */
+  get message(): Prisma.MessageDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(): PrismaClientConstructor {

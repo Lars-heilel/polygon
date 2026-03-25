@@ -17,4 +17,18 @@ import * as Prisma from './internal/prismaNamespaceBrowser.js'
 export { Prisma }
 export * as $Enums from './enums.js'
 export * from './enums.js';
-
+/**
+ * Model Chat
+ * 
+ */
+export type Chat = Prisma.ChatModel
+/**
+ * Model ChatMember
+ * 
+ */
+export type ChatMember = Prisma.ChatMemberModel
+/**
+ * Model Message
+ * 
+ */
+export type Message = Prisma.MessageModel

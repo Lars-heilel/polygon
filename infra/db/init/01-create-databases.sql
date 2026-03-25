@@ -1,11 +1,13 @@
--- Создание баз данных для каждого микросервиса
--- Этот скрипт выполняется при первом запуске PostgreSQL контейнера
+-- Скрипт инициализации баз данных для микросервисов
+-- Выполняется автоматически при первом запуске контейнера PostgreSQL
+-- когда том с данными пуст
 
-CREATE DATABASE polygon_auth;
-CREATE DATABASE polygon_chat;
-CREATE DATABASE polygon_media;
-CREATE DATABASE polygon_notification;
-CREATE DATABASE polygon_user;
+-- Создание баз данных для каждого микросервиса
+SELECT 'CREATE DATABASE polygon_auth' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_auth')\gexec
+SELECT 'CREATE DATABASE polygon_chat' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_chat')\gexec
+SELECT 'CREATE DATABASE polygon_media' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_media')\gexec
+SELECT 'CREATE DATABASE polygon_notification' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_notification')\gexec
+SELECT 'CREATE DATABASE polygon_user' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_user')\gexec
 
 -- Выдача прав пользователю polygon на все базы
 GRANT ALL PRIVILEGES ON DATABASE polygon_auth TO polygon;

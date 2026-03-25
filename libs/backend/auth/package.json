@@ -12,5 +12,9 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@org/common": "*",
+    "@nestjs/swagger": "^11.0.0",
+    "nestjs-zod": "^5.2.1"
+  }
 }
