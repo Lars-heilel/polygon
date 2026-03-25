@@ -46,3 +46,8 @@ export { Prisma }
  * 
  */
 export type Credentials = Prisma.CredentialsModel
+/**
+ * Model RefreshToken
+ * 
+ */
+export type RefreshToken = Prisma.RefreshTokenModel

@@ -22,3 +22,8 @@ export * from './enums.js';
  * 
  */
 export type Credentials = Prisma.CredentialsModel
+/**
+ * Model RefreshToken
+ * 
+ */
+export type RefreshToken = Prisma.RefreshTokenModel

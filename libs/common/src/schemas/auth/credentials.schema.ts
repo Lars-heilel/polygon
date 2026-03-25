@@ -12,3 +12,4 @@ export const credentialsSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 });
+export type Credentials = z.infer<typeof credentialsSchema>;

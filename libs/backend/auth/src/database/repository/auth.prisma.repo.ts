@@ -1,81 +1,51 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { Credentials, RefreshToken } from '@org/common';
 
 @Injectable()
 export class AuthPrismaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findById(id: string): Promise<Credentials | null> {
-    return this.prisma.credentials.findUnique({ where: { id } });
-  }
-
   async findByEmail(email: string): Promise<Credentials | null> {
     return this.prisma.credentials.findUnique({ where: { email } });
   }
 
-  async findAll(): Promise<Credentials[]> {
-    return this.prisma.credentials.findMany();
+  async findById(id: string): Promise<Credentials | null> {
+    return this.prisma.credentials.findUnique({ where: { id } });
   }
 
-  async create(data: {
+  async createCredentials(data: {
+    id: string;
     email: string;
-    role?: Role;
     passwordHash: string;
-    isVerified?: boolean;
-    lockedAt?: Date | null;
-    lockedUntil?: Date | null;
+    createdAt: Date;
   }): Promise<Credentials> {
     return this.prisma.credentials.create({ data });
   }
 
-  async update(id: string, data: {
-    email?: string;
-    role?: Role;
-    passwordHash?: string;
-    isVerified?: boolean;
-    lockedAt?: Date | null;
-    lockedUntil?: Date | null;
-  }): Promise<Credentials> {
-    return this.prisma.credentials.update({ where: { id }, data });
+  async saveRefreshToken(data: {
+    tokenHash: string;
+    credentialsId: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    await this.prisma.refreshToken.create({ data });
   }
 
-  async delete(id: string): Promise<Credentials> {
-    return this.prisma.credentials.delete({ where: { id } });
+  async findRefreshToken(tokenHash: string): Promise<RefreshToken | null> {
+    return this.prisma.refreshToken.findUnique({ where: { tokenHash } });
   }
 
-  async exists(id: string): Promise<boolean> {
-    const credentials = await this.prisma.credentials.findUnique({ where: { id }, select: { id: true } });
-    return credentials !== null;
-  }
-
-  async findByRole(role: Role): Promise<Credentials[]> {
-    return this.prisma.credentials.findMany({ where: { role } });
-  }
-
-  async setVerified(id: string, verified: boolean): Promise<Credentials> {
-    return this.prisma.credentials.update({
-      where: { id },
-      data: { isVerified: verified },
+  async revokeRefreshToken(tokenHash: string): Promise<void> {
+    await this.prisma.refreshToken.update({
+      where: { tokenHash },
+      data: { revokedAt: new Date() },
     });
   }
 
-  async lock(id: string, lockedUntil: Date | null): Promise<Credentials> {
-    return this.prisma.credentials.update({
-      where: { id },
-      data: {
-        lockedAt: new Date(),
-        lockedUntil,
-      },
-    });
-  }
-
-  async unlock(id: string): Promise<Credentials> {
-    return this.prisma.credentials.update({
-      where: { id },
-      data: {
-        lockedAt: null,
-        lockedUntil: null,
-      },
+  async revokeAllRefreshTokens(credentialsId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { credentialsId, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
   }
 }
