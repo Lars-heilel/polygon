@@ -1,149 +1,54 @@
 # Polygon Platform
 
-**Микросервисная платформа для коммуникаций**
-
-[Настройки окружения](./SETUP.md) • [Для разработчиков](./docs/DEVELOPMENT.md) • [Для AI агентов](./docs/AI-AGENTS.md) • [Архитектура](./docs/ARCHITECTURE.md)
+_By Lars Heilel (Igor Shevchenko)_
 
 ---
 
-## 🚀 Быстрый старт
+## 📖 About
 
-```bash
-# Клонировать репозиторий
-git clone <repository-url>
-cd polygon
-
-# Инициализировать окружение (первый запуск)
-./scripts/bootstrap.sh
-
-# Готово! Сервисы запущены
-```
-
-**Подробная инструкция:** [Настройка окружения →](./SETUP.md)
-
----
-
-## 📦 Что внутри
-
-| Сервис | Порт | Описание |
-|--------|------|----------|
-| **User** | 3001 | Управление пользователями |
-| **Auth** | 3002 | Аутентификация и авторизация |
-| **Chat** | 3003 | Чаты и сообщения |
-| **Media** | 3004 | Работа с медиафichiers |
-| **Notification** | 3005 | Уведомления |
-
-**Инфраструктура:**
-- PostgreSQL (5432) — базы данных
-- Redis (6379) — кэширование
-- RabbitMQ (5672/15672) — брокер сообщений
-
----
-
-## 📚 Документация
-
-### Для разработчиков
-| Файл | Описание |
-|------|----------|
-| [**SETUP.md**](./SETUP.md) | Настройка окружения, переменные, запуск |
-| [**docs/DEVELOPMENT.md**](./docs/DEVELOPMENT.md) | Гайд по разработке, стандарты кода, тесты |
-| [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Архитектура проекта, связи сервисов |
-| [**CONTRIBUTING.md**](./CONTRIBUTING.md) | Как вносить изменения, PR, кодстайл |
-
-### Для AI агентов
-| Файл | Описание |
-|------|----------|
-| [**docs/AI-AGENTS.md**](./docs/AI-AGENTS.md) | Гайд для AI ассистентов (Qwen, Cursor, Copilot) |
-| [**AGENTS.md**](./AGENTS.md) | Конфигурация Nx и навыки агентов |
-
----
-
-## 🛠 Технологии
-
-- **Backend:** NestJS, TypeScript, Prisma
-- **Database:** PostgreSQL, Redis
-- **Message Broker:** RabbitMQ
-- **Monorepo:** Nx
-- **Container:** Docker, Docker Compose
-
----
-
-## 📋 Лицензия
-
-MIT
-
----
-
-# Polygon Platform
-
-**Microservices communication platform**
-
-[Environment Setup](./SETUP.md) • [For Developers](./docs/DEVELOPMENT.md) • [For AI Agents](./docs/AI-AGENTS.md) • [Architecture](./docs/ARCHITECTURE.md)
-
----
-
-## 🚀 Quick Start
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd polygon
-
-# Initialize environment (first run)
-./scripts/bootstrap.sh
-
-# Done! Services are running
-```
-
-**Full guide:** [Environment Setup →](./SETUP.md)
-
----
-
-## 📦 What's Inside
-
-| Service | Port | Description |
-|---------|------|-------------|
-| **User** | 3001 | User management |
-| **Auth** | 3002 | Authentication & authorization |
-| **Chat** | 3003 | Chats & messaging |
-| **Media** | 3004 | Media handling |
-| **Notification** | 3005 | Notifications |
-
-**Infrastructure:**
-- PostgreSQL (5432) — databases
-- Redis (6379) — caching
-- RabbitMQ (5672/15672) — message broker
-
----
-
-## 📚 Documentation
-
-### For Developers
-| File | Description |
-|------|-------------|
-| [**SETUP.md**](./SETUP.md) | Environment setup, variables, running |
-| [**docs/DEVELOPMENT.md**](./docs/DEVELOPMENT.md) | Development guide, code standards, tests |
-| [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Project architecture, service connections |
-| [**CONTRIBUTING.md**](./CONTRIBUTING.md) | How to contribute, PRs, code style |
-
-### For AI Agents
-| File | Description |
-|------|-------------|
-| [**docs/AI-AGENTS.md**](./docs/AI-AGENTS.md) | Guide for AI assistants (Qwen, Cursor, Copilot) |
-| [**AGENTS.md**](./AGENTS.md) | Nx configuration and agent skills |
+> **Status:** 🚧 In Development
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Backend:** NestJS, TypeScript, Prisma
-- **Database:** PostgreSQL, Redis
-- **Message Broker:** RabbitMQ
-- **Monorepo:** Nx
-- **Container:** Docker, Docker Compose
+| Category              | Technology             | Version |
+| --------------------- | ---------------------- | ------- |
+| **Runtime**           | Node.js                | 20.x    |
+| **Language**          | TypeScript             | ~5.9    |
+| **Backend Framework** | NestJS                 | ^11.0   |
+| **Database**          | PostgreSQL             | 17      |
+| **ORM**               | Prisma                 | ^7.5    |
+| **Caching**           | Redis                  | 7       |
+| **Message Broker**    | RabbitMQ               | 3       |
+| **Monorepo**          | Nx                     | 22.6    |
+| **Frontend Build**    | Vite                   | ^7.0    |
+| **UI Library**        | React                  | ^19.0   |
+| **Validation**        | Zod                    | ^4.3    |
+| **Infrastructure**    | Docker, Docker Compose | —       |
 
 ---
 
-## 📋 License
+## 🚀 Quick Start
 
-MIT
+### 1. Setup Environment
+
+```bash
+cp .env.example .env
+```
+
+Configure environment variables in `.env` file.
+
+### 2. Initialize & Run
+
+See full setup guide: [Setup Documentation →](./docs/SETUP.md)
+
+---
+
+## 📚 Documentation
+
+| File                                       | Description                                              |
+| ------------------------------------------ | -------------------------------------------------------- |
+| [**Setup**](./docs/SETUP.md)               | Environment variables, Docker, databases                 |
+| [**Development**](./docs/DEVELOPMENT.md)   | Code standards, testing, debugging, module boundaries    |
+| [**Architecture**](./docs/ARCHITECTURE.md) | Microservices design, service communication              |

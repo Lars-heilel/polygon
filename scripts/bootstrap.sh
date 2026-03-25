@@ -1,69 +1,99 @@
 #!/bin/bash
 
-# Главный скрипт инициализации и запуска проекта
-# Автоматически определяет состояние системы и выполняет нужные действия
+# Main project initialization and startup script
+# Automatically detects system state and performs required actions
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
-echo "🔍 Проверка состояния системы..."
+echo "🔍 Checking system state..."
 
-# Проверка наличия Docker
+# Check Docker availability
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker не найден. Пожалуйста, установите Docker."
+    echo "❌ Docker not found. Please install Docker."
     exit 1
 fi
 
-# Проверка наличия docker compose
+# Check docker compose availability
 if ! docker compose version &> /dev/null; then
-    echo "❌ Docker Compose не найден. Пожалуйста, установите Docker Compose."
+    echo "❌ Docker Compose not found. Please install Docker Compose."
     exit 1
 fi
 
-# Проверка состояния контейнеров
+# Check container state
 if docker ps -a --format '{{.Names}}' | grep -q "polygon-postgres"; then
-    echo "✅ Контейнеры уже существуют"
-    
-    # Проверка работы PostgreSQL
+    echo "✅ Containers already exist"
+
+    # Check PostgreSQL status
     if docker ps --format '{{.Names}}' | grep -q "polygon-postgres"; then
-        echo "✅ PostgreSQL работает"
+        echo "✅ PostgreSQL is running"
     else
-        echo "⚠️  PostgreSQL остановлен. Запускаю..."
+        echo "⚠️  PostgreSQL is stopped. Starting..."
         docker compose up -d postgres
         sleep 5
     fi
 else
-    echo "🆕 Первый запуск. Инициализация..."
-    
-    # Запуск всех сервисов
+    echo "🆕 First run. Initializing..."
+
+    # Start all services
     docker compose up -d
-    
-    echo "⏳ Ожидание готовности PostgreSQL..."
+
+    echo "⏳ Waiting for PostgreSQL to be ready..."
     sleep 10
 fi
 
-# Проверка наличия баз данных
-echo "📋 Проверка баз данных..."
+# Check databases
+echo "📋 Checking databases..."
 DB_COUNT=$(docker exec polygon-postgres psql -U polygon -d postgres -t -c "SELECT count(*) FROM pg_database WHERE datname LIKE 'polygon_%'" 2>/dev/null | tr -d ' ')
 
 if [ "$DB_COUNT" -lt 5 ]; then
-    echo "⚠️  Базы данных не найдены. Запуск инициализации..."
+    echo "⚠️  Databases not found. Running initialization..."
     ./scripts/init-db.sh
 else
-    echo "✅ Базы данных существуют ($DB_COUNT найдено)"
+    echo "✅ Databases exist ($DB_COUNT found)"
 fi
 
 echo ""
-echo "✅ Система готова к работе!"
+echo "✅ System is ready!"
 echo ""
-echo "📚 Следующие шаги:"
-echo "   1. Применить миграции Prisma:"
-echo "      cd libs/backend/user && npx prisma migrate dev"
-echo "      cd ../auth && npx prisma migrate dev"
-echo "      cd ../chat && npx prisma migrate dev"
+echo "📋 Applying Prisma migrations and generating clients..."
+
+# Backend services list (libs/backend/<name>)
+SERVICES=("user" "auth" "chat" "media" "notification")
+
+for SERVICE in "${SERVICES[@]}"; do
+    SERVICE_PATH="libs/backend/$SERVICE"
+    echo ""
+    echo "🔧 Processing $SERVICE..."
+    
+    # Check if schema exists
+    if [ -f "$SERVICE_PATH/src/database/prisma/schema.prisma" ]; then
+        cd "$SERVICE_PATH"
+        
+        # Generate Prisma client
+        echo "   📦 Generating Prisma client..."
+        npx prisma generate
+        
+        # Apply migrations
+        echo "   🗄️  Applying migrations..."
+        npx prisma migrate dev
+        
+        cd - > /dev/null
+    else
+        echo "   ⚠️  schema.prisma not found, skipping..."
+    fi
+done
+
 echo ""
-echo "   2. Запустить сервисы (если ещё не запущены):"
+echo "✅ All migrations applied and clients generated!"
+echo ""
+echo "📚 Next steps:"
+echo "   1. Start services (if not already running):"
 echo "      docker compose up -d"
+echo ""
+echo "   2. Check logs:"
+echo "      docker compose logs -f"
 echo ""

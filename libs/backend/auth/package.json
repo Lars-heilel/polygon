@@ -16,5 +16,8 @@
     "@org/common": "*",
     "@nestjs/swagger": "^11.0.0",
     "nestjs-zod": "^5.2.1"
+  },
+  "nx": {
+    "tags": ["scope:backend", "type:business"]
   }
 }

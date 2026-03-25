@@ -26,6 +26,39 @@
           "configName": "tsconfig.lib.json",
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
+        },
+        "enforceModuleBoundaries": {
+          "allow": [],
+          "restrictions": [
+            {
+              "tag": "layer:entities",
+              "notDependableOn": ["layer:widgets", "layer:pages", "layer:layouts"]
+            },
+            {
+              "tag": "layer:features",
+              "notDependableOn": ["layer:widgets", "layer:pages", "layer:layouts"]
+            },
+            {
+              "tag": "layer:layouts",
+              "notDependableOn": ["layer:pages"]
+            },
+            {
+              "tag": "layer:shared",
+              "notDependableOn": ["layer:entities", "layer:features", "layer:widgets", "layer:pages", "layer:layouts"]
+            },
+            {
+              "tag": "scope:client",
+              "notDependableOn": ["scope:backend"]
+            },
+            {
+              "tag": "scope:backend",
+              "notDependableOn": ["scope:client"]
+            },
+            {
+              "tag": "type:framework-agnostic",
+              "canDependOn": ["type:framework-agnostic"]
+            }
+          ]
         }
       }
     },

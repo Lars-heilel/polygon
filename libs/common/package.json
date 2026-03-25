@@ -12,5 +12,8 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "nx": {
+    "tags": ["scope:shared", "type:framework-agnostic"]
+  }
 }

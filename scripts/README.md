@@ -1,52 +1,67 @@
-# Инициализация баз данных
+# Database Initialization
 
-Этот скрипт нужен для **первого запуска** проекта после клонирования.
+This script is for the **first run** of the project after cloning.
 
-## Быстрый старт
+## Quick Start
 
 ```bash
-# 1. Запустить скрипт инициализации (только один раз)
-./scripts/init-db.sh
+# 1. Run bootstrap script (initialization + migrations + Prisma client generation)
+./scripts/bootstrap.sh
 
-# 2. Запустить все сервисы
+# 2. Start all services
 docker compose up -d
-
-# 3. Запустить миграции Prisma (если не были применены)
-cd libs/backend/user && npx prisma migrate dev
-cd ../auth && npx prisma migrate dev
-cd ../chat && npx prisma migrate dev
 ```
 
-## Что делает скрипт `init-db.sh`
+## What `bootstrap.sh` Does
 
-1. Останавливает все контейнеры
-2. Удаляет старый том PostgreSQL (если есть)
-3. Запускает PostgreSQL с чистым томом
-4. Автоматически создаются базы данных для всех микросервисов:
+1. Checks Docker and Docker Compose availability
+2. Starts containers (PostgreSQL, Redis, RabbitMQ)
+3. Creates databases for all microservices (if not exists)
+4. Generates Prisma clients for all backend services
+5. Applies Prisma migrations
+
+## What `init-db.sh` Does
+
+1. Stops all containers
+2. Removes old PostgreSQL volume (if exists)
+3. Starts PostgreSQL with clean volume
+4. Automatically creates databases for all microservices:
    - `polygon_auth`
    - `polygon_chat`
    - `polygon_media`
    - `polygon_notification`
    - `polygon_user`
 
-## Важные замечания
+## Important Notes
 
-- Скрипт нужно запускать **только один раз** после клонирования проекта
-- При повторном запуске все данные баз данных будут **удалены**
-- Для сброса данных можно запустить скрипт повторно
+- Run `bootstrap.sh` **only once** after cloning the project
+- Running `init-db.sh` again will **delete** all database data
+- Prisma generated files are gitignored:
+  - `libs/backend/*/src/database/generated`
+  - `apps/backend/*/src/database/generated`
 
-## Ручное управление
+## Manual Management
 
 ```bash
-# Запуск всех сервисов
+# Start all services
 docker compose up -d
 
-# Просмотр логов
-docker compose logs -f postgres
+# View logs
+docker compose logs -f
 
-# Остановка всех сервисов
+# Stop all services
 docker compose down
 
-# Полный сброс (включая тома)
+# Full reset (including volumes)
 docker compose down -v
+
+# Generate Prisma client for a service
+cd libs/backend/user && npx prisma generate
+
+# Apply migrations for a service
+cd libs/backend/user && npx prisma migrate dev
+
+# Using Nx (alternative)
+npx nx run @org/user:prisma-generate
+npx nx run @org/user:prisma-migrate
 ```

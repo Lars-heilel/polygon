@@ -53,3 +53,7 @@ Thumbs.db
 .nx/polygraph
 vite.config.*.timestamp*
 test-output
+
+# Prisma generated files
+libs/backend/*/src/database/generated
+apps/backend/*/src/database/generated

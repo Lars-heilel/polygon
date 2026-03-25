@@ -1,27 +1,27 @@
 #!/bin/bash
 
-# Скрипт полной инициализации баз данных
-# Запускается ОДИН раз после клонирования проекта
-# Очищает старый том PostgreSQL и создаёт базы данных для всех микросервисов
+# Full database initialization script
+# Run ONLY once after cloning the project
+# Clears old PostgreSQL volume and creates databases for all microservices
 
 set -e
 
-echo "🗑️  Остановка контейнеров..."
+echo "🗑️  Stopping containers..."
 cd "$(dirname "$0")/.."
 docker compose down
 
-echo "🧹 Очистка тома PostgreSQL..."
+echo "🧹 Clearing PostgreSQL volume..."
 docker volume rm polygon_postgres_data 2>/dev/null || true
 
-echo "🚀 Запуск PostgreSQL с чистым томом..."
+echo "🚀 Starting PostgreSQL with clean volume..."
 docker compose up -d postgres
 
-echo "⏳ Ожидание готовности PostgreSQL (30 секунд)..."
+echo "⏳ Waiting for PostgreSQL to be ready (30 seconds)..."
 sleep 30
 
-echo "📋 Проверка созданных баз данных..."
+echo "📋 Checking created databases..."
 docker exec polygon-postgres psql -U polygon -d postgres -c "\l"
 
 echo ""
-echo "✅ Инициализация завершена!"
-echo "Теперь можно запустить все сервисы: docker compose up -d"
+echo "✅ Initialization complete!"
+echo "Now you can start all services: docker compose up -d"

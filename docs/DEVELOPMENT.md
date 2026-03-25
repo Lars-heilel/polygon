@@ -1,194 +1,4 @@
-# Разработка / Development
-
-[← На главную](../README.md) | [Архитектура](./ARCHITECTURE.md) | [Для AI агентов](./AI-AGENTS.md)
-
----
-
-## 📁 Структура проекта
-
-```
-polygon/
-├── apps/                    # Приложения (если есть)
-├── libs/                    # Библиотеки
-│   └── backend/
-│       ├── auth/           # Сервис аутентификации
-│       ├── user/           # Сервис пользователей
-│       ├── chat/           # Сервис чатов
-│       ├── media/          # Сервис медиа
-│       └── notification/   # Сервис уведомлений
-├── scripts/                 # Скрипты инициализации
-├── infra/                   # Инфраструктура (Docker, init скрипты)
-└── docs/                    # Документация
-```
-
----
-
-## 🚀 Запуск разработки
-
-### 1. Инициализация (первый раз)
-
-```bash
-./scripts/bootstrap.sh
-```
-
-### 2. Применение миграций
-
-```bash
-# Для каждого сервиса
-cd libs/backend/user && npx prisma migrate dev
-cd ../auth && npx prisma migrate dev
-cd ../chat && npx prisma migrate dev
-cd ../media && npx prisma migrate dev
-cd ../notification && npx prisma migrate dev
-```
-
-### 3. Генерация Prisma клиентов
-
-```bash
-npx prisma generate
-```
-
-### 4. Запуск сервисов
-
-```bash
-# Через Docker
-docker compose up -d
-
-# Или локально (если настроено)
-npm run start:dev
-```
-
----
-
-## 🧪 Тестирование
-
-```bash
-# Запустить тесты всех проектов
-npm run test
-
-# Запустить тесты конкретного сервиса
-npx nx test user
-npx nx test auth
-npx nx test chat
-
-# Запустить линтинг
-npx nx lint user
-
-# Сборка проекта
-npx nx build user
-```
-
----
-
-## 📝 Стандарты кода
-
-### TypeScript
-- Строгая типизация (`strict: true`)
-- Интерфейсы для DTO и сущностей
-- Типы Prisma не импортируются — выводятся автоматически
-
-### NestJS
-- Декоративный стиль (`@Injectable()`, `@Controller()`)
-- Repository pattern для работы с БД
-- Dependency Injection через конструктор
-
-### Именование
-```typescript
-// Классы — PascalCase
-class UserService {}
-
-// Интерфейсы — PascalCase
-interface UserDTO {}
-
-// Переменные/функции — camelCase
-const getUserById = () => {}
-
-// Константы — UPPER_SNAKE_CASE
-const MAX_RETRY_COUNT = 3
-
-// Файлы — kebab-case
-user.service.ts
-```
-
-### Структура сервиса
-```
-libs/backend/user/
-├── src/
-│   ├── database/
-│   │   ├── prisma/           # Prisma сервис
-│   │   └── repository/       # Репозитории
-│   ├── dto/                  # Data Transfer Objects
-│   ├── services/             # Бизнес-логика
-│   ├── controllers/          # HTTP контроллеры
-│   └── index.ts              # Точка входа
-├── prisma/
-│   └── schema.prisma         # Prisma схема
-└── tsconfig.json
-```
-
----
-
-## 🔧 Утилиты Nx
-
-```bash
-# Показать граф зависимостей
-npx nx graph
-
-# Запустить задачу с зависимостями
-npx nx run user:build --with-deps
-
-# Запустить задачи для нескольких проектов
-npx nx run-many --target=build --projects=user,auth
-
-# Запустить только изменённые проекты
-npx nx affected --target=test
-```
-
----
-
-## 🐛 Отладка
-
-### Логи Docker
-```bash
-# Все логи
-docker compose logs -f
-
-# Лог конкретного сервиса
-docker compose logs -f postgres
-```
-
-### Базы данных
-```bash
-# Подключиться к PostgreSQL
-docker exec -it polygon-postgres psql -U polygon -d polygon_user
-
-# Показать все БД
-docker exec polygon-postgres psql -U polygon -d postgres -c "\l"
-```
-
----
-
-## 📦 Переменные окружения
-
-Скопируйте `.env.example` в `.env`:
-
-```bash
-cp .env.example .env
-```
-
-**Основные переменные:**
-- `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_PASSWORD`
-- `REDIS_HOST`, `REDIS_PORT`
-- `RABBITMQ_HOST`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`
-- `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRES`
-
-Подробнее: [SETUP.md](../SETUP.md)
-
----
-
-# Development
-
-[← Home](../README.md) | [Architecture](./ARCHITECTURE.md) | [For AI Agents](./AI-AGENTS.md)
+# Development Guide
 
 ---
 
@@ -196,54 +6,66 @@ cp .env.example .env
 
 ```
 polygon/
-├── apps/                    # Applications (if any)
-├── libs/                    # Libraries
-│   └── backend/
-│       ├── auth/           # Authentication service
-│       ├── user/           # User service
-│       ├── chat/           # Chat service
-│       ├── media/          # Media service
-│       └── notification/   # Notification service
-├── scripts/                 # Initialization scripts
-├── infra/                   # Infrastructure (Docker, init scripts)
-└── docs/                    # Documentation
+├── apps/
+│   ├── backend/           # Executable applications
+│   │   ├── gateway/       # API Gateway
+│   │   ├── user-service/  # Microservices
+│   │   ├── auth-service/
+│   │   ├── chat-service/
+│   │   ├── media-service/
+│   │   └── notification-service/
+│   └── client/
+│       └── messenger/     # React SPA
+│
+├── libs/
+│   ├── backend/           # Business logic libraries
+│   │   ├── user/          # Prisma schemas + logic
+│   │   ├── auth/
+│   │   ├── chat/
+│   │   ├── media/
+│   │   ├── notification/
+│   │   └── core/
+│   ├── client/            # FSD packages
+│   │   ├── entities/      # Data models
+│   │   ├── features/      # User interactions
+│   │   ├── layouts/       # Page layouts
+│   │   ├── pages/         # Full pages
+│   │   ├── shared/        # Utilities
+│   │   └── widgets/       # Composite components
+│   └── common/            # Framework-agnostic shared code
+│
+├── scripts/               # Initialization scripts
+├── infra/                 # Infrastructure (Docker, DB init)
+└── docs/                  # Documentation
 ```
 
 ---
 
-## 🚀 Development Workflow
+## 🚀 Quick Start
 
-### 1. Initialization (first time)
+### 1. Initialize (First Run)
 
 ```bash
 ./scripts/bootstrap.sh
 ```
 
-### 2. Apply Migrations
+This script:
+- Checks Docker and Docker Compose
+- Starts containers (PostgreSQL, Redis, RabbitMQ)
+- Creates databases
+- Generates Prisma clients
+- Applies migrations
+
+### 2. Start Services
 
 ```bash
-# For each service
-cd libs/backend/user && npx prisma migrate dev
-cd ../auth && npx prisma migrate dev
-cd ../chat && npx prisma migrate dev
-cd ../media && npx prisma migrate dev
-cd ../notification && npx prisma migrate dev
-```
-
-### 3. Generate Prisma Clients
-
-```bash
-npx prisma generate
-```
-
-### 4. Start Services
-
-```bash
-# Via Docker
 docker compose up -d
+```
 
-# Or locally (if configured)
-npm run start:dev
+### 3. Generate Prisma Client (if needed)
+
+```bash
+cd libs/backend/user && npx prisma generate
 ```
 
 ---
@@ -254,16 +76,104 @@ npm run start:dev
 # Run all tests
 npm run test
 
-# Run specific service tests
-npx nx test user
-npx nx test auth
-npx nx test chat
+# Run specific project tests
+npx nx test @org/user-service
 
-# Run linting
-npx nx lint user
+# Run with coverage
+npx nx test @org/user-service --coverage
 
-# Build project
-npx nx build user
+# Run specific test file
+npx nx test @org/user-service --testFile=user.service.spec.ts
+```
+
+---
+
+## 🔒 Module Boundaries (FSD)
+
+This project uses **Nx Module Boundaries** to enforce Feature-Sliced Design (FSD) architecture.
+
+### Dependency Rules
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    FSD Layer Dependencies                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  pages → layouts, widgets, features, entities, shared       │
+│    ↓                                                        │
+│  layouts → widgets, features, entities, shared              │
+│    ↓                                                        │
+│  widgets → features, entities, shared                       │
+│    ↓                                                        │
+│  features → entities, shared                                │
+│    ↓                                                        │
+│  entities → shared                                          │
+│    ↓                                                        │
+│  shared → (external packages only)                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Scope Boundaries
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Scope Boundaries                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  @org/common (framework-agnostic)                           │
+│    ↓ can be imported by anyone                              │
+│                                                             │
+│  @org/client/*  ←→  @org/backend/*                          │
+│  (client cannot import backend)                             │
+│  (backend cannot import client)                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Examples
+
+```typescript
+// ✅ ALLOWED: widgets can import entities
+import { User } from '@org/entities';  // libs/client/widgets/...
+
+// ✅ ALLOWED: features can import common
+import { UserSchema } from '@org/common';  // libs/client/features/...
+
+// ❌ FORBIDDEN: entities cannot import widgets
+import { ChatWidget } from '@org/widgets';  // libs/client/entities/...
+// Error: Projects using tag "layer:entities" cannot depend on projects using tag "layer:widgets"
+
+// ❌ FORBIDDEN: client cannot import backend
+import { UserService } from '@org/backend/user';  // apps/client/...
+// Error: Projects using tag "scope:client" cannot depend on projects using tag "scope:backend"
+```
+
+### Tags Reference
+
+| Tag | Purpose |
+|-----|---------|
+| `layer:entities` | Business entities (User, Chat, Message) |
+| `layer:features` | User interactions (auth, send message) |
+| `layer:layouts` | Page layouts |
+| `layer:pages` | Full pages |
+| `layer:widgets` | Composite components |
+| `layer:shared` | Reusable utilities |
+| `scope:client` | Client-side code |
+| `scope:backend` | Server-side code |
+| `scope:shared` | Framework-agnostic shared code |
+| `type:app` | Executable applications |
+| `type:business` | Business logic libraries |
+| `type:framework-agnostic` | No framework dependencies |
+
+### Check Boundaries
+
+```bash
+# Check for boundary violations
+npx nx graph
+
+# Run lint with boundary checks
+npx nx lint --skip-nx-cache
 ```
 
 ---
@@ -271,17 +181,25 @@ npx nx build user
 ## 📝 Code Standards
 
 ### TypeScript
+
 - Strict typing (`strict: true`)
-- Interfaces for DTOs and entities
-- Prisma types not imported — inferred automatically
+- Explicit return types
+- Interfaces for DTOs
+- No `any` type
 
 ### NestJS
+
 - Decorator style (`@Injectable()`, `@Controller()`)
-- Repository pattern for database access
-- Constructor-based Dependency Injection
+- Repository pattern for database
+- Constructor-based DI
 
 ### Naming Conventions
+
 ```typescript
+// Files — kebab-case
+user.service.ts
+create-user.dto.ts
+
 // Classes — PascalCase
 class UserService {}
 
@@ -293,43 +211,68 @@ const getUserById = () => {}
 
 // Constants — UPPER_SNAKE_CASE
 const MAX_RETRY_COUNT = 3
-
-// Files — kebab-case
-user.service.ts
 ```
 
-### Service Structure
-```
-libs/backend/user/
-├── src/
-│   ├── database/
-│   │   ├── prisma/           # Prisma service
-│   │   └── repository/       # Repositories
-│   ├── dto/                  # Data Transfer Objects
-│   ├── services/             # Business logic
-│   ├── controllers/          # HTTP controllers
-│   └── index.ts              # Entry point
-├── prisma/
-│   └── schema.prisma         # Prisma schema
-└── tsconfig.json
+### Schema Extension Pattern
+
+```typescript
+// libs/common/src/schemas/user.ts
+export const UserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+// libs/client/features/auth/src/register-form.ts
+import { UserSchema } from '@org/common';
+
+export const RegisterFormSchema = UserSchema.extend({
+  confirmPassword: z.string(),
+}).refine(
+  (data) => data.password === data.confirmPassword,
+  { message: 'Passwords do not match' }
+);
+
+// libs/backend/user/src/dto/create-user.dto.ts
+import { UserSchema } from '@org/common';
+import { createZodDto } from 'nestjs-zod';
+
+export class CreateUserDto extends createZodDto(UserSchema) {
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'User password',
+    example: 'P@ssw0rd123',
+  })
+  password: string;
+}
 ```
 
 ---
 
-## 🔧 Nx Utilities
+## 🔧 Nx Commands
 
 ```bash
 # Show dependency graph
 npx nx graph
 
 # Run task with dependencies
-npx nx run user:build --with-deps
+npx nx run @org/user-service:build --with-deps
 
 # Run tasks for multiple projects
-npx nx run-many --target=build --projects=user,auth
+npx nx run-many --target=build --projects=@org/user-service,@org/auth-service
 
 # Run only affected projects
 npx nx affected --target=test
+
+# Show projects
+npx nx show projects
+
+# Show project details
+npx nx show project @org/user-service --json
 ```
 
 ---
@@ -337,15 +280,17 @@ npx nx affected --target=test
 ## 🐛 Debugging
 
 ### Docker Logs
+
 ```bash
 # All logs
 docker compose logs -f
 
-# Specific service logs
-docker compose logs -f postgres
+# Specific service
+docker compose logs -f polygon-postgres
 ```
 
 ### Databases
+
 ```bash
 # Connect to PostgreSQL
 docker exec -it polygon-postgres psql -U polygon -d polygon_user
@@ -370,4 +315,4 @@ cp .env.example .env
 - `RABBITMQ_HOST`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`
 - `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRES`
 
-More info: [SETUP.md](../SETUP.md)
+See [SETUP.md](./SETUP.md) for details.

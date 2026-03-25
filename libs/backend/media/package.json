@@ -12,5 +12,8 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "nx": {
+    "tags": ["scope:backend", "type:business"]
+  }
 }

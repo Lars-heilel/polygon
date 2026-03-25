@@ -1,5 +1,8 @@
 {
   "name": "@org/messenger",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "nx": {
+    "tags": ["scope:client", "type:app"]
+  }
 }
