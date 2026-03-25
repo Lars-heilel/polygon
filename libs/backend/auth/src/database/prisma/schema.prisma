@@ -1,0 +1,29 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MODERATOR
+  USER
+}
+
+model Credentials {
+  id             String    @id @default(uuid()) @map("id")
+  email          String    @unique @map("email")
+  role           Role      @default(USER) @map("role")
+  passwordHash   String    @map("password_hash")
+  isVerified     Boolean   @default(false) @map("is_verified")
+  lockedAt       DateTime? @map("locked_at")
+  lockedUntil    DateTime? @map("locked_until")
+  createdAt      DateTime  @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([email])
+}

@@ -1,0 +1,60 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+enum ChatRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+model Chat {
+  id        String   @id @default(uuid())
+  type      ChatType @map("type")
+  name      String?  @map("name")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members ChatMember[]
+  messages Message[]
+
+  @@index([type])
+}
+
+model ChatMember {
+  chatId   String   @map("chat_id")
+  userId   String   @map("user_id")
+  role     ChatRole @default(MEMBER) @map("role")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@id([chatId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String   @map("chat_id")
+  senderId  String   @map("sender_id")
+  text      String?  @map("text")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+}
