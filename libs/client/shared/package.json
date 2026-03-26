@@ -12,6 +12,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./styles/global.css": {
+      "@org/source": "./src/styles/global.css",
+      "default": "./src/styles/global.css"
     }
   },
   "nx": {

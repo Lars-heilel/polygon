@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Absolute */
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  /* Purple shades (tone scale) */
+  --color-purple-60: #703bf7;
+  --color-purple-65: #8254f8;
+  --color-purple-70: #946cf9;
+  --color-purple-75: #a685fa;
+  --color-purple-90: #dbcefd;
+  --color-purple-95: #ede7fe;
+  --color-purple-97: #f4f0fe;
+  --color-purple-99: #fbfaff;
+
+  /* White shades (tone scale) */
+  --color-white-90: #e4e4e7;
+  --color-white-95: #f1f1f3;
+  --color-white-97: #f7f7f8;
+  --color-white-99: #fcfcfd;
+
+  /* Gray shades (tone scale) */
+  --color-gray-09: #141414;
+  --color-gray-10: #1a1a1a;
+  --color-gray-15: #262626;
+  --color-gray-20: #333333;
+  --color-gray-30: #4d4d4d;
+  --color-gray-40: #666666;
+  --color-gray-50: #808080;
+  --color-gray-60: #999999;
+
+  /* Semantic aliases */
+  --color-primary: var(--color-purple-60);
+  --color-primary-hover: var(--color-purple-70);
+  --color-surface: var(--color-gray-09);
+  --color-surface-elevated: var(--color-gray-10);
+  --color-border: var(--color-gray-15);
+  --color-text: var(--color-white);
+  --color-text-muted: var(--color-gray-50);
+  --color-danger: #ef4444;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* Light theme overrides */
+.theme-light {
+  --color-surface: var(--color-purple-99);
+  --color-surface-elevated: var(--color-white);
+  --color-border: var(--color-purple-90);
+  --color-text: var(--color-gray-09);
+  --color-text-muted: var(--color-gray-40);
+  --color-primary-hover: var(--color-purple-65);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface text-text font-sans;
+  }
+}

@@ -10,7 +10,10 @@
       "!{projectRoot}/.eslintrc.json",
       "!{projectRoot}/eslint.config.mjs",
       "!{projectRoot}/jest.config.[jt]s",
-      "!{projectRoot}/test-setup.[jt]s"
+      "!{projectRoot}/test-setup.[jt]s",
+      "!{projectRoot}/**/*.stories.@(js|jsx|ts|tsx|mdx)",
+      "!{projectRoot}/.storybook/**/*",
+      "!{projectRoot}/tsconfig.storybook.json"
     ],
     "sharedGlobals": []
   },
@@ -32,11 +35,19 @@
           "restrictions": [
             {
               "tag": "layer:entities",
-              "notDependableOn": ["layer:widgets", "layer:pages", "layer:layouts"]
+              "notDependableOn": [
+                "layer:widgets",
+                "layer:pages",
+                "layer:layouts"
+              ]
             },
             {
               "tag": "layer:features",
-              "notDependableOn": ["layer:widgets", "layer:pages", "layer:layouts"]
+              "notDependableOn": [
+                "layer:widgets",
+                "layer:pages",
+                "layer:layouts"
+              ]
             },
             {
               "tag": "layer:layouts",
@@ -44,7 +55,13 @@
             },
             {
               "tag": "layer:shared",
-              "notDependableOn": ["layer:entities", "layer:features", "layer:widgets", "layer:pages", "layer:layouts"]
+              "notDependableOn": [
+                "layer:entities",
+                "layer:features",
+                "layer:widgets",
+                "layer:pages",
+                "layer:layouts"
+              ]
             },
             {
               "tag": "scope:client",
@@ -111,6 +128,17 @@
       "plugin": "@nx/playwright/plugin",
       "options": {
         "targetName": "e2e"
+      }
+    },
+    {
+      "plugin": "@nx/storybook/plugin",
+      "options": {
+        "serveStorybookTargetName": "storybook",
+        "buildStorybookTargetName": "build-storybook",
+        "testStorybookTargetName": "test-storybook",
+        "staticStorybookTargetName": "static-storybook",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
       }
     }
   ],

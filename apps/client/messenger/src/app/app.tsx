@@ -1,12 +1,11 @@
-// Uncomment this line to use CSS modules
-// import styles from './app.module.css';
-import NxWelcome from './nx-welcome';
+import { ThemeProvider } from '@org/shared';
+import { DesignSystemPage } from '../pages/design-system';
 
 export function App() {
   return (
-    <div>
-      <NxWelcome title="@org/messenger" />
-    </div>
+    <ThemeProvider>
+      <DesignSystemPage />
+    </ThemeProvider>
   );
 }
 

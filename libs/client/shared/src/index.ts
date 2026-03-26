@@ -1,1 +1,11 @@
-export * from './lib/shared';
+export { cn } from './lib/cn';
+export { ThemeProvider, useTheme } from './lib/theme';
+export { Heading, Text } from './ui/typography';
+export { Button } from './ui/button';
+export { IconButton } from './ui/icon-button';
+export { Input } from './ui/input';
+export { Textarea } from './ui/textarea';
+export { Avatar } from './ui/avatar';
+export { Badge } from './ui/badge';
+export { Divider } from './ui/divider';
+export { Spinner } from './ui/spinner';
