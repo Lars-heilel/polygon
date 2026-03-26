@@ -1,0 +1,11 @@
+{
+  "name": "@org/gateway",
+  "targets": {
+    "serve": {
+      "options": {
+        "inspect": false,
+        "runtimeArgs": ["--inspect=9229"]
+      }
+    }
+  }
+}

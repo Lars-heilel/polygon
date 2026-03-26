@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s      # как часто собирать метрики
+  evaluation_interval: 15s  # как часто проверять alerting rules
+
+scrape_configs:
+  # Gateway — метрики по пути /api/metrics (т.к. setGlobalPrefix('api'))
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+    metrics_path: '/api/metrics'
+
+  # Auth Service — HTTP на порту 3002
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['host.docker.internal:3002']
+    metrics_path: '/metrics'
+
+  # User Service — HTTP на порту 3001
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['host.docker.internal:3001']
+    metrics_path: '/metrics'
+
+  # Chat Service — HTTP на порту 3003
+  - job_name: 'chat-service'
+    static_configs:
+      - targets: ['host.docker.internal:3003']
+    metrics_path: '/api/metrics'
+
+  # Сам Prometheus мониторит себя
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

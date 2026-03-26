@@ -25,3 +25,19 @@ export * from './guards/jwt.guard';
 
 // Decorators
 export * from './decorators/current-user.decorator';
+
+// Filters
+export * from './filters/all-exceptions.filter';
+
+// Interceptors
+export * from './interceptors/logging.interceptor';
+
+// Logger
+export * from './logger/logger.module';
+
+// Health
+export * from './health/health.module';
+export * from './health/prisma-health.indicator';
+
+// Metrics
+export * from './metrics/metrics.module';

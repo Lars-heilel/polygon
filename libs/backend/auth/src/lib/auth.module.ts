@@ -36,5 +36,6 @@ import { AuthController } from '../controllers/auth.controller';
   ],
   controllers: [AuthController],
   providers: [PrismaService, AuthPrismaRepository, AuthService],
+  exports: [PrismaService],
 })
 export class OrgAuthModule {}

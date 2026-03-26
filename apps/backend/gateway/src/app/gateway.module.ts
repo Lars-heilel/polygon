@@ -6,17 +6,24 @@ import {
   ConfigService,
   CoreConfigModule,
   CoreTokenModule,
+  HealthModule,
   JwtGuard,
+  LoggerModule,
+  MetricsModule,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
 } from '@org/core';
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { UserGatewayController } from '../controllers/user.controller';
+import { HealthController } from '../controllers/health.controller';
 
 @Module({
   imports: [
     CoreConfigModule,
     CoreTokenModule,
+    LoggerModule,
+    HealthModule,
+    MetricsModule,
     ClientsModule.registerAsync([
       {
         name: AUTH_CLIENT_TOKEN,
@@ -46,7 +53,7 @@ import { UserGatewayController } from '../controllers/user.controller';
       },
     ]),
   ],
-  controllers: [AuthGatewayController, UserGatewayController],
+  controllers: [AuthGatewayController, UserGatewayController, HealthController],
   providers: [JwtGuard],
 })
 export class GatewayModule {}

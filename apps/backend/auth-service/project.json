@@ -1,0 +1,11 @@
+{
+  "name": "@org/auth-service",
+  "targets": {
+    "serve": {
+      "options": {
+        "inspect": false,
+        "runtimeArgs": ["--inspect=9230"]
+      }
+    }
+  }
+}

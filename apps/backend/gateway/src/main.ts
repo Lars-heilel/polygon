@@ -1,19 +1,32 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino';
 import cookieParser from 'cookie-parser';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { AllExceptionsFilter, LoggingInterceptor } from '@org/core';
 import { GatewayModule } from './app/gateway.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(GatewayModule);
+  const app = await NestFactory.create(GatewayModule, {
+    // Буферизируем логи до инициализации Pino, чтобы ничего не потерять
+    bufferLogs: true,
+  });
+
+  // Заменяем встроенный NestJS Logger на Pino
+  app.useLogger(app.get(Logger));
 
   app.use(cookieParser());
   app.useGlobalPipes(new ZodValidationPipe());
   app.setGlobalPrefix('api');
 
-  const port = process.env.GATEWAY_PORT ?? 3000;
+  // Глобальный перехватчик ошибок — ловит всё что не поймали контроллеры
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Логируем время выполнения каждого запроса
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  const port = process.env['GATEWAY_PORT'] ?? 3000;
   await app.listen(port);
-  Logger.log(`Gateway is running on: http://localhost:${port}/api`);
+  app.get(Logger).log(`Gateway is running on: http://localhost:${port}/api`);
 }
 
 bootstrap();

@@ -1,0 +1,11 @@
+{
+  "name": "@org/user-service",
+  "targets": {
+    "serve": {
+      "options": {
+        "inspect": false,
+        "runtimeArgs": ["--inspect=9231"]
+      }
+    }
+  }
+}
