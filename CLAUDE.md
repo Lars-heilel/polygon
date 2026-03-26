@@ -20,6 +20,7 @@ docker compose up -d
 ```
 
 Prisma generated files are gitignored (`libs/backend/*/src/database/generated`). Regenerate with:
+
 ```bash
 cd libs/backend/<service> && npx prisma generate
 # or migrate
@@ -117,6 +118,7 @@ libs/common/            # Framework-agnostic: Zod schemas + constants (imported 
 ### Backend Library Structure
 
 Each `libs/backend/<service>/` follows the same pattern:
+
 - `lib/<service>.module.ts` — NestJS module
 - `services/<service>.service.ts` — business logic
 - `controllers/<service>.controller.ts` — API endpoints
@@ -134,6 +136,7 @@ All inter-service communication is async via RabbitMQ events. There is no direct
 ### Shared Schemas Pattern (`libs/common`)
 
 Zod schemas in `@org/common` are the single source of truth for validation. They are shared across client and backend:
+
 - **Frontend**: extend schemas for form validation (add `confirmPassword`, etc.)
 - **Backend DTOs**: `export class CreateUserDto extends createZodDto(UserSchema)`
 
@@ -142,12 +145,15 @@ Zod schemas in `@org/common` are the single source of truth for validation. They
 Nx enforces strict dependency rules — violations are caught by `npx nx lint`.
 
 **FSD layer rules** (client only):
+
 ```
 pages → layouts → widgets → features → entities → shared → (external only)
 ```
+
 Each layer can only import from layers below it.
 
 **Scope rules**:
+
 - `scope:client` cannot import `scope:backend`
 - `scope:backend` cannot import `scope:client`
 - `scope:shared` (`@org/common`) can be imported by anyone
@@ -155,6 +161,7 @@ Each layer can only import from layers below it.
 ## Dependencies
 
 All external npm packages are installed at the **root** `package.json` only:
+
 ```bash
 npm install <package>   # always at repo root
 ```
@@ -181,6 +188,7 @@ npx nx run-many -t build lint test typecheck
 ```
 
 Key rules:
+
 - Always use `--no-interactive` to avoid hanging prompts
 - `--directory` is the **full path** of the artifact, not the parent (`--directory=libs/backend/my-lib`, not `--directory=libs/backend`)
 - Default to **non-buildable** libraries (no `--bundler`) unless publishing to npm
@@ -197,3 +205,27 @@ Key rules:
 - **Constants**: UPPER_SNAKE_CASE
 - TypeScript strict mode is on — no `any`, explicit return types, no unused locals
 - NestJS: constructor-based DI, repository pattern for database access
+
+<!-- nx configuration start-->
+<!-- Leave the start & end comments to automatically receive updates. -->
+
+## General Guidelines for working with Nx
+
+- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
+- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
+- You have access to the Nx MCP server and its tools, use them to help the user
+- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
+- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
+
+## Scaffolding & Generators
+
+- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
+
+## When to use nx_docs
+
+- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
+- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
+- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
+
+<!-- nx configuration end-->

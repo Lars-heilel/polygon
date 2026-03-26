@@ -1,11 +1,12 @@
-import { ThemeProvider } from '@org/shared';
-import { DesignSystemPage } from '../pages/design-system';
+import { RouterProvider } from 'react-router';
+import { Providers } from './providers';
+import { router } from './router';
 
 export function App() {
   return (
-    <ThemeProvider>
-      <DesignSystemPage />
-    </ThemeProvider>
+    <Providers>
+      <RouterProvider router={router} />
+    </Providers>
   );
 }
 

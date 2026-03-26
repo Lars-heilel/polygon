@@ -38,6 +38,12 @@
       "path": "../../../libs/client/features/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/common/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/client/shared/tsconfig.lib.json"
     }
   ]
