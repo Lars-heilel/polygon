@@ -6,4 +6,6 @@ export const AUTH_PATTERNS = {
   LOGIN: 'auth.login',
   LOGOUT: 'auth.logout',
   REFRESH: 'auth.refresh',
+  VERIFY_EMAIL: 'auth.verify-email',
+  RESEND_VERIFICATION: 'auth.resend-verification',
 } as const;

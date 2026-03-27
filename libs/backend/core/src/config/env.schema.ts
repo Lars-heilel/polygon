@@ -28,6 +28,17 @@ export const envSchema = z.object({
   GATEWAY_PORT: z.coerce.number().default(3000),
   AUTH_PORT: z.coerce.number().default(3002),
   USER_PORT: z.coerce.number().default(3001),
+  NOTIFICATION_PORT: z.coerce.number().default(3005),
+
+  // SMTP
+  SMTP_HOST: z.string().default('localhost'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().default('Polygon <noreply@polygon.app>'),
+
+  // App
+  APP_URL: z.string().default('http://localhost:3000'),
 });
 
 export type Env = z.infer<typeof envSchema>;

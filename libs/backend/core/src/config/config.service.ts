@@ -75,4 +75,32 @@ export class ConfigService {
   get userPort(): number {
     return this.config.USER_PORT;
   }
+
+  get notificationPort(): number {
+    return this.config.NOTIFICATION_PORT;
+  }
+
+  get smtpHost(): string {
+    return this.config.SMTP_HOST;
+  }
+
+  get smtpPort(): number {
+    return this.config.SMTP_PORT;
+  }
+
+  get smtpUser(): string | undefined {
+    return this.config.SMTP_USER;
+  }
+
+  get smtpPassword(): string | undefined {
+    return this.config.SMTP_PASSWORD;
+  }
+
+  get smtpFrom(): string {
+    return this.config.SMTP_FROM;
+  }
+
+  get appUrl(): string {
+    return this.config.APP_URL;
+  }
 }

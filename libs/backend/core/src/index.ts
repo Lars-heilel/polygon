@@ -6,6 +6,8 @@ export * from './constants/di/media.di';
 export * from './constants/di/notification.di';
 export * from './constants/queues/auth.queue';
 export * from './constants/queues/user.queue';
+export * from './constants/queues/chat.queue';
+export * from './constants/queues/notification.queue';
 
 // Config
 export * from './config/env.schema';
@@ -31,6 +33,16 @@ export * from './filters/all-exceptions.filter';
 
 // Interceptors
 export * from './interceptors/logging.interceptor';
+
+// Redis
+export * from './redis/redis.service';
+export * from './redis/redis.module';
+
+// Email
+export * from './email/email.interface';
+export * from './email/email.token';
+export * from './email/email-templates';
+export * from './email/email.module';
 
 // Logger
 export * from './logger/logger.module';
