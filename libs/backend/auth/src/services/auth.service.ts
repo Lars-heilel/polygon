@@ -12,6 +12,7 @@ import {
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
 import type { RegisterDto } from '../dto/register.dto';
 import type { LoginDto } from '../dto/login.dto';
+import { VerificationService } from './verification.service';
 
 export type TokenPair = {
   accessToken: string;
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly encryption: EncryptionService,
     private readonly tokenService: TokenService,
     private readonly config: ConfigService,
+    private readonly verification: VerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
   ) {}
 
@@ -46,6 +48,8 @@ export class AuthService {
       name: dto.username,
     });
 
+    await this.verification.generateAndSend(credentials.id, credentials.email);
+
     return this.issueTokenPair(credentials);
   }
 
@@ -57,6 +61,14 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     return this.issueTokenPair(credentials);
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    await this.verification.verify(token);
+  }
+
+  async resendVerification(email: string): Promise<void> {
+    await this.verification.resend(email);
   }
 
   async logout(refreshToken: string): Promise<void> {

@@ -28,4 +28,14 @@ export class AuthController {
   refresh(@Payload() payload: { refreshToken: string }) {
     return this.authService.refresh(payload.refreshToken);
   }
+
+  @MessagePattern(AUTH_PATTERNS.VERIFY_EMAIL)
+  verifyEmail(@Payload() payload: { token: string }) {
+    return this.authService.verifyEmail(payload.token);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.RESEND_VERIFICATION)
+  resendVerification(@Payload() payload: { email: string }) {
+    return this.authService.resendVerification(payload.email);
+  }
 }

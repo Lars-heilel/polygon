@@ -42,6 +42,13 @@ export class AuthPrismaRepository {
     });
   }
 
+  async verifyCredentials(id: string): Promise<void> {
+    await this.prisma.credentials.update({
+      where: { id },
+      data: { isVerified: true },
+    });
+  }
+
   async revokeAllRefreshTokens(credentialsId: string): Promise<void> {
     await this.prisma.refreshToken.updateMany({
       where: { credentialsId, revokedAt: null },
