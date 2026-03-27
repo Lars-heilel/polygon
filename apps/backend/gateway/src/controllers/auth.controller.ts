@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   Inject,
   Post,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -14,6 +16,7 @@ import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, ConfigService } from '@org/core';
 import type { TokenPair } from '@org/auth';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { ResendVerificationDto } from '../dto/resend-verification.dto';
 
 @Controller('auth')
 export class AuthGatewayController {
@@ -66,6 +69,22 @@ export class AuthGatewayController {
     );
     this.setTokenCookies(response, tokens);
     return { message: 'Tokens refreshed' };
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    await this.send(
+      this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, { token }),
+    );
+    return { message: 'Email verified successfully' };
+  }
+
+  @Post('resend-verification')
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    await this.send(
+      this.authClient.send(AUTH_PATTERNS.RESEND_VERIFICATION, { email: dto.email }),
+    );
+    return { message: 'Verification email sent' };
   }
 
   private setTokenCookies(res: Response, tokens: TokenPair): void {

@@ -3,6 +3,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_QUEUE,
+  CHAT_CLIENT_TOKEN,
+  CHAT_QUEUE,
   ConfigService,
   CoreConfigModule,
   CoreTokenModule,
@@ -15,7 +17,9 @@ import {
 } from '@org/core';
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { UserGatewayController } from '../controllers/user.controller';
+import { ChatGatewayController } from '../controllers/chat.controller';
 import { HealthController } from '../controllers/health.controller';
+import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 @Module({
   imports: [
@@ -51,9 +55,22 @@ import { HealthController } from '../controllers/health.controller';
           },
         }),
       },
+      {
+        name: CHAT_CLIENT_TOKEN,
+        imports: [CoreConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [config.rabbitmqUrl],
+            queue: CHAT_QUEUE,
+            queueOptions: { durable: true },
+          },
+        }),
+      },
     ]),
   ],
-  controllers: [AuthGatewayController, UserGatewayController, HealthController],
-  providers: [JwtGuard],
+  controllers: [AuthGatewayController, UserGatewayController, ChatGatewayController, HealthController],
+  providers: [JwtGuard, ChatSocketGateway],
 })
 export class GatewayModule {}
