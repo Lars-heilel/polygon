@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
+  envDir: '../../..',
   cacheDir: '../../../node_modules/.vite/apps/client/messenger',
   server: {
     port: 4200,
