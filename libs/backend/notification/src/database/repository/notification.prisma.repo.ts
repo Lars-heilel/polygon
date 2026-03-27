@@ -3,5 +3,5 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class NotificationPrismaRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(_prisma: PrismaService) {}
 }

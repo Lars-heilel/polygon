@@ -11,6 +11,12 @@ export const API_ROUTES = {
     me:   'users/me',
     byId: (id: string) => `users/${id}`,
   },
+  chats: {
+    root:       'chats',
+    direct:     'chats/direct',
+    byId:       (id: string) => `chats/${id}`,
+    messages:   (id: string) => `chats/${id}/messages`,
+  },
 } as const;
 
 export const CLIENT_ROUTES = {

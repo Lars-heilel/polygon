@@ -19,7 +19,7 @@
 
 ---
 
-## 🏗️ Фаза 1 — Фундамент (сейчас)
+## 🏗️ Фаза 1 — Фундамент
 
 ### Дизайн-система
 - [x] Tailwind v4 + дизайн-токены (dark/light темы)
@@ -46,25 +46,26 @@
 
 ## 🔐 Фаза 2 — Авторизация
 
-### Фронт
-- [ ] Форма логина (React Hook Form + Zod)
-- [ ] Форма регистрации (React Hook Form + Zod)
-- [ ] Форма forgot-password
-- [ ] Форма reset-password (токен из URL)
-- [ ] OAuth кнопки (Google)
-- [ ] Сохранение токенов (httpOnly cookie или secure storage)
-- [ ] Refresh token interceptor (автоматически обновлять при 401)
-- [ ] Logout с очисткой стейта
-
 ### Бэк (auth-service)
-- [ ] Register endpoint
-- [ ] Login endpoint (local strategy)
-- [ ] Refresh token endpoint с ротацией
-- [ ] Logout endpoint
-- [ ] OAuth (Google) через Passport
+- [x] Register endpoint
+- [x] Login endpoint
+- [x] Refresh token endpoint с ротацией
+- [x] Logout endpoint
+- [x] Email verification — генерация и отправка токена (Nodemailer)
+- [ ] Resend verification endpoint
 - [ ] Forgot password — отправка письма с токеном
 - [ ] Reset password — валидация токена + смена пароля
-- [ ] Все env vars обязательные (не .optional())
+- [ ] OAuth (Google) через Passport
+
+### Фронт
+- [x] Страницы: login, register, forgot-password, reset-password (роуты созданы)
+- [ ] Форма логина (React Hook Form + Zod), подключена к API
+- [ ] Форма регистрации (React Hook Form + Zod), подключена к API
+- [ ] Форма forgot-password, подключена к API
+- [ ] Форма reset-password (токен из URL), подключена к API
+- [ ] Refresh token interceptor (автоматически обновлять при 401)
+- [ ] Logout с очисткой стейта
+- [ ] OAuth кнопки (Google)
 
 > ⚠️ Legacy ошибка: CORS URL был захардкожен в двух местах включая WebSocket gateway.
 > Решение: один источник истины — переменная окружения.
@@ -73,7 +74,18 @@
 
 ## 💬 Фаза 3 — Мессенджер
 
+### Бэк (chat-service, gateway)
+- [x] WebSocket gateway (chat.socket-gateway.ts)
+- [x] Chat controller в Gateway (REST: создать чат, отправить сообщение)
+- [x] Очереди RabbitMQ для chat и notification
+- [ ] Пагинация истории сообщений (cursor-based)
+- [ ] Статус прочитано/непрочитано
+- [ ] Индексы в БД: senderId, chatRoomId, createdAt
+- [ ] Грамотная обработка переподключения WebSocket
+
 ### Фронт
+- [x] Socket.io клиент (socket.ts, use-chat-socket.ts)
+- [x] RTK Query для chat API (chat-api.ts)
 - [ ] Sidebar: список чатов с аватаром, последним сообщением, счётчиком непрочитанных
 - [ ] ChatWindow: список сообщений с виртуализацией (react-virtual)
 - [ ] MessageInput: textarea + кнопка отправки + attach
@@ -84,43 +96,62 @@
 - [ ] Поиск пользователей для нового чата
 - [ ] Управление дружбой (запросы, принять/отклонить)
 
-### Бэк (chat-service, user-service)
-- [ ] WebSocket gateway — вынести логику в отдельные сервисы
-- [ ] Грамотная обработка переподключения
-- [ ] Пагинация истории сообщений (cursor-based)
-- [ ] Статус прочитано/непрочитано
-- [ ] Индексы в БД: senderId, chatRoomId, createdAt
-
 > ⚠️ Legacy ошибка: Message.createAt вместо createdAt, уникальный индекс на timestamp+id без смысла.
 > Решение: правильные имена полей, индексы только на читаемых колонках.
 
 ---
 
-## 🧪 Фаза 4 — Качество
+## 🖼️ Фаза 4 — Медиа
+
+### Инфраструктура
+- [ ] MinIO в docker-compose (для dev)
+- [ ] Cloudflare R2 как продакшен-хранилище (бесплатный tier: 10 GB, 0 за egress)
+- [ ] Env vars: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_KEY`, `STORAGE_SECRET`
+
+### Бэк (media-service)
+- [ ] Prisma схема: `Media` (id, key, url, mimeType, size, ownerId, bucket, createdAt)
+- [ ] `@aws-sdk/client-s3` клиент (S3-совместимый — работает с MinIO и R2)
+- [ ] `POST /media/upload` — multipart/form-data, через Gateway
+- [ ] Валидация: допустимые MIME-типы (image/jpeg, image/png, image/webp), максимальный размер
+- [ ] Конвертация в WebP + ресайз через `sharp`
+- [ ] Сохранение метаданных в PostgreSQL
+- [ ] `DELETE /media/:id` — удаление файла и записи
+
+### Фронт
+- [ ] Компонент загрузки аватара (drag & drop или клик)
+- [ ] Предпросмотр перед загрузкой
+- [ ] Прогресс-бар загрузки
+- [ ] Обновление аватара в профиле пользователя
+
+---
+
+## 🧪 Фаза 5 — Качество
+
+### Логирование и мониторинг
+- [x] Структурированные логи на бэке (Pino)
+- [x] Health check endpoints
+- [x] Prometheus метрики
+- [x] Глобальный exception filter
+- [ ] Sentry для отслеживания ошибок в продакшене
+- [ ] Убрать console.error() из продакшн кода фронта
+
+### Безопасность
+- [ ] Rate limiting на auth endpoints (Throttler)
+- [ ] Helmet.js для HTTP headers
+- [ ] Санитизация входящих сообщений
+- [ ] Все секреты через env, никаких хардкодов
 
 ### Тесты
-- [ ] Unit-тесты для всех сервисов бэка (auth, user, chat, friendship)
+- [ ] Unit-тесты для всех сервисов бэка (auth, user, chat, media)
 - [ ] Unit-тесты для хуков и утилит фронта
 - [ ] Integration-тесты для API endpoints
 - [ ] E2E тесты ключевых флоу (Playwright): login → chat → send message
 
 > ⚠️ Legacy ошибка: 1 тест файл на весь бэк, 0 на фронт.
 
-### Логирование и мониторинг
-- [ ] Структурированные логи на бэке (Pino или Winston)
-- [ ] Убрать console.error() из продакшн кода фронта
-- [ ] Sentry или аналог для отслеживания ошибок
-- [ ] Health check endpoints
-
-### Безопасность
-- [ ] Rate limiting на auth endpoints
-- [ ] Санитизация входящих сообщений
-- [ ] Helmet.js для HTTP headers
-- [ ] Все секреты через env, никаких хардкодов
-
 ---
 
-## 🚀 Фаза 5 — DevOps
+## 🚀 Фаза 6 — DevOps
 
 - [ ] CI/CD pipeline (GitHub Actions): lint → typecheck → test → build
 - [ ] Secrets management (не в .env в репо)
