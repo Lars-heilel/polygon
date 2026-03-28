@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.5.0",
   "engineVersion": "280c870be64f457428992c43c1f6d557fab6e29e",
   "activeProvider": "postgresql",
-  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel User {\n  id          String   @id @map(\"id\")\n  email       String   @unique @map(\"email\")\n  name        String   @map(\"name\")\n  displayName String?  @map(\"display_name\")\n  avatarUrl   String?  @map(\"avatar_url\")\n  bio         String?  @map(\"bio\")\n  createdAt   DateTime @map(\"created_at\")\n  updatedAt   DateTime @updatedAt @map(\"updated_at\")\n\n  @@index([name])\n}\n",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel User {\n  id          String   @id @map(\"id\")\n  email       String   @unique @map(\"email\")\n  name        String   @map(\"name\")\n  displayName String?  @map(\"display_name\")\n  avatarUrl   String?  @map(\"avatar_url\")\n  bio         String?  @map(\"bio\")\n  createdAt   DateTime @default(now()) @map(\"created_at\")\n  updatedAt   DateTime @updatedAt @map(\"updated_at\")\n\n  @@index([name])\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},

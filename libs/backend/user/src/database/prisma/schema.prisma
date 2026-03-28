@@ -14,7 +14,7 @@ model User{
   displayName String?  @map("display_name")
   avatarUrl   String?  @map("avatar_url")
   bio         String?  @map("bio")
-  createdAt   DateTime @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@index([name])

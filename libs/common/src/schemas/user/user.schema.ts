@@ -11,4 +11,13 @@ export const userSchema = z.object({
   updatedAt: z.date(),
 });
 
+export const userPublicSchema = userSchema.pick({
+  id: true,
+  name: true,
+  displayName: true,
+  avatarUrl: true,
+  bio: true,
+});
+
 export type User = z.infer<typeof userSchema>;
+export type UserPublic = z.infer<typeof userPublicSchema>;

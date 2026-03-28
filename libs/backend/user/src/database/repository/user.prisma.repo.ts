@@ -1,56 +1,46 @@
 import { Injectable } from '@nestjs/common';
+import { USER_SELECT_FIELDS, USER_PUBLIC_SELECT_FIELDS } from '@org/common';
+import type { User, UserPublic, UpdateUserInput, CreateUserEventInput } from '@org/common';
+import type { IUserRepository } from '../../interfaces/user.interface';
 import { PrismaService } from '../prisma/prisma.service';
-import type { User } from '@org/common';
 
 @Injectable()
-export class UserPrismaRepository {
+export class UserPrismaRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.prisma.user.findUnique({ where: { id }, select: USER_SELECT_FIELDS });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.prisma.user.findUnique({ where: { email }, select: USER_SELECT_FIELDS });
   }
 
-  async findByName(name: string): Promise<User[]> {
-    return this.prisma.user.findMany({ where: { name } });
+  async findPublicById(id: string): Promise<UserPublic | null> {
+    return this.prisma.user.findUnique({ where: { id }, select: USER_PUBLIC_SELECT_FIELDS });
   }
 
-  async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+  async searchByName(query: string): Promise<UserPublic[]> {
+    return this.prisma.user.findMany({
+      where: { name: { contains: query, mode: 'insensitive' } },
+      select: USER_PUBLIC_SELECT_FIELDS,
+    });
   }
 
-  async create(data: {
-    id: string;
-    email: string;
-    name: string;
-    createdAt: Date;
-  }): Promise<User> {
-    return this.prisma.user.create({ data });
+  async create(data: CreateUserEventInput): Promise<void> {
+    await this.prisma.user.create({ data });
   }
 
-  async update(
-    id: string,
-    data: {
-      displayName?: string | null;
-      avatarUrl?: string | null;
-      bio?: string | null;
-    }
-  ): Promise<User> {
-    return this.prisma.user.update({ where: { id }, data });
+  async update(id: string, data: UpdateUserInput): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data, select: USER_SELECT_FIELDS });
   }
 
-  async delete(id: string): Promise<User> {
-    return this.prisma.user.delete({ where: { id } });
+  async delete(id: string): Promise<void> {
+    await this.prisma.user.delete({ where: { id } });
   }
 
   async exists(id: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true },
-    });
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { id: true } });
     return user !== null;
   }
 }

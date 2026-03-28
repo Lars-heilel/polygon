@@ -5,3 +5,5 @@ export const updateUserSchema = z.object({
   avatarUrl: z.url().optional(),
   bio: z.string().max(500, 'Bio must be at most 500 characters').optional(),
 });
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;

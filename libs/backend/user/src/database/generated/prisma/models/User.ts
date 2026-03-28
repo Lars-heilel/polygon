@@ -268,7 +268,7 @@ export type UserCreateInput = {
   displayName?: string | null
   avatarUrl?: string | null
   bio?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
 }
 
@@ -279,7 +279,7 @@ export type UserUncheckedCreateInput = {
   displayName?: string | null
   avatarUrl?: string | null
   bio?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
 }
 
@@ -312,7 +312,7 @@ export type UserCreateManyInput = {
   displayName?: string | null
   avatarUrl?: string | null
   bio?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
 }
 

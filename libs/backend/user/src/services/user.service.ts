@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import type { User } from '@org/common';
-import { UserPrismaRepository } from '../database/repository/user.prisma.repo';
-import type { UpdateUserDto } from '../dto/update-user.dto';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { USER_PRISMA_REPOSITORY_TOKEN } from '@org/core';
+import type { User, UserPublic, UpdateUserInput, CreateUserEventInput } from '@org/common';
+import type { IUserRepository, IUserService } from '../interfaces/user.interface';
 
 @Injectable()
-export class UserService {
-  constructor(private readonly repo: UserPrismaRepository) {}
+export class UserService implements IUserService {
+  constructor(
+    @Inject(USER_PRISMA_REPOSITORY_TOKEN) private readonly repo: IUserRepository,
+  ) {}
 
-  async createFromEvent(data: { id: string; email: string; name: string }): Promise<void> {
-    await this.repo.create({ ...data, createdAt: new Date() });
+  async createFromEvent(data: CreateUserEventInput): Promise<void> {
+    await this.repo.create(data);
   }
 
   async getById(id: string): Promise<User> {
@@ -17,7 +19,13 @@ export class UserService {
     return user;
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
+  async getPublicById(id: string): Promise<UserPublic> {
+    const user = await this.repo.findPublicById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async update(id: string, dto: UpdateUserInput): Promise<User> {
     const exists = await this.repo.exists(id);
     if (!exists) throw new NotFoundException('User not found');
     return this.repo.update(id, dto);
