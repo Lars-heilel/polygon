@@ -20,6 +20,9 @@ import { UserGatewayController } from '../controllers/user.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
 import { HealthController } from '../controllers/health.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
+import { GithubStrategy } from '../oauth/github.strategy';
+import { YandexStrategy } from '../oauth/yandex.strategy';
+import { GoogleStrategy } from '../oauth/google.strategy';
 
 @Module({
   imports: [
@@ -71,6 +74,6 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
     ]),
   ],
   controllers: [AuthGatewayController, UserGatewayController, ChatGatewayController, HealthController],
-  providers: [JwtGuard, ChatSocketGateway],
+  providers: [JwtGuard, ChatSocketGateway, GithubStrategy, YandexStrategy, GoogleStrategy],
 })
 export class GatewayModule {}

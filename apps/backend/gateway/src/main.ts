@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 import cookieParser from 'cookie-parser';
+import passport from 'passport';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AllExceptionsFilter, LoggingInterceptor } from '@org/core';
 import { GatewayModule } from './app/gateway.module';
@@ -15,6 +16,7 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   app.use(cookieParser());
+  app.use(passport.initialize());
   app.useGlobalPipes(new ZodValidationPipe());
   app.setGlobalPrefix('api');
 

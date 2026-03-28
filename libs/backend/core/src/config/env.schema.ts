@@ -39,6 +39,19 @@ export const envSchema = z.object({
 
   // App
   APP_URL: z.string().default('http://localhost:3000'),
+  CLIENT_URL: z.string().default('http://localhost:4200'),
+
+  // OAuth — GitHub
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+
+  // OAuth — Yandex
+  YANDEX_CLIENT_ID: z.string().optional(),
+  YANDEX_CLIENT_SECRET: z.string().optional(),
+
+  // OAuth — Google
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

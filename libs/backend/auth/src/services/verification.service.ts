@@ -12,6 +12,10 @@ const VERIFICATION_TTL = 86_400; // 24 hours
 const KEY_BY_TOKEN = (token: string) => `email_verification:${token}`;
 const KEY_BY_ID = (id: string) => `email_verification_id:${id}`;
 
+const PASSWORD_RESET_TTL = 3_600; // 1 hour
+const RESET_KEY_BY_TOKEN = (token: string) => `password_reset:${token}`;
+const RESET_KEY_BY_ID = (id: string) => `password_reset_id:${id}`;
+
 @Injectable()
 export class VerificationService {
   constructor(
@@ -51,5 +55,29 @@ export class VerificationService {
     }
 
     await this.generateAndSend(credentials.id, credentials.email);
+  }
+
+  async generatePasswordReset(credentialsId: string, email: string): Promise<void> {
+    const oldToken = await this.redis.get(RESET_KEY_BY_ID(credentialsId));
+    if (oldToken) {
+      await this.redis.del(RESET_KEY_BY_TOKEN(oldToken), RESET_KEY_BY_ID(credentialsId));
+    }
+
+    const token = randomBytes(32).toString('base64url');
+    await this.redis.set(RESET_KEY_BY_TOKEN(token), PASSWORD_RESET_TTL, credentialsId);
+    await this.redis.set(RESET_KEY_BY_ID(credentialsId), PASSWORD_RESET_TTL, token);
+
+    this.notificationClient.emit(NOTIFICATION_EVENTS.SEND_PASSWORD_RESET, {
+      to: email,
+      token,
+    });
+  }
+
+  async consumePasswordResetToken(token: string): Promise<string> {
+    const credentialsId = await this.redis.get(RESET_KEY_BY_TOKEN(token));
+    if (!credentialsId) throw new BadRequestException('Invalid or expired password reset token');
+
+    await this.redis.del(RESET_KEY_BY_TOKEN(token), RESET_KEY_BY_ID(credentialsId));
+    return credentialsId;
   }
 }

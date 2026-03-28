@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { createHash, randomUUID } from 'crypto';
 import {
@@ -13,6 +13,13 @@ import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
 import type { RegisterDto } from '../dto/register.dto';
 import type { LoginDto } from '../dto/login.dto';
 import { VerificationService } from './verification.service';
+
+export type OAuthLoginDto = {
+  provider: string;
+  providerId: string;
+  email: string;
+  name: string;
+};
 
 export type TokenPair = {
   accessToken: string;
@@ -55,7 +62,7 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<TokenPair> {
     const credentials = await this.repo.findByEmail(dto.email);
-    if (!credentials) throw new UnauthorizedException('Invalid credentials');
+    if (!credentials || !credentials.passwordHash) throw new UnauthorizedException('Invalid credentials');
 
     const valid = await this.encryption.compare(dto.password, credentials.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
@@ -69,6 +76,61 @@ export class AuthService {
 
   async resendVerification(email: string): Promise<void> {
     await this.verification.resend(email);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const credentials = await this.repo.findByEmail(email);
+    // No error if user not found — prevents email enumeration
+    if (!credentials || !credentials.passwordHash) return;
+    await this.verification.generatePasswordReset(credentials.id, credentials.email);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const credentialsId = await this.verification.consumePasswordResetToken(token);
+    const credentials = await this.repo.findById(credentialsId);
+    if (!credentials) throw new NotFoundException('User not found');
+
+    const passwordHash = await this.encryption.hash(newPassword);
+    await this.repo.updatePasswordHash(credentialsId, passwordHash);
+    await this.repo.revokeAllRefreshTokens(credentialsId);
+  }
+
+  async oauthLogin(dto: OAuthLoginDto): Promise<TokenPair> {
+    const existing = await this.repo.findOAuthAccount(dto.provider, dto.providerId);
+
+    if (existing) {
+      return this.issueTokenPair(existing.credentials);
+    }
+
+    let credentials = await this.repo.findByEmail(dto.email);
+
+    if (!credentials) {
+      credentials = await this.repo.createCredentials({
+        id: randomUUID(),
+        email: dto.email,
+        createdAt: new Date(),
+      });
+
+      this.userClient.emit(USER_EVENTS.REGISTERED, {
+        id: credentials.id,
+        email: credentials.email,
+        name: dto.name,
+      });
+    }
+
+    await this.repo.createOAuthAccount({
+      id: randomUUID(),
+      provider: dto.provider,
+      providerId: dto.providerId,
+      credentialsId: credentials.id,
+    });
+
+    if (!credentials.isVerified) {
+      await this.repo.verifyCredentials(credentials.id);
+      credentials = { ...credentials, isVerified: true };
+    }
+
+    return this.issueTokenPair(credentials);
   }
 
   async logout(refreshToken: string): Promise<void> {

@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AUTH_PATTERNS } from '@org/core';
 import { AuthService } from '../services/auth.service';
+import type { OAuthLoginDto } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 
@@ -37,5 +38,20 @@ export class AuthController {
   @MessagePattern(AUTH_PATTERNS.RESEND_VERIFICATION)
   resendVerification(@Payload() payload: { email: string }) {
     return this.authService.resendVerification(payload.email);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.FORGOT_PASSWORD)
+  forgotPassword(@Payload() payload: { email: string }) {
+    return this.authService.forgotPassword(payload.email);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.RESET_PASSWORD)
+  resetPassword(@Payload() payload: { token: string; newPassword: string }) {
+    return this.authService.resetPassword(payload.token, payload.newPassword);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.OAUTH_LOGIN)
+  oauthLogin(@Payload() dto: OAuthLoginDto) {
+    return this.authService.oauthLogin(dto);
   }
 }

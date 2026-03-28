@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Link } from 'react-router';
 import { registerSchema, CLIENT_ROUTES } from '@org/common';
 import { Button, Input, Divider } from '@org/shared';
+import { OAuthButtons } from './oauth-buttons';
 
 const registerFormSchema = registerSchema.extend({
   confirmPassword: z.string(),
@@ -25,9 +26,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <Button type="button" variant="secondary" className="w-full">
-        Continue with Google
-      </Button>
+      <OAuthButtons />
 
       <Divider label="or" />
 

@@ -17,10 +17,30 @@ export class AuthPrismaRepository {
   async createCredentials(data: {
     id: string;
     email: string;
-    passwordHash: string;
+    passwordHash?: string;
     createdAt: Date;
   }): Promise<Credentials> {
     return this.prisma.credentials.create({ data });
+  }
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.prisma.credentials.update({ where: { id }, data: { passwordHash } });
+  }
+
+  async findOAuthAccount(provider: string, providerId: string) {
+    return this.prisma.oAuthAccount.findUnique({
+      where: { provider_providerId: { provider, providerId } },
+      include: { credentials: true },
+    });
+  }
+
+  async createOAuthAccount(data: {
+    id: string;
+    provider: string;
+    providerId: string;
+    credentialsId: string;
+  }): Promise<void> {
+    await this.prisma.oAuthAccount.create({ data });
   }
 
   async saveRefreshToken(data: {

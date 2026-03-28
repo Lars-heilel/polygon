@@ -175,7 +175,7 @@ export type CredentialsGroupByOutputType = {
   id: string
   email: string
   role: $Enums.Role
-  passwordHash: string
+  passwordHash: string | null
   isVerified: boolean
   lockedAt: Date | null
   lockedUntil: Date | null
@@ -208,26 +208,28 @@ export type CredentialsWhereInput = {
   id?: Prisma.StringFilter<"Credentials"> | string
   email?: Prisma.StringFilter<"Credentials"> | string
   role?: Prisma.EnumRoleFilter<"Credentials"> | $Enums.Role
-  passwordHash?: Prisma.StringFilter<"Credentials"> | string
+  passwordHash?: Prisma.StringNullableFilter<"Credentials"> | string | null
   isVerified?: Prisma.BoolFilter<"Credentials"> | boolean
   lockedAt?: Prisma.DateTimeNullableFilter<"Credentials"> | Date | string | null
   lockedUntil?: Prisma.DateTimeNullableFilter<"Credentials"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Credentials"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Credentials"> | Date | string
   refreshTokens?: Prisma.RefreshTokenListRelationFilter
+  oauthAccounts?: Prisma.OAuthAccountListRelationFilter
 }
 
 export type CredentialsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   role?: Prisma.SortOrder
-  passwordHash?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   isVerified?: Prisma.SortOrder
   lockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   lockedUntil?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   refreshTokens?: Prisma.RefreshTokenOrderByRelationAggregateInput
+  oauthAccounts?: Prisma.OAuthAccountOrderByRelationAggregateInput
 }
 
 export type CredentialsWhereUniqueInput = Prisma.AtLeast<{
@@ -237,20 +239,21 @@ export type CredentialsWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CredentialsWhereInput[]
   NOT?: Prisma.CredentialsWhereInput | Prisma.CredentialsWhereInput[]
   role?: Prisma.EnumRoleFilter<"Credentials"> | $Enums.Role
-  passwordHash?: Prisma.StringFilter<"Credentials"> | string
+  passwordHash?: Prisma.StringNullableFilter<"Credentials"> | string | null
   isVerified?: Prisma.BoolFilter<"Credentials"> | boolean
   lockedAt?: Prisma.DateTimeNullableFilter<"Credentials"> | Date | string | null
   lockedUntil?: Prisma.DateTimeNullableFilter<"Credentials"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Credentials"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Credentials"> | Date | string
   refreshTokens?: Prisma.RefreshTokenListRelationFilter
+  oauthAccounts?: Prisma.OAuthAccountListRelationFilter
 }, "id" | "email">
 
 export type CredentialsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   role?: Prisma.SortOrder
-  passwordHash?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   isVerified?: Prisma.SortOrder
   lockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   lockedUntil?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -268,7 +271,7 @@ export type CredentialsScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Credentials"> | string
   email?: Prisma.StringWithAggregatesFilter<"Credentials"> | string
   role?: Prisma.EnumRoleWithAggregatesFilter<"Credentials"> | $Enums.Role
-  passwordHash?: Prisma.StringWithAggregatesFilter<"Credentials"> | string
+  passwordHash?: Prisma.StringNullableWithAggregatesFilter<"Credentials"> | string | null
   isVerified?: Prisma.BoolWithAggregatesFilter<"Credentials"> | boolean
   lockedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Credentials"> | Date | string | null
   lockedUntil?: Prisma.DateTimeNullableWithAggregatesFilter<"Credentials"> | Date | string | null
@@ -280,59 +283,63 @@ export type CredentialsCreateInput = {
   id?: string
   email: string
   role?: $Enums.Role
-  passwordHash: string
+  passwordHash?: string | null
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
   createdAt: Date | string
   updatedAt?: Date | string
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutCredentialsInput
+  oauthAccounts?: Prisma.OAuthAccountCreateNestedManyWithoutCredentialsInput
 }
 
 export type CredentialsUncheckedCreateInput = {
   id?: string
   email: string
   role?: $Enums.Role
-  passwordHash: string
+  passwordHash?: string | null
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
   createdAt: Date | string
   updatedAt?: Date | string
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutCredentialsInput
+  oauthAccounts?: Prisma.OAuthAccountUncheckedCreateNestedManyWithoutCredentialsInput
 }
 
 export type CredentialsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutCredentialsNestedInput
+  oauthAccounts?: Prisma.OAuthAccountUpdateManyWithoutCredentialsNestedInput
 }
 
 export type CredentialsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutCredentialsNestedInput
+  oauthAccounts?: Prisma.OAuthAccountUncheckedUpdateManyWithoutCredentialsNestedInput
 }
 
 export type CredentialsCreateManyInput = {
   id?: string
   email: string
   role?: $Enums.Role
-  passwordHash: string
+  passwordHash?: string | null
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
@@ -344,7 +351,7 @@ export type CredentialsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -356,7 +363,7 @@ export type CredentialsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -413,6 +420,10 @@ export type EnumRoleFieldUpdateOperationsInput = {
   set?: $Enums.Role
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
@@ -423,6 +434,20 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type CredentialsCreateNestedOneWithoutOauthAccountsInput = {
+  create?: Prisma.XOR<Prisma.CredentialsCreateWithoutOauthAccountsInput, Prisma.CredentialsUncheckedCreateWithoutOauthAccountsInput>
+  connectOrCreate?: Prisma.CredentialsCreateOrConnectWithoutOauthAccountsInput
+  connect?: Prisma.CredentialsWhereUniqueInput
+}
+
+export type CredentialsUpdateOneRequiredWithoutOauthAccountsNestedInput = {
+  create?: Prisma.XOR<Prisma.CredentialsCreateWithoutOauthAccountsInput, Prisma.CredentialsUncheckedCreateWithoutOauthAccountsInput>
+  connectOrCreate?: Prisma.CredentialsCreateOrConnectWithoutOauthAccountsInput
+  upsert?: Prisma.CredentialsUpsertWithoutOauthAccountsInput
+  connect?: Prisma.CredentialsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CredentialsUpdateToOneWithWhereWithoutOauthAccountsInput, Prisma.CredentialsUpdateWithoutOauthAccountsInput>, Prisma.CredentialsUncheckedUpdateWithoutOauthAccountsInput>
 }
 
 export type CredentialsCreateNestedOneWithoutRefreshTokensInput = {
@@ -439,28 +464,98 @@ export type CredentialsUpdateOneRequiredWithoutRefreshTokensNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CredentialsUpdateToOneWithWhereWithoutRefreshTokensInput, Prisma.CredentialsUpdateWithoutRefreshTokensInput>, Prisma.CredentialsUncheckedUpdateWithoutRefreshTokensInput>
 }
 
-export type CredentialsCreateWithoutRefreshTokensInput = {
+export type CredentialsCreateWithoutOauthAccountsInput = {
   id?: string
   email: string
   role?: $Enums.Role
-  passwordHash: string
+  passwordHash?: string | null
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
   createdAt: Date | string
   updatedAt?: Date | string
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutCredentialsInput
+}
+
+export type CredentialsUncheckedCreateWithoutOauthAccountsInput = {
+  id?: string
+  email: string
+  role?: $Enums.Role
+  passwordHash?: string | null
+  isVerified?: boolean
+  lockedAt?: Date | string | null
+  lockedUntil?: Date | string | null
+  createdAt: Date | string
+  updatedAt?: Date | string
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutCredentialsInput
+}
+
+export type CredentialsCreateOrConnectWithoutOauthAccountsInput = {
+  where: Prisma.CredentialsWhereUniqueInput
+  create: Prisma.XOR<Prisma.CredentialsCreateWithoutOauthAccountsInput, Prisma.CredentialsUncheckedCreateWithoutOauthAccountsInput>
+}
+
+export type CredentialsUpsertWithoutOauthAccountsInput = {
+  update: Prisma.XOR<Prisma.CredentialsUpdateWithoutOauthAccountsInput, Prisma.CredentialsUncheckedUpdateWithoutOauthAccountsInput>
+  create: Prisma.XOR<Prisma.CredentialsCreateWithoutOauthAccountsInput, Prisma.CredentialsUncheckedCreateWithoutOauthAccountsInput>
+  where?: Prisma.CredentialsWhereInput
+}
+
+export type CredentialsUpdateToOneWithWhereWithoutOauthAccountsInput = {
+  where?: Prisma.CredentialsWhereInput
+  data: Prisma.XOR<Prisma.CredentialsUpdateWithoutOauthAccountsInput, Prisma.CredentialsUncheckedUpdateWithoutOauthAccountsInput>
+}
+
+export type CredentialsUpdateWithoutOauthAccountsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutCredentialsNestedInput
+}
+
+export type CredentialsUncheckedUpdateWithoutOauthAccountsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutCredentialsNestedInput
+}
+
+export type CredentialsCreateWithoutRefreshTokensInput = {
+  id?: string
+  email: string
+  role?: $Enums.Role
+  passwordHash?: string | null
+  isVerified?: boolean
+  lockedAt?: Date | string | null
+  lockedUntil?: Date | string | null
+  createdAt: Date | string
+  updatedAt?: Date | string
+  oauthAccounts?: Prisma.OAuthAccountCreateNestedManyWithoutCredentialsInput
 }
 
 export type CredentialsUncheckedCreateWithoutRefreshTokensInput = {
   id?: string
   email: string
   role?: $Enums.Role
-  passwordHash: string
+  passwordHash?: string | null
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
   createdAt: Date | string
   updatedAt?: Date | string
+  oauthAccounts?: Prisma.OAuthAccountUncheckedCreateNestedManyWithoutCredentialsInput
 }
 
 export type CredentialsCreateOrConnectWithoutRefreshTokensInput = {
@@ -483,24 +578,26 @@ export type CredentialsUpdateWithoutRefreshTokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  oauthAccounts?: Prisma.OAuthAccountUpdateManyWithoutCredentialsNestedInput
 }
 
 export type CredentialsUncheckedUpdateWithoutRefreshTokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  oauthAccounts?: Prisma.OAuthAccountUncheckedUpdateManyWithoutCredentialsNestedInput
 }
 
 
@@ -510,10 +607,12 @@ export type CredentialsUncheckedUpdateWithoutRefreshTokensInput = {
 
 export type CredentialsCountOutputType = {
   refreshTokens: number
+  oauthAccounts: number
 }
 
 export type CredentialsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   refreshTokens?: boolean | CredentialsCountOutputTypeCountRefreshTokensArgs
+  oauthAccounts?: boolean | CredentialsCountOutputTypeCountOauthAccountsArgs
 }
 
 /**
@@ -533,6 +632,13 @@ export type CredentialsCountOutputTypeCountRefreshTokensArgs<ExtArgs extends run
   where?: Prisma.RefreshTokenWhereInput
 }
 
+/**
+ * CredentialsCountOutputType without action
+ */
+export type CredentialsCountOutputTypeCountOauthAccountsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OAuthAccountWhereInput
+}
+
 
 export type CredentialsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -545,6 +651,7 @@ export type CredentialsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   createdAt?: boolean
   updatedAt?: boolean
   refreshTokens?: boolean | Prisma.Credentials$refreshTokensArgs<ExtArgs>
+  oauthAccounts?: boolean | Prisma.Credentials$oauthAccountsArgs<ExtArgs>
   _count?: boolean | Prisma.CredentialsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["credentials"]>
 
@@ -587,6 +694,7 @@ export type CredentialsSelectScalar = {
 export type CredentialsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "role" | "passwordHash" | "isVerified" | "lockedAt" | "lockedUntil" | "createdAt" | "updatedAt", ExtArgs["result"]["credentials"]>
 export type CredentialsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   refreshTokens?: boolean | Prisma.Credentials$refreshTokensArgs<ExtArgs>
+  oauthAccounts?: boolean | Prisma.Credentials$oauthAccountsArgs<ExtArgs>
   _count?: boolean | Prisma.CredentialsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CredentialsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -596,12 +704,13 @@ export type $CredentialsPayload<ExtArgs extends runtime.Types.Extensions.Interna
   name: "Credentials"
   objects: {
     refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
+    oauthAccounts: Prisma.$OAuthAccountPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     email: string
     role: $Enums.Role
-    passwordHash: string
+    passwordHash: string | null
     isVerified: boolean
     lockedAt: Date | null
     lockedUntil: Date | null
@@ -1002,6 +1111,7 @@ readonly fields: CredentialsFieldRefs;
 export interface Prisma__CredentialsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   refreshTokens<T extends Prisma.Credentials$refreshTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Credentials$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  oauthAccounts<T extends Prisma.Credentials$oauthAccountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Credentials$oauthAccountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OAuthAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1454,6 +1564,30 @@ export type Credentials$refreshTokensArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.RefreshTokenScalarFieldEnum | Prisma.RefreshTokenScalarFieldEnum[]
+}
+
+/**
+ * Credentials.oauthAccounts
+ */
+export type Credentials$oauthAccountsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OAuthAccount
+   */
+  select?: Prisma.OAuthAccountSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OAuthAccount
+   */
+  omit?: Prisma.OAuthAccountOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OAuthAccountInclude<ExtArgs> | null
+  where?: Prisma.OAuthAccountWhereInput
+  orderBy?: Prisma.OAuthAccountOrderByWithRelationInput | Prisma.OAuthAccountOrderByWithRelationInput[]
+  cursor?: Prisma.OAuthAccountWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OAuthAccountScalarFieldEnum | Prisma.OAuthAccountScalarFieldEnum[]
 }
 
 /**

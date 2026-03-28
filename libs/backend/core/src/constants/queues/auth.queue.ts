@@ -8,4 +8,7 @@ export const AUTH_PATTERNS = {
   REFRESH: 'auth.refresh',
   VERIFY_EMAIL: 'auth.verify-email',
   RESEND_VERIFICATION: 'auth.resend-verification',
+  FORGOT_PASSWORD: 'auth.forgot-password',
+  RESET_PASSWORD: 'auth.reset-password',
+  OAUTH_LOGIN: 'auth.oauth-login',
 } as const;

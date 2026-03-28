@@ -5,7 +5,7 @@ export const credentialsSchema = z.object({
   id: z.uuid(),
   email: z.email(),
   role: roleSchema,
-  passwordHash: z.string(),
+  passwordHash: z.string().nullable(),
   isVerified: z.boolean(),
   lockedAt: z.date().nullable(),
   lockedUntil: z.date().nullable(),

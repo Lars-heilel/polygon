@@ -4,6 +4,7 @@ import { type z } from 'zod';
 import { Link } from 'react-router';
 import { loginSchema, CLIENT_ROUTES } from '@org/common';
 import { Button, Input, Divider } from '@org/shared';
+import { OAuthButtons } from './oauth-buttons';
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -18,9 +19,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <Button type="button" variant="secondary" className="w-full">
-        Continue with Google
-      </Button>
+      <OAuthButtons />
 
       <Divider label="or" />
 

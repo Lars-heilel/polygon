@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   Credentials: 'Credentials',
+  OAuthAccount: 'OAuthAccount',
   RefreshToken: 'RefreshToken'
 } as const
 
@@ -84,6 +85,17 @@ export const CredentialsScalarFieldEnum = {
 } as const
 
 export type CredentialsScalarFieldEnum = (typeof CredentialsScalarFieldEnum)[keyof typeof CredentialsScalarFieldEnum]
+
+
+export const OAuthAccountScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  providerId: 'providerId',
+  credentialsId: 'credentialsId',
+  createdAt: 'createdAt'
+} as const
+
+export type OAuthAccountScalarFieldEnum = (typeof OAuthAccountScalarFieldEnum)[keyof typeof OAuthAccountScalarFieldEnum]
 
 
 export const RefreshTokenScalarFieldEnum = {

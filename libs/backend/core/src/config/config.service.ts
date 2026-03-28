@@ -103,4 +103,32 @@ export class ConfigService {
   get appUrl(): string {
     return this.config.APP_URL;
   }
+
+  get clientUrl(): string {
+    return this.config.CLIENT_URL;
+  }
+
+  get githubClientId(): string | undefined {
+    return this.config.GITHUB_CLIENT_ID;
+  }
+
+  get githubClientSecret(): string | undefined {
+    return this.config.GITHUB_CLIENT_SECRET;
+  }
+
+  get yandexClientId(): string | undefined {
+    return this.config.YANDEX_CLIENT_ID;
+  }
+
+  get yandexClientSecret(): string | undefined {
+    return this.config.YANDEX_CLIENT_SECRET;
+  }
+
+  get googleClientId(): string | undefined {
+    return this.config.GOOGLE_CLIENT_ID;
+  }
+
+  get googleClientSecret(): string | undefined {
+    return this.config.GOOGLE_CLIENT_SECRET;
+  }
 }

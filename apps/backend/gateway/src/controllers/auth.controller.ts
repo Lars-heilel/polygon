@@ -8,7 +8,9 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ClientProxy } from '@nestjs/microservices';
 import type { Request, Response } from 'express';
 import { lastValueFrom, Observable } from 'rxjs';
@@ -17,6 +19,7 @@ import type { TokenPair } from '@org/auth';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from '../dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthGatewayController {
@@ -85,6 +88,69 @@ export class AuthGatewayController {
       this.authClient.send(AUTH_PATTERNS.RESEND_VERIFICATION, { email: dto.email }),
     );
     return { message: 'Verification email sent' };
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.send(
+      this.authClient.send(AUTH_PATTERNS.FORGOT_PASSWORD, { email: dto.email }),
+    );
+    // Always return success to prevent email enumeration
+    return { message: 'If this email is registered, a reset link has been sent' };
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.send(
+      this.authClient.send(AUTH_PATTERNS.RESET_PASSWORD, {
+        token: dto.token,
+        newPassword: dto.newPassword,
+      }),
+    );
+    return { message: 'Password reset successfully' };
+  }
+
+  // ── GitHub OAuth ──────────────────────────────────────────────────
+
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  githubAuth() {
+    // Passport redirects to GitHub — no body needed
+  }
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  githubCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
+    this.setTokenCookies(res, req.user);
+    res.redirect(this.config.clientUrl);
+  }
+
+  // ── Yandex OAuth ──────────────────────────────────────────────────
+
+  @Get('yandex')
+  @UseGuards(AuthGuard('yandex'))
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  yandexAuth() {}
+
+  @Get('yandex/callback')
+  @UseGuards(AuthGuard('yandex'))
+  yandexCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
+    this.setTokenCookies(res, req.user);
+    res.redirect(this.config.clientUrl);
+  }
+
+  // ── Google OAuth ──────────────────────────────────────────────────
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  googleCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
+    this.setTokenCookies(res, req.user);
+    res.redirect(this.config.clientUrl);
   }
 
   private setTokenCookies(res: Response, tokens: TokenPair): void {
