@@ -1,21 +1,22 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, Profile } from 'passport-github2';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, ConfigService } from '@org/core';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
 import type { TokenPair } from '@org/auth';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService,
+    config: ConfigService<Env>,
   ) {
     super({
-      clientID: config.githubClientId ?? '',
-      clientSecret: config.githubClientSecret ?? '',
-      callbackURL: `${config.appUrl}/api/auth/github/callback`,
+      clientID: config.get('GITHUB_CLIENT_ID', { infer: true }) ?? '',
+      clientSecret: config.get('GITHUB_CLIENT_SECRET', { infer: true }) ?? '',
+      callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/github/callback`,
       scope: ['user:email'],
     });
   }

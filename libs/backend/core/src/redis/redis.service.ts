@@ -1,18 +1,19 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import { ConfigService } from '../config/config.service';
+import type { Env } from '../config/env.schema';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client!: Redis;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService<Env>) {}
 
   onModuleInit(): void {
     this.client = new Redis({
-      host: this.config.redisHost,
-      port: this.config.redisPort,
-      password: this.config.redisPassword,
+      host: this.config.get('REDIS_HOST', { infer: true }),
+      port: this.config.get('REDIS_PORT', { infer: true }),
+      password: this.config.get('REDIS_PASSWORD', { infer: true }),
       lazyConnect: true,
     });
   }

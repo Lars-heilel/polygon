@@ -11,8 +11,8 @@ export * from './constants/queues/notification.queue';
 
 // Config
 export * from './config/env.schema';
-export * from './config/config.service';
 export * from './config/config.module';
+export { ConfigService } from '@nestjs/config';
 
 // Encryption
 export * from './encryption/encryption.service';

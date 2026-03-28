@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport, type RmqOptions } from '@nestjs/microservices';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_QUEUE,
   CHAT_CLIENT_TOKEN,
   CHAT_QUEUE,
-  ConfigService,
   CoreConfigModule,
   CoreTokenModule,
   HealthModule,
@@ -14,6 +14,7 @@ import {
   MetricsModule,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
+  type Env,
 } from '@org/core';
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { UserGatewayController } from '../controllers/user.controller';
@@ -24,6 +25,20 @@ import { GithubStrategy } from '../oauth/github.strategy';
 import { YandexStrategy } from '../oauth/yandex.strategy';
 import { GoogleStrategy } from '../oauth/google.strategy';
 
+const rmqClient = (name: string, queue: string) => ({
+  name,
+  imports: [CoreConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService<Env>): RmqOptions => ({
+    transport: Transport.RMQ,
+    options: {
+      urls: [`amqp://${config.get('RABBITMQ_USER', { infer: true })}:${config.get('RABBITMQ_PASSWORD', { infer: true })}@${config.get('RABBITMQ_HOST', { infer: true })}:${config.get('RABBITMQ_PORT', { infer: true })}`],
+      queue,
+      queueOptions: { durable: true },
+    },
+  }),
+});
+
 @Module({
   imports: [
     CoreConfigModule,
@@ -32,45 +47,9 @@ import { GoogleStrategy } from '../oauth/google.strategy';
     HealthModule,
     MetricsModule,
     ClientsModule.registerAsync([
-      {
-        name: AUTH_CLIENT_TOKEN,
-        imports: [CoreConfigModule],
-        inject: [ConfigService],
-        useFactory: (config: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [config.rabbitmqUrl],
-            queue: AUTH_QUEUE,
-            queueOptions: { durable: true },
-          },
-        }),
-      },
-      {
-        name: USER_CLIENT_TOKEN,
-        imports: [CoreConfigModule],
-        inject: [ConfigService],
-        useFactory: (config: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [config.rabbitmqUrl],
-            queue: USER_QUEUE,
-            queueOptions: { durable: true },
-          },
-        }),
-      },
-      {
-        name: CHAT_CLIENT_TOKEN,
-        imports: [CoreConfigModule],
-        inject: [ConfigService],
-        useFactory: (config: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [config.rabbitmqUrl],
-            queue: CHAT_QUEUE,
-            queueOptions: { durable: true },
-          },
-        }),
-      },
+      rmqClient(AUTH_CLIENT_TOKEN, AUTH_QUEUE),
+      rmqClient(USER_CLIENT_TOKEN, USER_QUEUE),
+      rmqClient(CHAT_CLIENT_TOKEN, CHAT_QUEUE),
     ]),
   ],
   controllers: [AuthGatewayController, UserGatewayController, ChatGatewayController, HealthController],

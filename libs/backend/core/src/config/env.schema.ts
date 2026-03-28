@@ -6,6 +6,7 @@ export const envSchema = z.object({
   // Database
   AUTH_DATABASE_URL: z.string(),
   USER_DATABASE_URL: z.string(),
+  CHAT_DATABASE_URL: z.string(),
 
   // JWT
   JWT_ACCESS_SECRET: z.string().min(32),

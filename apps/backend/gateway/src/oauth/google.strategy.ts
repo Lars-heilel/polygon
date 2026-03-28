@@ -1,21 +1,22 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, Profile } from 'passport-google-oauth20';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, ConfigService } from '@org/core';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
 import type { TokenPair } from '@org/auth';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService,
+    config: ConfigService<Env>,
   ) {
     super({
-      clientID: config.googleClientId ?? '',
-      clientSecret: config.googleClientSecret ?? '',
-      callbackURL: `${config.appUrl}/api/auth/google/callback`,
+      clientID: config.get('GOOGLE_CLIENT_ID', { infer: true }) ?? '',
+      clientSecret: config.get('GOOGLE_CLIENT_SECRET', { infer: true }) ?? '',
+      callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/google/callback`,
       scope: ['email', 'profile'],
     });
   }

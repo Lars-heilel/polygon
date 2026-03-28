@@ -1,13 +1,14 @@
 import { ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { createHash, randomUUID } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 import {
-  ConfigService,
   EncryptionService,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
   type JwtPayload,
+  type Env,
 } from '@org/core';
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
 import type { RegisterDto } from '../dto/register.dto';
@@ -32,7 +33,7 @@ export class AuthService {
     private readonly repo: AuthPrismaRepository,
     private readonly encryption: EncryptionService,
     private readonly tokenService: TokenService,
-    private readonly config: ConfigService,
+    private readonly config: ConfigService<Env>,
     private readonly verification: VerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
   ) {}
@@ -180,7 +181,7 @@ export class AuthService {
     const refreshToken = this.tokenService.generateRefreshToken(jwtPayload);
 
     const tokenHash = this.hashToken(refreshToken);
-    const expiresAt = new Date(Date.now() + this.config.jwtRefreshExpiresIn * 1000);
+    const expiresAt = new Date(Date.now() + this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000);
 
     await this.repo.saveRefreshToken({ tokenHash, credentialsId: credentials.id, expiresAt });
 

@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-yandex';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, ConfigService } from '@org/core';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
 import type { TokenPair } from '@org/auth';
 
 // passport-yandex does not ship its own typings
@@ -17,12 +18,12 @@ interface YandexProfile {
 export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService,
+    config: ConfigService<Env>,
   ) {
     super({
-      clientID: config.yandexClientId ?? '',
-      clientSecret: config.yandexClientSecret ?? '',
-      callbackURL: `${config.appUrl}/api/auth/yandex/callback`,
+      clientID: config.get('YANDEX_CLIENT_ID', { infer: true }) ?? '',
+      clientSecret: config.get('YANDEX_CLIENT_SECRET', { infer: true }) ?? '',
+      callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/yandex/callback`,
     });
   }
 

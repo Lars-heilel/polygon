@@ -14,7 +14,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { ClientProxy } from '@nestjs/microservices';
 import type { Request, Response } from 'express';
 import { lastValueFrom, Observable } from 'rxjs';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, ConfigService } from '@org/core';
+import { ConfigService } from '@nestjs/config';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
 import type { TokenPair } from '@org/auth';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
@@ -25,7 +26,7 @@ import { ForgotPasswordDto, ResetPasswordDto } from '../dto/reset-password.dto';
 export class AuthGatewayController {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    private readonly config: ConfigService,
+    private readonly config: ConfigService<Env>,
   ) {}
 
   @Post('register')
@@ -122,7 +123,7 @@ export class AuthGatewayController {
   @UseGuards(AuthGuard('github'))
   githubCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
     this.setTokenCookies(res, req.user);
-    res.redirect(this.config.clientUrl);
+    res.redirect(this.config.get('CLIENT_URL', { infer: true })!);
   }
 
   // ── Yandex OAuth ──────────────────────────────────────────────────
@@ -136,7 +137,7 @@ export class AuthGatewayController {
   @UseGuards(AuthGuard('yandex'))
   yandexCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
     this.setTokenCookies(res, req.user);
-    res.redirect(this.config.clientUrl);
+    res.redirect(this.config.get('CLIENT_URL', { infer: true })!);
   }
 
   // ── Google OAuth ──────────────────────────────────────────────────
@@ -150,22 +151,22 @@ export class AuthGatewayController {
   @UseGuards(AuthGuard('google'))
   googleCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
     this.setTokenCookies(res, req.user);
-    res.redirect(this.config.clientUrl);
+    res.redirect(this.config.get('CLIENT_URL', { infer: true })!);
   }
 
   private setTokenCookies(res: Response, tokens: TokenPair): void {
-    const secure = this.config.nodeEnv === 'production';
+    const secure = this.config.get('NODE_ENV', { infer: true }) === 'production';
     res.cookie('access_token', tokens.accessToken, {
       httpOnly: true,
       sameSite: 'strict',
       secure,
-      maxAge: this.config.jwtAccessExpiresIn * 1000,
+      maxAge: this.config.get('JWT_ACCESS_TOKEN_EXPIRES', { infer: true })! * 1000,
     });
     res.cookie('refresh_token', tokens.refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
       secure,
-      maxAge: this.config.jwtRefreshExpiresIn * 1000,
+      maxAge: this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000,
     });
   }
 
