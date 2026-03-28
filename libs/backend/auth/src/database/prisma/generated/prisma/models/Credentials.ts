@@ -287,7 +287,7 @@ export type CredentialsCreateInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutCredentialsInput
   oauthAccounts?: Prisma.OAuthAccountCreateNestedManyWithoutCredentialsInput
@@ -301,7 +301,7 @@ export type CredentialsUncheckedCreateInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutCredentialsInput
   oauthAccounts?: Prisma.OAuthAccountUncheckedCreateNestedManyWithoutCredentialsInput
@@ -343,7 +343,7 @@ export type CredentialsCreateManyInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
 }
 
@@ -472,7 +472,7 @@ export type CredentialsCreateWithoutOauthAccountsInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutCredentialsInput
 }
@@ -485,7 +485,7 @@ export type CredentialsUncheckedCreateWithoutOauthAccountsInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutCredentialsInput
 }
@@ -540,7 +540,7 @@ export type CredentialsCreateWithoutRefreshTokensInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   oauthAccounts?: Prisma.OAuthAccountCreateNestedManyWithoutCredentialsInput
 }
@@ -553,7 +553,7 @@ export type CredentialsUncheckedCreateWithoutRefreshTokensInput = {
   isVerified?: boolean
   lockedAt?: Date | string | null
   lockedUntil?: Date | string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   oauthAccounts?: Prisma.OAuthAccountUncheckedCreateNestedManyWithoutCredentialsInput
 }

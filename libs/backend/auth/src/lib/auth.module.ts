@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport, type RmqOptions } from '@nestjs/microservices';
 import {
+  AUTH_PRISMA_REPOSITORY_TOKEN,
+  AUTH_SERVICE_TOKEN,
   CoreConfigModule,
   CoreEncryptionModule,
   CoreRedisModule,
@@ -10,6 +12,7 @@ import {
   NOTIFICATION_QUEUE,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
+  VERIFICATION_SERVICE_TOKEN,
   type Env,
 } from '@org/core';
 import { PrismaService } from '../database/prisma/prisma.service';
@@ -44,7 +47,12 @@ const rmqClient = (name: string, queue: string) => ({
     ]),
   ],
   controllers: [AuthController],
-  providers: [PrismaService, AuthPrismaRepository, AuthService, VerificationService],
+  providers: [
+    PrismaService,
+    { provide: AUTH_PRISMA_REPOSITORY_TOKEN, useClass: AuthPrismaRepository },
+    { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
+    { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
+  ],
   exports: [PrismaService],
 })
 export class OrgAuthModule {}

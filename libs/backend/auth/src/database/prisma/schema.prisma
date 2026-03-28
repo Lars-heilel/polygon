@@ -22,12 +22,10 @@ model Credentials {
   isVerified     Boolean        @default(false) @map("is_verified")
   lockedAt       DateTime?      @map("locked_at")
   lockedUntil    DateTime?      @map("locked_until")
-  createdAt      DateTime       @map("created_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   refreshTokens  RefreshToken[]
   oauthAccounts  OAuthAccount[]
-
-  @@index([email])
 }
 
 model OAuthAccount {

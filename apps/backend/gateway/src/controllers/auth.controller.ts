@@ -10,15 +10,14 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ClientProxy } from '@nestjs/microservices';
 import type { Request, Response } from 'express';
 import { lastValueFrom, Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
-import type { TokenPair } from '@org/auth';
+import type { TokenPair, CredentialsPayload } from '@org/common';
+import { GithubGuard, GoogleGuard, LocalGuard, YandexGuard } from '@org/auth';
 import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from '../dto/reset-password.dto';
 
@@ -40,10 +39,12 @@ export class AuthGatewayController {
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: any) {
+  @UseGuards(LocalGuard)
+  async login(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const response = res as Response;
+    const credentials = req.user as CredentialsPayload;
     const tokens = await this.send<TokenPair>(
-      this.authClient.send(AUTH_PATTERNS.LOGIN, dto),
+      this.authClient.send(AUTH_PATTERNS.LOGIN, { id: credentials.id }),
     );
     this.setTokenCookies(response, tokens);
     return { message: 'Logged in successfully' };
@@ -114,13 +115,13 @@ export class AuthGatewayController {
   // ── GitHub OAuth ──────────────────────────────────────────────────
 
   @Get('github')
-  @UseGuards(AuthGuard('github'))
+  @UseGuards(GithubGuard)
   githubAuth() {
     // Passport redirects to GitHub — no body needed
   }
 
   @Get('github/callback')
-  @UseGuards(AuthGuard('github'))
+  @UseGuards(GithubGuard)
   githubCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
     this.setTokenCookies(res, req.user);
     res.redirect(this.config.get('CLIENT_URL', { infer: true })!);
@@ -129,12 +130,12 @@ export class AuthGatewayController {
   // ── Yandex OAuth ──────────────────────────────────────────────────
 
   @Get('yandex')
-  @UseGuards(AuthGuard('yandex'))
+  @UseGuards(YandexGuard)
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   yandexAuth() {}
 
   @Get('yandex/callback')
-  @UseGuards(AuthGuard('yandex'))
+  @UseGuards(YandexGuard)
   yandexCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
     this.setTokenCookies(res, req.user);
     res.redirect(this.config.get('CLIENT_URL', { infer: true })!);
@@ -143,12 +144,12 @@ export class AuthGatewayController {
   // ── Google OAuth ──────────────────────────────────────────────────
 
   @Get('google')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleGuard)
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   googleAuth() {}
 
   @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleGuard)
   googleCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
     this.setTokenCookies(res, req.user);
     res.redirect(this.config.get('CLIENT_URL', { infer: true })!);

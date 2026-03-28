@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { PASSWORD_REGEX } from '../../constants/regex';
+import { PASSWORD_REGEX } from '../../constants';
 
 export const registerSchema = z.object({
   email: z.email(),
@@ -11,3 +11,5 @@ export const registerSchema = z.object({
     ),
   username: z.string().min(2),
 });
+
+export type RegisterInput = z.infer<typeof registerSchema>;

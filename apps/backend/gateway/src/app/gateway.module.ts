@@ -21,9 +21,7 @@ import { UserGatewayController } from '../controllers/user.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
 import { HealthController } from '../controllers/health.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
-import { GithubStrategy } from '../oauth/github.strategy';
-import { YandexStrategy } from '../oauth/yandex.strategy';
-import { GoogleStrategy } from '../oauth/google.strategy';
+import { GithubStrategy, GoogleStrategy, LocalStrategy, YandexStrategy } from '@org/auth';
 
 const rmqClient = (name: string, queue: string) => ({
   name,
@@ -53,6 +51,6 @@ const rmqClient = (name: string, queue: string) => ({
     ]),
   ],
   controllers: [AuthGatewayController, UserGatewayController, ChatGatewayController, HealthController],
-  providers: [JwtGuard, ChatSocketGateway, GithubStrategy, YandexStrategy, GoogleStrategy],
+  providers: [JwtGuard, ChatSocketGateway, LocalStrategy, GithubStrategy, YandexStrategy, GoogleStrategy],
 })
 export class GatewayModule {}

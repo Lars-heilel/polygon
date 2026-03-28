@@ -5,7 +5,7 @@ import { Strategy } from 'passport-yandex';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
-import type { TokenPair } from '@org/auth';
+import type { TokenPair } from '@org/common';
 
 // passport-yandex does not ship its own typings
 interface YandexProfile {

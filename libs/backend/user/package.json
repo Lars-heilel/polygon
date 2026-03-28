@@ -14,9 +14,14 @@
   },
   "dependencies": {
     "@org/common": "*",
-    "@org/core": "*"
+    "@org/core": "*",
+    "@types/passport-local": "^1.0.38",
+    "passport-local": "^1.0.0"
   },
   "nx": {
-    "tags": ["scope:backend", "type:business"]
+    "tags": [
+      "scope:backend",
+      "type:business"
+    ]
   }
 }

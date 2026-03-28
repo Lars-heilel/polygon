@@ -1,40 +1,35 @@
-import { ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import {
+  AUTH_PRISMA_REPOSITORY_TOKEN,
   EncryptionService,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
-  type JwtPayload,
+  VERIFICATION_SERVICE_TOKEN,
   type Env,
+  type JwtPayload,
 } from '@org/core';
-import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
+import type {
+  TokenPair,
+  OAuthLoginDto,
+  CredentialsPayload,
+  Credentials,
+} from '@org/common';
+import type { IAuthRepository, IAuthService, IVerificationService } from '../interfaces/auth.interface';
 import type { RegisterDto } from '../dto/register.dto';
-import type { LoginDto } from '../dto/login.dto';
-import { VerificationService } from './verification.service';
-
-export type OAuthLoginDto = {
-  provider: string;
-  providerId: string;
-  email: string;
-  name: string;
-};
-
-export type TokenPair = {
-  accessToken: string;
-  refreshToken: string;
-};
 
 @Injectable()
-export class AuthService {
+export class AuthService implements IAuthService {
   constructor(
-    private readonly repo: AuthPrismaRepository,
+    @Inject(AUTH_PRISMA_REPOSITORY_TOKEN) private readonly repo: IAuthRepository,
     private readonly encryption: EncryptionService,
     private readonly tokenService: TokenService,
     private readonly config: ConfigService<Env>,
-    private readonly verification: VerificationService,
+    @Inject(VERIFICATION_SERVICE_TOKEN) private readonly verification: IVerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
   ) {}
 
@@ -43,12 +38,7 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already in use');
 
     const passwordHash = await this.encryption.hash(dto.password);
-    const credentials = await this.repo.createCredentials({
-      id: randomUUID(),
-      email: dto.email,
-      passwordHash,
-      createdAt: new Date(),
-    });
+    const credentials = await this.repo.createCredentials({ email: dto.email, passwordHash });
 
     this.userClient.emit(USER_EVENTS.REGISTERED, {
       id: credentials.id,
@@ -61,13 +51,19 @@ export class AuthService {
     return this.issueTokenPair(credentials);
   }
 
-  async login(dto: LoginDto): Promise<TokenPair> {
-    const credentials = await this.repo.findByEmail(dto.email);
+  async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
+    const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) throw new UnauthorizedException('Invalid credentials');
 
-    const valid = await this.encryption.compare(dto.password, credentials.passwordHash);
+    const valid = await this.encryption.compare(password, credentials.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
+    return { id: credentials.id, role: credentials.role, isVerified: credentials.isVerified };
+  }
+
+  async login(id: string): Promise<TokenPair> {
+    const credentials = await this.repo.findById(id);
+    if (!credentials) throw new UnauthorizedException();
     return this.issueTokenPair(credentials);
   }
 
@@ -81,7 +77,6 @@ export class AuthService {
 
   async forgotPassword(email: string): Promise<void> {
     const credentials = await this.repo.findByEmail(email);
-    // No error if user not found — prevents email enumeration
     if (!credentials || !credentials.passwordHash) return;
     await this.verification.generatePasswordReset(credentials.id, credentials.email);
   }
@@ -98,20 +93,12 @@ export class AuthService {
 
   async oauthLogin(dto: OAuthLoginDto): Promise<TokenPair> {
     const existing = await this.repo.findOAuthAccount(dto.provider, dto.providerId);
-
-    if (existing) {
-      return this.issueTokenPair(existing.credentials);
-    }
+    if (existing) return this.issueTokenPair(existing.credentials);
 
     let credentials = await this.repo.findByEmail(dto.email);
 
     if (!credentials) {
-      credentials = await this.repo.createCredentials({
-        id: randomUUID(),
-        email: dto.email,
-        createdAt: new Date(),
-      });
-
+      credentials = await this.repo.createCredentials({ email: dto.email });
       this.userClient.emit(USER_EVENTS.REGISTERED, {
         id: credentials.id,
         email: credentials.email,
@@ -120,7 +107,6 @@ export class AuthService {
     }
 
     await this.repo.createOAuthAccount({
-      id: randomUUID(),
       provider: dto.provider,
       providerId: dto.providerId,
       credentialsId: credentials.id,
@@ -137,9 +123,7 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     const tokenHash = this.hashToken(refreshToken);
     const stored = await this.repo.findRefreshToken(tokenHash);
-
     if (!stored || stored.revokedAt) return;
-
     await this.repo.revokeRefreshToken(tokenHash);
   }
 
@@ -153,10 +137,7 @@ export class AuthService {
 
     const tokenHash = this.hashToken(refreshToken);
     const stored = await this.repo.findRefreshToken(tokenHash);
-
-    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
-      throw new UnauthorizedException();
-    }
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) throw new UnauthorizedException();
 
     await this.repo.revokeRefreshToken(tokenHash);
 
@@ -166,11 +147,7 @@ export class AuthService {
     return this.issueTokenPair(credentials);
   }
 
-  private async issueTokenPair(credentials: {
-    id: string;
-    role: string;
-    isVerified: boolean;
-  }): Promise<TokenPair> {
+  private async issueTokenPair(credentials: Pick<Credentials, 'id' | 'role' | 'isVerified'>): Promise<TokenPair> {
     const jwtPayload: JwtPayload = {
       sub: credentials.id,
       role: credentials.role as JwtPayload['role'],
