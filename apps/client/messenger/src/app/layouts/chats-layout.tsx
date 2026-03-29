@@ -1,8 +1,7 @@
 import { Outlet, useNavigate, useParams } from 'react-router';
 import { Avatar, Spinner } from '@org/shared';
 import { CLIENT_ROUTES } from '@org/common';
-import { useGetChatsQuery, type Chat } from '../store/chat-api';
-import { useMeQuery } from '../store/auth-api';
+import { useGetChatsQuery, useMeQuery, type Chat } from '@org/entities';
 
 function formatTime(iso: string): string {
   const date = new Date(iso);

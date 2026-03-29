@@ -2,14 +2,17 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { NotFoundPage } from '@org/pages';
 import { ProtectedRoute, GuestRoute } from './protected-route';
 import { ChatsLayout } from '../layouts/chats-layout';
-import { LoginPage } from '../../pages/login';
-import { RegisterPage } from '../../pages/register';
-import { ForgotPasswordPage } from '../../pages/forgot-password';
-import { ResetPasswordPage } from '../../pages/reset-password';
-import { ChatsPage } from '../../pages/chats';
-import { ChatPage } from '../../pages/chat';
-import { SettingsPage } from '../../pages/settings';
-import { DesignSystemPage } from '../../pages/design-system';
+import {
+  LoginPage,
+  RegisterPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+  ChatsPage,
+  ChatPage,
+  SettingsPage,
+} from '../../pages';
+import { DesignSystemPage } from '@org/shared';
+import { ThemeToggle } from '@org/features';
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +20,6 @@ export const router = createBrowserRouter([
     element: <Navigate to="/chats" replace />,
   },
 
-  // Guest only — redirect to /chats if already logged in
   {
     element: <GuestRoute />,
     children: [
@@ -25,16 +27,15 @@ export const router = createBrowserRouter([
         path: '/auth',
         children: [
           { index: true, element: <Navigate to="/auth/login" replace /> },
-          { path: 'login',           element: <LoginPage /> },
-          { path: 'register',        element: <RegisterPage /> },
+          { path: 'login', element: <LoginPage /> },
+          { path: 'register', element: <RegisterPage /> },
           { path: 'forgot-password', element: <ForgotPasswordPage /> },
-          { path: 'reset-password',  element: <ResetPasswordPage /> },
+          { path: 'reset-password', element: <ResetPasswordPage /> },
         ],
       },
     ],
   },
 
-  // Protected — redirect to /auth/login if not logged in
   {
     element: <ProtectedRoute />,
     children: [
@@ -42,7 +43,7 @@ export const router = createBrowserRouter([
         path: '/chats',
         element: <ChatsLayout />,
         children: [
-          { index: true,     element: <ChatsPage /> },
+          { index: true, element: <ChatsPage /> },
           { path: ':chatId', element: <ChatPage /> },
         ],
       },
@@ -53,11 +54,9 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Dev only
   ...(import.meta.env.DEV
-    ? [{ path: '/ds', element: <DesignSystemPage /> }]
+    ? [{ path: '/ds', element: <DesignSystemPage headerSlot={<ThemeToggle />} /> }]
     : []),
 
-  // 404
   { path: '*', element: <NotFoundPage /> },
 ]);

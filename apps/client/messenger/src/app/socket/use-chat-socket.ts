@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import type { AppDispatch } from '../store';
-import { chatApi, type Message } from '../store/chat-api';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Message } from '@org/entities';
 import { socket } from './socket';
 
 export function useChatSocket(chatId: string) {
-  const dispatch = useDispatch<AppDispatch>();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!socket.connected) socket.connect();
@@ -13,13 +12,10 @@ export function useChatSocket(chatId: string) {
     socket.emit('chat:join', { chatId });
 
     const handleMessage = (msg: Message) => {
-      dispatch(
-        chatApi.util.updateQueryData('getMessages', chatId, (draft) => {
-          if (!draft.find((m) => m.id === msg.id)) {
-            draft.push(msg);
-          }
-        }),
-      );
+      queryClient.setQueryData<Message[]>(['messages', chatId], (old = []) => {
+        if (old.find((m) => m.id === msg.id)) return old; // дедупликация
+        return [...old, msg];
+      });
     };
 
     socket.on('message:new', handleMessage);
@@ -28,5 +24,5 @@ export function useChatSocket(chatId: string) {
       socket.emit('chat:leave', { chatId });
       socket.off('message:new', handleMessage);
     };
-  }, [chatId, dispatch]);
+  }, [chatId, queryClient]);
 }

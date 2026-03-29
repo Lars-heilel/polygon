@@ -93,8 +93,8 @@
     "@nestjs/websockets": "^11.1.17",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
-    "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/react-query": "^5.95.2",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/passport-github2": "^1.2.9",
@@ -102,12 +102,15 @@
     "@willsoto/nestjs-prometheus": "^6.0.2",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^0.10.9",
+    "async-mutex": "^0.5.0",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
+    "dayjs": "^1.11.20",
     "dotenv": "^17.3.1",
+    "es-toolkit": "^1.45.1",
     "ioredis": "^5.10.1",
     "nestjs-pino": "^4.6.1",
     "nestjs-zod": "^5.2.1",
@@ -123,7 +126,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.72.0",
-    "react-redux": "^9.2.0",
     "react-router": "^7.13.2",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
@@ -132,6 +134,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
   }
 }

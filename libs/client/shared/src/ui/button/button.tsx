@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
-import { cn } from '../../lib/cn';
+import { cn } from '../../lib/utils/cn';
 import { Spinner } from '../spinner/spinner';
 
 const buttonVariants = cva(

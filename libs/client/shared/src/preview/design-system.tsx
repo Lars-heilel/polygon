@@ -1,7 +1,11 @@
-import { ThemeToggle } from '@org/features';
-import { Heading } from '@org/shared';
+import type { ReactNode } from 'react';
+import { Heading } from '../ui/typography/heading';
 
-export function DesignSystemPage() {
+interface DesignSystemPageProps {
+  headerSlot?: ReactNode;
+}
+
+export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
   return (
     <div className="min-h-screen bg-surface text-text p-10 font-sans transition-colors duration-200">
       {/* Header */}
@@ -10,7 +14,7 @@ export function DesignSystemPage() {
           <h1 className="text-3xl font-bold mb-1">Design System</h1>
           <p className="text-text-muted text-sm">Polygon UI Kit</p>
         </div>
-        <ThemeToggle />
+        {headerSlot}
       </div>
 
       {/* Purple shades */}

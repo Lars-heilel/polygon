@@ -1,54 +1,48 @@
-# Polygon Platform
+# Polygon
 
 _By Lars Heilel (Igor Shevchenko)_
-
----
-
-## 📖 About
 
 > **Status:** 🚧 In Development
 
 ---
 
-## 🛠 Tech Stack
+## Applications
 
-| Category              | Technology             | Version |
-| --------------------- | ---------------------- | ------- |
-| **Runtime**           | Node.js                | 20.x    |
-| **Language**          | TypeScript             | ~5.9    |
-| **Backend Framework** | NestJS                 | ^11.0   |
-| **Database**          | PostgreSQL             | 17      |
-| **ORM**               | Prisma                 | ^7.5    |
-| **Caching**           | Redis                  | 7       |
-| **Message Broker**    | RabbitMQ               | 3       |
-| **Monorepo**          | Nx                     | 22.6    |
-| **Frontend Build**    | Vite                   | ^7.0    |
-| **UI Library**        | React                  | ^19.0   |
-| **Validation**        | Zod                    | ^4.3    |
-| **Infrastructure**    | Docker, Docker Compose | —       |
+| App | Description |
+| --- | ----------- |
+| [Messenger](./apps/client/messenger/README.md) | Real-time chat application |
 
 ---
 
-## 🚀 Quick Start
+## Tech Stack
 
-### 1. Setup Environment
-
-```bash
-cp .env.example .env
-```
-
-Configure environment variables in `.env` file.
-
-### 2. Initialize & Run
-
-See full setup guide: [Setup Documentation →](./docs/SETUP.md)
+| Category           | Technology             | Version |
+| ------------------ | ---------------------- | ------- |
+| **Runtime**        | Node.js                | 20.x    |
+| **Language**       | TypeScript             | ~5.9    |
+| **Backend**        | NestJS                 | ^11.0   |
+| **Database**       | PostgreSQL             | 17      |
+| **ORM**            | Prisma                 | ^7.5    |
+| **Cache**          | Redis                  | 7       |
+| **Message Broker** | RabbitMQ               | 3       |
+| **Monorepo**       | Nx                     | 22.6    |
+| **Frontend Build** | Vite                   | ^7.0    |
+| **UI**             | React                  | ^19.0   |
+| **State**          | Zustand                | —       |
+| **Data Fetching**  | TanStack Query         | —       |
+| **WebSocket**      | Socket.IO              | —       |
+| **CSS**            | Tailwind CSS           | v4      |
+| **Validation**     | Zod                    | ^4.3    |
+| **Infrastructure** | Docker, Docker Compose | —       |
 
 ---
 
-## 📚 Documentation
+## Documentation
 
-| File                                       | Description                                              |
-| ------------------------------------------ | -------------------------------------------------------- |
-| [**Setup**](./docs/SETUP.md)               | Environment variables, Docker, databases                 |
-| [**Development**](./docs/DEVELOPMENT.md)   | Code standards, testing, debugging, module boundaries    |
-| [**Architecture**](./docs/ARCHITECTURE.md) | Microservices design, service communication              |
+| File                                                       | Description                                         |
+| ---------------------------------------------------------- | --------------------------------------------------- |
+| [Setup](./docs/SETUP.md)                                   | Environment setup, Docker, databases                |
+| [Development](./docs/DEVELOPMENT.md)                       | Project structure, code standards, Nx commands      |
+| [Architecture](./docs/ARCHITECTURE.md)                     | Microservices design, client FSD, communication     |
+| [Monorepo Gotchas](./docs/MONOREPO_GOTCHAS.md)             | Tailwind v4 in Nx, env variables, Prisma paths      |
+| [Observability](./docs/observability.md)                   | Logging, metrics, health checks, Prometheus/Grafana |

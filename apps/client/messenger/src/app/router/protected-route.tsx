@@ -1,12 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
-
-// Temporary stub — will read from auth store in Phase 2
-function useIsAuthenticated(): boolean {
-  return Boolean(localStorage.getItem('access_token'));
-}
+import { useSessionStore, selectIsAuthenticated } from '@org/entities';
 
 export function ProtectedRoute() {
-  const isAuthenticated = useIsAuthenticated();
+  const isAuthenticated = useSessionStore(selectIsAuthenticated);
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -17,7 +13,7 @@ export function ProtectedRoute() {
 }
 
 export function GuestRoute() {
-  const isAuthenticated = useIsAuthenticated();
+  const isAuthenticated = useSessionStore(selectIsAuthenticated);
 
   if (isAuthenticated) {
     return <Navigate to="/chats" replace />;

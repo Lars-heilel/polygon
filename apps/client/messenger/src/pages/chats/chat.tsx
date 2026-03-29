@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useParams } from 'react-router';
 import { Avatar, Button, Spinner, Textarea } from '@org/shared';
-import { chatApi, useGetMessagesQuery, useSendMessageMutation, type Message } from '../app/store/chat-api';
-import { useMeQuery } from '../app/store/auth-api';
-import { useChatSocket } from '../app/socket/use-chat-socket';
-import { useDispatch } from 'react-redux';
-import type { AppDispatch } from '../app/store';
+import { useGetMessagesQuery, useSendMessageMutation, useMeQuery, type Message } from '@org/entities';
+import { useChatSocket } from '../../app/socket/use-chat-socket';
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -33,41 +30,25 @@ function MessageBubble({ message, isMine }: { message: Message; isMine: boolean 
 
 export function ChatPage() {
   const { chatId } = useParams<{ chatId: string }>();
-  const dispatch = useDispatch<AppDispatch>();
 
-  const { data: messages = [], isLoading } = useGetMessagesQuery(chatId!, { skip: !chatId });
+  const { data: messages = [], isLoading } = useGetMessagesQuery(chatId!);
   const { data: me } = useMeQuery();
-  const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
+  const { mutate: sendMessage, isPending: isSending } = useSendMessageMutation(chatId!);
 
   const [text, setText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useChatSocket(chatId!);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || !chatId || isSending) return;
-
     setText('');
-
-    try {
-      const message = await sendMessage({ chatId, text: trimmed }).unwrap();
-      // Add own message immediately (WS deduplicates for other clients)
-      dispatch(
-        chatApi.util.updateQueryData('getMessages', chatId, (draft) => {
-          if (!draft.find((m) => m.id === message.id)) {
-            draft.push(message);
-          }
-        }),
-      );
-    } catch {
-      setText(trimmed);
-    }
+    sendMessage(trimmed, { onError: () => setText(trimmed) });
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -81,12 +62,10 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="px-4 py-3 border-b border-border shrink-0">
         <p className="text-sm font-semibold">{chatId.slice(0, 8)}…</p>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {isLoading && (
           <div className="flex justify-center py-8">
@@ -111,7 +90,6 @@ export function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="px-4 py-3 border-t border-border shrink-0 flex gap-2 items-end">
         <div className="flex-1">
           <Textarea

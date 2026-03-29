@@ -1,5 +1,6 @@
-export { cn } from './lib/cn';
-export { ThemeProvider, useTheme } from './lib/theme';
+export { apiFetch, ApiError } from './lib/api/client';
+export { DesignSystemPage } from './preview/design-system';
+export { cn } from './lib/utils/cn';
 export { Heading, Text } from './ui/typography';
 export { Button } from './ui/button';
 export { IconButton } from './ui/icon-button';

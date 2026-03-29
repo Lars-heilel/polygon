@@ -1,4 +1,4 @@
-import { useTheme } from '@org/shared';
+import { useTheme } from '../model/theme';
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();

@@ -2,317 +2,284 @@
 
 ---
 
-## 📁 Project Structure
+## Nx Workspace
+
+Nx is the build system and task runner for this monorepo. Key concepts:
+
+- **Project graph** — Nx tracks dependencies between all projects. Run `npx nx graph` to visualize.
+- **Caching** — task results (build, test, lint) are cached. Re-running an unchanged project is instant.
+- **Affected** — `npx nx affected -t test` runs tests only for projects changed since the base branch.
+
+All projects are referenced by their `@org/<name>` package name.
+
+### Common Commands
+
+```bash
+# Serve
+npx nx serve @org/gateway
+npx nx serve @org/messenger
+
+# Build / test / lint / typecheck
+npx nx build @org/<project>
+npx nx test @org/<project>
+npx nx lint @org/<project>
+npx nx typecheck @org/<project>
+
+# Run multiple targets
+npx nx run-many -t build test lint typecheck
+npx nx affected -t test
+
+# Inspect a project's resolved config and available targets
+npx nx show project @org/<project> --json
+npx nx show project @org/<project> --json | jq '.targets | keys'
+
+# Fix out-of-sync workspace / clear stale cache
+npx nx sync
+npx nx reset
+```
+
+---
+
+## Project Structure
 
 ```
 polygon/
 ├── apps/
-│   ├── backend/           # Executable applications
-│   │   ├── gateway/       # API Gateway
-│   │   ├── user-service/  # Microservices
-│   │   ├── auth-service/
-│   │   ├── chat-service/
-│   │   ├── media-service/
-│   │   └── notification-service/
+│   ├── backend/
+│   │   ├── gateway/              # API Gateway — single entry point (port 3000)
+│   │   ├── auth-service/         # Authentication (port 3002)
+│   │   ├── user-service/         # User profiles (port 3001)
+│   │   ├── chat-service/         # Chats & messages (port 3003)
+│   │   ├── media-service/        # File handling (port 3004)
+│   │   └── notification-service/ # Notifications (port 3005)
 │   └── client/
-│       └── messenger/     # React SPA
+│       └── messenger/            # React 19 + Vite SPA
 │
 ├── libs/
-│   ├── backend/           # Business logic libraries
-│   │   ├── user/          # Prisma schemas + logic
-│   │   ├── auth/
-│   │   ├── chat/
+│   ├── backend/
+│   │   ├── auth/                 # Auth business logic + Prisma schema
+│   │   ├── user/                 # User business logic + Prisma schema
+│   │   ├── chat/                 # Chat business logic + Prisma schema
 │   │   ├── media/
 │   │   ├── notification/
-│   │   └── core/
-│   ├── client/            # FSD packages
-│   │   ├── entities/      # Data models
-│   │   ├── features/      # User interactions
-│   │   ├── layouts/       # Page layouts
-│   │   ├── pages/         # Full pages
-│   │   ├── shared/        # Utilities
-│   │   └── widgets/       # Composite components
-│   └── common/            # Framework-agnostic shared code
+│   │   └── core/                 # Shared NestJS infrastructure (logging, filters, health)
+│   ├── client/                   # Feature-Sliced Design layers (see below)
+│   │   ├── shared/               # UI kit, utilities, API client
+│   │   ├── entities/             # Business entities and their API hooks
+│   │   ├── features/             # User-facing features (auth, theme, ...)
+│   │   ├── widgets/              # Composite components
+│   │   ├── layouts/              # Page layouts
+│   │   └── pages/                # Standalone pages (e.g. 404)
+│   └── common/                   # Framework-agnostic: Zod schemas + constants
 │
-├── scripts/               # Initialization scripts
-├── infra/                 # Infrastructure (Docker, DB init)
-└── docs/                  # Documentation
+├── scripts/                      # bootstrap.sh, init-db.sh
+├── infra/                        # Docker, Prometheus, Grafana config
+└── docs/
 ```
+
+### Dependency Installation
+
+All external packages are installed at the **repository root** only:
+
+```bash
+npm install <package>   # always at repo root
+```
+
+Individual lib `package.json` files do not list external packages — Nx resolves everything from the root via hoisting. This enforces a single version policy across the monorepo.
 
 ---
 
-## 🚀 Quick Start
+## Module Boundaries
 
-### 1. Initialize (First Run)
+Nx enforces dependency rules via the `@nx/enforce-module-boundaries` ESLint rule. Projects declare their identity through tags in `package.json`:
 
-```bash
-./scripts/bootstrap.sh
-```
-
-This script:
-- Checks Docker and Docker Compose
-- Starts containers (PostgreSQL, Redis, RabbitMQ)
-- Creates databases
-- Generates Prisma clients
-- Applies migrations
-
-### 2. Start Services
-
-```bash
-docker compose up -d
-```
-
-### 3. Generate Prisma Client (if needed)
-
-```bash
-cd libs/backend/user && npx prisma generate
-```
-
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm run test
-
-# Run specific project tests
-npx nx test @org/user-service
-
-# Run with coverage
-npx nx test @org/user-service --coverage
-
-# Run specific test file
-npx nx test @org/user-service --testFile=user.service.spec.ts
-```
-
----
-
-## 🔒 Module Boundaries (FSD)
-
-This project uses **Nx Module Boundaries** to enforce Feature-Sliced Design (FSD) architecture.
-
-### Dependency Rules
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    FSD Layer Dependencies                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  pages → layouts, widgets, features, entities, shared       │
-│    ↓                                                        │
-│  layouts → widgets, features, entities, shared              │
-│    ↓                                                        │
-│  widgets → features, entities, shared                       │
-│    ↓                                                        │
-│  features → entities, shared                                │
-│    ↓                                                        │
-│  entities → shared                                          │
-│    ↓                                                        │
-│  shared → (external packages only)                          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Scope Boundaries
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Scope Boundaries                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  @org/common (framework-agnostic)                           │
-│    ↓ can be imported by anyone                              │
-│                                                             │
-│  @org/client/*  ←→  @org/backend/*                          │
-│  (client cannot import backend)                             │
-│  (backend cannot import client)                             │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Examples
-
-```typescript
-// ✅ ALLOWED: widgets can import entities
-import { User } from '@org/entities';  // libs/client/widgets/...
-
-// ✅ ALLOWED: features can import common
-import { UserSchema } from '@org/common';  // libs/client/features/...
-
-// ❌ FORBIDDEN: entities cannot import widgets
-import { ChatWidget } from '@org/widgets';  // libs/client/entities/...
-// Error: Projects using tag "layer:entities" cannot depend on projects using tag "layer:widgets"
-
-// ❌ FORBIDDEN: client cannot import backend
-import { UserService } from '@org/backend/user';  // apps/client/...
-// Error: Projects using tag "scope:client" cannot depend on projects using tag "scope:backend"
-```
-
-### Tags Reference
-
-| Tag | Purpose |
-|-----|---------|
-| `layer:entities` | Business entities (User, Chat, Message) |
-| `layer:features` | User interactions (auth, send message) |
-| `layer:layouts` | Page layouts |
-| `layer:pages` | Full pages |
-| `layer:widgets` | Composite components |
-| `layer:shared` | Reusable utilities |
-| `scope:client` | Client-side code |
-| `scope:backend` | Server-side code |
-| `scope:shared` | Framework-agnostic shared code |
-| `type:app` | Executable applications |
-| `type:business` | Business logic libraries |
-| `type:framework-agnostic` | No framework dependencies |
-
-### Check Boundaries
-
-```bash
-# Check for boundary violations
-npx nx graph
-
-# Run lint with boundary checks
-npx nx lint --skip-nx-cache
-```
-
----
-
-## 📝 Code Standards
-
-### TypeScript
-
-- Strict typing (`strict: true`)
-- Explicit return types
-- Interfaces for DTOs
-- No `any` type
-
-### NestJS
-
-- Decorator style (`@Injectable()`, `@Controller()`)
-- Repository pattern for database
-- Constructor-based DI
-
-### Naming Conventions
-
-```typescript
-// Files — kebab-case
-user.service.ts
-create-user.dto.ts
-
-// Classes — PascalCase
-class UserService {}
-
-// Interfaces — PascalCase
-interface UserDTO {}
-
-// Variables/functions — camelCase
-const getUserById = () => {}
-
-// Constants — UPPER_SNAKE_CASE
-const MAX_RETRY_COUNT = 3
-```
-
-### Schema Extension Pattern
-
-```typescript
-// libs/common/src/schemas/user.ts
-export const UserSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-// libs/client/features/auth/src/register-form.ts
-import { UserSchema } from '@org/common';
-
-export const RegisterFormSchema = UserSchema.extend({
-  confirmPassword: z.string(),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  { message: 'Passwords do not match' }
-);
-
-// libs/backend/user/src/dto/create-user.dto.ts
-import { UserSchema } from '@org/common';
-import { createZodDto } from 'nestjs-zod';
-
-export class CreateUserDto extends createZodDto(UserSchema) {
-  @ApiProperty({
-    description: 'User email address',
-    example: 'user@example.com',
-  })
-  email: string;
-
-  @ApiProperty({
-    description: 'User password',
-    example: 'P@ssw0rd123',
-  })
-  password: string;
+```json
+{
+  "nx": {
+    "tags": ["layer:features", "scope:client"]
+  }
 }
 ```
 
----
+### Tags in Use
 
-## 🔧 Nx Commands
+| Tag | Projects |
+| --- | -------- |
+| `scope:client` | All `libs/client/*` |
+| `scope:backend` | All `libs/backend/*` |
+| `scope:shared` | `libs/common` |
+| `layer:shared` | `@org/shared` |
+| `layer:entities` | `@org/entities` |
+| `layer:features` | `@org/features` |
+| `layer:widgets` | `@org/widgets` |
+| `layer:layouts` | `@org/layouts` |
+| `layer:pages` | `@org/pages` |
+| `type:business` | Backend service libs |
+| `type:core` | `@org/core` |
+| `type:framework-agnostic` | `@org/common` |
+
+### Boundary Rules
+
+Configured in the root `.eslintrc.json` under `@nx/enforce-module-boundaries`:
+
+```
+FSD layer order (can only import from layers below):
+  pages → layouts → widgets → features → entities → shared
+
+Scope rules:
+  scope:client  — cannot import scope:backend
+  scope:backend — cannot import scope:client
+  scope:shared  — can be imported by anyone
+```
+
+Check for violations:
 
 ```bash
-# Show dependency graph
-npx nx graph
-
-# Run task with dependencies
-npx nx run @org/user-service:build --with-deps
-
-# Run tasks for multiple projects
-npx nx run-many --target=build --projects=@org/user-service,@org/auth-service
-
-# Run only affected projects
-npx nx affected --target=test
-
-# Show projects
-npx nx show projects
-
-# Show project details
-npx nx show project @org/user-service --json
+npx nx lint @org/<project>
+npx nx run-many -t lint
 ```
 
 ---
 
-## 🐛 Debugging
+## Code Conventions
 
-### Docker Logs
+### Naming
 
-```bash
-# All logs
-docker compose logs -f
+| Subject | Convention | Example |
+| ------- | ---------- | ------- |
+| Files | kebab-case | `user.service.ts`, `create-user.dto.ts` |
+| Classes / Interfaces | PascalCase | `UserService`, `CreateUserDto` |
+| Variables / Functions | camelCase | `getUserById` |
+| Constants | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
 
-# Specific service
-docker compose logs -f polygon-postgres
+### TypeScript
+
+- `strict: true` — no exceptions
+- No `any` — use `unknown` and narrow explicitly
+- Explicit return types on public functions and methods
+- No unused locals or parameters
+
+### NestJS
+
+- Constructor-based DI only — no property injection
+- Repository pattern for all database access — controllers and services never touch Prisma directly
+- Each backend lib follows the same internal structure:
+
 ```
-
-### Databases
-
-```bash
-# Connect to PostgreSQL
-docker exec -it polygon-postgres psql -U polygon -d polygon_user
-
-# Show all databases
-docker exec polygon-postgres psql -U polygon -d postgres -c "\l"
+libs/backend/<service>/
+  lib/<service>.module.ts
+  services/<service>.service.ts
+  controllers/<service>.controller.ts
+  database/
+    prisma/schema.prisma
+    prisma/prisma.service.ts
+    repository/<service>.prisma.repo.ts
+  dto/
 ```
 
 ---
 
-## 📦 Environment Variables
+## Shared Logic (`@org/common`)
 
-Copy `.env.example` to `.env`:
+`libs/common` is the single source of truth for validation schemas and constants. It is framework-agnostic and can be imported by both client and backend.
 
-```bash
-cp .env.example .env
+### Zod Schemas
+
+Define schemas once, use everywhere:
+
+```typescript
+// libs/common/src/schemas/auth.ts
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
 ```
 
-**Key variables:**
-- `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_PASSWORD`
-- `REDIS_HOST`, `REDIS_PORT`
-- `RABBITMQ_HOST`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`
-- `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRES`
+**Frontend** — extend for form-specific needs:
 
-See [SETUP.md](./SETUP.md) for details.
+```typescript
+// libs/client/features/src/lib/auth/ui/register-form.tsx
+import { registerSchema } from '@org/common';
+
+const registerFormSchema = registerSchema.extend({
+  confirmPassword: z.string(),
+}).refine(
+  (data) => data.password === data.confirmPassword,
+  { message: "Passwords don't match", path: ['confirmPassword'] },
+);
+```
+
+**Backend** — create NestJS DTOs via `createZodDto`:
+
+```typescript
+// libs/backend/auth/src/dto/login.dto.ts
+import { createZodDto } from 'nestjs-zod';
+import { loginSchema } from '@org/common';
+
+export class LoginDto extends createZodDto(loginSchema) {}
+```
+
+`ZodValidationPipe` (applied globally in each service) automatically validates incoming requests against the DTO schema and returns a `400 Bad Request` on failure.
+
+---
+
+## Client Architecture — FSD in a Monorepo
+
+The client follows **Feature-Sliced Design (FSD)**. Each FSD layer is a separate Nx library under `libs/client/`:
+
+```
+@org/shared    ←  UI kit, utilities, API client
+@org/entities  ←  business entities + TanStack Query hooks
+@org/features  ←  user-facing features
+@org/widgets   ←  composite components
+@org/layouts   ←  page layouts
+@org/pages     ←  standalone pages (e.g. NotFoundPage)
+```
+
+The actual application (`apps/client/messenger`) composes these layers: router, providers, app-level layouts, and pages live there.
+
+### Internal Structure of a Feature
+
+Each feature inside `libs/client/features/src/lib/` is split into two segments:
+
+```
+lib/auth/
+  ui/             # React components consumed by pages
+  model/          # Hooks and state logic consumed by ui/ or pages
+  index.ts        # Public API of this feature
+```
+
+Keep `ui/` and `model/` focused on **one feature only**. If you open `auth/ui/` you should immediately understand what every file does — because everything there is about authentication. A folder with 20 components of mixed purpose is a signal to split into separate features.
+
+### Public API
+
+Every lib and every feature exposes a public API through `index.ts`. This file is the **contract** — it explicitly declares what the outside world is allowed to use. Anything not listed there is an implementation detail.
+
+```typescript
+// libs/client/features/src/lib/auth/index.ts
+export { LoginForm } from './ui/login-form';
+export { RegisterForm } from './ui/register-form';
+export { useLogin } from './model/use-login';
+export { useRegister } from './model/use-register';
+// ForgotPasswordForm is intentionally not exported — only used inside the feature
+```
+
+The lib-level `src/index.ts` re-exports from each feature's `index.ts`:
+
+```typescript
+// libs/client/features/src/index.ts
+export * from './lib/auth';
+export * from './lib/theme';
+```
+
+Consumers always import from the package name — never from internal paths:
+
+```typescript
+// ✅ correct
+import { LoginForm, useLogin } from '@org/features';
+
+// ❌ wrong — bypasses the contract, breaks on any internal refactor
+import { LoginForm } from '@org/features/src/lib/auth/ui/login-form';
+```
+
+This means you can freely restructure internals (rename files, split segments, move code) without touching any consumer — as long as `index.ts` stays the same.

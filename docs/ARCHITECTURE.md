@@ -2,17 +2,17 @@
 
 ---
 
-## 🏗 Overview
+## Overview
 
 - **API Gateway** as single entry point for all client requests
 - **Database per service** pattern for data isolation
 - **Async communication** via RabbitMQ message broker
-- **Shared libraries** for code reuse across frontend and backend
-- **Nx monorepo** for efficient development and tree-shaking
+- **Shared schemas** via `@org/common` — single source of truth for validation across client and backend
+- **Nx monorepo** for dependency management, caching, and build optimization
 
 ---
 
-## 📐 System Diagram
+## System Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -23,272 +23,269 @@
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    API Gateway                              │
-│              (Single Entry Point)                           │
+│              (Single Entry Point, port 3000)                │
 └─────────────────────────────────────────────────────────────┘
                             │
         ┌───────────────────┼───────────────────┐
         ▼                   ▼                   ▼
 ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│    User       │   │    Auth       │   │    Chat       │
-│   Service     │   │   Service     │   │   Service     │
+│  User Service │   │  Auth Service │   │  Chat Service │
+│   port 3001   │   │   port 3002   │   │   port 3003   │
 └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
         │                   │                   │
         └───────────────────┼───────────────────┘
                             ▼
         ┌───────────────────────────────────────┐
+        │              RabbitMQ                 │
         │           Message Broker              │
-        │            RabbitMQ                   │
         └───────────────────────────────────────┘
                             │
         ┌───────────────────┼───────────────────┐
         ▼                   ▼                   ▼
 ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│    Media      │   │ Notification  │   │   PostgreSQL  │
-│   Service     │   │   Service     │   │               │
+│ Media Service │   │ Notification  │   │  PostgreSQL   │
+│   port 3004   │   │   port 3005   │   │  (per service)│
 └───────────────┘   └───────────────┘   └───────────────┘
-                            │
-                            ▼
-                    ┌───────────────┐
-                    │     Redis     │
-                    │   (cache)     │
-                    └───────────────┘
+                                                │
+                                                ▼
+                                        ┌───────────────┐
+                                        │     Redis     │
+                                        └───────────────┘
 ```
 
 ---
 
-## 📦 Microservices
+## Microservices
 
 ### API Gateway
-**Entry point for all client requests.** Routes requests to appropriate backend services.
-
----
-
-### User Service
-**Responsibility:** User profile management
-
-**Functions:**
-- User CRUD operations
-- User search
-- Profile management (avatar, bio)
-
-**Database:** `polygon_user`
-
----
+Single entry point for all client requests. Handles routing, authentication guards, and proxies requests to the appropriate backend service via RabbitMQ.
 
 ### Auth Service
-**Responsibility:** Authentication & authorization
+Registration, login, JWT access/refresh tokens, OAuth (GitHub, Google, Yandex), password reset.
+Database: `polygon_auth`
 
-**Functions:**
-- Registration / login
-- JWT tokens (access/refresh)
-- Role-based access control
-
-**Database:** `polygon_auth`
-
----
+### User Service
+User profiles, search, avatar and bio management.
+Database: `polygon_user`
 
 ### Chat Service
-**Responsibility:** Chats & messaging
-
-**Functions:**
-- Create/delete chats
-- Member management
-- Send/receive messages
-- Message history
-
-**Database:** `polygon_chat`
-
----
+Chat creation, member management, message sending and history. Emits WebSocket events for real-time delivery.
+Database: `polygon_chat`
 
 ### Media Service
-**Responsibility:** File handling
-
-**Functions:**
-- File uploads
-- Metadata storage
-
-**Database:** `polygon_media`
-
----
+File uploads and metadata storage.
+Database: `polygon_media`
 
 ### Notification Service
-**Responsibility:** Notifications
-
-**Functions:**
-- Email notifications
-- Push notifications
-- In-app notifications
-
-**Database:** `polygon_notification`
+Email, push, and in-app notifications.
+Database: `polygon_notification`
 
 ---
 
-## 🔄 Communication Patterns
+## Communication Patterns
 
-### Async (RabbitMQ)
+### Client → Backend
+All HTTP requests go through the API Gateway. No service is directly accessible from the client.
 
-All inter-service communication happens via RabbitMQ events:
+### Inter-service (async)
+All communication between services is asynchronous via RabbitMQ events. There is no direct HTTP between services.
 
 ```
-Auth Service --[user.created]--> Notification Service
-Chat Service --[message.sent]--> Notification Service
-Media Service --[file.uploaded]--> Chat Service
+Auth Service    --[user.created]-->  Notification Service
+Chat Service    --[message.sent]-->  Notification Service
+Media Service   --[file.uploaded]--> Chat Service
 ```
 
-**Benefits:**
-- Loose coupling between services
-- Eventual consistency
-- Better fault tolerance
+### WebSocket
+The Gateway maintains a persistent Socket.IO connection with the client for real-time message delivery. See [Session & WebSocket](#session--websocket) for the full lifecycle.
 
 ---
 
-## 🗄 Data Storage
+## Data Storage
 
-### PostgreSQL
+### PostgreSQL — database per service
 
-Database per service pattern:
+| Service      | Database              |
+| ------------ | --------------------- |
+| Auth         | `polygon_auth`        |
+| User         | `polygon_user`        |
+| Chat         | `polygon_chat`        |
+| Media        | `polygon_media`       |
+| Notification | `polygon_notification`|
 
-| Service | Database |
-|---------|----------|
-| User | `polygon_user` |
-| Auth | `polygon_auth` |
-| Chat | `polygon_chat` |
-| Media | `polygon_media` |
-| Notification | `polygon_notification` |
+Each service owns its database exclusively. No cross-service database queries.
 
 ### Redis
-
-- Query caching
-- Session storage
+- Session / token caching
 - Rate limiting
+- Pub/Sub for real-time events
 
 ---
 
-## 📁 Monorepo Structure (Nx)
+## Shared Schemas (`@org/common`)
 
-```
-polygon/
-├── apps/
-│   ├── backend/
-│   │   ├── gateway/              # API Gateway
-│   │   ├── user-service/         # Microservices
-│   │   ├── auth-service/
-│   │   ├── chat-service/
-│   │   ├── media-service/
-│   │   └── notification-service/
-│   └── client/
-│       └── messenger/            # React SPA
-│
-├── libs/
-│   ├── backend/
-│   │   ├── user/                 # Business logic + Prisma
-│   │   ├── auth/
-│   │   ├── chat/
-│   │   ├── media/
-│   │   ├── notification/
-│   │   └── core/
-│   ├── client/
-│   │   ├── entities/             # FSD: Data models
-│   │   ├── features/             # FSD: Features
-│   │   ├── layouts/              # FSD: Layouts
-│   │   ├── pages/                # FSD: Pages
-│   │   ├── shared/               # FSD: Shared utilities
-│   │   └── widgets/              # FSD: Widgets
-│   └── common/                   # Framework-agnostic shared code
-│
-└── infrastructure/
-    └── db/init/                  # Database initialization
-```
+`libs/common` is a framework-agnostic library imported by both client and backend. It is the single source of truth for validation rules and constants.
 
----
+### Zod Schemas
 
-## 🔗 Shared Libraries (@org/common)
-
-**Framework-agnostic library** for code reuse across frontend and backend.
-
-### Purpose
-
-- Share Zod schemas between client and server
-- Store common constants (regex, validation rules)
-- Provide base types for extension
-
-### Schema Extension Pattern
+Define once, use on both sides:
 
 ```typescript
-// libs/common/src/schemas/user.ts
-export const UserSchema = z.object({
+// libs/common/src/schemas/auth.ts
+export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
+```
 
-// libs/client/features/auth/src/register-form.ts
-import { UserSchema } from '@org/common';
+**Frontend** — extend schemas for form-specific needs:
 
-export const RegisterFormSchema = UserSchema.extend({
+```typescript
+import { registerSchema } from '@org/common';
+
+const registerFormSchema = registerSchema.extend({
   confirmPassword: z.string(),
 }).refine(
   (data) => data.password === data.confirmPassword,
-  { message: 'Passwords do not match' }
+  { message: "Passwords don't match", path: ['confirmPassword'] },
 );
+```
 
-// libs/backend/user/src/dto/create-user.dto.ts
-import { UserSchema } from '@org/common';
+**Backend** — create NestJS DTOs via `createZodDto`. `ZodValidationPipe` validates incoming requests automatically:
+
+```typescript
 import { createZodDto } from 'nestjs-zod';
+import { loginSchema } from '@org/common';
 
+export class LoginDto extends createZodDto(loginSchema) {}
+```
+
+**Swagger** — DTOs derived from `createZodDto` can be extended with `@ApiProperty` decorators for API documentation without duplicating validation logic:
+
+```typescript
 export class CreateUserDto extends createZodDto(UserSchema) {
-  @ApiProperty({
-    description: 'User email address',
-    example: 'user@example.com',
-  })
+  @ApiProperty({ description: 'User email', example: 'user@example.com' })
   email: string;
 
-  @ApiProperty({
-    description: 'User password',
-    example: 'P@ssw0rd123',
-  })
+  @ApiProperty({ description: 'User password', example: 'P@ssw0rd123' })
   password: string;
 }
 ```
 
-### Benefits
+---
 
-- **Single source of truth** for validation rules
-- **Type safety** across the stack
-- **Tree-shaking** — Nx includes only used code in final bundle
+## Client Architecture
+
+The client is a React 19 SPA following **Feature-Sliced Design (FSD)**. Each layer is a separate Nx library.
+
+### FSD Layers
+
+| Layer | Package | Purpose |
+| ----- | ------- | ------- |
+| shared | `@org/shared` | UI kit, utilities, API client |
+| entities | `@org/entities` | Business entities, TanStack Query hooks |
+| features | `@org/features` | User-facing features (auth forms, theme) |
+| widgets | `@org/widgets` | Composite components |
+| layouts | `@org/layouts` | Page layouts |
+| pages | `@org/pages` | Standalone pages (e.g. NotFoundPage) |
+
+The application (`apps/client/messenger`) composes these layers into a working product — router, providers, and app-level pages live there.
+
+### State Management
+
+| Concern | Tool | Where |
+| ------- | ---- | ----- |
+| Server state (API data) | TanStack Query | `@org/entities` |
+| Session / auth token | Zustand + `persist` | `@org/entities` → `session.store.ts` |
+| UI state (theme) | React Context | `@org/features` → `theme/model/` |
 
 ---
 
-## 🎯 Client Architecture (FSD)
+## Session & WebSocket
 
-The client application uses **Feature-Sliced Design (FSD)** pattern:
+### Authentication Flow
 
-| Layer | Purpose |
-|-------|---------|
-| `entities` | Business entities (User, Chat, Message) |
-| `features` | User interactions (auth, send message) |
-| `layouts` | Page layouts |
-| `pages` | Full pages (Login, Chat, Settings) |
-| `widgets` | Composite components (Sidebar, Header) |
-| `shared` | Reusable utilities (UI kit, helpers) |
+```
+1. User submits login form
+      │
+      ▼
+2. POST /api/auth/login → { accessToken }
+      │
+      ▼
+3. setCredentials(accessToken)
+   └─ Zustand store updated
+   └─ persisted to localStorage (survives page reload)
+      │
+      ▼
+4. socket-middleware reacts to store change
+   └─ accessToken appeared → socket.connect()
+      │
+      ▼
+5. ProtectedRoute reads selectIsAuthenticated
+   └─ true → renders the app
+   └─ false → redirect to /auth/login
+```
 
-**All layers are Nx packages** — imported by messenger and future micro-frontends.
+### Token Refresh
+
+`authedFetch` wraps every authenticated API call:
+
+```
+Request sent with Authorization: Bearer <token>
+      │
+  401 received?
+      │
+      ├─ No  → return response
+      │
+      └─ Yes → acquire mutex (prevents parallel refresh races)
+                  │
+                  ├─ Token already refreshed by another request?
+                  │   └─ retry with new token
+                  │
+                  └─ POST /api/auth/refresh
+                        │
+                        ├─ Success → setCredentials(newToken) → retry request
+                        └─ Failure → clearCredentials() → redirect to login
+```
+
+### WebSocket Lifecycle
+
+```
+App startup
+  └─ initSocketMiddleware()
+       └─ subscribe to useSessionStore
+            ├─ accessToken set   → socket.connect()
+            └─ accessToken cleared → socket.disconnect()
+
+Socket auth
+  └─ auth callback reads useSessionStore.getState().accessToken
+       on every connect / reconnect — always uses the current token
+
+User opens a chat (/chats/:chatId)
+  └─ useChatSocket(chatId) mounts
+       ├─ socket.emit('chat:join', { chatId })
+       └─ socket.on('message:new', handler)
+            └─ handler adds message to TanStack Query cache
+                 └─ deduplicates by message.id
+
+User leaves the chat (component unmounts)
+  └─ socket.emit('chat:leave', { chatId })
+  └─ socket.off('message:new', handler)
+
+User logs out
+  └─ clearCredentials()
+       └─ Zustand store cleared
+       └─ socket-middleware reacts → socket.disconnect()
+```
 
 ---
 
-## 🛠 Infrastructure
+## Infrastructure
 
-### Docker Services
-
-| Service | Image | Port |
-|---------|-------|------|
-| PostgreSQL | `postgres:17-alpine` | 5432 |
-| Redis | `redis:7-alpine` | 6379 |
-| RabbitMQ | `rabbitmq:3-management-alpine` | 5672, 15672 |
-
-### Nx Benefits
-
-- Dependency graph visualization
-- Affected commands (run only on changed projects)
-- Build caching
-- Code generators
-- Tree-shaking for shared libraries
+| Service    | Image                            | Port(s)       |
+| ---------- | -------------------------------- | ------------- |
+| PostgreSQL | `postgres:17-alpine`             | 5432          |
+| Redis      | `redis:7-alpine`                 | 6379          |
+| RabbitMQ   | `rabbitmq:3-management-alpine`   | 5672 / 15672  |
+| Prometheus | `prom/prometheus`                | 9090          |
+| Grafana    | `grafana/grafana`                | 3010          |

@@ -1,7 +1,16 @@
 import { type ReactNode } from 'react';
-import { Provider as ReduxProvider } from 'react-redux';
-import { ThemeProvider, ErrorBoundary, Toaster } from '@org/shared';
-import { store } from '../store';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@org/features';
+import { ErrorBoundary, Toaster } from '@org/shared';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+});
 
 interface ProvidersProps {
   children: ReactNode;
@@ -10,12 +19,12 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <ErrorBoundary>
-      <ReduxProvider store={store}>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           {children}
           <Toaster />
         </ThemeProvider>
-      </ReduxProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
