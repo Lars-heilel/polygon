@@ -248,7 +248,7 @@ export type ChatCreateInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   members?: Prisma.ChatMemberCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
@@ -259,7 +259,7 @@ export type ChatUncheckedCreateInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   members?: Prisma.ChatMemberUncheckedCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
@@ -292,7 +292,7 @@ export type ChatCreateManyInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
 }
 
@@ -395,7 +395,7 @@ export type ChatCreateWithoutMembersInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
 }
@@ -405,7 +405,7 @@ export type ChatUncheckedCreateWithoutMembersInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
 }
@@ -451,7 +451,7 @@ export type ChatCreateWithoutMessagesInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   members?: Prisma.ChatMemberCreateNestedManyWithoutChatInput
 }
@@ -461,7 +461,7 @@ export type ChatUncheckedCreateWithoutMessagesInput = {
   type: $Enums.ChatType
   name?: string | null
   avatarUrl?: string | null
-  createdAt: Date | string
+  createdAt?: Date | string
   updatedAt?: Date | string
   members?: Prisma.ChatMemberUncheckedCreateNestedManyWithoutChatInput
 }
