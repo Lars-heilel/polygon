@@ -9,7 +9,18 @@ export default defineConfig(() => ({
   cacheDir: '../../../node_modules/.vite/apps/client/messenger',
   server: {
     port: 4200,
-    host: 'localhost',
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
   preview: {
     port: 4200,

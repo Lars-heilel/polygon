@@ -196,7 +196,7 @@ The application (`apps/client/messenger`) composes these layers into a working p
 | Concern | Tool | Where |
 | ------- | ---- | ----- |
 | Server state (API data) | TanStack Query | `@org/entities` |
-| Session / auth token | Zustand + `persist` | `@org/entities` → `session.store.ts` |
+| Session state | Zustand | `@org/entities` → `session.store.ts` |
 | UI state (theme) | React Context | `@org/features` → `theme/model/` |
 
 ---
@@ -205,25 +205,39 @@ The application (`apps/client/messenger`) composes these layers into a working p
 
 ### Authentication Flow
 
+Auth is cookie-based. The backend sets `HttpOnly` cookies on login — the client never handles tokens directly.
+
 ```
 1. User submits login form
       │
       ▼
-2. POST /api/auth/login → { accessToken }
+2. POST /api/auth/login → backend sets HttpOnly cookies (access + refresh)
       │
       ▼
-3. setCredentials(accessToken)
-   └─ Zustand store updated
-   └─ persisted to localStorage (survives page reload)
+3. setAuthenticated(true)
+   └─ Zustand store updated (isAuthenticated: true, isLoading: false)
       │
       ▼
 4. socket-middleware reacts to store change
-   └─ accessToken appeared → socket.connect()
+   └─ isAuthenticated became true → socket.connect() (withCredentials)
       │
       ▼
 5. ProtectedRoute reads selectIsAuthenticated
-   └─ true → renders the app
-   └─ false → redirect to /auth/login
+   └─ isLoading: true  → renders <Spinner /> (session check in progress)
+   └─ isAuthenticated  → renders the app
+   └─ !isAuthenticated → redirect to /auth/login
+```
+
+### Session Bootstrap
+
+On every app load, before rendering protected routes, `AuthBootstrap` resolves the session:
+
+```
+App mounts
+  └─ AuthBootstrap calls GET /api/users/me (cookie sent automatically)
+       ├─ 200 OK  → setAuthenticated(true)
+       └─ 401     → setAuthenticated(false)
+            └─ ProtectedRoute redirects to /auth/login
 ```
 
 ### Token Refresh
@@ -231,7 +245,7 @@ The application (`apps/client/messenger`) composes these layers into a working p
 `authedFetch` wraps every authenticated API call:
 
 ```
-Request sent with Authorization: Bearer <token>
+Request sent (cookies included automatically via credentials: 'include')
       │
   401 received?
       │
@@ -239,13 +253,10 @@ Request sent with Authorization: Bearer <token>
       │
       └─ Yes → acquire mutex (prevents parallel refresh races)
                   │
-                  ├─ Token already refreshed by another request?
-                  │   └─ retry with new token
-                  │
-                  └─ POST /api/auth/refresh
+                  └─ POST /api/auth/refresh (refresh cookie sent automatically)
                         │
-                        ├─ Success → setCredentials(newToken) → retry request
-                        └─ Failure → clearCredentials() → redirect to login
+                        ├─ Success → backend rotates cookies → retry original request
+                        └─ Failure → setAuthenticated(false) → redirect to login
 ```
 
 ### WebSocket Lifecycle
@@ -254,12 +265,12 @@ Request sent with Authorization: Bearer <token>
 App startup
   └─ initSocketMiddleware()
        └─ subscribe to useSessionStore
-            ├─ accessToken set   → socket.connect()
-            └─ accessToken cleared → socket.disconnect()
+            ├─ isAuthenticated became true  → socket.connect()
+            └─ isAuthenticated became false → socket.disconnect()
 
 Socket auth
-  └─ auth callback reads useSessionStore.getState().accessToken
-       on every connect / reconnect — always uses the current token
+  └─ socket.io configured with withCredentials: true
+       └─ cookies are sent on every connect / reconnect automatically
 
 User opens a chat (/chats/:chatId)
   └─ useChatSocket(chatId) mounts
@@ -273,8 +284,8 @@ User leaves the chat (component unmounts)
   └─ socket.off('message:new', handler)
 
 User logs out
-  └─ clearCredentials()
-       └─ Zustand store cleared
+  └─ POST /api/auth/logout → backend clears cookies
+  └─ setAuthenticated(false)
        └─ socket-middleware reacts → socket.disconnect()
 ```
 

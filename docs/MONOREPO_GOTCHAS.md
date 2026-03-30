@@ -44,6 +44,44 @@ Tailwind v4 has no `tailwind.config.js`. Point the `bradlc.vscode-tailwindcss` e
 
 ---
 
+## Vite Dev Proxy
+
+In development, the Vite dev server runs on port `4200` while the API Gateway runs on port `3000`. To avoid CORS issues and to expose only a single port for tunneling, Vite proxies `/api` and `/socket.io` to the gateway.
+
+Configured in `apps/client/messenger/vite.config.mts`:
+
+```ts
+server: {
+  port: 4200,
+  host: true,          // bind to all interfaces — required for ngrok / LAN access
+  proxy: {
+    '/api': {
+      target: 'http://localhost:3000',
+      changeOrigin: true,
+    },
+    '/socket.io': {
+      target: 'http://localhost:3000',
+      changeOrigin: true,
+      ws: true,          // proxy WebSocket upgrades
+    },
+  },
+},
+```
+
+### Adding a new Vite app to the monorepo
+
+If you scaffold a new frontend app (`npx nx g @nx/react:app`), add the same `proxy` block to its `vite.config.mts`. Without it:
+
+- API requests will hit `localhost:<new-app-port>/api` and return 404
+- WebSocket connections will fail
+- ngrok will only tunnel the frontend, breaking all API calls
+
+### Why `host: true`
+
+By default Vite binds to `localhost` only, which blocks access from other machines (including ngrok). `host: true` makes it listen on `0.0.0.0` — required for any remote access.
+
+---
+
 ## Environment Variables
 
 A single `.env` file lives at the **repository root**. Each tool resolves it differently.
