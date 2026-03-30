@@ -11,6 +11,7 @@ import {
   ChatPage,
   SettingsPage,
 } from '../../pages';
+import { ChatsTestPage } from '../../pages/chats-test/chats-test';
 import { DesignSystemPage } from '@org/shared';
 import { ThemeToggle } from '@org/features';
 
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
         {
           path: '/ds',
           element: <DesignSystemPage headerSlot={<ThemeToggle />} />,
+        },
+        {
+          path: '/chats-test',
+          element: <ChatsTestPage />,
         },
       ]
     : []),

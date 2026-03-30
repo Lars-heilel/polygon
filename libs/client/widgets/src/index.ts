@@ -1,1 +1,13 @@
-export * from './lib/widgets';
+export { UserPanel } from './lib/user-panel';
+export { MessageInput } from './lib/message-input';
+export { MessageList } from './lib/message-list';
+export { ChatHeader } from './lib/chat-header';
+export { ChatWindow } from './lib/chat-window';
+export { ChatList } from './lib/chat-list';
+export { SidebarHeader } from './lib/sidebar-header';
+export { ChatSearch } from './lib/chat-search';
+export { ChatItem } from './lib/chat-item';
+export { ProfileModal } from './lib/profile-modal';
+export { SettingsModal } from './lib/settings-modal';
+export { CreateChatModal } from './lib/create-chat-modal';
+export { ChatListSidebar } from './lib/chat-list-sidebar';

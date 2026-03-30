@@ -53,7 +53,7 @@ export function useGetMessagesQuery(chatId: string) {
   return useQuery({
     queryKey: ['messages', chatId],
     queryFn: () => chatApi.getMessages(chatId),
-    enabled: Boolean(chatId),
+    enabled: chatId.length > 0,
   });
 }
 

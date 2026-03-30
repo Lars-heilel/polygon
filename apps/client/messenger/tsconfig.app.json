@@ -35,19 +35,19 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../../libs/client/features/tsconfig.lib.json"
-    },
-    {
       "path": "../../../libs/client/pages/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/entities/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/common/tsconfig.lib.json"
+      "path": "../../../libs/client/shared/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/shared/tsconfig.lib.json"
+      "path": "../../../libs/client/features/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/widgets/tsconfig.lib.json"
     }
   ]
 }

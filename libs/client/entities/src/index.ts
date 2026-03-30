@@ -15,10 +15,14 @@ export {
   useResetPasswordMutation,
 } from './lib/user/user.api';
 
-export type { Chat, ChatMember, Message } from './lib/chat/chat.api';
+export type { Chat, ChatMember, Message } from './lib/chat';
 export {
   useGetChatsQuery,
   useCreateDirectChatMutation,
   useGetMessagesQuery,
   useSendMessageMutation,
-} from './lib/chat/chat.api';
+  useChatStore,
+  selectActiveChatId,
+  selectActiveMessageId,
+  selectIsTyping,
+} from './lib/chat';

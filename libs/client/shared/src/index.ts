@@ -1,6 +1,7 @@
 export { apiFetch, ApiError } from './lib/api/client';
 export { DesignSystemPage } from './styles/preview/design-system';
 export { cn } from './lib/utils/cn';
+export { formatTime, formatDate, formatRelativeTime, isDateToday, isDateThisWeek } from './lib/utils/date-format';
 export { Heading, Text } from './ui/typography';
 export { Button } from './ui/button';
 export { IconButton } from './ui/icon-button';
@@ -16,3 +17,8 @@ export { Toaster, toast } from './ui/toast';
 export { EmptyState } from './ui/empty-state';
 export { ResourceList } from './ui/resource-list';
 export { StatusScreen } from './ui/status-screen';
+export { Dropdown } from './ui/dropdown';
+export type { DropdownItem } from './ui/dropdown';
+export { socket } from './lib/socket';
+export { Modal } from './ui/modal';
+export { Toggle } from './ui/toggle';
