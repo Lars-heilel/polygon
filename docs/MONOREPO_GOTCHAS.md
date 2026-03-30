@@ -148,3 +148,87 @@ libs/backend/auth/
 libs/backend/user|chat|.../
 └── prisma.config.ts              ← import 'dotenv/config'  (works via nx)
 ```
+
+---
+
+## MSW in Multi-lib Frontend
+
+MSW handlers are defined in `libs/client/entities/src/test/handlers/` and shared across libs. Each lib that needs API mocking has its own `src/test/server.ts` that imports from that location.
+
+**Why not import from `@org/entities`?**
+Test utilities should not be part of a lib's public API (`src/index.ts`). Exporting `server` from the public API would include test code in production builds.
+
+**Pattern for libs that need MSW:**
+
+```
+libs/client/<lib>/
+  src/
+    test/
+      server.ts          ← setupServer(...handlers)
+      handlers/          ← lib-specific handlers (if any)
+    test-setup.ts        ← beforeAll/afterEach/afterAll wiring
+```
+
+`test-setup.ts` in each lib:
+
+```ts
+import { server } from './test/server';
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+**Adding a new handler:**
+
+1. Add handler to `libs/client/entities/src/test/handlers/auth.handlers.ts` (or create a new file for another domain)
+2. Export it from `libs/client/entities/src/test/handlers/index.ts`
+3. All `server.ts` files that import `authHandlers` pick it up automatically
+
+**Overriding a handler in a specific test:**
+
+```ts
+import { http, HttpResponse } from 'msw';
+import { server } from '../test/server';
+
+it('handles login failure', () => {
+  server.use(
+    http.post('/api/auth/login', () =>
+      HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 })
+    )
+  );
+  // ... test
+});
+```
+
+---
+
+## Testing the Gateway (Supertest + Mocked Microservices)
+
+The Gateway communicates with microservices via RabbitMQ `ClientProxy`. Integration tests use `NestJS TestingModule` + Supertest with the real HTTP layer but mocked clients — no RabbitMQ or running services required.
+
+**Setup helper:** `apps/backend/gateway/src/test/create-test-app.ts`
+
+```ts
+const authClient = { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() };
+
+const moduleRef = await Test.createTestingModule({
+  imports: [CoreConfigModule, CoreTokenModule],
+  controllers: [AuthGatewayController],
+  providers: [
+    { provide: AUTH_CLIENT_TOKEN, useValue: authClient },
+    // ...other mocked clients
+  ],
+}).compile();
+```
+
+**What this tests:**
+- HTTP status codes, request validation (ZodValidationPipe), cookie handling
+- Guards and middleware behavior
+- Error mapping from microservice exceptions to HTTP responses
+
+**What this does NOT test:**
+- Business logic inside microservices (test those in their own lib specs)
+- Real database state
+
+**POST handlers return 201 by default in NestJS** (not 200) unless `@HttpCode(200)` is added to the method. Account for this in test assertions.

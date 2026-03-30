@@ -35,9 +35,7 @@ What it does:
 
 > ⚠️ Run only once after cloning. Re-running `init-db.sh` will delete all database data.
 
----
-
-## Infrastructure
+### Infrastructure
 
 | Service    | Port(s)      | Purpose                                          |
 | ---------- | ------------ | ------------------------------------------------ |
@@ -48,14 +46,6 @@ What it does:
 ---
 
 ## 3. Running Dev Servers
-
-Start infrastructure first (if not already running):
-
-```bash
-docker compose up -d
-```
-
-Then start backend and frontend in separate terminals:
 
 ```bash
 # Terminal 1 — API Gateway (port 3000)
