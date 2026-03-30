@@ -10,12 +10,12 @@ type LoginValues = z.infer<typeof loginSchema>;
 export function useLogin() {
   const navigate = useNavigate();
   const { mutateAsync, isPending } = useLoginMutation();
-  const setCredentials = useSessionStore((s) => s.setCredentials);
+  const setAuthenticated = useSessionStore((s) => s.setAuthenticated);
 
   const login = async (values: LoginValues) => {
     try {
-      const { accessToken } = await mutateAsync(values);
-      setCredentials(accessToken);
+      await mutateAsync(values);
+      setAuthenticated(true);
       navigate(CLIENT_ROUTES.chats.root);
     } catch {
       toast.error('Invalid email or password');

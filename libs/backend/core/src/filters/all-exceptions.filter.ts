@@ -45,6 +45,7 @@ function isPrismaInitError(e: unknown): boolean {
 interface ResolvedError {
   status:   number;
   message:  string;
+  errors?:  unknown;
   logStack: boolean; // нужен ли stack trace в логе
 }
 
@@ -69,11 +70,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 1. NestJS HttpException — уже правильный формат
     if (exception instanceof HttpException) {
       const response = exception.getResponse();
-      const raw      = typeof response === 'string'
-        ? response
-        : (response as { message: string | string[] }).message;
+      const body     = typeof response === 'string' ? { message: response } : response as Record<string, unknown>;
+      const raw      = body['message'] as string | string[];
       const message  = Array.isArray(raw) ? raw.join(', ') : raw;
-      return { status: exception.getStatus(), message, logStack: false };
+      const errors   = body['errors'];
+      return { status: exception.getStatus(), message, errors, logStack: false };
     }
 
     // 2. NestJS RpcException
@@ -145,6 +146,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(resolved.status).json({
       statusCode: resolved.status,
       message:    resolved.message,
+      ...(resolved.errors !== undefined && { errors: resolved.errors }),
       path:       request.url,
       timestamp:  new Date().toISOString(),
     });

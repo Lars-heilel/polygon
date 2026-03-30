@@ -10,12 +10,12 @@ type RegisterValues = z.infer<typeof registerSchema>;
 export function useRegister() {
   const navigate = useNavigate();
   const { mutateAsync, isPending } = useRegisterMutation();
-  const setCredentials = useSessionStore((s) => s.setCredentials);
+  const setAuthenticated = useSessionStore((s) => s.setAuthenticated);
 
   const register = async (values: RegisterValues) => {
     try {
-      const { accessToken } = await mutateAsync(values);
-      setCredentials(accessToken);
+      await mutateAsync(values);
+      setAuthenticated(true);
       navigate(CLIENT_ROUTES.chats.root);
     } catch {
       toast.error('Registration failed. Please try again.');

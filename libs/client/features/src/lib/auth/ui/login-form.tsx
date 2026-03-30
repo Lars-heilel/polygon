@@ -13,7 +13,11 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -43,7 +47,10 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       </div>
 
       <div className="flex justify-end">
-        <Link to={CLIENT_ROUTES.auth.forgotPassword} className="text-xs text-text-muted hover:text-text transition-colors">
+        <Link
+          to={CLIENT_ROUTES.auth.forgotPassword}
+          className="text-xs text-text-muted hover:text-text transition-colors"
+        >
           Forgot password?
         </Link>
       </div>
@@ -54,7 +61,10 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
       <p className="text-center text-sm text-text-muted">
         Don't have an account?{' '}
-        <Link to={CLIENT_ROUTES.auth.register} className="text-primary hover:underline">
+        <Link
+          to={CLIENT_ROUTES.auth.register}
+          className="text-primary hover:underline"
+        >
           Sign up
         </Link>
       </p>

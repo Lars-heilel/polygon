@@ -21,8 +21,8 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
     config: ConfigService<Env>,
   ) {
     super({
-      clientID: config.get('YANDEX_CLIENT_ID', { infer: true }) ?? '',
-      clientSecret: config.get('YANDEX_CLIENT_SECRET', { infer: true }) ?? '',
+      clientID: config.get('YANDEX_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret: config.get('YANDEX_CLIENT_SECRET', { infer: true }) || 'not-configured',
       callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/yandex/callback`,
     });
   }

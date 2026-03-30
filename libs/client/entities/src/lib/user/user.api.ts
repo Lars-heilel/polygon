@@ -1,27 +1,21 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { type z } from 'zod';
-import {
-  API_ROUTES,
-  loginSchema,
-  registerSchema,
-  tokenPairSchema,
-} from '@org/common';
+import { API_ROUTES, loginSchema, registerSchema } from '@org/common';
 import type { User as UserBase } from '@org/common';
 import { apiFetch } from '@org/shared';
 import { authedFetch } from '../api/authed-fetch';
 
 export type User = Omit<UserBase, 'createdAt' | 'updatedAt'>;
-export type TokenPair = z.infer<typeof tokenPairSchema>;
 
 export const authApi = {
   login: (body: z.infer<typeof loginSchema>) =>
-    apiFetch<TokenPair>(API_ROUTES.auth.login, {
+    apiFetch<void>(API_ROUTES.auth.login, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
   register: (body: z.infer<typeof registerSchema>) =>
-    apiFetch<TokenPair>(API_ROUTES.auth.register, {
+    apiFetch<void>(API_ROUTES.auth.register, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
@@ -29,12 +23,26 @@ export const authApi = {
   logout: () => authedFetch<void>(API_ROUTES.auth.logout, { method: 'POST' }),
 
   me: () => authedFetch<User>(API_ROUTES.users.me),
+
+  forgotPassword: (email: string) =>
+    apiFetch<void>(API_ROUTES.auth.forgotPassword, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiFetch<void>(API_ROUTES.auth.resetPassword, {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
 };
 
 export function useMeQuery() {
   return useQuery({
     queryKey: ['me'],
     queryFn: authApi.me,
+    retry: false,
+    staleTime: Infinity,
   });
 }
 
@@ -48,4 +56,15 @@ export function useRegisterMutation() {
 
 export function useLogoutMutation() {
   return useMutation({ mutationFn: authApi.logout });
+}
+
+export function useForgotPasswordMutation() {
+  return useMutation({ mutationFn: (email: string) => authApi.forgotPassword(email) });
+}
+
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
+      authApi.resetPassword(token, newPassword),
+  });
 }

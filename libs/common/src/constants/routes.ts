@@ -1,10 +1,12 @@
 export const API_ROUTES = {
   auth: {
-    root:     'auth',
-    register: 'auth/register',
-    login:    'auth/login',
-    logout:   'auth/logout',
-    refresh:  'auth/refresh',
+    root:           'auth',
+    register:       'auth/register',
+    login:          'auth/login',
+    logout:         'auth/logout',
+    refresh:        'auth/refresh',
+    forgotPassword: 'auth/forgot-password',
+    resetPassword:  'auth/reset-password',
   },
   users: {
     root: 'users',

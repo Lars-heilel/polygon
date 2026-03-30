@@ -8,3 +8,5 @@ export type { ForgotPasswordFormValues } from './ui/forgot-password-form';
 export type { ResetPasswordFormValues } from './ui/reset-password-form';
 export { useLogin } from './model/use-login';
 export { useRegister } from './model/use-register';
+export { useForgotPassword } from './model/use-forgot-password';
+export { useResetPassword } from './model/use-reset-password';

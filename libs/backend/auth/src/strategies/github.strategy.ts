@@ -14,8 +14,8 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     config: ConfigService<Env>,
   ) {
     super({
-      clientID: config.get('GITHUB_CLIENT_ID', { infer: true }) ?? '',
-      clientSecret: config.get('GITHUB_CLIENT_SECRET', { infer: true }) ?? '',
+      clientID: config.get('GITHUB_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret: config.get('GITHUB_CLIENT_SECRET', { infer: true }) || 'not-configured',
       callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/github/callback`,
       scope: ['user:email'],
     });

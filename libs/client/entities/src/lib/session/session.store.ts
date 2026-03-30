@@ -1,28 +1,24 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
 
 interface SessionState {
-  accessToken: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 interface SessionActions {
-  setCredentials: (accessToken: string) => void;
-  clearCredentials: () => void;
+  setAuthenticated: (value: boolean) => void;
 }
 
 type SessionStore = SessionState & SessionActions;
 
 export const useSessionStore = create<SessionStore>()(
-  persist(
-    (set) => ({
-      accessToken: null,
-      setCredentials: (accessToken) => set({ accessToken }),
-      clearCredentials: () => set({ accessToken: null }),
-    }),
-    { name: 'session' }
-  )
+  subscribeWithSelector((set) => ({
+    isAuthenticated: false,
+    isLoading: true,
+    setAuthenticated: (isAuthenticated) => set({ isAuthenticated, isLoading: false }),
+  })),
 );
 
-export const selectAccessToken = (s: SessionStore) => s.accessToken;
-export const selectIsAuthenticated = (s: SessionStore) =>
-  Boolean(s.accessToken);
+export const selectIsAuthenticated = (s: SessionStore) => s.isAuthenticated;
+export const selectIsSessionLoading = (s: SessionStore) => s.isLoading;

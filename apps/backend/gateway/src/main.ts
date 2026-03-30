@@ -15,6 +15,13 @@ async function bootstrap() {
   // Заменяем встроенный NestJS Logger на Pino
   app.useLogger(app.get(Logger));
 
+  app.enableCors({
+    origin: process.env['CLIENT_URL'] ?? 'http://localhost:4200',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   app.use(cookieParser());
   app.use(passport.initialize());
   app.useGlobalPipes(new ZodValidationPipe());

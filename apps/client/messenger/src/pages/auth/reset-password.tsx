@@ -1,14 +1,15 @@
 import { AuthLayout, toast } from '@org/shared';
-import { ResetPasswordForm } from '@org/features';
+import { ResetPasswordForm, useResetPassword } from '@org/features';
 
 export function ResetPasswordPage() {
+  const { resetPassword } = useResetPassword();
+
   return (
     <AuthLayout title="New password" description="Choose a strong password">
       <ResetPasswordForm
-        onSubmit={async (_values) => {
+        onSubmit={async ({ token, password }) => {
           try {
-            // TODO: add reset-password endpoint to backend
-            toast.success('Password updated successfully');
+            await resetPassword(token, password);
           } catch {
             toast.error('Failed to reset password. The link may have expired.');
           }

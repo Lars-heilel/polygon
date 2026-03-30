@@ -1,5 +1,5 @@
 export { apiFetch, ApiError } from './lib/api/client';
-export { DesignSystemPage } from './preview/design-system';
+export { DesignSystemPage } from './styles/preview/design-system';
 export { cn } from './lib/utils/cn';
 export { Heading, Text } from './ui/typography';
 export { Button } from './ui/button';
