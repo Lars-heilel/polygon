@@ -7,10 +7,13 @@ const meta: Meta<typeof Text> = {
   tags: ['autodocs'],
   args: { children: 'The quick brown fox jumps over the lazy dog' },
   argTypes: {
-    size:   { control: 'select', options: ['xs', 'sm', 'md', 'lg'] },
-    color:  { control: 'select', options: ['default', 'muted', 'danger', 'inherit'] },
+    size: { control: 'select', options: ['xs', 'sm', 'md', 'lg'] },
+    color: {
+      control: 'select',
+      options: ['default', 'muted', 'danger', 'inherit'],
+    },
     weight: { control: 'select', options: ['normal', 'medium', 'semibold'] },
-    as:     { control: 'select', options: ['p', 'span', 'label', 'li', 'div'] },
+    as: { control: 'select', options: ['p', 'span', 'label', 'li', 'div'] },
     srOnly: { control: 'boolean' },
   },
 };
@@ -56,8 +59,12 @@ export const AsTags: Story = {
   render: () => (
     <div className="space-y-2">
       <Text as="p">As paragraph</Text>
-      <Text as="label" size="sm" weight="medium">As label</Text>
-      <Text as="span" color="muted" size="sm">As span</Text>
+      <Text as="label" size="sm" weight="medium">
+        As label
+      </Text>
+      <Text as="span" color="muted" size="sm">
+        As span
+      </Text>
     </div>
   ),
 };

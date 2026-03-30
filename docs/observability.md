@@ -19,15 +19,15 @@ Traces  → ГДЕ в цепочке     ("gateway 12ms → auth-service 45ms �
 
 ## Что реализовано в проекте
 
-| Компонент | Где | Что даёт |
-|---|---|---|
-| `AllExceptionsFilter` | `@org/core` | ловит все ошибки, логирует, форматирует ответ |
-| `LoggingInterceptor` | `@org/core` | замеряет время каждого запроса |
-| `LoggerModule` (Pino) | `@org/core` | структурированные JSON-логи |
-| `HealthModule` | `@org/core` | `/health` эндпоинт с проверками |
-| `MetricsModule` | `@org/core` | `/metrics` эндпоинт для Prometheus |
-| Prometheus | `docker-compose` | собирает метрики каждые 15s |
-| Grafana | `docker-compose` | дашборды, порт 3010 |
+| Компонент             | Где              | Что даёт                                      |
+| --------------------- | ---------------- | --------------------------------------------- |
+| `AllExceptionsFilter` | `@org/core`      | ловит все ошибки, логирует, форматирует ответ |
+| `LoggingInterceptor`  | `@org/core`      | замеряет время каждого запроса                |
+| `LoggerModule` (Pino) | `@org/core`      | структурированные JSON-логи                   |
+| `HealthModule`        | `@org/core`      | `/health` эндпоинт с проверками               |
+| `MetricsModule`       | `@org/core`      | `/metrics` эндпоинт для Prometheus            |
+| Prometheus            | `docker-compose` | собирает метрики каждые 15s                   |
+| Grafana               | `docker-compose` | дашборды, порт 3010                           |
 
 ---
 
@@ -79,7 +79,7 @@ if (contextType === 'http') {
 if (status >= 500) {
   this.logger.error(payload); // Реальная проблема — нужно чинить
 } else {
-  this.logger.warn(payload);  // Ошибка клиента (404, 401) — это нормально
+  this.logger.warn(payload); // Ошибка клиента (404, 401) — это нормально
 }
 ```
 
@@ -122,9 +122,9 @@ ZodError (невалидные данные)     → должно быть 400 B
 
 ```typescript
 const PRISMA_CODE_MAP = {
-  P2002: { status: 409, message: 'Resource already exists' },  // unique constraint
-  P2025: { status: 404, message: 'Resource not found' },       // record not found
-  P2003: { status: 400, message: 'Related resource not found' },// foreign key
+  P2002: { status: 409, message: 'Resource already exists' }, // unique constraint
+  P2025: { status: 404, message: 'Resource not found' }, // record not found
+  P2003: { status: 400, message: 'Related resource not found' }, // foreign key
   P2000: { status: 400, message: 'Input value is too long' },
 };
 ```
@@ -142,8 +142,10 @@ const PRISMA_CODE_MAP = {
 ```typescript
 function isPrismaKnownError(e: unknown): e is { code: string } {
   return (
-    typeof e === 'object' && e !== null &&
-    'code' in e && 'clientVersion' in e &&       // есть у всех Prisma ошибок
+    typeof e === 'object' &&
+    e !== null &&
+    'code' in e &&
+    'clientVersion' in e && // есть у всех Prisma ошибок
     typeof (e as { code: unknown }).code === 'string' &&
     (e as { code: string }).code.startsWith('P') // P2002, P2025...
   );
@@ -193,6 +195,7 @@ throw new Error('что-то сломалось') → unknown     → status=500
 ### Зачем не встроенный NestJS Logger
 
 Встроенный Logger:
+
 ```
 [Nest] 12345  - 01/01/2025, 14:23:05  INFO  [AuthService] User registered
 ```
@@ -201,8 +204,16 @@ throw new Error('что-то сломалось') → unknown     → status=500
 Чтобы написать запрос "все ошибки за час по userId" — нужна структура.
 
 Pino в prod:
+
 ```json
-{"level":50,"time":1735737785000,"pid":1,"msg":"User registered","userId":"abc","service":"auth"}
+{
+  "level": 50,
+  "time": 1735737785000,
+  "pid": 1,
+  "msg": "User registered",
+  "userId": "abc",
+  "service": "auth"
+}
 ```
 
 Каждое поле индексируется. Можно фильтровать по `userId`, `service`, `level`.
@@ -231,7 +242,7 @@ NestJS стартует и пишет логи до того как Pino ини�
 ### Redact — защита чувствительных данных
 
 ```typescript
-redact: ['req.headers.authorization', 'req.headers.cookie']
+redact: ['req.headers.authorization', 'req.headers.cookie'];
 // → {"authorization": "[Redacted]"}
 ```
 
@@ -249,7 +260,7 @@ Interceptor — работает на уровне NestJS, знает о кон�
 ```typescript
 return next.handle().pipe(
   tap({
-    next:  () => logger.debug(`POST /api/auth/login — 45ms`),
+    next: () => logger.debug(`POST /api/auth/login — 45ms`),
     error: () => logger.debug(`POST /api/auth/login — 45ms [FAILED]`),
   })
 );
@@ -317,13 +328,17 @@ Auth и User — RabbitMQ микросервисы, у них нет HTTP.
 const app = await NestFactory.create(AuthModule);
 
 // Добавляем RabbitMQ как второй транспорт
-app.connectMicroservice({ transport: Transport.RMQ, options: { queue: AUTH_QUEUE } });
+app.connectMicroservice({
+  transport: Transport.RMQ,
+  options: { queue: AUTH_QUEUE },
+});
 
 await app.startAllMicroservices(); // ← слушает RabbitMQ
-await app.listen(3002);            // ← слушает HTTP
+await app.listen(3002); // ← слушает HTTP
 ```
 
 Теперь auth-service одновременно:
+
 - Обрабатывает `auth.login`, `auth.register` через RabbitMQ
 - Отвечает на `GET /health` и `GET /metrics` через HTTP
 
@@ -347,6 +362,7 @@ Prometheus → GET http://gateway:3000/api/metrics  → сохраняет
 ### Что `/metrics` возвращает
 
 Текстовый формат (Prometheus Exposition Format):
+
 ```
 # HELP nodejs_heap_size_used_bytes Heap size used
 # TYPE nodejs_heap_size_used_bytes gauge
@@ -362,12 +378,12 @@ http_request_duration_seconds_sum{method="POST",route="/auth/login"} 143.7
 
 ### Типы метрик
 
-| Тип | Поведение | Когда использовать |
-|---|---|---|
-| **Counter** | только растёт, никогда не падает | кол-во запросов, кол-во ошибок |
-| **Gauge** | может расти и падать | память, активные соединения, очередь |
-| **Histogram** | считает распределение в buckets | время ответа (нужен p50/p95/p99) |
-| **Summary** | похоже на histogram | то же, но вычисляет квантили на клиенте |
+| Тип           | Поведение                        | Когда использовать                      |
+| ------------- | -------------------------------- | --------------------------------------- |
+| **Counter**   | только растёт, никогда не падает | кол-во запросов, кол-во ошибок          |
+| **Gauge**     | может расти и падать             | память, активные соединения, очередь    |
+| **Histogram** | считает распределение в buckets  | время ответа (нужен p50/p95/p99)        |
+| **Summary**   | похоже на histogram              | то же, но вычисляет квантили на клиенте |
 
 ### Что собирается автоматически
 
@@ -502,6 +518,7 @@ npm install @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node
 ### Alerting в Grafana
 
 Уведомление в Slack/Telegram при:
+
 - Error rate > 1% за 5 минут
 - Heap memory > 80% от максимума
 - p95 latency > 500ms
@@ -521,6 +538,7 @@ gateway logs       ─┘
 ### Sentry / Glitchtip — трекинг ошибок
 
 Grafana хороша для метрик и логов. Для ошибок удобнее специализированный инструмент:
+
 - Stack trace с полным контекстом запроса
 - Группировка одинаковых ошибок
 - Сколько пользователей затронуто

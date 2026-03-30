@@ -19,8 +19,11 @@ const meta: Meta<typeof IconButton> = {
   tags: ['autodocs'],
   args: { icon: <SendIcon />, label: 'Send message' },
   argTypes: {
-    variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger'] },
-    size:    { control: 'select', options: ['xs', 'sm', 'md', 'lg'] },
+    variant: {
+      control: 'select',
+      options: ['primary', 'secondary', 'ghost', 'danger'],
+    },
+    size: { control: 'select', options: ['xs', 'sm', 'md', 'lg'] },
     loading: { control: 'boolean' },
     disabled: { control: 'boolean' },
   },
@@ -29,16 +32,24 @@ const meta: Meta<typeof IconButton> = {
 export default meta;
 type Story = StoryObj<typeof IconButton>;
 
-export const Default: Story  = {};
-export const Primary: Story  = { args: { variant: 'primary' } };
-export const Danger: Story   = { args: { variant: 'danger', icon: <CloseIcon />, label: 'Remove' } };
-export const Loading: Story  = { args: { loading: true } };
+export const Default: Story = {};
+export const Primary: Story = { args: { variant: 'primary' } };
+export const Danger: Story = {
+  args: { variant: 'danger', icon: <CloseIcon />, label: 'Remove' },
+};
+export const Loading: Story = { args: { loading: true } };
 
 export const Sizes: Story = {
   render: () => (
     <div className="flex items-center gap-3">
       {(['xs', 'sm', 'md', 'lg'] as const).map((size) => (
-        <IconButton key={size} icon={<SendIcon />} label="Send" size={size} variant="primary" />
+        <IconButton
+          key={size}
+          icon={<SendIcon />}
+          label="Send"
+          size={size}
+          variant="primary"
+        />
       ))}
     </div>
   ),
@@ -47,9 +58,9 @@ export const Sizes: Story = {
 export const Variants: Story = {
   render: () => (
     <div className="flex items-center gap-3">
-      <IconButton icon={<SendIcon />}  label="Send"   variant="primary" />
-      <IconButton icon={<SendIcon />}  label="Send"   variant="secondary" />
-      <IconButton icon={<SendIcon />}  label="Send"   variant="ghost" />
+      <IconButton icon={<SendIcon />} label="Send" variant="primary" />
+      <IconButton icon={<SendIcon />} label="Send" variant="secondary" />
+      <IconButton icon={<SendIcon />} label="Send" variant="ghost" />
       <IconButton icon={<CloseIcon />} label="Remove" variant="danger" />
     </div>
   ),

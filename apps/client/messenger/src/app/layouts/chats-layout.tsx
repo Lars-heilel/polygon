@@ -5,25 +5,31 @@ import { useGetChatsQuery, useMeQuery, type Chat } from '@org/entities';
 
 function formatTime(iso: string): string {
   const date = new Date(iso);
-  const now  = new Date();
+  const now = new Date();
   const sameDay =
     date.getFullYear() === now.getFullYear() &&
-    date.getMonth()    === now.getMonth() &&
-    date.getDate()     === now.getDate();
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
 
   return sameDay
     ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 }
 
-function ChatItem({ chat, currentUserId, isActive }: {
+function ChatItem({
+  chat,
+  currentUserId,
+  isActive,
+}: {
   chat: Chat;
   currentUserId: string;
   isActive: boolean;
 }) {
   const navigate = useNavigate();
   const otherMember = chat.members.find((m) => m.userId !== currentUserId);
-  const displayName = otherMember ? otherMember.userId.slice(0, 8) : chat.name ?? 'Chat';
+  const displayName = otherMember
+    ? otherMember.userId.slice(0, 8)
+    : chat.name ?? 'Chat';
   const lastMessage = chat.messages[0];
 
   return (

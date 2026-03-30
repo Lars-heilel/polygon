@@ -14,7 +14,7 @@ export type JwtPayload = {
 export class TokenService {
   constructor(
     private readonly jwt: JwtService,
-    private readonly config: ConfigService<Env>,
+    private readonly config: ConfigService<Env>
   ) {}
 
   generateAccessToken(payload: JwtPayload): string {

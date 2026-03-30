@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { CREDENTIALS_FULL_SELECT_FIELDS } from '@org/common';
-import type { Credentials, CreateCredentialsInput, RefreshToken } from '@org/common';
+import type {
+  Credentials,
+  CreateCredentialsInput,
+  RefreshToken,
+} from '@org/common';
 import type { IAuthRepository } from '../../interfaces/auth.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -9,33 +13,56 @@ export class AuthPrismaRepository implements IAuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<Credentials | null> {
-    return this.prisma.credentials.findUnique({ where: { email }, select: CREDENTIALS_FULL_SELECT_FIELDS });
+    return this.prisma.credentials.findUnique({
+      where: { email },
+      select: CREDENTIALS_FULL_SELECT_FIELDS,
+    });
   }
 
   async findById(id: string): Promise<Credentials | null> {
-    return this.prisma.credentials.findUnique({ where: { id }, select: CREDENTIALS_FULL_SELECT_FIELDS });
+    return this.prisma.credentials.findUnique({
+      where: { id },
+      select: CREDENTIALS_FULL_SELECT_FIELDS,
+    });
   }
 
   async createCredentials(data: CreateCredentialsInput): Promise<Credentials> {
-    return this.prisma.credentials.create({ data, select: CREDENTIALS_FULL_SELECT_FIELDS });
+    return this.prisma.credentials.create({
+      data,
+      select: CREDENTIALS_FULL_SELECT_FIELDS,
+    });
   }
 
   async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
-    await this.prisma.credentials.update({ where: { id }, data: { passwordHash } });
+    await this.prisma.credentials.update({
+      where: { id },
+      data: { passwordHash },
+    });
   }
 
-  async findOAuthAccount(provider: string, providerId: string): Promise<{ credentials: Credentials } | null> {
+  async findOAuthAccount(
+    provider: string,
+    providerId: string
+  ): Promise<{ credentials: Credentials } | null> {
     return this.prisma.oAuthAccount.findUnique({
       where: { provider_providerId: { provider, providerId } },
       select: { credentials: { select: CREDENTIALS_FULL_SELECT_FIELDS } },
     });
   }
 
-  async createOAuthAccount(data: { provider: string; providerId: string; credentialsId: string }): Promise<void> {
+  async createOAuthAccount(data: {
+    provider: string;
+    providerId: string;
+    credentialsId: string;
+  }): Promise<void> {
     await this.prisma.oAuthAccount.create({ data });
   }
 
-  async saveRefreshToken(data: { tokenHash: string; credentialsId: string; expiresAt: Date }): Promise<void> {
+  async saveRefreshToken(data: {
+    tokenHash: string;
+    credentialsId: string;
+    expiresAt: Date;
+  }): Promise<void> {
     await this.prisma.refreshToken.create({ data });
   }
 
@@ -44,11 +71,17 @@ export class AuthPrismaRepository implements IAuthRepository {
   }
 
   async revokeRefreshToken(tokenHash: string): Promise<void> {
-    await this.prisma.refreshToken.update({ where: { tokenHash }, data: { revokedAt: new Date() } });
+    await this.prisma.refreshToken.update({
+      where: { tokenHash },
+      data: { revokedAt: new Date() },
+    });
   }
 
   async verifyCredentials(id: string): Promise<void> {
-    await this.prisma.credentials.update({ where: { id }, data: { isVerified: true } });
+    await this.prisma.credentials.update({
+      where: { id },
+      data: { isVerified: true },
+    });
   }
 
   async revokeAllRefreshTokens(credentialsId: string): Promise<void> {

@@ -14,7 +14,9 @@ import { lastValueFrom } from 'rxjs';
 import { CHAT_CLIENT_TOKEN, CHAT_PATTERNS, TokenService } from '@org/core';
 
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
-export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatSocketGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   private readonly server!: Server;
 
@@ -22,7 +24,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
   constructor(
     private readonly tokenService: TokenService,
-    @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
+    @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy
   ) {}
 
   handleConnection(socket: Socket) {
@@ -48,7 +50,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   @SubscribeMessage('chat:join')
   async handleJoin(
     @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { chatId: string },
+    @MessageBody() payload: { chatId: string }
   ) {
     const userId = socket.data['userId'] as string;
     if (!userId) return;
@@ -57,7 +59,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
         chatId: payload.chatId,
         userId,
-      }),
+      })
     ).catch(() => false);
 
     if (isMember) {
@@ -69,7 +71,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   @SubscribeMessage('chat:leave')
   async handleLeave(
     @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { chatId: string },
+    @MessageBody() payload: { chatId: string }
   ) {
     await socket.leave(`chat:${payload.chatId}`);
   }

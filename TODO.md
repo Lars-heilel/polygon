@@ -6,8 +6,10 @@
 Пока OAuth не работает — кнопки входа через GitHub/Google/Yandex будут падать с ошибкой.
 
 Что сделать:
+
 1. Зарегистрировать OAuth-приложения в нужных сервисах
 2. Заполнить в `.env`:
+
    ```
    GITHUB_CLIENT_ID=
    GITHUB_CLIENT_SECRET=
@@ -18,6 +20,7 @@
    YANDEX_CLIENT_ID=
    YANDEX_CLIENT_SECRET=
    ```
+
 3. Убрать fallback `|| 'not-configured'` в стратегиях:
    - `libs/backend/auth/src/strategies/github.strategy.ts`
    - `libs/backend/auth/src/strategies/google.strategy.ts`

@@ -8,10 +8,11 @@ const iconButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary:   'bg-primary hover:bg-primary-hover text-white',
-        secondary: 'bg-surface-elevated hover:bg-border text-text border border-border',
-        ghost:     'text-text-muted hover:text-text hover:bg-surface-elevated',
-        danger:    'bg-danger text-white hover:opacity-90',
+        primary: 'bg-primary hover:bg-primary-hover text-white',
+        secondary:
+          'bg-surface-elevated hover:bg-border text-text border border-border',
+        ghost: 'text-text-muted hover:text-text hover:bg-surface-elevated',
+        danger: 'bg-danger text-white hover:opacity-90',
       },
       size: {
         xs: 'w-6  h-6  text-xs',
@@ -22,17 +23,17 @@ const iconButtonVariants = cva(
     },
     defaultVariants: {
       variant: 'ghost',
-      size:    'md',
+      size: 'md',
     },
-  },
+  }
 );
 
 interface IconButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof iconButtonVariants> {
-  icon:       ReactNode;
-  label:      string;
-  loading?:   boolean;
+  icon: ReactNode;
+  label: string;
+  loading?: boolean;
 }
 
 export function IconButton({

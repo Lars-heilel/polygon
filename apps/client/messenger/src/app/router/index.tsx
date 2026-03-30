@@ -55,7 +55,12 @@ export const router = createBrowserRouter([
   },
 
   ...(import.meta.env.DEV
-    ? [{ path: '/ds', element: <DesignSystemPage headerSlot={<ThemeToggle />} /> }]
+    ? [
+        {
+          path: '/ds',
+          element: <DesignSystemPage headerSlot={<ThemeToggle />} />,
+        },
+      ]
     : []),
 
   { path: '*', element: <NotFoundPage /> },

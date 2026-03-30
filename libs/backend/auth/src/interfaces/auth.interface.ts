@@ -13,9 +13,20 @@ export interface IAuthRepository {
   findById(id: string): Promise<Credentials | null>;
   createCredentials(data: CreateCredentialsInput): Promise<Credentials>;
   updatePasswordHash(id: string, passwordHash: string): Promise<void>;
-  findOAuthAccount(provider: string, providerId: string): Promise<{ credentials: Credentials } | null>;
-  createOAuthAccount(data: { provider: string; providerId: string; credentialsId: string }): Promise<void>;
-  saveRefreshToken(data: { tokenHash: string; credentialsId: string; expiresAt: Date }): Promise<void>;
+  findOAuthAccount(
+    provider: string,
+    providerId: string
+  ): Promise<{ credentials: Credentials } | null>;
+  createOAuthAccount(data: {
+    provider: string;
+    providerId: string;
+    credentialsId: string;
+  }): Promise<void>;
+  saveRefreshToken(data: {
+    tokenHash: string;
+    credentialsId: string;
+    expiresAt: Date;
+  }): Promise<void>;
   findRefreshToken(tokenHash: string): Promise<RefreshToken | null>;
   revokeRefreshToken(tokenHash: string): Promise<void>;
   verifyCredentials(id: string): Promise<void>;
@@ -32,7 +43,10 @@ export interface IVerificationService {
 
 export interface IAuthService {
   register(dto: RegisterDto): Promise<TokenPair>;
-  validateCredentials(email: string, password: string): Promise<CredentialsPayload>;
+  validateCredentials(
+    email: string,
+    password: string
+  ): Promise<CredentialsPayload>;
   login(id: string): Promise<TokenPair>;
   logout(refreshToken: string): Promise<void>;
   refresh(refreshToken: string): Promise<TokenPair>;
@@ -45,7 +59,10 @@ export interface IAuthService {
 
 export interface IAuthController {
   register(dto: RegisterDto): Promise<TokenPair>;
-  validateCredentials(payload: { email: string; password: string }): Promise<CredentialsPayload>;
+  validateCredentials(payload: {
+    email: string;
+    password: string;
+  }): Promise<CredentialsPayload>;
   login(payload: { id: string }): Promise<TokenPair>;
   logout(payload: { refreshToken: string }): Promise<void>;
   refresh(payload: { refreshToken: string }): Promise<TokenPair>;

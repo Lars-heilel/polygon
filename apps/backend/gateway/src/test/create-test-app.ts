@@ -11,7 +11,12 @@ import {
   JwtGuard,
   USER_CLIENT_TOKEN,
 } from '@org/core';
-import { GithubStrategy, GoogleStrategy, LocalStrategy, YandexStrategy } from '@org/auth';
+import {
+  GithubStrategy,
+  GoogleStrategy,
+  LocalStrategy,
+  YandexStrategy,
+} from '@org/auth';
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { UserGatewayController } from '../controllers/user.controller';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -42,7 +47,10 @@ export async function createTestApp(): Promise<{
       GoogleStrategy,
       { provide: AUTH_CLIENT_TOKEN, useValue: authClient },
       { provide: USER_CLIENT_TOKEN, useValue: userClient },
-      { provide: CHAT_CLIENT_TOKEN, useValue: { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() } },
+      {
+        provide: CHAT_CLIENT_TOKEN,
+        useValue: { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() },
+      },
     ],
   }).compile();
 

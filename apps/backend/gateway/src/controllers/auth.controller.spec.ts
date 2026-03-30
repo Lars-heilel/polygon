@@ -24,35 +24,51 @@ describe('AuthGatewayController', () => {
   describe('POST /api/auth/register', () => {
     it('returns 201 and sets cookies on valid payload', async () => {
       authClient['send'].mockReturnValue(
-        of({ accessToken: 'access-tok', refreshToken: 'refresh-tok' }),
+        of({ accessToken: 'access-tok', refreshToken: 'refresh-tok' })
       );
 
       const res = await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email: 'user@example.com', password: 'Password1!', username: 'user' });
+        .send({
+          email: 'user@example.com',
+          password: 'Password1!',
+          username: 'user',
+        });
 
       expect(res.status).toBe(201);
       const cookies = res.headers['set-cookie'] as string[];
-      expect(cookies.some((c: string) => c.startsWith('access_token='))).toBe(true);
-      expect(cookies.some((c: string) => c.startsWith('refresh_token='))).toBe(true);
+      expect(cookies.some((c: string) => c.startsWith('access_token='))).toBe(
+        true
+      );
+      expect(cookies.some((c: string) => c.startsWith('refresh_token='))).toBe(
+        true
+      );
     });
 
     it('returns 400 on invalid email', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email: 'not-an-email', password: 'Password1!', username: 'user' });
+        .send({
+          email: 'not-an-email',
+          password: 'Password1!',
+          username: 'user',
+        });
 
       expect(res.status).toBe(400);
     });
 
     it('returns 409 when auth service throws conflict', async () => {
       authClient['send'].mockReturnValue(
-        throwError(() => ({ statusCode: 409, message: 'Email already in use' })),
+        throwError(() => ({ statusCode: 409, message: 'Email already in use' }))
       );
 
       const res = await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email: 'user@example.com', password: 'Password1!', username: 'user' });
+        .send({
+          email: 'user@example.com',
+          password: 'Password1!',
+          username: 'user',
+        });
 
       expect(res.status).toBe(409);
     });
@@ -70,8 +86,12 @@ describe('AuthGatewayController', () => {
 
       expect(res.status).toBe(201);
       const cookies = res.headers['set-cookie'] as string[];
-      expect(cookies.some((c: string) => c.includes('access_token=;'))).toBe(true);
-      expect(cookies.some((c: string) => c.includes('refresh_token=;'))).toBe(true);
+      expect(cookies.some((c: string) => c.includes('access_token=;'))).toBe(
+        true
+      );
+      expect(cookies.some((c: string) => c.includes('refresh_token=;'))).toBe(
+        true
+      );
     });
   });
 

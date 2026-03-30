@@ -6,8 +6,11 @@ const meta: Meta<typeof Spinner> = {
   component: Spinner,
   tags: ['autodocs'],
   argTypes: {
-    size:  { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl'] },
-    color: { control: 'select', options: ['current', 'primary', 'muted', 'white'] },
+    size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl'] },
+    color: {
+      control: 'select',
+      options: ['current', 'primary', 'muted', 'white'],
+    },
   },
 };
 
@@ -16,7 +19,7 @@ type Story = StoryObj<typeof Spinner>;
 
 export const Default: Story = {};
 export const Primary: Story = { args: { color: 'primary' } };
-export const Muted: Story   = { args: { color: 'muted' } };
+export const Muted: Story = { args: { color: 'muted' } };
 
 export const Sizes: Story = {
   render: () => (

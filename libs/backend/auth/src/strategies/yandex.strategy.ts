@@ -18,22 +18,25 @@ interface YandexProfile {
 export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService<Env>,
+    config: ConfigService<Env>
   ) {
     super({
-      clientID: config.get('YANDEX_CLIENT_ID', { infer: true }) || 'not-configured',
-      clientSecret: config.get('YANDEX_CLIENT_SECRET', { infer: true }) || 'not-configured',
-      callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/yandex/callback`,
+      clientID:
+        config.get('YANDEX_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret:
+        config.get('YANDEX_CLIENT_SECRET', { infer: true }) || 'not-configured',
+      callbackURL: `${config.get('APP_URL', {
+        infer: true,
+      })}/api/auth/yandex/callback`,
     });
   }
 
   async validate(
     _accessToken: string,
     _refreshToken: string,
-    profile: YandexProfile,
+    profile: YandexProfile
   ): Promise<TokenPair> {
-    const email =
-      profile.emails?.[0]?.value ?? `${profile.id}@yandex.noemail`;
+    const email = profile.emails?.[0]?.value ?? `${profile.id}@yandex.noemail`;
 
     return lastValueFrom(
       this.authClient.send<TokenPair>(AUTH_PATTERNS.OAUTH_LOGIN, {
@@ -41,7 +44,7 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
         providerId: profile.id,
         email,
         name: profile.displayName || email,
-      }),
+      })
     );
   }
 }

@@ -5,8 +5,11 @@ import { AllExceptionsFilter, LoggingInterceptor, USER_QUEUE } from '@org/core';
 import { UserModule } from './app/user.module';
 
 async function bootstrap() {
-  const { RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT } = process.env;
-  const rabbitmqUrl = `amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST ?? 'localhost'}:${RABBITMQ_PORT ?? 5672}`;
+  const { RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT } =
+    process.env;
+  const rabbitmqUrl = `amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${
+    RABBITMQ_HOST ?? 'localhost'
+  }:${RABBITMQ_PORT ?? 5672}`;
 
   const app = await NestFactory.create(UserModule, { bufferLogs: true });
 
@@ -28,7 +31,9 @@ async function bootstrap() {
   const port = process.env['USER_PORT'] ?? 3001;
   await app.listen(port);
 
-  app.get(Logger).log(`User Service: RMQ queue=${USER_QUEUE}, HTTP port=${port}`);
+  app
+    .get(Logger)
+    .log(`User Service: RMQ queue=${USER_QUEUE}, HTTP port=${port}`);
 }
 
 bootstrap();

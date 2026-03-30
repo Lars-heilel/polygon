@@ -9,24 +9,24 @@ const badgeVariants = cva(
       variant: {
         primary: 'bg-primary text-white',
         surface: 'bg-surface-elevated text-text border border-border',
-        danger:  'bg-danger text-white',
-        muted:   'bg-border text-text-muted',
+        danger: 'bg-danger text-white',
+        muted: 'bg-border text-text-muted',
       },
       size: {
         sm: 'text-[10px] px-1.5 py-0.5 min-w-[1.125rem]',
         md: 'text-xs    px-2   py-0.5 min-w-[1.375rem]',
       },
       dot: {
-        true:  'w-2 h-2 p-0 min-w-0 rounded-full',
+        true: 'w-2 h-2 p-0 min-w-0 rounded-full',
         false: '',
       },
     },
     defaultVariants: {
       variant: 'primary',
-      size:    'md',
-      dot:     false,
+      size: 'md',
+      dot: false,
     },
-  },
+  }
 );
 
 interface BadgeProps extends VariantProps<typeof badgeVariants> {

@@ -10,10 +10,10 @@ Non-obvious specifics that are not covered in the main docs but matter during de
 
 In Tailwind v4, two types of utilities behave differently:
 
-| Type | Examples | How generated |
-| ---- | -------- | ------------- |
+| Type                         | Examples                                        | How generated                       |
+| ---------------------------- | ----------------------------------------------- | ----------------------------------- |
 | Theme colors (from `@theme`) | `bg-purple-60`, `text-surface`, `border-border` | **Always**, no file scanning needed |
-| Core utilities | `p-8`, `rounded-xl`, `flex`, `gap-4` | Only if found in scanned files |
+| Core utilities               | `p-8`, `rounded-xl`, `flex`, `gap-4`            | Only if found in scanned files      |
 
 **Symptom:** `bg-purple-60` works, but `p-8` or `rounded-xl` do not.
 
@@ -113,6 +113,7 @@ Prisma CLI runs from the specific lib directory (`cd libs/backend/<service>`), s
 Each lib has a `prisma.config.ts`. Two approaches are used in the project:
 
 **Option A — explicit path (more reliable):**
+
 ```ts
 // libs/backend/auth/prisma.config.ts
 import * as dotenv from 'dotenv';
@@ -124,10 +125,12 @@ dotenv.config({ path: envFile });
 ```
 
 **Option B — dotenv/config without parameters:**
+
 ```ts
 // libs/backend/user/prisma.config.ts
 import 'dotenv/config';
 ```
+
 Works only when the command is run from the repository root (which is what `npx nx` does).
 
 > **Rule:** when running Prisma directly from the lib directory — use Option A.
@@ -223,11 +226,13 @@ const moduleRef = await Test.createTestingModule({
 ```
 
 **What this tests:**
+
 - HTTP status codes, request validation (ZodValidationPipe), cookie handling
 - Guards and middleware behavior
 - Error mapping from microservice exceptions to HTTP responses
 
 **What this does NOT test:**
+
 - Business logic inside microservices (test those in their own lib specs)
 - Real database state
 

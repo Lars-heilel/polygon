@@ -14,6 +14,9 @@
   },
   "dependencies": {},
   "nx": {
-    "tags": ["scope:backend", "type:business"]
+    "tags": [
+      "scope:backend",
+      "type:business"
+    ]
   }
 }

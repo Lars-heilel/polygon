@@ -27,6 +27,7 @@ Run once after cloning:
 ```
 
 What it does:
+
 1. Checks Docker and Docker Compose availability
 2. Starts containers (PostgreSQL, Redis, RabbitMQ)
 3. Creates a database for each service
@@ -37,11 +38,11 @@ What it does:
 
 ### Infrastructure
 
-| Service    | Port(s)      | Purpose                                          |
-| ---------- | ------------ | ------------------------------------------------ |
-| PostgreSQL | 5432         | Primary database                                 |
-| Redis      | 6379         | Cache                                            |
-| RabbitMQ   | 5672 / 15672 | Message broker — UI at http://localhost:15672    |
+| Service    | Port(s)      | Purpose                                       |
+| ---------- | ------------ | --------------------------------------------- |
+| PostgreSQL | 5432         | Primary database                              |
+| Redis      | 6379         | Cache                                         |
+| RabbitMQ   | 5672 / 15672 | Message broker — UI at http://localhost:15672 |
 
 ---
 

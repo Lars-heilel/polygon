@@ -1,12 +1,20 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { USER_PRISMA_REPOSITORY_TOKEN } from '@org/core';
-import type { User, UserPublic, UpdateUserInput, CreateUserEventInput } from '@org/common';
-import type { IUserRepository, IUserService } from '../interfaces/user.interface';
+import type {
+  User,
+  UserPublic,
+  UpdateUserInput,
+  CreateUserEventInput,
+} from '@org/common';
+import type {
+  IUserRepository,
+  IUserService,
+} from '../interfaces/user.interface';
 
 @Injectable()
 export class UserService implements IUserService {
   constructor(
-    @Inject(USER_PRISMA_REPOSITORY_TOKEN) private readonly repo: IUserRepository,
+    @Inject(USER_PRISMA_REPOSITORY_TOKEN) private readonly repo: IUserRepository
   ) {}
 
   async createFromEvent(data: CreateUserEventInput): Promise<void> {

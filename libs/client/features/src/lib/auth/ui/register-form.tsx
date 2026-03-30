@@ -6,12 +6,14 @@ import { registerSchema, CLIENT_ROUTES } from '@org/common';
 import { Button, Input, Divider } from '@org/shared';
 import { OAuthButtons } from './oauth-buttons';
 
-const registerFormSchema = registerSchema.extend({
-  confirmPassword: z.string(),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  { message: "Passwords don't match", path: ['confirmPassword'] },
-);
+const registerFormSchema = registerSchema
+  .extend({
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
 
@@ -20,7 +22,11 @@ interface RegisterFormProps {
 }
 
 export function RegisterForm({ onSubmit }: RegisterFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
   });
 
@@ -70,7 +76,10 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
       <p className="text-center text-sm text-text-muted">
         Already have an account?{' '}
-        <Link to={CLIENT_ROUTES.auth.login} className="text-primary hover:underline">
+        <Link
+          to={CLIENT_ROUTES.auth.login}
+          className="text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>

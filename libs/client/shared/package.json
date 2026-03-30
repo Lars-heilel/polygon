@@ -19,6 +19,9 @@
     }
   },
   "nx": {
-    "tags": ["layer:shared", "scope:client"]
+    "tags": [
+      "layer:shared",
+      "scope:client"
+    ]
   }
 }

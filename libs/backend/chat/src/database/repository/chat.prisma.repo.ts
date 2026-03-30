@@ -4,8 +4,17 @@ import {
   CHAT_MEMBER_SELECT_FIELDS,
   MESSAGE_SELECT_FIELDS,
 } from '@org/common';
-import type { Chat, ChatMember, ChatType, ChatRole, Message } from '@org/common';
-import type { IChatRepository, ChatWithPreview } from '../../interfaces/chat.interface';
+import type {
+  Chat,
+  ChatMember,
+  ChatType,
+  ChatRole,
+  Message,
+} from '@org/common';
+import type {
+  IChatRepository,
+  ChatWithPreview,
+} from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -13,10 +22,16 @@ export class ChatPrismaRepository implements IChatRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findChatById(id: string): Promise<Chat | null> {
-    return this.prisma.chat.findUnique({ where: { id }, select: CHAT_SELECT_FIELDS });
+    return this.prisma.chat.findUnique({
+      where: { id },
+      select: CHAT_SELECT_FIELDS,
+    });
   }
 
-  async findDirectChatBetween(userId1: string, userId2: string): Promise<Chat | null> {
+  async findDirectChatBetween(
+    userId1: string,
+    userId2: string
+  ): Promise<Chat | null> {
     return this.prisma.chat.findFirst({
       where: {
         type: 'DIRECT',
@@ -51,7 +66,11 @@ export class ChatPrismaRepository implements IChatRepository {
     }));
   }
 
-  async createChat(data: { type: ChatType; name?: string | null; avatarUrl?: string | null }): Promise<Chat> {
+  async createChat(data: {
+    type: ChatType;
+    name?: string | null;
+    avatarUrl?: string | null;
+  }): Promise<Chat> {
     return this.prisma.chat.create({ data, select: CHAT_SELECT_FIELDS });
   }
 
@@ -59,7 +78,10 @@ export class ChatPrismaRepository implements IChatRepository {
     await this.prisma.chat.delete({ where: { id } });
   }
 
-  async findChatMember(chatId: string, userId: string): Promise<ChatMember | null> {
+  async findChatMember(
+    chatId: string,
+    userId: string
+  ): Promise<ChatMember | null> {
     return this.prisma.chatMember.findUnique({
       where: { chatId_userId: { chatId, userId } },
       select: CHAT_MEMBER_SELECT_FIELDS,
@@ -67,18 +89,34 @@ export class ChatPrismaRepository implements IChatRepository {
   }
 
   async findMembersByChat(chatId: string): Promise<ChatMember[]> {
-    return this.prisma.chatMember.findMany({ where: { chatId }, select: CHAT_MEMBER_SELECT_FIELDS });
+    return this.prisma.chatMember.findMany({
+      where: { chatId },
+      select: CHAT_MEMBER_SELECT_FIELDS,
+    });
   }
 
-  async addChatMember(data: { chatId: string; userId: string; role?: ChatRole }): Promise<ChatMember> {
-    return this.prisma.chatMember.create({ data, select: CHAT_MEMBER_SELECT_FIELDS });
+  async addChatMember(data: {
+    chatId: string;
+    userId: string;
+    role?: ChatRole;
+  }): Promise<ChatMember> {
+    return this.prisma.chatMember.create({
+      data,
+      select: CHAT_MEMBER_SELECT_FIELDS,
+    });
   }
 
   async removeChatMember(chatId: string, userId: string): Promise<void> {
-    await this.prisma.chatMember.delete({ where: { chatId_userId: { chatId, userId } } });
+    await this.prisma.chatMember.delete({
+      where: { chatId_userId: { chatId, userId } },
+    });
   }
 
-  async findMessagesByChat(chatId: string, skip: number, take: number): Promise<Message[]> {
+  async findMessagesByChat(
+    chatId: string,
+    skip: number,
+    take: number
+  ): Promise<Message[]> {
     return this.prisma.message.findMany({
       where: { chatId },
       orderBy: { createdAt: 'asc' },
@@ -88,7 +126,11 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
-  async createMessage(data: { chatId: string; senderId: string; text?: string | null }): Promise<Message> {
+  async createMessage(data: {
+    chatId: string;
+    senderId: string;
+    text?: string | null;
+  }): Promise<Message> {
     return this.prisma.message.create({ data, select: MESSAGE_SELECT_FIELDS });
   }
 }

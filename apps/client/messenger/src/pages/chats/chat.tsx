@@ -1,16 +1,34 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useParams } from 'react-router';
 import { Avatar, Button, Spinner, Textarea } from '@org/shared';
-import { useGetMessagesQuery, useSendMessageMutation, useMeQuery, type Message } from '@org/entities';
+import {
+  useGetMessagesQuery,
+  useSendMessageMutation,
+  useMeQuery,
+  type Message,
+} from '@org/entities';
 import { useChatSocket } from '../../app/socket/use-chat-socket';
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
-function MessageBubble({ message, isMine }: { message: Message; isMine: boolean }) {
+function MessageBubble({
+  message,
+  isMine,
+}: {
+  message: Message;
+  isMine: boolean;
+}) {
   return (
-    <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div
+      className={`flex items-end gap-2 ${
+        isMine ? 'flex-row-reverse' : 'flex-row'
+      }`}
+    >
       {!isMine && <Avatar name={message.senderId.slice(0, 6)} size="xs" />}
       <div
         className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${
@@ -20,7 +38,11 @@ function MessageBubble({ message, isMine }: { message: Message; isMine: boolean 
         }`}
       >
         <p className="break-words">{message.text}</p>
-        <p className={`text-[10px] mt-0.5 text-right ${isMine ? 'text-white/60' : 'text-text-muted'}`}>
+        <p
+          className={`text-[10px] mt-0.5 text-right ${
+            isMine ? 'text-white/60' : 'text-text-muted'
+          }`}
+        >
           {formatTime(message.createdAt)}
         </p>
       </div>
@@ -33,7 +55,9 @@ export function ChatPage() {
 
   const { data: messages = [], isLoading } = useGetMessagesQuery(chatId!);
   const { data: me } = useMeQuery();
-  const { mutate: sendMessage, isPending: isSending } = useSendMessageMutation(chatId!);
+  const { mutate: sendMessage, isPending: isSending } = useSendMessageMutation(
+    chatId!
+  );
 
   const [text, setText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { USER_SELECT_FIELDS, USER_PUBLIC_SELECT_FIELDS } from '@org/common';
-import type { User, UserPublic, UpdateUserInput, CreateUserEventInput } from '@org/common';
+import type {
+  User,
+  UserPublic,
+  UpdateUserInput,
+  CreateUserEventInput,
+} from '@org/common';
 import type { IUserRepository } from '../../interfaces/user.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -9,15 +14,24 @@ export class UserPrismaRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { id }, select: USER_SELECT_FIELDS });
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: USER_SELECT_FIELDS,
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email }, select: USER_SELECT_FIELDS });
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: USER_SELECT_FIELDS,
+    });
   }
 
   async findPublicById(id: string): Promise<UserPublic | null> {
-    return this.prisma.user.findUnique({ where: { id }, select: USER_PUBLIC_SELECT_FIELDS });
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: USER_PUBLIC_SELECT_FIELDS,
+    });
   }
 
   async searchByName(query: string): Promise<UserPublic[]> {
@@ -32,7 +46,11 @@ export class UserPrismaRepository implements IUserRepository {
   }
 
   async update(id: string, data: UpdateUserInput): Promise<User> {
-    return this.prisma.user.update({ where: { id }, data, select: USER_SELECT_FIELDS });
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: USER_SELECT_FIELDS,
+    });
   }
 
   async delete(id: string): Promise<void> {
@@ -40,7 +58,10 @@ export class UserPrismaRepository implements IUserRepository {
   }
 
   async exists(id: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({ where: { id }, select: { id: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
     return user !== null;
   }
 }

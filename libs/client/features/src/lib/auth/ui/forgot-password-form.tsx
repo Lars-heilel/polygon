@@ -14,8 +14,11 @@ interface ForgotPasswordFormProps {
 }
 
 export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting, isSubmitSuccessful } } =
-    useForm<ForgotPasswordFormValues>({ resolver: zodResolver(schema) });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+  } = useForm<ForgotPasswordFormValues>({ resolver: zodResolver(schema) });
 
   if (isSubmitSuccessful) {
     return (
@@ -23,7 +26,10 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
         <p className="text-sm text-text-muted">
           We sent a reset link to your email. Check your inbox.
         </p>
-        <Link to={CLIENT_ROUTES.auth.login} className="text-sm text-primary hover:underline">
+        <Link
+          to={CLIENT_ROUTES.auth.login}
+          className="text-sm text-primary hover:underline"
+        >
           Back to sign in
         </Link>
       </div>
@@ -44,7 +50,10 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
         Send reset link
       </Button>
       <p className="text-center text-sm text-text-muted">
-        <Link to={CLIENT_ROUTES.auth.login} className="text-primary hover:underline">
+        <Link
+          to={CLIENT_ROUTES.auth.login}
+          className="text-primary hover:underline"
+        >
           Back to sign in
         </Link>
       </p>

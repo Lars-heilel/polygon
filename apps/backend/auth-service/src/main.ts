@@ -5,8 +5,11 @@ import { AllExceptionsFilter, AUTH_QUEUE, LoggingInterceptor } from '@org/core';
 import { AuthModule } from './app/auth.module';
 
 async function bootstrap() {
-  const { RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT } = process.env;
-  const rabbitmqUrl = `amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST ?? 'localhost'}:${RABBITMQ_PORT ?? 5672}`;
+  const { RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT } =
+    process.env;
+  const rabbitmqUrl = `amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${
+    RABBITMQ_HOST ?? 'localhost'
+  }:${RABBITMQ_PORT ?? 5672}`;
 
   // Гибридное приложение: HTTP-сервер для /health и /metrics
   // + RabbitMQ транспорт для обработки сообщений
@@ -33,7 +36,9 @@ async function bootstrap() {
   const port = process.env['AUTH_PORT'] ?? 3002;
   await app.listen(port);
 
-  app.get(Logger).log(`Auth Service: RMQ queue=${AUTH_QUEUE}, HTTP port=${port}`);
+  app
+    .get(Logger)
+    .log(`Auth Service: RMQ queue=${AUTH_QUEUE}, HTTP port=${port}`);
 }
 
 bootstrap();

@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport, type RmqOptions } from '@nestjs/microservices';
+import {
+  ClientsModule,
+  Transport,
+  type RmqOptions,
+} from '@nestjs/microservices';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   AUTH_SERVICE_TOKEN,
@@ -28,7 +32,15 @@ const rmqClient = (name: string, queue: string) => ({
   useFactory: (config: ConfigService<Env>): RmqOptions => ({
     transport: Transport.RMQ,
     options: {
-      urls: [`amqp://${config.get('RABBITMQ_USER', { infer: true })}:${config.get('RABBITMQ_PASSWORD', { infer: true })}@${config.get('RABBITMQ_HOST', { infer: true })}:${config.get('RABBITMQ_PORT', { infer: true })}`],
+      urls: [
+        `amqp://${config.get('RABBITMQ_USER', { infer: true })}:${config.get(
+          'RABBITMQ_PASSWORD',
+          { infer: true }
+        )}@${config.get('RABBITMQ_HOST', { infer: true })}:${config.get(
+          'RABBITMQ_PORT',
+          { infer: true }
+        )}`,
+      ],
       queue,
       queueOptions: { durable: true },
     },

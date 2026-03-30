@@ -58,25 +58,31 @@
 ## Microservices
 
 ### API Gateway
+
 Single entry point for all client requests. Handles routing, authentication guards, and proxies requests to the appropriate backend service via RabbitMQ.
 
 ### Auth Service
+
 Registration, login, JWT access/refresh tokens, OAuth (GitHub, Google, Yandex), password reset.
 Database: `polygon_auth`
 
 ### User Service
+
 User profiles, search, avatar and bio management.
 Database: `polygon_user`
 
 ### Chat Service
+
 Chat creation, member management, message sending and history. Emits WebSocket events for real-time delivery.
 Database: `polygon_chat`
 
 ### Media Service
+
 File uploads and metadata storage.
 Database: `polygon_media`
 
 ### Notification Service
+
 Email, push, and in-app notifications.
 Database: `polygon_notification`
 
@@ -85,9 +91,11 @@ Database: `polygon_notification`
 ## Communication Patterns
 
 ### Client → Backend
+
 All HTTP requests go through the API Gateway. No service is directly accessible from the client.
 
 ### Inter-service (async)
+
 All communication between services is asynchronous via RabbitMQ events. There is no direct HTTP between services.
 
 ```
@@ -97,6 +105,7 @@ Media Service   --[file.uploaded]--> Chat Service
 ```
 
 ### WebSocket
+
 The Gateway maintains a persistent Socket.IO connection with the client for real-time message delivery. See [Session & WebSocket](#session--websocket) for the full lifecycle.
 
 ---
@@ -105,17 +114,18 @@ The Gateway maintains a persistent Socket.IO connection with the client for real
 
 ### PostgreSQL — database per service
 
-| Service      | Database              |
-| ------------ | --------------------- |
-| Auth         | `polygon_auth`        |
-| User         | `polygon_user`        |
-| Chat         | `polygon_chat`        |
-| Media        | `polygon_media`       |
-| Notification | `polygon_notification`|
+| Service      | Database               |
+| ------------ | ---------------------- |
+| Auth         | `polygon_auth`         |
+| User         | `polygon_user`         |
+| Chat         | `polygon_chat`         |
+| Media        | `polygon_media`        |
+| Notification | `polygon_notification` |
 
 Each service owns its database exclusively. No cross-service database queries.
 
 ### Redis
+
 - Session / token caching
 - Rate limiting
 - Pub/Sub for real-time events
@@ -143,12 +153,14 @@ export const loginSchema = z.object({
 ```typescript
 import { registerSchema } from '@org/common';
 
-const registerFormSchema = registerSchema.extend({
-  confirmPassword: z.string(),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  { message: "Passwords don't match", path: ['confirmPassword'] },
-);
+const registerFormSchema = registerSchema
+  .extend({
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 ```
 
 **Backend** — create NestJS DTOs via `createZodDto`. `ZodValidationPipe` validates incoming requests automatically:
@@ -180,24 +192,24 @@ The client is a React 19 SPA following **Feature-Sliced Design (FSD)**. Each lay
 
 ### FSD Layers
 
-| Layer | Package | Purpose |
-| ----- | ------- | ------- |
-| shared | `@org/shared` | UI kit, utilities, API client |
-| entities | `@org/entities` | Business entities, TanStack Query hooks |
+| Layer    | Package         | Purpose                                  |
+| -------- | --------------- | ---------------------------------------- |
+| shared   | `@org/shared`   | UI kit, utilities, API client            |
+| entities | `@org/entities` | Business entities, TanStack Query hooks  |
 | features | `@org/features` | User-facing features (auth forms, theme) |
-| widgets | `@org/widgets` | Composite components |
-| layouts | `@org/layouts` | Page layouts |
-| pages | `@org/pages` | Standalone pages (e.g. NotFoundPage) |
+| widgets  | `@org/widgets`  | Composite components                     |
+| layouts  | `@org/layouts`  | Page layouts                             |
+| pages    | `@org/pages`    | Standalone pages (e.g. NotFoundPage)     |
 
 The application (`apps/client/messenger`) composes these layers into a working product — router, providers, and app-level pages live there.
 
 ### State Management
 
-| Concern | Tool | Where |
-| ------- | ---- | ----- |
-| Server state (API data) | TanStack Query | `@org/entities` |
-| Session state | Zustand | `@org/entities` → `session.store.ts` |
-| UI state (theme) | React Context | `@org/features` → `theme/model/` |
+| Concern                 | Tool           | Where                                |
+| ----------------------- | -------------- | ------------------------------------ |
+| Server state (API data) | TanStack Query | `@org/entities`                      |
+| Session state           | Zustand        | `@org/entities` → `session.store.ts` |
+| UI state (theme)        | React Context  | `@org/features` → `theme/model/`     |
 
 ---
 
@@ -293,10 +305,10 @@ User logs out
 
 ## Infrastructure
 
-| Service    | Image                            | Port(s)       |
-| ---------- | -------------------------------- | ------------- |
-| PostgreSQL | `postgres:17-alpine`             | 5432          |
-| Redis      | `redis:7-alpine`                 | 6379          |
-| RabbitMQ   | `rabbitmq:3-management-alpine`   | 5672 / 15672  |
-| Prometheus | `prom/prometheus`                | 9090          |
-| Grafana    | `grafana/grafana`                | 3010          |
+| Service    | Image                          | Port(s)      |
+| ---------- | ------------------------------ | ------------ |
+| PostgreSQL | `postgres:17-alpine`           | 5432         |
+| Redis      | `redis:7-alpine`               | 6379         |
+| RabbitMQ   | `rabbitmq:3-management-alpine` | 5672 / 15672 |
+| Prometheus | `prom/prometheus`              | 9090         |
+| Grafana    | `grafana/grafana`              | 3010         |

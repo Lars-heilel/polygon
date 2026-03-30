@@ -14,7 +14,7 @@ const avatarVariants = cva(
       },
     },
     defaultVariants: { size: 'md' },
-  },
+  }
 );
 
 const statusDotVariants = cva(
@@ -22,8 +22,8 @@ const statusDotVariants = cva(
   {
     variants: {
       status: {
-        online:  'bg-green-500',
-        away:    'bg-yellow-400',
+        online: 'bg-green-500',
+        away: 'bg-yellow-400',
         offline: 'bg-gray-50',
       },
       size: {
@@ -34,7 +34,7 @@ const statusDotVariants = cva(
         xl: 'w-3.5 h-3.5',
       },
     },
-  },
+  }
 );
 
 function getInitials(name: string): string {
@@ -48,28 +48,40 @@ function getInitials(name: string): string {
 type AvatarSize = NonNullable<VariantProps<typeof avatarVariants>['size']>;
 
 interface AvatarProps {
-  src?:       string;
-  name?:      string;
-  status?:    'online' | 'away' | 'offline';
-  size?:      AvatarSize;
+  src?: string;
+  name?: string;
+  status?: 'online' | 'away' | 'offline';
+  size?: AvatarSize;
   className?: string;
 }
 
-export function Avatar({ src, name, size = 'md', status, className }: AvatarProps) {
+export function Avatar({
+  src,
+  name,
+  size = 'md',
+  status,
+  className,
+}: AvatarProps) {
   return (
     <span className={cn(avatarVariants({ size }), className)}>
       {src ? (
-        <img src={src} alt={name ?? ''} className="w-full h-full object-cover" />
+        <img
+          src={src}
+          alt={name ?? ''}
+          className="w-full h-full object-cover"
+        />
       ) : name ? (
         <span>{getInitials(name)}</span>
       ) : (
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-1/2 h-1/2 opacity-40">
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-1/2 h-1/2 opacity-40"
+        >
           <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
         </svg>
       )}
-      {status && (
-        <span className={cn(statusDotVariants({ status, size }))} />
-      )}
+      {status && <span className={cn(statusDotVariants({ status, size }))} />}
     </span>
   );
 }

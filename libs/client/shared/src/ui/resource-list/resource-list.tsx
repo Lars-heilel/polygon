@@ -3,13 +3,13 @@ import { Spinner } from '../spinner/spinner';
 import { cn } from '../../lib/utils/cn';
 
 interface ResourceListProps<T> {
-  data:        T[];
-  renderItem:  (item: T, index: number) => ReactNode;
-  isLoading:   boolean;
-  isError:     boolean;
-  emptyState:  ReactNode;
-  errorState:  ReactNode;
-  className?:  string;
+  data: T[];
+  renderItem: (item: T, index: number) => ReactNode;
+  isLoading: boolean;
+  isError: boolean;
+  emptyState: ReactNode;
+  errorState: ReactNode;
+  className?: string;
 }
 
 export function ResourceList<T>({

@@ -4,10 +4,7 @@ import { TokenService } from './token.service';
 import { CoreConfigModule } from '../config/config.module';
 
 @Module({
-  imports: [
-    CoreConfigModule,
-    JwtModule.register({}),
-  ],
+  imports: [CoreConfigModule, JwtModule.register({})],
   providers: [TokenService],
   exports: [TokenService],
 })

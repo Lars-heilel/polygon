@@ -70,15 +70,15 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'  # хранить данные 15 дней
-      - '--web.enable-lifecycle'              # позволяет перезагружать конфиг без рестарта
+      - '--storage.tsdb.retention.time=15d' # хранить данные 15 дней
+      - '--web.enable-lifecycle' # позволяет перезагружать конфиг без рестарта
     ports:
       - '9090:9090'
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     extra_hosts:
-      - 'host.docker.internal:host-gateway'  # доступ к сервисам на хост-машине
+      - 'host.docker.internal:host-gateway' # доступ к сервисам на хост-машине
     networks:
       - polygon-network
 
@@ -91,7 +91,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: polygon_grafana
       GF_USERS_ALLOW_SIGN_UP: 'false'
     ports:
-      - '3010:3000'  # порт 3010 чтобы не конфликтовать с gateway (3000)
+      - '3010:3000' # порт 3010 чтобы не конфликтовать с gateway (3000)
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro

@@ -7,7 +7,7 @@ const refreshMutex = new Mutex();
 
 export async function authedFetch<T>(
   path: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<T> {
   try {
     return await apiFetch<T>(path, init);

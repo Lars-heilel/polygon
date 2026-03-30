@@ -17,7 +17,10 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       const theme = context.globals['theme'] as string;
-      document.documentElement.classList.toggle('theme-light', theme === 'light');
+      document.documentElement.classList.toggle(
+        'theme-light',
+        theme === 'light'
+      );
       return Story();
     },
   ],

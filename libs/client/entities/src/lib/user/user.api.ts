@@ -59,12 +59,19 @@ export function useLogoutMutation() {
 }
 
 export function useForgotPasswordMutation() {
-  return useMutation({ mutationFn: (email: string) => authApi.forgotPassword(email) });
+  return useMutation({
+    mutationFn: (email: string) => authApi.forgotPassword(email),
+  });
 }
 
 export function useResetPasswordMutation() {
   return useMutation({
-    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
-      authApi.resetPassword(token, newPassword),
+    mutationFn: ({
+      token,
+      newPassword,
+    }: {
+      token: string;
+      newPassword: string;
+    }) => authApi.resetPassword(token, newPassword),
   });
 }

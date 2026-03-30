@@ -23,27 +23,25 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 @UseGuards(JwtGuard)
 export class UserGatewayController {
   constructor(
-    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
+    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy
   ) {}
 
   @Get('me')
   getMe(@CurrentUser() user: JwtPayload) {
     return this.send(
-      this.userClient.send(USER_PATTERNS.GET_BY_ID, { id: user.sub }),
+      this.userClient.send(USER_PATTERNS.GET_BY_ID, { id: user.sub })
     );
   }
 
   @Get(':id')
   getById(@Param('id') id: string) {
-    return this.send(
-      this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }),
-    );
+    return this.send(this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }));
   }
 
   @Patch('me')
   updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto) {
     return this.send(
-      this.userClient.send(USER_PATTERNS.UPDATE, { id: user.sub, dto }),
+      this.userClient.send(USER_PATTERNS.UPDATE, { id: user.sub, dto })
     );
   }
 
@@ -54,7 +52,7 @@ export class UserGatewayController {
       const error = err as { statusCode?: number; message?: string };
       throw new HttpException(
         error.message ?? 'Internal server error',
-        error.statusCode ?? 500,
+        error.statusCode ?? 500
       );
     }
   }

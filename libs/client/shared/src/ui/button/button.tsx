@@ -8,10 +8,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary:   'bg-primary hover:bg-primary-hover text-white',
-        secondary: 'bg-surface-elevated hover:bg-border text-text border border-border',
-        ghost:     'text-text-muted hover:text-text hover:bg-surface-elevated',
-        danger:    'bg-danger text-white hover:opacity-90',
+        primary: 'bg-primary hover:bg-primary-hover text-white',
+        secondary:
+          'bg-surface-elevated hover:bg-border text-text border border-border',
+        ghost: 'text-text-muted hover:text-text hover:bg-surface-elevated',
+        danger: 'bg-danger text-white hover:opacity-90',
       },
       size: {
         sm: 'text-xs px-3 py-1.5',
@@ -23,7 +24,7 @@ const buttonVariants = cva(
       variant: 'primary',
       size: 'md',
     },
-  },
+  }
 );
 
 interface ButtonProps

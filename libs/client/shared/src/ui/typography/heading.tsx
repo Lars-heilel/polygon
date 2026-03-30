@@ -40,10 +40,7 @@ export function Heading({
 
   return (
     <Tag
-      className={cn(
-        srOnly ? 'sr-only' : headingVariants({ level }),
-        className,
-      )}
+      className={cn(srOnly ? 'sr-only' : headingVariants({ level }), className)}
       {...props}
     >
       {children}

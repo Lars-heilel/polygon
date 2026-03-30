@@ -11,12 +11,16 @@ import type { TokenPair } from '@org/common';
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService<Env>,
+    config: ConfigService<Env>
   ) {
     super({
-      clientID: config.get('GOOGLE_CLIENT_ID', { infer: true }) || 'not-configured',
-      clientSecret: config.get('GOOGLE_CLIENT_SECRET', { infer: true }) || 'not-configured',
-      callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/google/callback`,
+      clientID:
+        config.get('GOOGLE_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret:
+        config.get('GOOGLE_CLIENT_SECRET', { infer: true }) || 'not-configured',
+      callbackURL: `${config.get('APP_URL', {
+        infer: true,
+      })}/api/auth/google/callback`,
       scope: ['email', 'profile'],
     });
   }
@@ -24,11 +28,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   async validate(
     _accessToken: string,
     _refreshToken: string,
-    profile: Profile,
+    profile: Profile
   ): Promise<TokenPair> {
-    const email =
-      profile.emails?.[0]?.value ??
-      `${profile.id}@google.noemail`;
+    const email = profile.emails?.[0]?.value ?? `${profile.id}@google.noemail`;
 
     return lastValueFrom(
       this.authClient.send<TokenPair>(AUTH_PATTERNS.OAUTH_LOGIN, {
@@ -36,7 +38,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         providerId: profile.id,
         email,
         name: profile.displayName || email,
-      }),
+      })
     );
   }
 }

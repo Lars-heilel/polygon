@@ -15,6 +15,9 @@
     }
   },
   "nx": {
-    "tags": ["layer:pages", "scope:client"]
+    "tags": [
+      "layer:pages",
+      "scope:client"
+    ]
   }
 }

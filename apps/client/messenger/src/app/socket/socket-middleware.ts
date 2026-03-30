@@ -10,6 +10,6 @@ export function initSocketMiddleware(): () => void {
       } else if (!isAuthenticated && wasAuthenticated) {
         socket.disconnect();
       }
-    },
+    }
   );
 }

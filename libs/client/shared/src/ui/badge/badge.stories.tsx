@@ -8,9 +8,12 @@ const meta: Meta<typeof Badge> = {
   tags: ['autodocs'],
   args: { children: '3' },
   argTypes: {
-    variant: { control: 'select', options: ['primary', 'surface', 'danger', 'muted'] },
-    size:    { control: 'select', options: ['sm', 'md'] },
-    dot:     { control: 'boolean' },
+    variant: {
+      control: 'select',
+      options: ['primary', 'surface', 'danger', 'muted'],
+    },
+    size: { control: 'select', options: ['sm', 'md'] },
+    dot: { control: 'boolean' },
   },
 };
 
@@ -18,8 +21,8 @@ export default meta;
 type Story = StoryObj<typeof Badge>;
 
 export const Default: Story = {};
-export const Danger: Story  = { args: { variant: 'danger', children: '99+' } };
-export const Dot: Story     = { args: { dot: true, variant: 'primary' } };
+export const Danger: Story = { args: { variant: 'danger', children: '99+' } };
+export const Dot: Story = { args: { dot: true, variant: 'primary' } };
 
 export const Variants: Story = {
   render: () => (
@@ -37,7 +40,9 @@ export const WithAvatar: Story = {
     <div className="flex items-center gap-4">
       <div className="relative inline-flex">
         <Avatar name="Alex Kim" />
-        <Badge variant="danger" className="absolute -top-1 -right-1">5</Badge>
+        <Badge variant="danger" className="absolute -top-1 -right-1">
+          5
+        </Badge>
       </div>
       <div className="relative inline-flex">
         <Avatar name="Sam Lee" />

@@ -5,7 +5,10 @@ export function ForgotPasswordPage() {
   const { forgotPassword } = useForgotPassword();
 
   return (
-    <AuthLayout title="Reset password" description="Enter your email and we'll send you a reset link">
+    <AuthLayout
+      title="Reset password"
+      description="Enter your email and we'll send you a reset link"
+    >
       <ForgotPasswordForm
         onSubmit={async (values) => {
           try {

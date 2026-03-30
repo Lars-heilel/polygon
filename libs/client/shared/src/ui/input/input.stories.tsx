@@ -7,13 +7,19 @@ const meta: Meta<typeof Input> = {
   tags: ['autodocs'],
   args: { placeholder: 'Placeholder...' },
   argTypes: {
-    size:     { control: 'select', options: ['sm', 'md', 'lg'] },
-    label:    { control: 'text' },
-    error:    { control: 'text' },
-    hint:     { control: 'text' },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
+    label: { control: 'text' },
+    error: { control: 'text' },
+    hint: { control: 'text' },
     disabled: { control: 'boolean' },
   },
-  decorators: [(Story) => <div className="w-80"><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div className="w-80">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export default meta;
@@ -26,11 +32,19 @@ export const WithLabel: Story = {
 };
 
 export const WithHint: Story = {
-  args: { label: 'Username', hint: 'Only letters, numbers and underscores', placeholder: 'john_doe' },
+  args: {
+    label: 'Username',
+    hint: 'Only letters, numbers and underscores',
+    placeholder: 'john_doe',
+  },
 };
 
 export const WithError: Story = {
-  args: { label: 'Email', error: 'Invalid email address', value: 'not-an-email' },
+  args: {
+    label: 'Email',
+    error: 'Invalid email address',
+    value: 'not-an-email',
+  },
 };
 
 export const WithIcons: Story = {

@@ -7,15 +7,21 @@ const meta: Meta<typeof Textarea> = {
   tags: ['autodocs'],
   args: { placeholder: 'Write a message...' },
   argTypes: {
-    size:     { control: 'select', options: ['sm', 'md', 'lg'] },
-    label:    { control: 'text' },
-    error:    { control: 'text' },
-    hint:     { control: 'text' },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
+    label: { control: 'text' },
+    error: { control: 'text' },
+    hint: { control: 'text' },
     disabled: { control: 'boolean' },
     maxChars: { control: 'number' },
-    rows:     { control: 'number' },
+    rows: { control: 'number' },
   },
-  decorators: [(Story) => <div className="w-96"><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div className="w-96">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export default meta;
@@ -40,5 +46,10 @@ export const WithCharCounter: Story = {
 };
 
 export const Disabled: Story = {
-  args: { label: 'Message', disabled: true, value: 'Disabled content', rows: 3 },
+  args: {
+    label: 'Message',
+    disabled: true,
+    value: 'Disabled content',
+    rows: 3,
+  },
 };

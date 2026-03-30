@@ -15,6 +15,9 @@
     }
   },
   "nx": {
-    "tags": ["layer:entities", "scope:client"]
+    "tags": [
+      "layer:entities",
+      "scope:client"
+    ]
   }
 }

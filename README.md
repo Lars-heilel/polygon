@@ -8,8 +8,8 @@ _By Lars Heilel (Igor Shevchenko)_
 
 ## Applications
 
-| App | Description |
-| --- | ----------- |
+| App                                            | Description                |
+| ---------------------------------------------- | -------------------------- |
 | [Messenger](./apps/client/messenger/README.md) | Real-time chat application |
 
 ---
@@ -39,10 +39,10 @@ _By Lars Heilel (Igor Shevchenko)_
 
 ## Documentation
 
-| File                                                       | Description                                         |
-| ---------------------------------------------------------- | --------------------------------------------------- |
-| [Setup](./docs/SETUP.md)                                   | Environment setup, Docker, databases                |
-| [Development](./docs/DEVELOPMENT.md)                       | Project structure, code standards, Nx commands      |
-| [Architecture](./docs/ARCHITECTURE.md)                     | Microservices design, client FSD, communication     |
-| [Monorepo Gotchas](./docs/MONOREPO_GOTCHAS.md)             | Tailwind v4 in Nx, env variables, Prisma paths      |
-| [Observability](./docs/observability.md)                   | Logging, metrics, health checks, Prometheus/Grafana |
+| File                                           | Description                                         |
+| ---------------------------------------------- | --------------------------------------------------- |
+| [Setup](./docs/SETUP.md)                       | Environment setup, Docker, databases                |
+| [Development](./docs/DEVELOPMENT.md)           | Project structure, code standards, Nx commands      |
+| [Architecture](./docs/ARCHITECTURE.md)         | Microservices design, client FSD, communication     |
+| [Monorepo Gotchas](./docs/MONOREPO_GOTCHAS.md) | Tailwind v4 in Nx, env variables, Prisma paths      |
+| [Observability](./docs/observability.md)       | Logging, metrics, health checks, Prometheus/Grafana |

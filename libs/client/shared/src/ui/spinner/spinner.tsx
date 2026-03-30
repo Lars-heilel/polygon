@@ -13,22 +13,27 @@ const spinnerVariants = cva('animate-spin', {
     color: {
       current: 'text-current',
       primary: 'text-primary',
-      muted:   'text-text-muted',
-      white:   'text-white',
+      muted: 'text-text-muted',
+      white: 'text-white',
     },
   },
   defaultVariants: {
-    size:  'md',
+    size: 'md',
     color: 'current',
   },
 });
 
 interface SpinnerProps extends VariantProps<typeof spinnerVariants> {
   className?: string;
-  label?:     string;
+  label?: string;
 }
 
-export function Spinner({ size, color, className, label = 'Loading...' }: SpinnerProps) {
+export function Spinner({
+  size,
+  color,
+  className,
+  label = 'Loading...',
+}: SpinnerProps) {
   return (
     <svg
       className={cn(spinnerVariants({ size, color }), className)}
@@ -39,7 +44,9 @@ export function Spinner({ size, color, className, label = 'Loading...' }: Spinne
     >
       <circle
         className="opacity-20"
-        cx="12" cy="12" r="10"
+        cx="12"
+        cy="12"
+        r="10"
         stroke="currentColor"
         strokeWidth="3"
       />

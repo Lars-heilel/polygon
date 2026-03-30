@@ -103,20 +103,20 @@ Nx enforces dependency rules via the `@nx/enforce-module-boundaries` ESLint rule
 
 ### Tags in Use
 
-| Tag | Projects |
-| --- | -------- |
-| `scope:client` | All `libs/client/*` |
-| `scope:backend` | All `libs/backend/*` |
-| `scope:shared` | `libs/common` |
-| `layer:shared` | `@org/shared` |
-| `layer:entities` | `@org/entities` |
-| `layer:features` | `@org/features` |
-| `layer:widgets` | `@org/widgets` |
-| `layer:layouts` | `@org/layouts` |
-| `layer:pages` | `@org/pages` |
-| `type:business` | Backend service libs |
-| `type:core` | `@org/core` |
-| `type:framework-agnostic` | `@org/common` |
+| Tag                       | Projects             |
+| ------------------------- | -------------------- |
+| `scope:client`            | All `libs/client/*`  |
+| `scope:backend`           | All `libs/backend/*` |
+| `scope:shared`            | `libs/common`        |
+| `layer:shared`            | `@org/shared`        |
+| `layer:entities`          | `@org/entities`      |
+| `layer:features`          | `@org/features`      |
+| `layer:widgets`           | `@org/widgets`       |
+| `layer:layouts`           | `@org/layouts`       |
+| `layer:pages`             | `@org/pages`         |
+| `type:business`           | Backend service libs |
+| `type:core`               | `@org/core`          |
+| `type:framework-agnostic` | `@org/common`        |
 
 ### Boundary Rules
 
@@ -145,12 +145,12 @@ npx nx run-many -t lint
 
 ### Naming
 
-| Subject | Convention | Example |
-| ------- | ---------- | ------- |
-| Files | kebab-case | `user.service.ts`, `create-user.dto.ts` |
-| Classes / Interfaces | PascalCase | `UserService`, `CreateUserDto` |
-| Variables / Functions | camelCase | `getUserById` |
-| Constants | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
+| Subject               | Convention       | Example                                 |
+| --------------------- | ---------------- | --------------------------------------- |
+| Files                 | kebab-case       | `user.service.ts`, `create-user.dto.ts` |
+| Classes / Interfaces  | PascalCase       | `UserService`, `CreateUserDto`          |
+| Variables / Functions | camelCase        | `getUserById`                           |
+| Constants             | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT`                       |
 
 ### TypeScript
 
@@ -201,12 +201,14 @@ export const loginSchema = z.object({
 // libs/client/features/src/lib/auth/ui/register-form.tsx
 import { registerSchema } from '@org/common';
 
-const registerFormSchema = registerSchema.extend({
-  confirmPassword: z.string(),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  { message: "Passwords don't match", path: ['confirmPassword'] },
-);
+const registerFormSchema = registerSchema
+  .extend({
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 ```
 
 **Backend** — create NestJS DTOs via `createZodDto`:

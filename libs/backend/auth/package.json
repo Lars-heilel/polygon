@@ -17,6 +17,9 @@
     "@org/core": "*"
   },
   "nx": {
-    "tags": ["scope:backend", "type:business"]
+    "tags": [
+      "scope:backend",
+      "type:business"
+    ]
   }
 }

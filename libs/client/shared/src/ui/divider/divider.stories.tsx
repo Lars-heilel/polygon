@@ -14,7 +14,11 @@ const meta: Meta<typeof Divider> = {
 export default meta;
 type Story = StoryObj<typeof Divider>;
 
-const wrapW80: Decorator = (Story) => <div className="w-80"><Story /></div>;
+const wrapW80: Decorator = (Story) => (
+  <div className="w-80">
+    <Story />
+  </div>
+);
 
 export const Horizontal: Story = {
   decorators: [wrapW80],

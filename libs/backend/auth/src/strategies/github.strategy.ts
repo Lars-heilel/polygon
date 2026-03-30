@@ -11,12 +11,16 @@ import type { TokenPair } from '@org/common';
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService<Env>,
+    config: ConfigService<Env>
   ) {
     super({
-      clientID: config.get('GITHUB_CLIENT_ID', { infer: true }) || 'not-configured',
-      clientSecret: config.get('GITHUB_CLIENT_SECRET', { infer: true }) || 'not-configured',
-      callbackURL: `${config.get('APP_URL', { infer: true })}/api/auth/github/callback`,
+      clientID:
+        config.get('GITHUB_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret:
+        config.get('GITHUB_CLIENT_SECRET', { infer: true }) || 'not-configured',
+      callbackURL: `${config.get('APP_URL', {
+        infer: true,
+      })}/api/auth/github/callback`,
       scope: ['user:email'],
     });
   }
@@ -24,11 +28,9 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   async validate(
     _accessToken: string,
     _refreshToken: string,
-    profile: Profile,
+    profile: Profile
   ): Promise<TokenPair> {
-    const email =
-      profile.emails?.[0]?.value ??
-      `${profile.id}@github.noemail`;
+    const email = profile.emails?.[0]?.value ?? `${profile.id}@github.noemail`;
 
     return lastValueFrom(
       this.authClient.send<TokenPair>(AUTH_PATTERNS.OAUTH_LOGIN, {
@@ -36,7 +38,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
         providerId: profile.id,
         email,
         name: profile.displayName || profile.username || email,
-      }),
+      })
     );
   }
 }

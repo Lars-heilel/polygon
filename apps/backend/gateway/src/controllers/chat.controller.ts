@@ -27,23 +27,26 @@ import { SendMessageDto } from '../dto/send-message.dto';
 export class ChatGatewayController {
   constructor(
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
-    private readonly socketGateway: ChatSocketGateway,
+    private readonly socketGateway: ChatSocketGateway
   ) {}
 
   @Post('direct')
-  createDirect(@CurrentUser() user: JwtPayload, @Body() dto: CreateDirectChatDto) {
+  createDirect(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateDirectChatDto
+  ) {
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.CREATE_DIRECT, {
         userId: user.sub,
         targetUserId: dto.targetUserId,
-      }),
+      })
     );
   }
 
   @Get()
   getChats(@CurrentUser() user: JwtPayload) {
     return this.send(
-      this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub }),
+      this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub })
     );
   }
 
@@ -52,7 +55,7 @@ export class ChatGatewayController {
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
     @Query('skip') skip?: string,
-    @Query('take') take?: string,
+    @Query('take') take?: string
   ) {
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.GET_MESSAGES, {
@@ -60,7 +63,7 @@ export class ChatGatewayController {
         userId: user.sub,
         skip: skip ? parseInt(skip, 10) : undefined,
         take: take ? parseInt(take, 10) : undefined,
-      }),
+      })
     );
   }
 
@@ -68,14 +71,14 @@ export class ChatGatewayController {
   async sendMessage(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
-    @Body() dto: SendMessageDto,
+    @Body() dto: SendMessageDto
   ) {
     const message = await this.send(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId,
         senderId: user.sub,
         text: dto.text,
-      }),
+      })
     );
 
     this.socketGateway.broadcastMessage(chatId, message);
@@ -88,7 +91,10 @@ export class ChatGatewayController {
       return await lastValueFrom(observable);
     } catch (err) {
       const error = err as { statusCode?: number; message?: string };
-      throw new HttpException(error.message ?? 'Internal server error', error.statusCode ?? 500);
+      throw new HttpException(
+        error.message ?? 'Internal server error',
+        error.statusCode ?? 500
+      );
     }
   }
 }

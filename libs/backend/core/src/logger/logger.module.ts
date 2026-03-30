@@ -12,9 +12,13 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
       forRoutes: [{ path: '/{*splat}', method: RequestMethod.ALL }],
       pinoHttp: {
         // В dev включаем красивый вывод, в prod — JSON
-        transport: process.env['NODE_ENV'] !== 'production'
-          ? { target: 'pino-pretty', options: { colorize: true, singleLine: true } }
-          : undefined,
+        transport:
+          process.env['NODE_ENV'] !== 'production'
+            ? {
+                target: 'pino-pretty',
+                options: { colorize: true, singleLine: true },
+              }
+            : undefined,
 
         // Уровень логирования: в prod не засоряем debug-сообщениями
         level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',

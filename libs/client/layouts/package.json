@@ -15,6 +15,9 @@
     }
   },
   "nx": {
-    "tags": ["layer:layouts", "scope:client"]
+    "tags": [
+      "layer:layouts",
+      "scope:client"
+    ]
   }
 }

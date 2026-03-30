@@ -1,4 +1,9 @@
-import type { User, UserPublic, UpdateUserInput, CreateUserEventInput } from '@org/common';
+import type {
+  User,
+  UserPublic,
+  UpdateUserInput,
+  CreateUserEventInput,
+} from '@org/common';
 import type { UpdateUserDto } from '../dto/update-user.dto';
 
 export interface IUserRepository {

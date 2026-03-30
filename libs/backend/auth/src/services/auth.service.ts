@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConflictException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { createHash } from 'crypto';
@@ -19,18 +24,24 @@ import type {
   CredentialsPayload,
   Credentials,
 } from '@org/common';
-import type { IAuthRepository, IAuthService, IVerificationService } from '../interfaces/auth.interface';
+import type {
+  IAuthRepository,
+  IAuthService,
+  IVerificationService,
+} from '../interfaces/auth.interface';
 import type { RegisterDto } from '../dto/register.dto';
 
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
-    @Inject(AUTH_PRISMA_REPOSITORY_TOKEN) private readonly repo: IAuthRepository,
+    @Inject(AUTH_PRISMA_REPOSITORY_TOKEN)
+    private readonly repo: IAuthRepository,
     private readonly encryption: EncryptionService,
     private readonly tokenService: TokenService,
     private readonly config: ConfigService<Env>,
-    @Inject(VERIFICATION_SERVICE_TOKEN) private readonly verification: IVerificationService,
-    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
+    @Inject(VERIFICATION_SERVICE_TOKEN)
+    private readonly verification: IVerificationService,
+    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy
   ) {}
 
   async register(dto: RegisterDto): Promise<TokenPair> {
@@ -38,7 +49,10 @@ export class AuthService implements IAuthService {
     if (existing) throw new ConflictException('Email already in use');
 
     const passwordHash = await this.encryption.hash(dto.password);
-    const credentials = await this.repo.createCredentials({ email: dto.email, passwordHash });
+    const credentials = await this.repo.createCredentials({
+      email: dto.email,
+      passwordHash,
+    });
 
     this.userClient.emit(USER_EVENTS.REGISTERED, {
       id: credentials.id,
@@ -51,14 +65,25 @@ export class AuthService implements IAuthService {
     return this.issueTokenPair(credentials);
   }
 
-  async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
+  async validateCredentials(
+    email: string,
+    password: string
+  ): Promise<CredentialsPayload> {
     const credentials = await this.repo.findByEmail(email);
-    if (!credentials || !credentials.passwordHash) throw new UnauthorizedException('Invalid credentials');
+    if (!credentials || !credentials.passwordHash)
+      throw new UnauthorizedException('Invalid credentials');
 
-    const valid = await this.encryption.compare(password, credentials.passwordHash);
+    const valid = await this.encryption.compare(
+      password,
+      credentials.passwordHash
+    );
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    return { id: credentials.id, role: credentials.role, isVerified: credentials.isVerified };
+    return {
+      id: credentials.id,
+      role: credentials.role,
+      isVerified: credentials.isVerified,
+    };
   }
 
   async login(id: string): Promise<TokenPair> {
@@ -78,11 +103,16 @@ export class AuthService implements IAuthService {
   async forgotPassword(email: string): Promise<void> {
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) return;
-    await this.verification.generatePasswordReset(credentials.id, credentials.email);
+    await this.verification.generatePasswordReset(
+      credentials.id,
+      credentials.email
+    );
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const credentialsId = await this.verification.consumePasswordResetToken(token);
+    const credentialsId = await this.verification.consumePasswordResetToken(
+      token
+    );
     const credentials = await this.repo.findById(credentialsId);
     if (!credentials) throw new NotFoundException('User not found');
 
@@ -92,7 +122,10 @@ export class AuthService implements IAuthService {
   }
 
   async oauthLogin(dto: OAuthLoginDto): Promise<TokenPair> {
-    const existing = await this.repo.findOAuthAccount(dto.provider, dto.providerId);
+    const existing = await this.repo.findOAuthAccount(
+      dto.provider,
+      dto.providerId
+    );
     if (existing) return this.issueTokenPair(existing.credentials);
 
     let credentials = await this.repo.findByEmail(dto.email);
@@ -137,7 +170,8 @@ export class AuthService implements IAuthService {
 
     const tokenHash = this.hashToken(refreshToken);
     const stored = await this.repo.findRefreshToken(tokenHash);
-    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) throw new UnauthorizedException();
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date())
+      throw new UnauthorizedException();
 
     await this.repo.revokeRefreshToken(tokenHash);
 
@@ -147,7 +181,9 @@ export class AuthService implements IAuthService {
     return this.issueTokenPair(credentials);
   }
 
-  private async issueTokenPair(credentials: Pick<Credentials, 'id' | 'role' | 'isVerified'>): Promise<TokenPair> {
+  private async issueTokenPair(
+    credentials: Pick<Credentials, 'id' | 'role' | 'isVerified'>
+  ): Promise<TokenPair> {
     const jwtPayload: JwtPayload = {
       sub: credentials.id,
       role: credentials.role as JwtPayload['role'],
@@ -158,9 +194,16 @@ export class AuthService implements IAuthService {
     const refreshToken = this.tokenService.generateRefreshToken(jwtPayload);
 
     const tokenHash = this.hashToken(refreshToken);
-    const expiresAt = new Date(Date.now() + this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000);
+    const expiresAt = new Date(
+      Date.now() +
+        this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000
+    );
 
-    await this.repo.saveRefreshToken({ tokenHash, credentialsId: credentials.id, expiresAt });
+    await this.repo.saveRefreshToken({
+      tokenHash,
+      credentialsId: credentials.id,
+      expiresAt,
+    });
 
     return { accessToken, refreshToken };
   }

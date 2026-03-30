@@ -13,27 +13,30 @@ const textareaVariants = cva(
       },
       state: {
         default: 'border-border',
-        error:   'border-danger focus:ring-danger/40 focus:border-danger',
+        error: 'border-danger focus:ring-danger/40 focus:border-danger',
       },
     },
     defaultVariants: {
-      size:  'md',
+      size: 'md',
       state: 'default',
     },
-  },
+  }
 );
 
 interface TextareaProps
   extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'>,
     Pick<VariantProps<typeof textareaVariants>, 'size'> {
-  label?:    string;
-  error?:    string;
-  hint?:     string;
+  label?: string;
+  error?: string;
+  hint?: string;
   maxChars?: number;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ size, label, error, hint, maxChars, className, id, value, ...props }, ref) => {
+  (
+    { size, label, error, hint, maxChars, className, id, value, ...props },
+    ref
+  ) => {
     const textareaId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
     const state = error ? 'error' : 'default';
     const charCount = typeof value === 'string' ? value.length : 0;
@@ -54,11 +57,21 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
         {(error || hint || maxChars) && (
           <div className="flex justify-between">
-            <p className={cn('text-xs', error ? 'text-danger' : 'text-text-muted')}>
+            <p
+              className={cn(
+                'text-xs',
+                error ? 'text-danger' : 'text-text-muted'
+              )}
+            >
               {error ?? hint}
             </p>
             {maxChars && (
-              <p className={cn('text-xs', charCount > maxChars ? 'text-danger' : 'text-text-muted')}>
+              <p
+                className={cn(
+                  'text-xs',
+                  charCount > maxChars ? 'text-danger' : 'text-text-muted'
+                )}
+              >
                 {charCount}/{maxChars}
               </p>
             )}
@@ -66,7 +79,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 Textarea.displayName = 'Textarea';

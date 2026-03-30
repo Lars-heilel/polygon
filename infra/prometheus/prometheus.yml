@@ -1,6 +1,6 @@
 global:
-  scrape_interval: 15s      # как часто собирать метрики
-  evaluation_interval: 15s  # как часто проверять alerting rules
+  scrape_interval: 15s # как часто собирать метрики
+  evaluation_interval: 15s # как часто проверять alerting rules
 
 scrape_configs:
   # Gateway — метрики по пути /api/metrics (т.к. setGlobalPrefix('api'))

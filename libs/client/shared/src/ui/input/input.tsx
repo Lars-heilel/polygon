@@ -13,28 +13,31 @@ const inputVariants = cva(
       },
       state: {
         default: 'border-border',
-        error:   'border-danger focus:ring-danger/40 focus:border-danger',
+        error: 'border-danger focus:ring-danger/40 focus:border-danger',
       },
     },
     defaultVariants: {
-      size:  'md',
+      size: 'md',
       state: 'default',
     },
-  },
+  }
 );
 
 interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>,
     Pick<VariantProps<typeof inputVariants>, 'size'> {
-  label?:     string;
-  error?:     string;
-  hint?:      string;
-  leftIcon?:  ReactNode;
+  label?: string;
+  error?: string;
+  hint?: string;
+  leftIcon?: ReactNode;
   rightIcon?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ size, label, error, hint, leftIcon, rightIcon, className, id, ...props }, ref) => {
+  (
+    { size, label, error, hint, leftIcon, rightIcon, className, id, ...props },
+    ref
+  ) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
     const state = error ? 'error' : 'default';
 
@@ -56,9 +59,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               inputVariants({ size, state }),
-              leftIcon  && 'pl-9',
+              leftIcon && 'pl-9',
               rightIcon && 'pr-9',
-              className,
+              className
             )}
             {...props}
           />
@@ -69,13 +72,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {(error || hint) && (
-          <p className={cn('text-xs', error ? 'text-danger' : 'text-text-muted')}>
+          <p
+            className={cn('text-xs', error ? 'text-danger' : 'text-text-muted')}
+          >
             {error ?? hint}
           </p>
         )}
       </div>
     );
-  },
+  }
 );
 
 Input.displayName = 'Input';

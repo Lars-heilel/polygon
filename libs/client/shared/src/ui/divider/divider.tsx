@@ -2,11 +2,15 @@ import { cn } from '../../lib/utils/cn';
 
 interface DividerProps {
   orientation?: 'horizontal' | 'vertical';
-  label?:       string;
-  className?:   string;
+  label?: string;
+  className?: string;
 }
 
-export function Divider({ orientation = 'horizontal', label, className }: DividerProps) {
+export function Divider({
+  orientation = 'horizontal',
+  label,
+  className,
+}: DividerProps) {
   if (orientation === 'vertical') {
     return <div className={cn('w-px self-stretch bg-border', className)} />;
   }

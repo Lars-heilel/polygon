@@ -11,19 +11,19 @@ const textVariants = cva('font-sans', {
     },
     color: {
       default: 'text-text',
-      muted:   'text-text-muted',
-      danger:  'text-danger',
+      muted: 'text-text-muted',
+      danger: 'text-danger',
       inherit: '',
     },
     weight: {
-      normal:   'font-normal',
-      medium:   'font-medium',
+      normal: 'font-normal',
+      medium: 'font-medium',
       semibold: 'font-semibold',
     },
   },
   defaultVariants: {
-    size:   'md',
-    color:  'default',
+    size: 'md',
+    color: 'default',
     weight: 'normal',
   },
 });
@@ -49,7 +49,10 @@ export function Text({
 }: TextProps) {
   return (
     <Tag
-      className={cn(srOnly ? 'sr-only' : textVariants({ size, color, weight }), className)}
+      className={cn(
+        srOnly ? 'sr-only' : textVariants({ size, color, weight }),
+        className
+      )}
       {...props}
     >
       {children}

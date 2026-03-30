@@ -1,5 +1,9 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { useSessionStore, selectIsAuthenticated, selectIsSessionLoading } from '@org/entities';
+import {
+  useSessionStore,
+  selectIsAuthenticated,
+  selectIsSessionLoading,
+} from '@org/entities';
 import { Spinner } from '@org/shared';
 
 export function ProtectedRoute() {
