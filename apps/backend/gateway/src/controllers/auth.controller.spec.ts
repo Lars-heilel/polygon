@@ -22,10 +22,8 @@ describe('AuthGatewayController', () => {
   // ── POST /api/auth/register ────────────────────────────────────────
 
   describe('POST /api/auth/register', () => {
-    it('returns 201 and sets cookies on valid payload', async () => {
-      authClient['send'].mockReturnValue(
-        of({ accessToken: 'access-tok', refreshToken: 'refresh-tok' })
-      );
+    it('returns 201 with message on valid payload', async () => {
+      authClient['send'].mockReturnValue(of(null));
 
       const res = await request(app.getHttpServer())
         .post('/api/auth/register')
@@ -36,13 +34,23 @@ describe('AuthGatewayController', () => {
         });
 
       expect(res.status).toBe(201);
-      const cookies = res.headers['set-cookie'] as string[];
-      expect(cookies.some((c: string) => c.startsWith('access_token='))).toBe(
-        true
-      );
-      expect(cookies.some((c: string) => c.startsWith('refresh_token='))).toBe(
-        true
-      );
+      expect(res.body).toMatchObject({ message: 'Registered successfully' });
+    });
+
+    it('does not set auth cookies on register', async () => {
+      authClient['send'].mockReturnValue(of(null));
+
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send({
+          email: 'user@example.com',
+          password: 'Password1!',
+          username: 'user',
+        });
+
+      const cookies = (res.headers['set-cookie'] as unknown as string[] | undefined) ?? [];
+      expect(cookies.some((c) => c.startsWith('access_token='))).toBe(false);
+      expect(cookies.some((c) => c.startsWith('refresh_token='))).toBe(false);
     });
 
     it('returns 400 on invalid email', async () => {
@@ -85,7 +93,7 @@ describe('AuthGatewayController', () => {
         .set('Cookie', 'refresh_token=some-token');
 
       expect(res.status).toBe(201);
-      const cookies = res.headers['set-cookie'] as string[];
+      const cookies = res.headers['set-cookie'] as unknown as string[];
       expect(cookies.some((c: string) => c.includes('access_token=;'))).toBe(
         true
       );

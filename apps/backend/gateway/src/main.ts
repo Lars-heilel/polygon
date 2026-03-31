@@ -3,6 +3,8 @@ import { Logger } from 'nestjs-pino';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter, LoggingInterceptor } from '@org/core';
 import { GatewayModule } from './app/gateway.module';
 
@@ -33,9 +35,19 @@ async function bootstrap() {
   // Логируем время выполнения каждого запроса
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  const config = new DocumentBuilder()
+    .setTitle('Polygon API')
+    .setDescription('Polygon messaging platform REST API')
+    .setVersion('1.0')
+    .addCookieAuth('access_token')
+    .build();
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
+  SwaggerModule.setup('api/docs', app, document);
+
   const port = process.env['GATEWAY_PORT'] ?? 3000;
   await app.listen(port);
   app.get(Logger).log(`Gateway is running on: http://localhost:${port}/api`);
+  app.get(Logger).log(`Swagger docs: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

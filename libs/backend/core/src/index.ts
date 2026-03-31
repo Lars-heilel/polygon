@@ -38,6 +38,9 @@ export * from './interceptors/logging.interceptor';
 export * from './redis/redis.service';
 export * from './redis/redis.module';
 
+// Schedule
+export * from './schedule/schedule.module';
+
 // Email
 export * from './email/email.interface';
 export * from './email/email.token';

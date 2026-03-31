@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router';
 import { registerSchema, CLIENT_ROUTES } from '@org/common';
-import { Button, Input, Divider } from '@org/shared';
+import { Button, Input, Divider, FormAlert } from '@org/shared';
 import { OAuthButtons } from './oauth-buttons';
 
 const registerFormSchema = registerSchema
@@ -19,9 +19,10 @@ export type RegisterFormValues = z.infer<typeof registerFormSchema>;
 
 interface RegisterFormProps {
   onSubmit: (values: RegisterFormValues) => Promise<void>;
+  apiError?: string | null;
 }
 
-export function RegisterForm({ onSubmit }: RegisterFormProps) {
+export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
   const {
     register,
     handleSubmit,
@@ -69,6 +70,8 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
           autoComplete="new-password"
         />
       </div>
+
+      <FormAlert message={apiError ?? null} />
 
       <Button type="submit" className="w-full" loading={isSubmitting}>
         Create account

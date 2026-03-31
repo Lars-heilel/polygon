@@ -1,16 +1,19 @@
 import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConflictException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { createHash } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   EncryptionService,
+  RedisService,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
@@ -33,18 +36,22 @@ import type { RegisterDto } from '../dto/register.dto';
 
 @Injectable()
 export class AuthService implements IAuthService {
+  private static readonly LOGIN_ATTEMPTS_LIMIT = 5;
+  private static readonly LOGIN_ATTEMPTS_TTL = 900; // 15 minutes
+
   constructor(
     @Inject(AUTH_PRISMA_REPOSITORY_TOKEN)
     private readonly repo: IAuthRepository,
     private readonly encryption: EncryptionService,
     private readonly tokenService: TokenService,
+    private readonly redis: RedisService,
     private readonly config: ConfigService<Env>,
     @Inject(VERIFICATION_SERVICE_TOKEN)
     private readonly verification: IVerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy
   ) {}
 
-  async register(dto: RegisterDto): Promise<TokenPair> {
+  async register(dto: RegisterDto): Promise<void> {
     const existing = await this.repo.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
 
@@ -61,23 +68,45 @@ export class AuthService implements IAuthService {
     });
 
     await this.verification.generateAndSend(credentials.id, credentials.email);
-
-    return this.issueTokenPair(credentials);
   }
 
   async validateCredentials(
     email: string,
     password: string
   ): Promise<CredentialsPayload> {
+    const attemptsKey = `login_attempts:${email}`;
+
+    const attempts = await this.redis.incr(
+      attemptsKey,
+      AuthService.LOGIN_ATTEMPTS_TTL
+    );
+    if (attempts > AuthService.LOGIN_ATTEMPTS_LIMIT) {
+      throw new HttpException(
+        'Too many failed login attempts. Please try again in 15 minutes.',
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+
     const credentials = await this.repo.findByEmail(email);
-    if (!credentials || !credentials.passwordHash)
+    if (!credentials || !credentials.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
+    }
 
     const valid = await this.encryption.compare(
       password,
       credentials.passwordHash
     );
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
+    if (!valid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!credentials.isVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email before signing in'
+      );
+    }
+
+    await this.redis.del(attemptsKey);
 
     return {
       id: credentials.id,
@@ -92,8 +121,11 @@ export class AuthService implements IAuthService {
     return this.issueTokenPair(credentials);
   }
 
-  async verifyEmail(token: string): Promise<void> {
-    await this.verification.verify(token);
+  async verifyEmail(token: string): Promise<TokenPair> {
+    const credentialsId = await this.verification.verify(token);
+    const credentials = await this.repo.findById(credentialsId);
+    if (!credentials) throw new UnauthorizedException();
+    return this.issueTokenPair(credentials);
   }
 
   async resendVerification(email: string): Promise<void> {

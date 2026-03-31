@@ -18,7 +18,7 @@ export class UserService implements IUserService {
   ) {}
 
   async createFromEvent(data: CreateUserEventInput): Promise<void> {
-    await this.repo.create(data);
+    await this.repo.upsert(data);
   }
 
   async getById(id: string): Promise<User> {

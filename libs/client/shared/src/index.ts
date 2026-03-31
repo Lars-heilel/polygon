@@ -17,6 +17,7 @@ export { Toaster, toast } from './ui/toast';
 export { EmptyState } from './ui/empty-state';
 export { ResourceList } from './ui/resource-list';
 export { StatusScreen } from './ui/status-screen';
+export { FormAlert } from './ui/form-alert';
 export { Dropdown } from './ui/dropdown';
 export type { DropdownItem } from './ui/dropdown';
 export { socket } from './lib/socket';

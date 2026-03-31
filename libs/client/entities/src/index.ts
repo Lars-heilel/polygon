@@ -13,6 +13,7 @@ export {
   useMeQuery,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useResendVerificationMutation,
 } from './lib/user/user.api';
 
 export type { Chat, ChatMember, Message } from './lib/chat';

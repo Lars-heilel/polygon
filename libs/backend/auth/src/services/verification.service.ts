@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -25,6 +27,11 @@ const PASSWORD_RESET_TTL = 3_600; // 1 hour
 const RESET_KEY_BY_TOKEN = (token: string) => `password_reset:${token}`;
 const RESET_KEY_BY_ID = (id: string) => `password_reset_id:${id}`;
 
+const RESEND_COOLDOWN_TTL = 60; // 1 minute
+const KEY_RESEND_COOLDOWN = (email: string) => `resend_cooldown:${email}`;
+const RESET_COOLDOWN_TTL = 60; // 1 minute
+const KEY_RESET_COOLDOWN = (email: string) => `reset_cooldown:${email}`;
+
 @Injectable()
 export class VerificationService implements IVerificationService {
   constructor(
@@ -45,12 +52,13 @@ export class VerificationService implements IVerificationService {
     });
   }
 
-  async verify(token: string): Promise<void> {
+  async verify(token: string): Promise<string> {
     const credentialsId = await this.redis.get(KEY_BY_TOKEN(token));
     if (!credentialsId)
       throw new BadRequestException('Invalid or expired verification token');
     await this.repo.verifyCredentials(credentialsId);
     await this.redis.del(KEY_BY_TOKEN(token), KEY_BY_ID(credentialsId));
+    return credentialsId;
   }
 
   async resend(email: string): Promise<void> {
@@ -59,17 +67,32 @@ export class VerificationService implements IVerificationService {
     if (credentials.isVerified)
       throw new BadRequestException('Account already verified');
 
+    const cooldown = await this.redis.get(KEY_RESEND_COOLDOWN(email));
+    if (cooldown)
+      throw new HttpException(
+        'Please wait before requesting another verification email',
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+
     const oldToken = await this.redis.get(KEY_BY_ID(credentials.id));
     if (oldToken)
       await this.redis.del(KEY_BY_TOKEN(oldToken), KEY_BY_ID(credentials.id));
 
     await this.generateAndSend(credentials.id, credentials.email);
+    await this.redis.set(KEY_RESEND_COOLDOWN(email), RESEND_COOLDOWN_TTL, '1');
   }
 
   async generatePasswordReset(
     credentialsId: string,
     email: string
   ): Promise<void> {
+    const cooldown = await this.redis.get(KEY_RESET_COOLDOWN(email));
+    if (cooldown)
+      throw new HttpException(
+        'Please wait before requesting another password reset email',
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+
     const oldToken = await this.redis.get(RESET_KEY_BY_ID(credentialsId));
     if (oldToken)
       await this.redis.del(
@@ -92,6 +115,7 @@ export class VerificationService implements IVerificationService {
       to: email,
       token,
     });
+    await this.redis.set(KEY_RESET_COOLDOWN(email), RESET_COOLDOWN_TTL, '1');
   }
 
   async consumePasswordResetToken(token: string): Promise<string> {

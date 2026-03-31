@@ -13,6 +13,8 @@ const textVariants = cva('font-sans', {
       default: 'text-text',
       muted: 'text-text-muted',
       danger: 'text-danger',
+      success: 'text-success',
+      primary: 'text-primary',
       inherit: '',
     },
     weight: {

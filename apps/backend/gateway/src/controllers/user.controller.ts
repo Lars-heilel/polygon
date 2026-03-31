@@ -8,6 +8,7 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom, Observable } from 'rxjs';
 import {
@@ -19,6 +20,8 @@ import {
 } from '@org/core';
 import { UpdateUserDto } from '../dto/update-user.dto';
 
+@ApiTags('users')
+@ApiCookieAuth('access_token')
 @Controller('users')
 @UseGuards(JwtGuard)
 export class UserGatewayController {
@@ -27,6 +30,9 @@ export class UserGatewayController {
   ) {}
 
   @Get('me')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   getMe(@CurrentUser() user: JwtPayload) {
     return this.send(
       this.userClient.send(USER_PATTERNS.GET_BY_ID, { id: user.sub })
@@ -34,11 +40,20 @@ export class UserGatewayController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get user profile by ID' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'User profile' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   getById(@Param('id') id: string) {
     return this.send(this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }));
   }
 
   @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'Updated user profile' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto) {
     return this.send(
       this.userClient.send(USER_PATTERNS.UPDATE, { id: user.sub, dto })

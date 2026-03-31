@@ -7,6 +7,9 @@ import * as path from 'path';
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/libs/client/entities',
+  resolve: {
+    conditions: ['@org/source'],
+  },
   plugins: [
     react(),
     dts({

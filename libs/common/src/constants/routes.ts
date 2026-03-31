@@ -7,6 +7,7 @@ export const API_ROUTES = {
     refresh: 'auth/refresh',
     forgotPassword: 'auth/forgot-password',
     resetPassword: 'auth/reset-password',
+    resendVerification: 'auth/resend-verification',
   },
   users: {
     root: 'users',
@@ -27,6 +28,8 @@ export const CLIENT_ROUTES = {
     root: '/auth',
     login: '/auth/login',
     register: '/auth/register',
+    checkEmail: '/auth/check-email',
+    emailVerified: '/auth/email-verified',
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',
   },

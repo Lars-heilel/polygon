@@ -11,7 +11,7 @@ export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
   findPublicById(id: string): Promise<UserPublic | null>;
   searchByName(query: string): Promise<UserPublic[]>;
-  create(data: CreateUserEventInput): Promise<void>;
+  upsert(data: CreateUserEventInput): Promise<void>;
   update(id: string, data: UpdateUserInput): Promise<User>;
   delete(id: string): Promise<void>;
   exists(id: string): Promise<boolean>;

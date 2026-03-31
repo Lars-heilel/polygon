@@ -9,6 +9,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiCookieAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { Observable, lastValueFrom } from 'rxjs';
 import {
@@ -22,6 +30,8 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 import { CreateDirectChatDto } from '../dto/create-direct-chat.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
 
+@ApiTags('chats')
+@ApiCookieAuth('access_token')
 @Controller('chats')
 @UseGuards(JwtGuard)
 export class ChatGatewayController {
@@ -31,6 +41,9 @@ export class ChatGatewayController {
   ) {}
 
   @Post('direct')
+  @ApiOperation({ summary: 'Create or return existing direct chat with a user' })
+  @ApiResponse({ status: 201, description: 'Chat object' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   createDirect(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateDirectChatDto
@@ -44,6 +57,9 @@ export class ChatGatewayController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get all chats for current user' })
+  @ApiResponse({ status: 200, description: 'Array of chat objects' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   getChats(@CurrentUser() user: JwtPayload) {
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub })
@@ -51,6 +67,13 @@ export class ChatGatewayController {
   }
 
   @Get(':id/messages')
+  @ApiOperation({ summary: 'Get messages for a chat (paginated)' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiQuery({ name: 'skip', required: false, description: 'Number of messages to skip' })
+  @ApiQuery({ name: 'take', required: false, description: 'Number of messages to return (default 50)' })
+  @ApiResponse({ status: 200, description: 'Array of message objects' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not a member of this chat' })
   getMessages(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
@@ -68,6 +91,12 @@ export class ChatGatewayController {
   }
 
   @Post(':id/messages')
+  @ApiOperation({ summary: 'Send a message to a chat' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiResponse({ status: 201, description: 'Created message object' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not a member of this chat' })
   async sendMessage(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,

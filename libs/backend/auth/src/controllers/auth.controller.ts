@@ -15,7 +15,7 @@ export class AuthController implements IAuthController {
   ) {}
 
   @MessagePattern(AUTH_PATTERNS.REGISTER)
-  register(@Payload() dto: RegisterDto): Promise<TokenPair> {
+  register(@Payload() dto: RegisterDto): Promise<void> {
     return this.authService.register(dto);
   }
 
@@ -45,7 +45,7 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.VERIFY_EMAIL)
-  verifyEmail(@Payload() payload: { token: string }): Promise<void> {
+  verifyEmail(@Payload() payload: { token: string }): Promise<TokenPair> {
     return this.authService.verifyEmail(payload.token);
   }
 

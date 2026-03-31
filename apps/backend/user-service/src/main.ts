@@ -23,6 +23,7 @@ async function bootstrap() {
       urls: [rabbitmqUrl],
       queue: USER_QUEUE,
       queueOptions: { durable: true },
+      noAck: false,
     },
   });
 

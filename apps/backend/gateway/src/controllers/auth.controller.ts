@@ -10,6 +10,14 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiCookieAuth,
+  ApiQuery,
+  ApiExcludeEndpoint,
+} from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import type { Request, Response } from 'express';
 import { lastValueFrom, Observable } from 'rxjs';
@@ -21,6 +29,7 @@ import { RegisterDto } from '../dto/register.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from '../dto/reset-password.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthGatewayController {
   constructor(
@@ -29,20 +38,21 @@ export class AuthGatewayController {
   ) {}
 
   @Post('register')
-  async register(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) res: any
-  ) {
-    const response = res as Response;
-    const tokens = await this.send<TokenPair>(
-      this.authClient.send(AUTH_PATTERNS.REGISTER, dto)
-    );
-    this.setTokenCookies(response, tokens);
+  @ApiOperation({ summary: 'Register a new user with email and password' })
+  @ApiResponse({ status: 201, description: 'Registered successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
+  async register(@Body() dto: RegisterDto) {
+    await this.send(this.authClient.send(AUTH_PATTERNS.REGISTER, dto));
     return { message: 'Registered successfully' };
   }
 
   @Post('login')
   @UseGuards(LocalGuard)
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiResponse({ status: 201, description: 'Logged in — sets access_token and refresh_token cookies' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials or email not verified' })
+  @ApiResponse({ status: 429, description: 'Too many failed attempts' })
   async login(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const response = res as Response;
     const credentials = req.user as CredentialsPayload;
@@ -54,6 +64,9 @@ export class AuthGatewayController {
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Logout — revokes refresh token and clears cookies' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({ status: 201, description: 'Logged out' })
   async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const request = req as Request;
     const response = res as Response;
@@ -70,6 +83,10 @@ export class AuthGatewayController {
   }
 
   @Post('refresh')
+  @ApiOperation({ summary: 'Rotate token pair using refresh_token cookie' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({ status: 201, description: 'New access_token and refresh_token cookies set' })
+  @ApiResponse({ status: 401, description: 'Refresh token missing, expired, or revoked' })
   async refresh(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const request = req as Request;
     const response = res as Response;
@@ -84,14 +101,29 @@ export class AuthGatewayController {
   }
 
   @Get('verify-email')
-  async verifyEmail(@Query('token') token: string) {
-    await this.send(
+  @ApiOperation({ summary: 'Verify email from link — sets cookies and redirects to client' })
+  @ApiQuery({ name: 'token', description: 'Email verification token from the link' })
+  @ApiResponse({ status: 302, description: 'Redirects to /auth/email-verified with auth cookies' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(
+    @Query('token') token: string,
+    @Res() res: any
+  ) {
+    const response = res as Response;
+    const tokens = await this.send<TokenPair>(
       this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, { token })
     );
-    return { message: 'Email verified successfully' };
+    this.setTokenCookies(response, tokens);
+    const clientUrl = this.config.get('CLIENT_URL', { infer: true })!;
+    response.redirect(`${clientUrl}/auth/email-verified`);
   }
 
   @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend email verification link' })
+  @ApiResponse({ status: 201, description: 'Verification email sent' })
+  @ApiResponse({ status: 400, description: 'Account already verified' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 429, description: 'Resend cooldown active (60s)' })
   async resendVerification(@Body() dto: ResendVerificationDto) {
     await this.send(
       this.authClient.send(AUTH_PATTERNS.RESEND_VERIFICATION, {
@@ -102,6 +134,9 @@ export class AuthGatewayController {
   }
 
   @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset email' })
+  @ApiResponse({ status: 201, description: 'Reset link sent if email is registered (always returns success to prevent enumeration)' })
+  @ApiResponse({ status: 429, description: 'Reset cooldown active (60s)' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.send(
       this.authClient.send(AUTH_PATTERNS.FORGOT_PASSWORD, { email: dto.email })
@@ -113,6 +148,9 @@ export class AuthGatewayController {
   }
 
   @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password using token from email' })
+  @ApiResponse({ status: 201, description: 'Password reset — all sessions revoked' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.send(
       this.authClient.send(AUTH_PATTERNS.RESET_PASSWORD, {
@@ -127,12 +165,14 @@ export class AuthGatewayController {
 
   @Get('github')
   @UseGuards(GithubGuard)
+  @ApiExcludeEndpoint()
   githubAuth() {
     // Passport redirects to GitHub — no body needed
   }
 
   @Get('github/callback')
   @UseGuards(GithubGuard)
+  @ApiExcludeEndpoint()
   githubCallback(
     @Req() req: Request & { user: TokenPair },
     @Res() res: Response
@@ -145,11 +185,13 @@ export class AuthGatewayController {
 
   @Get('yandex')
   @UseGuards(YandexGuard)
+  @ApiExcludeEndpoint()
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   yandexAuth() {}
 
   @Get('yandex/callback')
   @UseGuards(YandexGuard)
+  @ApiExcludeEndpoint()
   yandexCallback(
     @Req() req: Request & { user: TokenPair },
     @Res() res: Response
@@ -162,11 +204,13 @@ export class AuthGatewayController {
 
   @Get('google')
   @UseGuards(GoogleGuard)
+  @ApiExcludeEndpoint()
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   googleAuth() {}
 
   @Get('google/callback')
   @UseGuards(GoogleGuard)
+  @ApiExcludeEndpoint()
   googleCallback(
     @Req() req: Request & { user: TokenPair },
     @Res() res: Response

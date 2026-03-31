@@ -41,8 +41,12 @@ export class UserPrismaRepository implements IUserRepository {
     });
   }
 
-  async create(data: CreateUserEventInput): Promise<void> {
-    await this.prisma.user.create({ data });
+  async upsert(data: CreateUserEventInput): Promise<void> {
+    await this.prisma.user.upsert({
+      where: { id: data.id },
+      create: data,
+      update: {},
+    });
   }
 
   async update(id: string, data: UpdateUserInput): Promise<User> {

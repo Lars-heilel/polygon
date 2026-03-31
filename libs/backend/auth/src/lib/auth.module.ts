@@ -11,6 +11,7 @@ import {
   CoreConfigModule,
   CoreEncryptionModule,
   CoreRedisModule,
+  CoreScheduleModule,
   CoreTokenModule,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_QUEUE,
@@ -22,6 +23,7 @@ import {
 import { PrismaService } from '../database/prisma/prisma.service';
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
 import { AuthService } from '../services/auth.service';
+import { CleanupService } from '../services/cleanup.service';
 import { VerificationService } from '../services/verification.service';
 import { AuthController } from '../controllers/auth.controller';
 
@@ -53,6 +55,7 @@ const rmqClient = (name: string, queue: string) => ({
     CoreEncryptionModule,
     CoreTokenModule,
     CoreRedisModule,
+    CoreScheduleModule,
     ClientsModule.registerAsync([
       rmqClient(USER_CLIENT_TOKEN, USER_QUEUE),
       rmqClient(NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_QUEUE),
@@ -64,6 +67,7 @@ const rmqClient = (name: string, queue: string) => ({
     { provide: AUTH_PRISMA_REPOSITORY_TOKEN, useClass: AuthPrismaRepository },
     { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
     { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
+    CleanupService,
   ],
   exports: [PrismaService],
 })

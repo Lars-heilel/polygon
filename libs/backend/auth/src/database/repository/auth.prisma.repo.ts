@@ -90,4 +90,15 @@ export class AuthPrismaRepository implements IAuthRepository {
       data: { revokedAt: new Date() },
     });
   }
+
+  async deleteUnverifiedOlderThan(before: Date): Promise<number> {
+    const result = await this.prisma.credentials.deleteMany({
+      where: {
+        isVerified: false,
+        passwordHash: { not: null },
+        createdAt: { lt: before },
+      },
+    });
+    return result.count;
+  }
 }

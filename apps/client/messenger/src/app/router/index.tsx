@@ -5,6 +5,8 @@ import { ChatsLayout } from '../layouts/chats-layout';
 import {
   LoginPage,
   RegisterPage,
+  CheckEmailPage,
+  EmailVerifiedPage,
   ForgotPasswordPage,
   ResetPasswordPage,
   ChatsPage,
@@ -30,6 +32,8 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/auth/login" replace /> },
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
+          { path: 'check-email', element: <CheckEmailPage /> },
+          { path: 'email-verified', element: <EmailVerifiedPage /> },
           { path: 'forgot-password', element: <ForgotPasswordPage /> },
           { path: 'reset-password', element: <ResetPasswordPage /> },
         ],

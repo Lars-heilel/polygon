@@ -31,18 +31,19 @@ export interface IAuthRepository {
   revokeRefreshToken(tokenHash: string): Promise<void>;
   verifyCredentials(id: string): Promise<void>;
   revokeAllRefreshTokens(credentialsId: string): Promise<void>;
+  deleteUnverifiedOlderThan(before: Date): Promise<number>;
 }
 
 export interface IVerificationService {
   generateAndSend(credentialsId: string, email: string): Promise<void>;
-  verify(token: string): Promise<void>;
+  verify(token: string): Promise<string>;
   resend(email: string): Promise<void>;
   generatePasswordReset(credentialsId: string, email: string): Promise<void>;
   consumePasswordResetToken(token: string): Promise<string>;
 }
 
 export interface IAuthService {
-  register(dto: RegisterDto): Promise<TokenPair>;
+  register(dto: RegisterDto): Promise<void>;
   validateCredentials(
     email: string,
     password: string
@@ -50,7 +51,7 @@ export interface IAuthService {
   login(id: string): Promise<TokenPair>;
   logout(refreshToken: string): Promise<void>;
   refresh(refreshToken: string): Promise<TokenPair>;
-  verifyEmail(token: string): Promise<void>;
+  verifyEmail(token: string): Promise<TokenPair>;
   resendVerification(email: string): Promise<void>;
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
@@ -58,7 +59,7 @@ export interface IAuthService {
 }
 
 export interface IAuthController {
-  register(dto: RegisterDto): Promise<TokenPair>;
+  register(dto: RegisterDto): Promise<void>;
   validateCredentials(payload: {
     email: string;
     password: string;
@@ -66,7 +67,7 @@ export interface IAuthController {
   login(payload: { id: string }): Promise<TokenPair>;
   logout(payload: { refreshToken: string }): Promise<void>;
   refresh(payload: { refreshToken: string }): Promise<TokenPair>;
-  verifyEmail(payload: { token: string }): Promise<void>;
+  verifyEmail(payload: { token: string }): Promise<TokenPair>;
   resendVerification(payload: { email: string }): Promise<void>;
   forgotPassword(payload: { email: string }): Promise<void>;
   resetPassword(payload: { token: string; newPassword: string }): Promise<void>;

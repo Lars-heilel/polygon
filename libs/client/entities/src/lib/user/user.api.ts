@@ -35,6 +35,12 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
     }),
+
+  resendVerification: (email: string) =>
+    apiFetch<void>(API_ROUTES.auth.resendVerification, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
 };
 
 export function useMeQuery() {
@@ -73,5 +79,11 @@ export function useResetPasswordMutation() {
       token: string;
       newPassword: string;
     }) => authApi.resetPassword(token, newPassword),
+  });
+}
+
+export function useResendVerificationMutation() {
+  return useMutation({
+    mutationFn: (email: string) => authApi.resendVerification(email),
   });
 }

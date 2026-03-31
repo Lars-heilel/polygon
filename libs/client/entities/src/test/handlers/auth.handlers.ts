@@ -23,10 +23,15 @@ export const authHandlers = [
     return HttpResponse.json({
       id: 'test-user-id',
       email: 'test@example.com',
-      username: 'testuser',
+      name: 'testuser',
+      displayName: null,
       avatarUrl: null,
       bio: null,
     });
+  }),
+
+  http.post(`${BASE}/auth/resend-verification`, () => {
+    return new HttpResponse(null, { status: 201 });
   }),
 
   http.post(`${BASE}/auth/forgot-password`, () => {
