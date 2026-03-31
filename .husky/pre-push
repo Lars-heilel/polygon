@@ -1,0 +1,1 @@
+npx nx affected -t test typecheck --base=origin/dev --parallel=3
