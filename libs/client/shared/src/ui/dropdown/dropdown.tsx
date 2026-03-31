@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, type ReactNode, type MouseEvent } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+
 import { cn } from '../../lib/utils/cn';
 import { Divider } from '../divider';
 
@@ -48,14 +49,17 @@ export function Dropdown({ trigger, items, align = 'left', className }: Dropdown
   }, [isOpen]);
 
   return (
-    <div className={cn('relative inline-block text-left', className)} ref={menuRef}>
+    <div
+      className={cn('relative inline-block text-left', className)}
+      ref={menuRef}
+    >
       <div onClick={handleTriggerClick}>{trigger}</div>
 
       {isOpen && (
         <div
           className={cn(
             'absolute z-50 mt-2 w-48 rounded-md bg-surface-elevated shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
-            align === 'right' ? 'right-0' : 'left-0'
+            align === 'right' ? 'right-0' : 'left-0',
           )}
         >
           <div className="py-1">
@@ -68,19 +72,15 @@ export function Dropdown({ trigger, items, align = 'left', className }: Dropdown
                   onClick={() => handleItemClick(item.onClick)}
                   className={cn(
                     'group flex w-full items-center gap-2 px-4 py-2 text-sm',
-                    item.danger
-                      ? 'text-danger hover:bg-danger/10'
-                      : 'text-text hover:bg-surface'
+                    item.danger ? 'text-danger hover:bg-danger/10' : 'text-text hover:bg-surface',
                   )}
                 >
                   {item.icon && (
-                    <span className="text-text-muted group-hover:text-text">
-                      {item.icon}
-                    </span>
+                    <span className="text-text-muted group-hover:text-text">{item.icon}</span>
                   )}
                   {item.label}
                 </button>
-              )
+              ),
             )}
           </div>
         </div>

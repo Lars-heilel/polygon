@@ -1,23 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, Profile } from 'passport-google-oauth20';
 import { ClientProxy } from '@nestjs/microservices';
-import { lastValueFrom } from 'rxjs';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
+import { PassportStrategy } from '@nestjs/passport';
 import type { TokenPair } from '@org/common';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
+import { Profile, Strategy } from 'passport-google-oauth20';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService<Env>
+    config: ConfigService<Env>,
   ) {
     super({
-      clientID:
-        config.get('GOOGLE_CLIENT_ID', { infer: true }) || 'not-configured',
-      clientSecret:
-        config.get('GOOGLE_CLIENT_SECRET', { infer: true }) || 'not-configured',
+      clientID: config.get('GOOGLE_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret: config.get('GOOGLE_CLIENT_SECRET', { infer: true }) || 'not-configured',
       callbackURL: `${config.get('APP_URL', {
         infer: true,
       })}/api/auth/google/callback`,
@@ -28,7 +26,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   async validate(
     _accessToken: string,
     _refreshToken: string,
-    profile: Profile
+    profile: Profile,
   ): Promise<TokenPair> {
     const email = profile.emails?.[0]?.value ?? `${profile.id}@google.noemail`;
 
@@ -38,7 +36,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         providerId: profile.id,
         email,
         name: profile.displayName || email,
-      })
+      }),
     );
   }
 }

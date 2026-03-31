@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ApiError } from '@org/shared';
+
 import { useResendVerificationMutation } from '@org/entities';
+import { ApiError } from '@org/shared';
 
 type ResendStatus = 'idle' | 'success' | 'error' | 'rate-limited';
 

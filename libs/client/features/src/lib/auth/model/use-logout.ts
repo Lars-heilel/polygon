@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router';
+
 import { CLIENT_ROUTES } from '@org/common';
 import { useLogoutMutation, useSessionStore } from '@org/entities';
+import { useNavigate } from 'react-router';
 
 export function useLogout() {
   const navigate = useNavigate();

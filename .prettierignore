@@ -3,3 +3,13 @@
 /coverage
 /.nx/cache
 /.nx/workspace-data
+.agents
+.github
+.claude
+.husky
+.nx
+.vscode
+**/generated
+**/prisma/generated
+**/*.min.js
+*dist

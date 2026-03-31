@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { createZodDto } from 'nestjs-zod';
 import { PASSWORD_REGEX } from '@org/common';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 const ForgotPasswordSchema = z.object({
   email: z.string().email(),
@@ -12,7 +12,7 @@ const ResetPasswordSchema = z.object({
     .string()
     .regex(
       PASSWORD_REGEX,
-      'Password must contain uppercase, lowercase, digits, and special characters (min 8 characters)'
+      'Password must contain uppercase, lowercase, digits, and special characters (min 8 characters)',
     ),
 });
 

@@ -29,9 +29,7 @@ const PRISMA_CODE_MAP: Record<string, { status: number; message: string }> = {
 // Вместо import из '@prisma/client/runtime/library' (недоступен вне Prisma-сервисов)
 // используем duck-typing — проверяем наличие свойств характерных для Prisma ошибок.
 // Это надёжнее: работает с любой версией Prisma и любым сгенерированным клиентом.
-function isPrismaKnownError(
-  e: unknown
-): e is { code: string; meta?: Record<string, unknown> } {
+function isPrismaKnownError(e: unknown): e is { code: string; meta?: Record<string, unknown> } {
   return (
     typeof e === 'object' &&
     e !== null &&
@@ -96,10 +94,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 2. NestJS RpcException
     if (exception instanceof RpcException) {
       const error = exception.getError();
-      const message =
-        typeof error === 'string'
-          ? error
-          : (error as { message: string }).message;
+      const message = typeof error === 'string' ? error : (error as { message: string }).message;
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message,
@@ -150,19 +145,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 7. Всё остальное — непредвиденная ошибка, всегда логируем стек
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message:
-        exception instanceof Error
-          ? exception.message
-          : 'Internal server error',
+      message: exception instanceof Error ? exception.message : 'Internal server error',
       logStack: true,
     };
   }
 
-  private handleHttp(
-    exception: unknown,
-    resolved: ResolvedError,
-    host: ArgumentsHost
-  ): void {
+  private handleHttp(exception: unknown, resolved: ResolvedError, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
@@ -172,10 +160,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       url: request.url,
       status: resolved.status,
       message: resolved.message,
-      stack:
-        resolved.logStack && exception instanceof Error
-          ? exception.stack
-          : undefined,
+      stack: resolved.logStack && exception instanceof Error ? exception.stack : undefined,
     };
 
     if (resolved.status >= 500) {
@@ -197,10 +182,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     this.logger.error({
       message: resolved.message,
       status: resolved.status,
-      stack:
-        resolved.logStack && exception instanceof Error
-          ? exception.stack
-          : undefined,
+      stack: resolved.logStack && exception instanceof Error ? exception.stack : undefined,
     });
 
     throw new RpcException({

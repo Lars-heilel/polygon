@@ -1,6 +1,7 @@
-import { Link } from 'react-router';
 import { CLIENT_ROUTES } from '@org/common';
-import { StatusScreen, Button, Text, FormAlert } from '@org/shared';
+import { Button, FormAlert, StatusScreen, Text } from '@org/shared';
+import { Link } from 'react-router';
+
 import { useResendVerification } from '../model/use-resend-verification';
 
 interface CheckEmailScreenProps {
@@ -42,8 +43,14 @@ export function CheckEmailScreen({ email }: CheckEmailScreenProps) {
       >
         Resend email
       </Button>
-      <Text size="sm" color="muted">
-        <Link to={CLIENT_ROUTES.auth.login} className="hover:underline">
+      <Text
+        size="sm"
+        color="muted"
+      >
+        <Link
+          to={CLIENT_ROUTES.auth.login}
+          className="hover:underline"
+        >
           Back to sign in
         </Link>
       </Text>

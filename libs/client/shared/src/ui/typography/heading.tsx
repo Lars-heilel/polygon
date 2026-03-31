@@ -1,4 +1,5 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const headingVariants = cva('font-sans font-bold tracking-tight', {
@@ -21,8 +22,7 @@ type Level = 1 | 2 | 3 | 4 | 5 | 6;
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 interface HeadingProps
-  extends React.HTMLAttributes<HTMLHeadingElement>,
-    VariantProps<typeof headingVariants> {
+  extends React.HTMLAttributes<HTMLHeadingElement>, VariantProps<typeof headingVariants> {
   level: Level;
   as?: HeadingTag;
   srOnly?: boolean;

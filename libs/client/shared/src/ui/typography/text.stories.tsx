@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { Text } from './text';
 
 const meta: Meta<typeof Text> = {
@@ -27,7 +28,10 @@ export const Sizes: Story = {
   render: () => (
     <div className="space-y-2">
       {(['xs', 'sm', 'md', 'lg'] as const).map((size) => (
-        <Text key={size} size={size}>
+        <Text
+          key={size}
+          size={size}
+        >
           [{size}] The quick brown fox
         </Text>
       ))}
@@ -59,10 +63,18 @@ export const AsTags: Story = {
   render: () => (
     <div className="space-y-2">
       <Text as="p">As paragraph</Text>
-      <Text as="label" size="sm" weight="medium">
+      <Text
+        as="label"
+        size="sm"
+        weight="medium"
+      >
         As label
       </Text>
-      <Text as="span" color="muted" size="sm">
+      <Text
+        as="span"
+        color="muted"
+        size="sm"
+      >
         As span
       </Text>
     </div>

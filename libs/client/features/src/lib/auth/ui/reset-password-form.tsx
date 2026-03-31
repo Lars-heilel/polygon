@@ -1,9 +1,9 @@
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link, useSearchParams } from 'react-router';
-import { PasswordRegex, CLIENT_ROUTES } from '@org/common';
+import { CLIENT_ROUTES, PasswordRegex } from '@org/common';
 import { Button, Input } from '@org/shared';
+import { useForm } from 'react-hook-form';
+import { Link, useSearchParams } from 'react-router';
+import { z } from 'zod';
 
 const schema = z
   .object({
@@ -18,9 +18,7 @@ const schema = z
 export type ResetPasswordFormValues = z.infer<typeof schema>;
 
 interface ResetPasswordFormProps {
-  onSubmit: (
-    values: ResetPasswordFormValues & { token: string }
-  ) => Promise<void>;
+  onSubmit: (values: ResetPasswordFormValues & { token: string }) => Promise<void>;
 }
 
 export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
@@ -36,9 +34,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
   if (isSubmitSuccessful) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-sm text-text-muted">
-          Password updated successfully.
-        </p>
+        <p className="text-sm text-text-muted">Password updated successfully.</p>
         <Link
           to={CLIENT_ROUTES.auth.login}
           className="text-sm text-primary hover:underline"
@@ -87,7 +83,11 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           autoComplete="new-password"
         />
       </div>
-      <Button type="submit" className="w-full" loading={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={isSubmitting}
+      >
         Set new password
       </Button>
     </form>

@@ -1,26 +1,32 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { ThemeToggle } from '@org/features';
 import { NotFoundPage } from '@org/pages';
-import { ProtectedRoute, GuestRoute } from './protected-route';
-import { ChatsLayout } from '../layouts/chats-layout';
+import { DesignSystemPage } from '@org/shared';
+import { Navigate, createBrowserRouter } from 'react-router';
+
 import {
-  LoginPage,
-  RegisterPage,
+  ChatPage,
+  ChatsPage,
   CheckEmailPage,
   EmailVerifiedPage,
   ForgotPasswordPage,
+  LoginPage,
+  RegisterPage,
   ResetPasswordPage,
-  ChatsPage,
-  ChatPage,
   SettingsPage,
 } from '../../pages';
 import { ChatsTestPage } from '../../pages/chats-test/chats-test';
-import { DesignSystemPage } from '@org/shared';
-import { ThemeToggle } from '@org/features';
+import { ChatsLayout } from '../layouts/chats-layout';
+import { GuestRoute, ProtectedRoute } from './protected-route';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/chats" replace />,
+    element: (
+      <Navigate
+        to="/chats"
+        replace
+      />
+    ),
   },
 
   {
@@ -29,7 +35,15 @@ export const router = createBrowserRouter([
       {
         path: '/auth',
         children: [
-          { index: true, element: <Navigate to="/auth/login" replace /> },
+          {
+            index: true,
+            element: (
+              <Navigate
+                to="/auth/login"
+                replace
+              />
+            ),
+          },
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
           { path: 'check-email', element: <CheckEmailPage /> },

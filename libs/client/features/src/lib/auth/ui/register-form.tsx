@@ -1,9 +1,10 @@
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { CLIENT_ROUTES, registerSchema } from '@org/common';
+import { Button, Divider, FormAlert, Input } from '@org/shared';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router';
-import { registerSchema, CLIENT_ROUTES } from '@org/common';
-import { Button, Input, Divider, FormAlert } from '@org/shared';
+import { z } from 'zod';
+
 import { OAuthButtons } from './oauth-buttons';
 
 const registerFormSchema = registerSchema
@@ -32,7 +33,11 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-4"
+      noValidate
+    >
       <OAuthButtons />
 
       <Divider label="or" />
@@ -73,7 +78,11 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 
       <FormAlert message={apiError ?? null} />
 
-      <Button type="submit" className="w-full" loading={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={isSubmitting}
+      >
         Create account
       </Button>
 

@@ -1,9 +1,9 @@
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link } from 'react-router';
 import { CLIENT_ROUTES } from '@org/common';
 import { Button, Input } from '@org/shared';
+import { useForm } from 'react-hook-form';
+import { Link } from 'react-router';
+import { z } from 'zod';
 
 const schema = z.object({ email: z.email() });
 
@@ -37,7 +37,11 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-4"
+      noValidate
+    >
       <Input
         {...register('email')}
         type="email"
@@ -46,7 +50,11 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
         error={errors.email?.message}
         autoComplete="email"
       />
-      <Button type="submit" className="w-full" loading={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={isSubmitting}
+      >
         Send reset link
       </Button>
       <p className="text-center text-sm text-text-muted">

@@ -1,1 +1,1 @@
-export interface INotification {}
+// export interface INotification {}

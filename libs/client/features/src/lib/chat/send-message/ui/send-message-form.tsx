@@ -1,5 +1,7 @@
 import { type KeyboardEvent } from 'react';
-import { Textarea, Button } from '@org/shared';
+
+import { Button, Textarea } from '@org/shared';
+
 import { useSendMessage } from '../model/use-send-message';
 
 interface SendMessageFormProps {
@@ -29,7 +31,11 @@ export function SendMessageForm({ chatId }: SendMessageFormProps) {
           disabled={isSending}
         />
       </div>
-      <Button onClick={send} disabled={!text.trim() || isSending} size="md">
+      <Button
+        onClick={send}
+        disabled={!text.trim() || isSending}
+        size="md"
+      >
         Send
       </Button>
     </div>

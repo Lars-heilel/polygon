@@ -1,10 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  DiskHealthIndicator,
   HealthCheck,
   HealthCheckService,
   MemoryHealthIndicator,
-  DiskHealthIndicator,
 } from '@nestjs/terminus';
 
 @ApiTags('health')
@@ -13,7 +13,7 @@ export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly memory: MemoryHealthIndicator,
-    private readonly disk: DiskHealthIndicator
+    private readonly disk: DiskHealthIndicator,
   ) {}
 
   @Get()
@@ -28,8 +28,7 @@ export class HealthController {
       // RSS — всё что процесс занимает в OS. Порог 750MB
       () => this.memory.checkRSS('memory_rss', 750 * 1024 * 1024),
       // Свободное место на диске. Порог — минимум 10% свободно
-      () =>
-        this.disk.checkStorage('disk', { path: '/', thresholdPercent: 0.9 }),
+      () => this.disk.checkStorage('disk', { path: '/', thresholdPercent: 0.9 }),
     ]);
   }
 }

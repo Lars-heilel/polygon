@@ -1,7 +1,7 @@
-import { useNavigate } from 'react-router';
 import { CLIENT_ROUTES } from '@org/common';
-import { toast } from '@org/shared';
 import { useResetPasswordMutation } from '@org/entities';
+import { toast } from '@org/shared';
+import { useNavigate } from 'react-router';
 
 export function useResetPassword() {
   const navigate = useNavigate();

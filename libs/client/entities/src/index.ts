@@ -27,3 +27,5 @@ export {
   selectActiveMessageId,
   selectIsTyping,
 } from './lib/chat';
+
+export { authHandlers } from './test/handlers';

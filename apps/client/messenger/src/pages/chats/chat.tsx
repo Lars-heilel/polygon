@@ -1,5 +1,5 @@
-import { useParams } from 'react-router';
 import { ChatWindow } from '@org/widgets';
+import { useParams } from 'react-router';
 
 export function ChatPage() {
   const { chatId } = useParams<{ chatId: string }>();

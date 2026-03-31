@@ -1,4 +1,5 @@
 import { Inject, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   ConnectedSocket,
   MessageBody,
@@ -8,15 +9,12 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { ClientProxy } from '@nestjs/microservices';
-import { Server, Socket } from 'socket.io';
-import { lastValueFrom } from 'rxjs';
 import { CHAT_CLIENT_TOKEN, CHAT_PATTERNS, TokenService } from '@org/core';
+import { lastValueFrom } from 'rxjs';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
-export class ChatSocketGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server!: Server;
 
@@ -24,7 +22,7 @@ export class ChatSocketGateway
 
   constructor(
     private readonly tokenService: TokenService,
-    @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy
+    @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
   ) {}
 
   handleConnection(socket: Socket) {
@@ -48,10 +46,7 @@ export class ChatSocketGateway
   }
 
   @SubscribeMessage('chat:join')
-  async handleJoin(
-    @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { chatId: string }
-  ) {
+  async handleJoin(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
     const userId = socket.data['userId'] as string;
     if (!userId) return;
 
@@ -59,7 +54,7 @@ export class ChatSocketGateway
       this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
         chatId: payload.chatId,
         userId,
-      })
+      }),
     ).catch(() => false);
 
     if (isMember) {
@@ -69,10 +64,7 @@ export class ChatSocketGateway
   }
 
   @SubscribeMessage('chat:leave')
-  async handleLeave(
-    @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { chatId: string }
-  ) {
+  async handleLeave(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
     await socket.leave(`chat:${payload.chatId}`);
   }
 

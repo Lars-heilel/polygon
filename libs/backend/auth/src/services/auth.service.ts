@@ -7,32 +7,28 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { createHash } from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
+import type { Credentials, CredentialsPayload, OAuthLoginDto, TokenPair } from '@org/common';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   EncryptionService,
+  type Env,
+  type JwtPayload,
   RedisService,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
   VERIFICATION_SERVICE_TOKEN,
-  type Env,
-  type JwtPayload,
 } from '@org/core';
-import type {
-  TokenPair,
-  OAuthLoginDto,
-  CredentialsPayload,
-  Credentials,
-} from '@org/common';
+import { createHash } from 'crypto';
+
+import type { RegisterDto } from '../dto/register.dto';
 import type {
   IAuthRepository,
   IAuthService,
   IVerificationService,
 } from '../interfaces/auth.interface';
-import type { RegisterDto } from '../dto/register.dto';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -48,7 +44,7 @@ export class AuthService implements IAuthService {
     private readonly config: ConfigService<Env>,
     @Inject(VERIFICATION_SERVICE_TOKEN)
     private readonly verification: IVerificationService,
-    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy
+    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
   ) {}
 
   async register(dto: RegisterDto): Promise<void> {
@@ -70,20 +66,14 @@ export class AuthService implements IAuthService {
     await this.verification.generateAndSend(credentials.id, credentials.email);
   }
 
-  async validateCredentials(
-    email: string,
-    password: string
-  ): Promise<CredentialsPayload> {
+  async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
     const attemptsKey = `login_attempts:${email}`;
 
-    const attempts = await this.redis.incr(
-      attemptsKey,
-      AuthService.LOGIN_ATTEMPTS_TTL
-    );
+    const attempts = await this.redis.incr(attemptsKey, AuthService.LOGIN_ATTEMPTS_TTL);
     if (attempts > AuthService.LOGIN_ATTEMPTS_LIMIT) {
       throw new HttpException(
         'Too many failed login attempts. Please try again in 15 minutes.',
-        HttpStatus.TOO_MANY_REQUESTS
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
@@ -92,18 +82,13 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const valid = await this.encryption.compare(
-      password,
-      credentials.passwordHash
-    );
+    const valid = await this.encryption.compare(password, credentials.passwordHash);
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!credentials.isVerified) {
-      throw new UnauthorizedException(
-        'Please verify your email before signing in'
-      );
+      throw new UnauthorizedException('Please verify your email before signing in');
     }
 
     await this.redis.del(attemptsKey);
@@ -135,16 +120,11 @@ export class AuthService implements IAuthService {
   async forgotPassword(email: string): Promise<void> {
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) return;
-    await this.verification.generatePasswordReset(
-      credentials.id,
-      credentials.email
-    );
+    await this.verification.generatePasswordReset(credentials.id, credentials.email);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const credentialsId = await this.verification.consumePasswordResetToken(
-      token
-    );
+    const credentialsId = await this.verification.consumePasswordResetToken(token);
     const credentials = await this.repo.findById(credentialsId);
     if (!credentials) throw new NotFoundException('User not found');
 
@@ -154,10 +134,7 @@ export class AuthService implements IAuthService {
   }
 
   async oauthLogin(dto: OAuthLoginDto): Promise<TokenPair> {
-    const existing = await this.repo.findOAuthAccount(
-      dto.provider,
-      dto.providerId
-    );
+    const existing = await this.repo.findOAuthAccount(dto.provider, dto.providerId);
     if (existing) return this.issueTokenPair(existing.credentials);
 
     let credentials = await this.repo.findByEmail(dto.email);
@@ -214,7 +191,7 @@ export class AuthService implements IAuthService {
   }
 
   private async issueTokenPair(
-    credentials: Pick<Credentials, 'id' | 'role' | 'isVerified'>
+    credentials: Pick<Credentials, 'id' | 'role' | 'isVerified'>,
   ): Promise<TokenPair> {
     const jwtPayload: JwtPayload = {
       sub: credentials.id,
@@ -227,8 +204,7 @@ export class AuthService implements IAuthService {
 
     const tokenHash = this.hashToken(refreshToken);
     const expiresAt = new Date(
-      Date.now() +
-        this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000
+      Date.now() + this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000,
     );
 
     await this.repo.saveRefreshToken({

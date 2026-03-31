@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { USER_SELECT_FIELDS, USER_PUBLIC_SELECT_FIELDS } from '@org/common';
-import type {
-  User,
-  UserPublic,
-  UpdateUserInput,
-  CreateUserEventInput,
-} from '@org/common';
+import { USER_PUBLIC_SELECT_FIELDS, USER_SELECT_FIELDS } from '@org/common';
+import type { CreateUserEventInput, UpdateUserInput, User, UserPublic } from '@org/common';
+
 import type { IUserRepository } from '../../interfaces/user.interface';
 import { PrismaService } from '../prisma/prisma.service';
 

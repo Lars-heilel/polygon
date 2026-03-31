@@ -1,4 +1,5 @@
 import { ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
@@ -9,9 +10,9 @@ import {
   USER_EVENTS,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
-import { ConfigService } from '@nestjs/config';
-import { AuthService } from './auth.service';
 import { AUTH_SERVICE_TOKEN } from '@org/core';
+
+import { AuthService } from './auth.service';
 
 const mockRepo = {
   findByEmail: jest.fn(),
@@ -134,7 +135,7 @@ describe('AuthService', () => {
 
       expect(mockVerification.generateAndSend).toHaveBeenCalledWith(
         credentials.id,
-        credentials.email
+        credentials.email,
       );
     });
 

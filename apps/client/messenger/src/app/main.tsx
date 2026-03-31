@@ -1,18 +1,18 @@
-import './styles/global.css';
-import './config/env';
 import { StrictMode } from 'react';
+
 import * as ReactDOM from 'react-dom/client';
+
 import App from './app';
+import './config/env';
 import { initSocketMiddleware } from './socket/socket-middleware';
+import './styles/global.css';
 
 initSocketMiddleware();
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(
   <StrictMode>
     <App />
-  </StrictMode>
+  </StrictMode>,
 );

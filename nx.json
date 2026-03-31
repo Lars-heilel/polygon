@@ -37,19 +37,11 @@
           "restrictions": [
             {
               "tag": "layer:entities",
-              "notDependableOn": [
-                "layer:widgets",
-                "layer:pages",
-                "layer:layouts"
-              ]
+              "notDependableOn": ["layer:widgets", "layer:pages", "layer:layouts"]
             },
             {
               "tag": "layer:features",
-              "notDependableOn": [
-                "layer:widgets",
-                "layer:pages",
-                "layer:layouts"
-              ]
+              "notDependableOn": ["layer:widgets", "layer:pages", "layer:layouts"]
             },
             {
               "tag": "layer:layouts",

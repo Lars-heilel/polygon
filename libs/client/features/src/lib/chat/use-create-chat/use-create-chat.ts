@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { useCreateDirectChatMutation, useGetChatsQuery } from '@org/entities';
 
 interface User {
@@ -22,13 +23,13 @@ export function useCreateChat() {
       name: member.userId.slice(0, 8),
       email: `${member.userId.slice(0, 8)}@polygon.app`,
       online: false, // TODO: добавить статус online
-    }))
+    })),
   );
 
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSelectUser = (targetUserId: string) => {
@@ -39,7 +40,7 @@ export function useCreateChat() {
           setIsOpen(false);
           setSearchQuery('');
         },
-      }
+      },
     );
   };
 

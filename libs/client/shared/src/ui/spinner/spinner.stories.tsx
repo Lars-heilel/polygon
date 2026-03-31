@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { Spinner } from './spinner';
 
 const meta: Meta<typeof Spinner> = {
@@ -25,7 +26,11 @@ export const Sizes: Story = {
   render: () => (
     <div className="flex items-center gap-4">
       {(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((size) => (
-        <Spinner key={size} size={size} color="primary" />
+        <Spinner
+          key={size}
+          size={size}
+          color="primary"
+        />
       ))}
     </div>
   ),

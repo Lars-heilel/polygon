@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+
 import { cn } from '../../lib/utils/cn';
 
 const variants = {
@@ -28,7 +29,7 @@ export function StatusScreen({
     <div
       className={cn(
         'flex flex-col items-center justify-center gap-4 py-16 px-4 text-center',
-        className
+        className,
       )}
     >
       <span
@@ -39,9 +40,7 @@ export function StatusScreen({
       </span>
       <div className="space-y-1">
         <p className="text-lg font-semibold text-text">{title}</p>
-        {description && (
-          <p className="text-sm text-text-muted max-w-sm">{description}</p>
-        )}
+        {description && <p className="text-sm text-text-muted max-w-sm">{description}</p>}
       </div>
       {children && <div className="mt-2 flex gap-2">{children}</div>}
     </div>

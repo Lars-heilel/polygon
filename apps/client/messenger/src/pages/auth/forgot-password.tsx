@@ -1,5 +1,5 @@
-import { AuthLayout, toast } from '@org/shared';
 import { ForgotPasswordForm, useForgotPassword } from '@org/features';
+import { AuthLayout, toast } from '@org/shared';
 
 export function ForgotPasswordPage() {
   const { forgotPassword } = useForgotPassword();

@@ -1,4 +1,5 @@
-import type { Meta, StoryObj, Decorator } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react';
+
 import { Divider } from './divider';
 
 const meta: Meta<typeof Divider> = {

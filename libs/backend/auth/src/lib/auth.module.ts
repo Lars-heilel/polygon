@@ -1,10 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  ClientsModule,
-  Transport,
-  type RmqOptions,
-} from '@nestjs/microservices';
+import { ClientsModule, type RmqOptions, Transport } from '@nestjs/microservices';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   AUTH_SERVICE_TOKEN,
@@ -13,19 +9,20 @@ import {
   CoreRedisModule,
   CoreScheduleModule,
   CoreTokenModule,
+  type Env,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_QUEUE,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
   VERIFICATION_SERVICE_TOKEN,
-  type Env,
 } from '@org/core';
+
+import { AuthController } from '../controllers/auth.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
 import { AuthService } from '../services/auth.service';
 import { CleanupService } from '../services/cleanup.service';
 import { VerificationService } from '../services/verification.service';
-import { AuthController } from '../controllers/auth.controller';
 
 const rmqClient = (name: string, queue: string) => ({
   name,
@@ -35,13 +32,11 @@ const rmqClient = (name: string, queue: string) => ({
     transport: Transport.RMQ,
     options: {
       urls: [
-        `amqp://${config.get('RABBITMQ_USER', { infer: true })}:${config.get(
-          'RABBITMQ_PASSWORD',
-          { infer: true }
-        )}@${config.get('RABBITMQ_HOST', { infer: true })}:${config.get(
-          'RABBITMQ_PORT',
-          { infer: true }
-        )}`,
+        `amqp://${config.get('RABBITMQ_USER', { infer: true })}:${config.get('RABBITMQ_PASSWORD', {
+          infer: true,
+        })}@${config.get('RABBITMQ_HOST', { infer: true })}:${config.get('RABBITMQ_PORT', {
+          infer: true,
+        })}`,
       ],
       queue,
       queueOptions: { durable: true },

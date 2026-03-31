@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+
 import {
   cleanupTestUser,
   closeConnections,
@@ -6,8 +7,7 @@ import {
   getVerificationToken,
 } from '../support/test-db';
 
-const uniqueEmail = () =>
-  `e2e-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+const uniqueEmail = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 
 const validBody = (email: string) => ({
   email,
@@ -37,9 +37,7 @@ describe('POST /api/auth/register', () => {
     expect(res.data).toEqual({ message: 'Registered successfully' });
 
     const setCookie = res.headers['set-cookie'] ?? [];
-    const cookieStr = Array.isArray(setCookie)
-      ? setCookie.join('; ')
-      : setCookie;
+    const cookieStr = Array.isArray(setCookie) ? setCookie.join('; ') : setCookie;
     expect(cookieStr).not.toContain('access_token');
     expect(cookieStr).not.toContain('refresh_token');
   });
@@ -55,19 +53,17 @@ describe('POST /api/auth/register', () => {
   it('returns 409 on duplicate email', async () => {
     await axios.post('/api/auth/register', validBody(testEmail));
 
-    await expect(
-      axios.post('/api/auth/register', validBody(testEmail))
-    ).rejects.toMatchObject({
+    await expect(axios.post('/api/auth/register', validBody(testEmail))).rejects.toMatchObject({
       response: { status: 409 },
     });
   });
 
   it('returns 400 on missing required fields', async () => {
-    await expect(
-      axios.post('/api/auth/register', { email: 'not-an-email' })
-    ).rejects.toMatchObject({
-      response: { status: 400 },
-    });
+    await expect(axios.post('/api/auth/register', { email: 'not-an-email' })).rejects.toMatchObject(
+      {
+        response: { status: 400 },
+      },
+    );
   });
 
   it('returns 400 on weak password', async () => {
@@ -76,7 +72,7 @@ describe('POST /api/auth/register', () => {
         email: testEmail,
         password: '123',
         username: 'e2euser',
-      })
+      }),
     ).rejects.toMatchObject({
       response: { status: 400 },
     });
@@ -108,7 +104,7 @@ describe('POST /api/auth/resend-verification', () => {
     await axios.post('/api/auth/resend-verification', { email: testEmail });
 
     await expect(
-      axios.post('/api/auth/resend-verification', { email: testEmail })
+      axios.post('/api/auth/resend-verification', { email: testEmail }),
     ).rejects.toMatchObject({
       response: { status: 429 },
     });
@@ -118,7 +114,7 @@ describe('POST /api/auth/resend-verification', () => {
     await expect(
       axios.post('/api/auth/resend-verification', {
         email: 'nobody@example.com',
-      })
+      }),
     ).rejects.toMatchObject({
       response: { status: 404 },
     });
@@ -139,7 +135,7 @@ describe('GET /api/auth/verify-email', () => {
 
   it('returns 400 for an invalid token', async () => {
     await expect(
-      axios.get('/api/auth/verify-email', { params: { token: 'bad-token' } })
+      axios.get('/api/auth/verify-email', { params: { token: 'bad-token' } }),
     ).rejects.toMatchObject({
       response: { status: 400 },
     });
@@ -167,9 +163,7 @@ describe('GET /api/auth/verify-email', () => {
     expect(redirectRes?.status).toBe(302);
     expect(redirectRes?.headers['location']).toContain('/auth/email-verified');
 
-    const cookies: string = (redirectRes?.headers['set-cookie'] ?? []).join(
-      '; '
-    );
+    const cookies: string = (redirectRes?.headers['set-cookie'] ?? []).join('; ');
     expect(cookies).toContain('access_token');
     expect(cookies).toContain('refresh_token');
     expect(cookies).toContain('HttpOnly');
@@ -207,9 +201,7 @@ describe('GET /api/auth/verify-email', () => {
     }
 
     // Second use — token was consumed
-    await expect(
-      axios.get('/api/auth/verify-email', { params: { token } })
-    ).rejects.toMatchObject({
+    await expect(axios.get('/api/auth/verify-email', { params: { token } })).rejects.toMatchObject({
       response: { status: 400 },
     });
   });

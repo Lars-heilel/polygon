@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { Heading } from './heading';
 
 const meta: Meta<typeof Heading> = {
@@ -44,9 +45,7 @@ export const ScreenReaderOnly: Story = {
   decorators: [
     (Story) => (
       <div>
-        <p style={{ fontSize: 14, opacity: 0.5 }}>
-          Heading is in the DOM but not visible:
-        </p>
+        <p style={{ fontSize: 14, opacity: 0.5 }}>Heading is in the DOM but not visible:</p>
         <Story />
       </div>
     ),
@@ -58,7 +57,10 @@ export const AllLevels: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {([1, 2, 3, 4, 5, 6] as const).map((level) => (
-        <Heading key={level} level={level}>
+        <Heading
+          key={level}
+          level={level}
+        >
           Level {level} — The quick brown fox
         </Heading>
       ))}

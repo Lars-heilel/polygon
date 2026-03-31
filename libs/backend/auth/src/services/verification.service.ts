@@ -7,17 +7,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { randomBytes } from 'crypto';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_EVENTS,
   RedisService,
 } from '@org/core';
-import type {
-  IAuthRepository,
-  IVerificationService,
-} from '../interfaces/auth.interface';
+import { randomBytes } from 'crypto';
+
+import type { IAuthRepository, IVerificationService } from '../interfaces/auth.interface';
 
 const VERIFICATION_TTL = 86_400; // 24 hours
 const KEY_BY_TOKEN = (token: string) => `email_verification:${token}`;
@@ -39,7 +37,7 @@ export class VerificationService implements IVerificationService {
     private readonly repo: IAuthRepository,
     private readonly redis: RedisService,
     @Inject(NOTIFICATION_CLIENT_TOKEN)
-    private readonly notificationClient: ClientProxy
+    private readonly notificationClient: ClientProxy,
   ) {}
 
   async generateAndSend(credentialsId: string, email: string): Promise<void> {
@@ -54,8 +52,7 @@ export class VerificationService implements IVerificationService {
 
   async verify(token: string): Promise<string> {
     const credentialsId = await this.redis.get(KEY_BY_TOKEN(token));
-    if (!credentialsId)
-      throw new BadRequestException('Invalid or expired verification token');
+    if (!credentialsId) throw new BadRequestException('Invalid or expired verification token');
     await this.repo.verifyCredentials(credentialsId);
     await this.redis.del(KEY_BY_TOKEN(token), KEY_BY_ID(credentialsId));
     return credentialsId;
@@ -64,53 +61,37 @@ export class VerificationService implements IVerificationService {
   async resend(email: string): Promise<void> {
     const credentials = await this.repo.findByEmail(email);
     if (!credentials) throw new NotFoundException('User not found');
-    if (credentials.isVerified)
-      throw new BadRequestException('Account already verified');
+    if (credentials.isVerified) throw new BadRequestException('Account already verified');
 
     const cooldown = await this.redis.get(KEY_RESEND_COOLDOWN(email));
     if (cooldown)
       throw new HttpException(
         'Please wait before requesting another verification email',
-        HttpStatus.TOO_MANY_REQUESTS
+        HttpStatus.TOO_MANY_REQUESTS,
       );
 
     const oldToken = await this.redis.get(KEY_BY_ID(credentials.id));
-    if (oldToken)
-      await this.redis.del(KEY_BY_TOKEN(oldToken), KEY_BY_ID(credentials.id));
+    if (oldToken) await this.redis.del(KEY_BY_TOKEN(oldToken), KEY_BY_ID(credentials.id));
 
     await this.generateAndSend(credentials.id, credentials.email);
     await this.redis.set(KEY_RESEND_COOLDOWN(email), RESEND_COOLDOWN_TTL, '1');
   }
 
-  async generatePasswordReset(
-    credentialsId: string,
-    email: string
-  ): Promise<void> {
+  async generatePasswordReset(credentialsId: string, email: string): Promise<void> {
     const cooldown = await this.redis.get(KEY_RESET_COOLDOWN(email));
     if (cooldown)
       throw new HttpException(
         'Please wait before requesting another password reset email',
-        HttpStatus.TOO_MANY_REQUESTS
+        HttpStatus.TOO_MANY_REQUESTS,
       );
 
     const oldToken = await this.redis.get(RESET_KEY_BY_ID(credentialsId));
     if (oldToken)
-      await this.redis.del(
-        RESET_KEY_BY_TOKEN(oldToken),
-        RESET_KEY_BY_ID(credentialsId)
-      );
+      await this.redis.del(RESET_KEY_BY_TOKEN(oldToken), RESET_KEY_BY_ID(credentialsId));
 
     const token = randomBytes(32).toString('base64url');
-    await this.redis.set(
-      RESET_KEY_BY_TOKEN(token),
-      PASSWORD_RESET_TTL,
-      credentialsId
-    );
-    await this.redis.set(
-      RESET_KEY_BY_ID(credentialsId),
-      PASSWORD_RESET_TTL,
-      token
-    );
+    await this.redis.set(RESET_KEY_BY_TOKEN(token), PASSWORD_RESET_TTL, credentialsId);
+    await this.redis.set(RESET_KEY_BY_ID(credentialsId), PASSWORD_RESET_TTL, token);
     this.notificationClient.emit(NOTIFICATION_EVENTS.SEND_PASSWORD_RESET, {
       to: email,
       token,
@@ -120,12 +101,8 @@ export class VerificationService implements IVerificationService {
 
   async consumePasswordResetToken(token: string): Promise<string> {
     const credentialsId = await this.redis.get(RESET_KEY_BY_TOKEN(token));
-    if (!credentialsId)
-      throw new BadRequestException('Invalid or expired password reset token');
-    await this.redis.del(
-      RESET_KEY_BY_TOKEN(token),
-      RESET_KEY_BY_ID(credentialsId)
-    );
+    if (!credentialsId) throw new BadRequestException('Invalid or expired password reset token');
+    await this.redis.del(RESET_KEY_BY_TOKEN(token), RESET_KEY_BY_ID(credentialsId));
     return credentialsId;
   }
 }

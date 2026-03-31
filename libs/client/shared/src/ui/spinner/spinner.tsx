@@ -1,4 +1,5 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const spinnerVariants = cva('animate-spin', {
@@ -28,12 +29,7 @@ interface SpinnerProps extends VariantProps<typeof spinnerVariants> {
   label?: string;
 }
 
-export function Spinner({
-  size,
-  color,
-  className,
-  label = 'Loading...',
-}: SpinnerProps) {
+export function Spinner({ size, color, className, label = 'Loading...' }: SpinnerProps) {
   return (
     <svg
       className={cn(spinnerVariants({ size, color }), className)}

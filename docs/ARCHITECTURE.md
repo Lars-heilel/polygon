@@ -166,8 +166,8 @@ const registerFormSchema = registerSchema
 **Backend** — create NestJS DTOs via `createZodDto`. `ZodValidationPipe` validates incoming requests automatically:
 
 ```typescript
-import { createZodDto } from 'nestjs-zod';
 import { loginSchema } from '@org/common';
+import { createZodDto } from 'nestjs-zod';
 
 export class LoginDto extends createZodDto(loginSchema) {}
 ```

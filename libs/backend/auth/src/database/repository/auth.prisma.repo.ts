@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CREDENTIALS_FULL_SELECT_FIELDS } from '@org/common';
-import type {
-  Credentials,
-  CreateCredentialsInput,
-  RefreshToken,
-} from '@org/common';
+import type { CreateCredentialsInput, Credentials, RefreshToken } from '@org/common';
+
 import type { IAuthRepository } from '../../interfaces/auth.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -42,7 +39,7 @@ export class AuthPrismaRepository implements IAuthRepository {
 
   async findOAuthAccount(
     provider: string,
-    providerId: string
+    providerId: string,
   ): Promise<{ credentials: Credentials } | null> {
     return this.prisma.oAuthAccount.findUnique({
       where: { provider_providerId: { provider, providerId } },

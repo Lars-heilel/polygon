@@ -1,16 +1,15 @@
-const BASE_URL =
-  (import.meta.env['VITE_API_URL'] as string | undefined) ?? '/api';
+const BASE_URL = (import.meta.env['VITE_API_URL'] as string | undefined) ?? '/api';
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, public readonly data: unknown) {
+  constructor(
+    public readonly status: number,
+    public readonly data: unknown,
+  ) {
     super(`HTTP ${status}`);
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init?: RequestInit
-): Promise<T> {
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}/${path}`, {
     ...init,
     credentials: 'include',

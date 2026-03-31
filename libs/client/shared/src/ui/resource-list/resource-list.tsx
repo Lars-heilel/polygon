@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
-import { Spinner } from '../spinner/spinner';
+
 import { cn } from '../../lib/utils/cn';
+import { Spinner } from '../spinner/spinner';
 
 interface ResourceListProps<T> {
   data: T[];

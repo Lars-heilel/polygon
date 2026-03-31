@@ -1,6 +1,16 @@
 import { useState } from 'react';
-import { SidebarHeader, ChatSearch, ChatItem, UserPanel, ProfileModal, SettingsModal, CreateChatModal } from '@org/widgets';
+
 import { useChatList, useCreateChat } from '@org/features';
+
+import {
+  ChatItem,
+  ChatSearch,
+  CreateChatModal,
+  ProfileModal,
+  SettingsModal,
+  SidebarHeader,
+  UserPanel,
+} from '../..';
 
 interface ChatListSidebarProps {
   selectedChatId?: string | null;
@@ -41,12 +51,17 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
 
   return (
     <>
-      <aside className={`${isSidebarOpen ? 'w-80' : 'w-0'} shrink-0 border-r border-border flex flex-col bg-surface transition-all duration-300 overflow-hidden`}>
+      <aside
+        className={`${isSidebarOpen ? 'w-80' : 'w-0'} shrink-0 border-r border-border flex flex-col bg-surface transition-all duration-300 overflow-hidden`}
+      >
         <SidebarHeader
           onMenuClick={() => setIsSidebarOpen(false)}
           onNewChatClick={() => setIsCreateChatOpen(true)}
         />
-        <ChatSearch value={searchQuery} onChange={setSearchQuery} />
+        <ChatSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+        />
         <nav className="flex-1 overflow-y-auto">
           {isLoading && <p className="text-center text-sm text-text-muted py-4">Loading...</p>}
           {!isLoading && chats.length === 0 && (
@@ -69,8 +84,18 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
           onClick={() => setIsSidebarOpen(true)}
           className="absolute left-4 top-4 z-10 p-2 bg-surface border border-border rounded-lg hover:bg-surface-elevated"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
       )}

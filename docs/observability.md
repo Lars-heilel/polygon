@@ -262,7 +262,7 @@ return next.handle().pipe(
   tap({
     next: () => logger.debug(`POST /api/auth/login — 45ms`),
     error: () => logger.debug(`POST /api/auth/login — 45ms [FAILED]`),
-  })
+  }),
 );
 ```
 

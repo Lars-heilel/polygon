@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+
 import { Heading } from '../../ui/typography';
 
 interface DesignSystemPageProps {
@@ -33,10 +34,11 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
             ['bg-purple-97', '#f4f0fe', '97'],
             ['bg-purple-99', '#fbfaff', '99'],
           ].map(([cls, hex, label]) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <div
-                className={`w-12 h-12 rounded-md border border-border ${cls}`}
-              />
+            <div
+              key={label}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className={`w-12 h-12 rounded-md border border-border ${cls}`} />
               <span className="text-[10px] text-text-muted">{label}</span>
               <span className="text-[10px] text-gray-40">{hex}</span>
             </div>
@@ -57,10 +59,11 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
             ['bg-white-99', '#fcfcfd', '99'],
             ['bg-white', '#ffffff', '100'],
           ].map(([cls, hex, label]) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <div
-                className={`w-12 h-12 rounded-md border border-border ${cls}`}
-              />
+            <div
+              key={label}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className={`w-12 h-12 rounded-md border border-border ${cls}`} />
               <span className="text-[10px] text-text-muted">{label}</span>
               <span className="text-[10px] text-gray-40">{hex}</span>
             </div>
@@ -85,10 +88,11 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
             ['bg-gray-50', '#808080', '50'],
             ['bg-gray-60', '#999999', '60'],
           ].map(([cls, hex, label]) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <div
-                className={`w-12 h-12 rounded-md border border-border ${cls}`}
-              />
+            <div
+              key={label}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className={`w-12 h-12 rounded-md border border-border ${cls}`} />
               <span className="text-[10px] text-text-muted">{label}</span>
               <span className="text-[10px] text-gray-40">{hex}</span>
             </div>
@@ -109,10 +113,11 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
             ['bg-border', 'border'],
             ['bg-danger', 'danger'],
           ].map(([cls, label]) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <div
-                className={`w-12 h-12 rounded-md border border-border ${cls}`}
-              />
+            <div
+              key={label}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className={`w-12 h-12 rounded-md border border-border ${cls}`} />
               <span className="text-[10px] text-text-muted">{label}</span>
             </div>
           ))}
@@ -126,7 +131,10 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
         </h2>
         <div className="space-y-4">
           {([1, 2, 3, 4, 5, 6] as const).map((level) => (
-            <div key={level} className="flex items-baseline gap-4">
+            <div
+              key={level}
+              className="flex items-baseline gap-4"
+            >
               <span className="text-[10px] text-text-muted w-4">h{level}</span>
               <Heading level={level}>The quick brown fox</Heading>
             </div>
@@ -138,7 +146,10 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
             </p>
             <div className="flex items-baseline gap-4">
               <span className="text-[10px] text-text-muted w-16">h1 as h3</span>
-              <Heading level={3} as="h1">
+              <Heading
+                level={3}
+                as="h1"
+              >
                 Looks like h3, tag is h1
               </Heading>
             </div>
@@ -147,7 +158,10 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
               <span className="text-sm text-text-muted italic">
                 [ невидим — только для скринридеров ]
               </span>
-              <Heading level={2} srOnly>
+              <Heading
+                level={2}
+                srOnly
+              >
                 Hidden heading for screen readers
               </Heading>
             </div>
@@ -182,9 +196,7 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
           Surfaces
         </h2>
         <div className="flex gap-3">
-          <div className="bg-surface border border-border rounded-lg p-4 text-sm">
-            surface
-          </div>
+          <div className="bg-surface border border-border rounded-lg p-4 text-sm">surface</div>
           <div className="bg-surface-elevated border border-border rounded-lg p-4 text-sm">
             surface-elevated
           </div>

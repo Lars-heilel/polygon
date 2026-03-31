@@ -1,18 +1,14 @@
 import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import type { CredentialsPayload, OAuthLoginDto, TokenPair } from '@org/common';
 import { AUTH_PATTERNS, AUTH_SERVICE_TOKEN } from '@org/core';
-import type { OAuthLoginDto, TokenPair, CredentialsPayload } from '@org/common';
-import type {
-  IAuthController,
-  IAuthService,
-} from '../interfaces/auth.interface';
+
 import { RegisterDto } from '../dto/register.dto';
+import type { IAuthController, IAuthService } from '../interfaces/auth.interface';
 
 @Controller()
 export class AuthController implements IAuthController {
-  constructor(
-    @Inject(AUTH_SERVICE_TOKEN) private readonly authService: IAuthService
-  ) {}
+  constructor(@Inject(AUTH_SERVICE_TOKEN) private readonly authService: IAuthService) {}
 
   @MessagePattern(AUTH_PATTERNS.REGISTER)
   register(@Payload() dto: RegisterDto): Promise<void> {
@@ -21,12 +17,9 @@ export class AuthController implements IAuthController {
 
   @MessagePattern(AUTH_PATTERNS.VALIDATE_CREDENTIALS)
   validateCredentials(
-    @Payload() payload: { email: string; password: string }
+    @Payload() payload: { email: string; password: string },
   ): Promise<CredentialsPayload> {
-    return this.authService.validateCredentials(
-      payload.email,
-      payload.password
-    );
+    return this.authService.validateCredentials(payload.email, payload.password);
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGIN)
@@ -60,9 +53,7 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.RESET_PASSWORD)
-  resetPassword(
-    @Payload() payload: { token: string; newPassword: string }
-  ): Promise<void> {
+  resetPassword(@Payload() payload: { token: string; newPassword: string }): Promise<void> {
     return this.authService.resetPassword(payload.token, payload.newPassword);
   }
 

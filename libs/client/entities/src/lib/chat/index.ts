@@ -7,8 +7,4 @@ export {
 } from './chat.api';
 
 export { useChatStore } from './chat.store';
-export {
-  selectActiveChatId,
-  selectActiveMessageId,
-  selectIsTyping,
-} from './chat.store';
+export { selectActiveChatId, selectActiveMessageId, selectIsTyping } from './chat.store';

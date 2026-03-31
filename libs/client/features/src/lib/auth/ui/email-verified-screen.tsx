@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router';
 import { CLIENT_ROUTES } from '@org/common';
-import { StatusScreen, Button } from '@org/shared';
+import { Button, StatusScreen } from '@org/shared';
+import { useNavigate } from 'react-router';
 
 export function EmailVerifiedScreen() {
   const navigate = useNavigate();

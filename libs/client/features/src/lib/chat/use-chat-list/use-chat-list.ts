@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+
 import { useGetChatsQuery, useMeQuery } from '@org/entities';
 
 export function useChatList() {
@@ -22,9 +23,7 @@ export function useChatList() {
           online: false, // TODO: добавить статус online
         };
       })
-      .filter((chat) =>
-        chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      .filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [chats, me, searchQuery]);
 
   return {

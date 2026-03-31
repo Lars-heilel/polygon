@@ -1,20 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import {
-  CHAT_SELECT_FIELDS,
-  CHAT_MEMBER_SELECT_FIELDS,
-  MESSAGE_SELECT_FIELDS,
-} from '@org/common';
-import type {
-  Chat,
-  ChatMember,
-  ChatType,
-  ChatRole,
-  Message,
-} from '@org/common';
-import type {
-  IChatRepository,
-  ChatWithPreview,
-} from '../../interfaces/chat.interface';
+import { CHAT_MEMBER_SELECT_FIELDS, CHAT_SELECT_FIELDS, MESSAGE_SELECT_FIELDS } from '@org/common';
+import type { Chat, ChatMember, ChatRole, ChatType, Message } from '@org/common';
+
+import type { ChatWithPreview, IChatRepository } from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -28,10 +16,7 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
-  async findDirectChatBetween(
-    userId1: string,
-    userId2: string
-  ): Promise<Chat | null> {
+  async findDirectChatBetween(userId1: string, userId2: string): Promise<Chat | null> {
     return this.prisma.chat.findFirst({
       where: {
         type: 'DIRECT',
@@ -78,10 +63,7 @@ export class ChatPrismaRepository implements IChatRepository {
     await this.prisma.chat.delete({ where: { id } });
   }
 
-  async findChatMember(
-    chatId: string,
-    userId: string
-  ): Promise<ChatMember | null> {
+  async findChatMember(chatId: string, userId: string): Promise<ChatMember | null> {
     return this.prisma.chatMember.findUnique({
       where: { chatId_userId: { chatId, userId } },
       select: CHAT_MEMBER_SELECT_FIELDS,
@@ -112,11 +94,7 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
-  async findMessagesByChat(
-    chatId: string,
-    skip: number,
-    take: number
-  ): Promise<Message[]> {
+  async findMessagesByChat(chatId: string, skip: number, take: number): Promise<Message[]> {
     return this.prisma.message.findMany({
       where: { chatId },
       orderBy: { createdAt: 'asc' },

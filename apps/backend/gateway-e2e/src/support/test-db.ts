@@ -1,5 +1,5 @@
-import { Pool } from 'pg';
 import Redis from 'ioredis';
+import { Pool } from 'pg';
 
 let pgPool: Pool | null = null;
 let redisClient: Redis | null = null;
@@ -35,19 +35,17 @@ export async function closeConnections(): Promise<void> {
 }
 
 /** Returns the verification token stored in Redis for the given credentialsId. */
-export async function getVerificationToken(
-  credentialsId: string
-): Promise<string | null> {
+export async function getVerificationToken(credentialsId: string): Promise<string | null> {
   return getRedis().get(`email_verification_id:${credentialsId}`);
 }
 
 /** Returns the credentials row for an email, or null if not found. */
 export async function findCredentialsByEmail(
-  email: string
+  email: string,
 ): Promise<{ id: string; is_verified: boolean } | null> {
   const result = await getAuthDb().query<{ id: string; is_verified: boolean }>(
     'SELECT id, is_verified FROM "Credentials" WHERE email = $1',
-    [email]
+    [email],
   );
   return result.rows[0] ?? null;
 }
@@ -60,12 +58,7 @@ export async function cleanupTestUser(email: string): Promise<void> {
     if (token) {
       await getRedis().del(`email_verification:${token}`);
     }
-    await getRedis().del(
-      `email_verification_id:${creds.id}`,
-      `resend_cooldown:${email}`
-    );
-    await getAuthDb().query('DELETE FROM "Credentials" WHERE id = $1', [
-      creds.id,
-    ]);
+    await getRedis().del(`email_verification_id:${creds.id}`, `resend_cooldown:${email}`);
+    await getAuthDb().query('DELETE FROM "Credentials" WHERE id = $1', [creds.id]);
   }
 }

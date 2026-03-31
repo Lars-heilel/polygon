@@ -1,14 +1,12 @@
-import { Mutex } from 'async-mutex';
-import { apiFetch, ApiError } from '@org/shared';
 import { API_ROUTES } from '@org/common';
+import { ApiError, apiFetch } from '@org/shared';
+import { Mutex } from 'async-mutex';
+
 import { useSessionStore } from '../session/session.store';
 
 const refreshMutex = new Mutex();
 
-export async function authedFetch<T>(
-  path: string,
-  init?: RequestInit
-): Promise<T> {
+export async function authedFetch<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     return await apiFetch<T>(path, init);
   } catch (err) {

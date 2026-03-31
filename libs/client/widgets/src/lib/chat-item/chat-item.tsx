@@ -13,7 +13,6 @@ interface ChatItemProps {
 }
 
 export function ChatItem({
-  id,
   name,
   lastMessage,
   time,
@@ -30,9 +29,17 @@ export function ChatItem({
       }`}
     >
       <div className="relative shrink-0">
-        <Avatar name={name} size="md" />
+        <Avatar
+          name={name}
+          size="md"
+        />
         {online && (
-          <Badge variant="primary" size="sm" dot className="absolute bottom-0 right-0 border-2 border-surface" />
+          <Badge
+            variant="primary"
+            size="sm"
+            dot
+            className="absolute bottom-0 right-0 border-2 border-surface"
+          />
         )}
       </div>
       <div className="flex-1 min-w-0 text-left">
@@ -43,7 +50,12 @@ export function ChatItem({
         <div className="flex justify-between items-center gap-2">
           <p className="text-xs text-text-muted truncate">{lastMessage}</p>
           {unread > 0 && (
-            <Badge variant="primary" size="sm">{unread}</Badge>
+            <Badge
+              variant="primary"
+              size="sm"
+            >
+              {unread}
+            </Badge>
           )}
         </div>
       </div>

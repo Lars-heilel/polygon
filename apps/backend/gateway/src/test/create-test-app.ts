@@ -1,8 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { of } from 'rxjs';
-import cookieParser from 'cookie-parser';
-import passport from 'passport';
+import { GithubStrategy, GoogleStrategy, LocalStrategy, YandexStrategy } from '@org/auth';
 import {
   AUTH_CLIENT_TOKEN,
   CHAT_CLIENT_TOKEN,
@@ -11,15 +9,13 @@ import {
   JwtGuard,
   USER_CLIENT_TOKEN,
 } from '@org/core';
-import {
-  GithubStrategy,
-  GoogleStrategy,
-  LocalStrategy,
-  YandexStrategy,
-} from '@org/auth';
+import cookieParser from 'cookie-parser';
+import { ZodValidationPipe } from 'nestjs-zod';
+import passport from 'passport';
+import { of } from 'rxjs';
+
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { UserGatewayController } from '../controllers/user.controller';
-import { ZodValidationPipe } from 'nestjs-zod';
 
 /** Creates a lightweight NestJS test app with mocked microservice clients. */
 export async function createTestApp(): Promise<{

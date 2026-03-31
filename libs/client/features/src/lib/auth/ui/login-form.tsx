@@ -1,9 +1,10 @@
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type z } from 'zod';
+import { CLIENT_ROUTES, loginSchema } from '@org/common';
+import { Button, Divider, Input } from '@org/shared';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router';
-import { loginSchema, CLIENT_ROUTES } from '@org/common';
-import { Button, Input, Divider } from '@org/shared';
+import { type z } from 'zod';
+
 import { OAuthButtons } from './oauth-buttons';
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -22,7 +23,11 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-4"
+      noValidate
+    >
       <OAuthButtons />
 
       <Divider label="or" />
@@ -55,7 +60,11 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         </Link>
       </div>
 
-      <Button type="submit" className="w-full" loading={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={isSubmitting}
+      >
         Sign in
       </Button>
 

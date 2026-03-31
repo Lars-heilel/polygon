@@ -1,18 +1,14 @@
 import { Controller, Inject } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import type { CreateUserEventInput } from '@org/common';
 import { USER_EVENTS, USER_PATTERNS, USER_SERVICE_TOKEN } from '@org/core';
-import type { CreateUserEventInput, UpdateUserInput } from '@org/common';
-import type {
-  IUserController,
-  IUserService,
-} from '../interfaces/user.interface';
+
 import { UpdateUserDto } from '../dto/update-user.dto';
+import type { IUserController, IUserService } from '../interfaces/user.interface';
 
 @Controller()
 export class UserController implements IUserController {
-  constructor(
-    @Inject(USER_SERVICE_TOKEN) private readonly userService: IUserService
-  ) {}
+  constructor(@Inject(USER_SERVICE_TOKEN) private readonly userService: IUserService) {}
 
   @EventPattern(USER_EVENTS.REGISTERED)
   handleUserRegistered(@Payload() data: CreateUserEventInput) {

@@ -1,12 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { Logger } from 'nestjs-pino';
 import { AllExceptionsFilter, LoggingInterceptor, USER_QUEUE } from '@org/core';
+import { Logger } from 'nestjs-pino';
+
 import { UserModule } from './app/user.module';
 
 async function bootstrap() {
-  const { RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT } =
-    process.env;
+  const { RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_HOST, RABBITMQ_PORT } = process.env;
   const rabbitmqUrl = `amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${
     RABBITMQ_HOST ?? 'localhost'
   }:${RABBITMQ_PORT ?? 5672}`;
@@ -32,9 +32,7 @@ async function bootstrap() {
   const port = process.env['USER_PORT'] ?? 3001;
   await app.listen(port);
 
-  app
-    .get(Logger)
-    .log(`User Service: RMQ queue=${USER_QUEUE}, HTTP port=${port}`);
+  app.get(Logger).log(`User Service: RMQ queue=${USER_QUEUE}, HTTP port=${port}`);
 }
 
 bootstrap();

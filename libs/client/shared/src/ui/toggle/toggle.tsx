@@ -20,13 +20,13 @@ export function Toggle({ checked, onChange, disabled = false, className }: Toggl
         'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
         checked ? 'bg-primary' : 'bg-surface-elevated',
         disabled && 'opacity-50 cursor-not-allowed',
-        className
+        className,
       )}
     >
       <span
         className={cn(
           'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition',
-          checked ? 'translate-x-5' : 'translate-x-0.5'
+          checked ? 'translate-x-5' : 'translate-x-0.5',
         )}
       />
     </button>

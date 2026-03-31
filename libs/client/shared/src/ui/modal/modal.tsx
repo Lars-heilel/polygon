@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode, type MouseEvent } from 'react';
+import { type MouseEvent, type ReactNode, useEffect } from 'react';
+
 import { cn } from '../../lib/utils/cn';
 
 interface ModalProps {
@@ -9,13 +10,7 @@ interface ModalProps {
   overlayClassName?: string;
 }
 
-export function Modal({
-  isOpen,
-  onClose,
-  children,
-  className,
-  overlayClassName,
-}: ModalProps) {
+export function Modal({ isOpen, onClose, children, className, overlayClassName }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -53,14 +48,14 @@ export function Modal({
     <div
       className={cn(
         'fixed inset-0 z-50 flex items-center justify-center bg-black/50',
-        overlayClassName
+        overlayClassName,
       )}
       onClick={handleOverlayClick}
     >
       <div
         className={cn(
           'bg-surface rounded-2xl shadow-2xl overflow-hidden max-w-md w-full mx-4',
-          className
+          className,
         )}
         onClick={(e) => e.stopPropagation()}
       >

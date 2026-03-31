@@ -1,1 +1,21 @@
+# Зависимости и системные папки
 node_modules
+.nx
+.cache
+.vscode
+.agents
+.claude
+.github
+.husky
+
+# Артефакты сборки (САМОЕ ВАЖНОЕ)
+dist
+coverage
+out-tsc
+build
+
+# Сгенерированный код
+**/generated
+**/prisma/generated
+**/*.min.js
+**/vite.config.*.timestamp*

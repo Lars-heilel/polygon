@@ -1,8 +1,9 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { HttpResponse, http } from 'msw';
 import { MemoryRouter } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { server } from '../../../test/server';
 import { CheckEmailScreen } from '../ui/check-email-screen';
 
@@ -15,7 +16,7 @@ function renderScreen(email = 'user@example.com') {
       <MemoryRouter>
         <CheckEmailScreen email={email} />
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -36,8 +37,8 @@ describe('CheckEmailScreen', () => {
   it('shows rate-limited alert on 429', async () => {
     server.use(
       http.post('/api/auth/resend-verification', () =>
-        HttpResponse.json({ message: 'Too many requests' }, { status: 429 })
-      )
+        HttpResponse.json({ message: 'Too many requests' }, { status: 429 }),
+      ),
     );
 
     renderScreen();
@@ -50,8 +51,8 @@ describe('CheckEmailScreen', () => {
   it('shows error alert on server failure', async () => {
     server.use(
       http.post('/api/auth/resend-verification', () =>
-        HttpResponse.json({ message: 'Internal error' }, { status: 500 })
-      )
+        HttpResponse.json({ message: 'Internal error' }, { status: 500 }),
+      ),
     );
 
     renderScreen();

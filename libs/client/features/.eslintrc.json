@@ -1,11 +1,6 @@
 {
   "extends": ["plugin:@nx/react", "../../../.eslintrc.json"],
-  "ignorePatterns": [
-    "!**/*",
-    "**/out-tsc",
-    "**/dist",
-    "**/vite.config.*.timestamp*"
-  ],
+  "ignorePatterns": ["**/out-tsc", "**/dist", "**/vite.config.*.timestamp*"],
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],

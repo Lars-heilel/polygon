@@ -215,8 +215,8 @@ const registerFormSchema = registerSchema
 
 ```typescript
 // libs/backend/auth/src/dto/login.dto.ts
-import { createZodDto } from 'nestjs-zod';
 import { loginSchema } from '@org/common';
+import { createZodDto } from 'nestjs-zod';
 
 export class LoginDto extends createZodDto(loginSchema) {}
 ```

@@ -1,5 +1,7 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import { type InputHTMLAttributes, type ReactNode, forwardRef } from 'react';
+
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const inputVariants = cva(
@@ -20,11 +22,12 @@ const inputVariants = cva(
       size: 'md',
       state: 'default',
     },
-  }
+  },
 );
 
 interface InputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>,
+  extends
+    Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>,
     Pick<VariantProps<typeof inputVariants>, 'size'> {
   label?: string;
   error?: string;
@@ -34,17 +37,17 @@ interface InputProps
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    { size, label, error, hint, leftIcon, rightIcon, className, id, ...props },
-    ref
-  ) => {
+  ({ size, label, error, hint, leftIcon, rightIcon, className, id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
     const state = error ? 'error' : 'default';
 
     return (
       <div className="flex flex-col gap-1.5 w-full">
         {label && (
-          <label htmlFor={inputId} className="text-sm font-medium text-text">
+          <label
+            htmlFor={inputId}
+            className="text-sm font-medium text-text"
+          >
             {label}
           </label>
         )}
@@ -61,7 +64,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               inputVariants({ size, state }),
               leftIcon && 'pl-9',
               rightIcon && 'pr-9',
-              className
+              className,
             )}
             {...props}
           />
@@ -72,15 +75,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {(error || hint) && (
-          <p
-            className={cn('text-xs', error ? 'text-danger' : 'text-text-muted')}
-          >
+          <p className={cn('text-xs', error ? 'text-danger' : 'text-text-muted')}>
             {error ?? hint}
           </p>
         )}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';

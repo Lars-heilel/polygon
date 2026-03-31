@@ -1,4 +1,5 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const textVariants = cva('font-sans', {
@@ -33,8 +34,7 @@ const textVariants = cva('font-sans', {
 type TextTag = 'p' | 'span' | 'label' | 'li' | 'div';
 
 interface TextProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'color'>,
-    VariantProps<typeof textVariants> {
+  extends Omit<React.HTMLAttributes<HTMLElement>, 'color'>, VariantProps<typeof textVariants> {
   as?: TextTag;
   srOnly?: boolean;
 }
@@ -51,10 +51,7 @@ export function Text({
 }: TextProps) {
   return (
     <Tag
-      className={cn(
-        srOnly ? 'sr-only' : textVariants({ size, color, weight }),
-        className
-      )}
+      className={cn(srOnly ? 'sr-only' : textVariants({ size, color, weight }), className)}
       {...props}
     >
       {children}

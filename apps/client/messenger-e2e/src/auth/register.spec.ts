@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const REGISTER_URL = '/api/auth/register';
 const RESEND_URL = '/api/auth/resend-verification';
@@ -12,17 +12,13 @@ const validForm = {
 
 async function fillRegisterForm(
   page: import('@playwright/test').Page,
-  values: Partial<typeof validForm> = {}
+  values: Partial<typeof validForm> = {},
 ) {
   const data = { ...validForm, ...values };
-  if (data.username)
-    await page.getByLabel('Username').fill(data.username);
-  if (data.email)
-    await page.getByLabel('Email').fill(data.email);
-  if (data.password)
-    await page.getByLabel('Password', { exact: true }).fill(data.password);
-  if (data.confirmPassword)
-    await page.getByLabel('Confirm password').fill(data.confirmPassword);
+  if (data.username) await page.getByLabel('Username').fill(data.username);
+  if (data.email) await page.getByLabel('Email').fill(data.email);
+  if (data.password) await page.getByLabel('Password', { exact: true }).fill(data.password);
+  if (data.confirmPassword) await page.getByLabel('Confirm password').fill(data.confirmPassword);
 }
 
 test.describe('Register page', () => {
@@ -39,9 +35,7 @@ test.describe('Register page', () => {
   });
 
   test('happy path: navigates to check-email with email param', async ({ page }) => {
-    await page.route(REGISTER_URL, (route) =>
-      route.fulfill({ status: 201 })
-    );
+    await page.route(REGISTER_URL, (route) => route.fulfill({ status: 201 }));
 
     await fillRegisterForm(page);
     await page.getByRole('button', { name: /create account/i }).click();
@@ -56,7 +50,7 @@ test.describe('Register page', () => {
         status: 409,
         contentType: 'application/json',
         body: JSON.stringify({ message: 'Email already in use' }),
-      })
+      }),
     );
 
     await fillRegisterForm(page);
@@ -74,7 +68,7 @@ test.describe('Register page', () => {
         status: 500,
         contentType: 'application/json',
         body: JSON.stringify({ message: 'Internal server error' }),
-      })
+      }),
     );
 
     await fillRegisterForm(page);
@@ -135,9 +129,7 @@ test.describe('Check-email page', () => {
   });
 
   test('shows success alert after resend', async ({ page }) => {
-    await page.route(RESEND_URL, (route) =>
-      route.fulfill({ status: 201 })
-    );
+    await page.route(RESEND_URL, (route) => route.fulfill({ status: 201 }));
 
     await page.getByRole('button', { name: /resend email/i }).click();
 
@@ -152,7 +144,7 @@ test.describe('Check-email page', () => {
         status: 429,
         contentType: 'application/json',
         body: JSON.stringify({ message: 'Too many requests' }),
-      })
+      }),
     );
 
     await page.getByRole('button', { name: /resend email/i }).click();
@@ -168,7 +160,7 @@ test.describe('Check-email page', () => {
         status: 500,
         contentType: 'application/json',
         body: JSON.stringify({ message: 'Internal server error' }),
-      })
+      }),
     );
 
     await page.getByRole('button', { name: /resend email/i }).click();

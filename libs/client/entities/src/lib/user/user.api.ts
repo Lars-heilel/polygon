@@ -1,8 +1,9 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { type z } from 'zod';
 import { API_ROUTES, loginSchema, registerSchema } from '@org/common';
 import type { User as UserBase } from '@org/common';
 import { apiFetch } from '@org/shared';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { type z } from 'zod';
+
 import { authedFetch } from '../api/authed-fetch';
 
 export type User = Omit<UserBase, 'createdAt' | 'updatedAt'>;
@@ -72,13 +73,8 @@ export function useForgotPasswordMutation() {
 
 export function useResetPasswordMutation() {
   return useMutation({
-    mutationFn: ({
-      token,
-      newPassword,
-    }: {
-      token: string;
-      newPassword: string;
-    }) => authApi.resetPassword(token, newPassword),
+    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
+      authApi.resetPassword(token, newPassword),
   });
 }
 

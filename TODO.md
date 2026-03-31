@@ -6,24 +6,26 @@
 
 ## Статус сервисов
 
-| Сервис | Бэкенд | Фронт | Готовность |
-|---|---|---|---|
-| Auth | ✅ полный | ✅ полный | Баги + доработки + тесты |
-| Chat | ✅ полный | ✅ полный | Advanced features + тесты |
-| User | ✅ полный | ✅ полный | Тесты |
-| Notification | ✅ email | — | Норм для MVP |
-| Media | ❌ заглушка | — | **Вне MVP** |
+| Сервис       | Бэкенд      | Фронт     | Готовность                |
+| ------------ | ----------- | --------- | ------------------------- |
+| Auth         | ✅ полный   | ✅ полный | Баги + доработки + тесты  |
+| Chat         | ✅ полный   | ✅ полный | Advanced features + тесты |
+| User         | ✅ полный   | ✅ полный | Тесты                     |
+| Notification | ✅ email    | —         | Норм для MVP              |
+| Media        | ❌ заглушка | —         | **Вне MVP**               |
 
 ---
 
 ## БЛОК 1: AUTH — Регистрация и верификация email
 
 ### Требования
+
 - Email+password регистрация → обязательное подтверждение email, без него доступ запрещён
 - Пользователь может запросить повторную отправку письма
 - OAuth (GitHub / Google / Yandex) → пароль не нужен, аккаунт авто-верифицирован
 
 ### Поток email-регистрации (текущий)
+
 ```
 RegisterForm { email, password, username }
   → POST /api/auth/register
@@ -40,27 +42,32 @@ RegisterForm { email, password, username }
 ### Найденные баги и доработки
 
 #### БАГ-1: MSW handler — неверное поле
+
 - `libs/client/entities/src/test/handlers/auth.handlers.ts:23`
 - `username: 'testuser'` → должно быть `name: 'testuser'`, добавить `displayName: null`
 
 #### БАГ-2: `useRegister` — глухой catch
+
 - `libs/client/features/src/lib/auth/model/use-register.ts`
 - Любая ошибка (409, 400, 500) → одно сообщение "Registration failed"
 - Нужно: `ApiError(409)` → "Email already in use", остальное → generic
 
 #### ДОРАБОТКА-1: Email verification enforcement
+
 - После register → пользователь попадает в `isAuthenticated=true` без верификации
 - Решение: после register **не** делать `setAuthenticated(true)`, вместо этого показывать страницу "Check your email"
 - `ProtectedRoute` остаётся без изменений — пользователь просто не попадает в `/chats` до верификации
 - Страница "Check your email": кнопка "Resend verification email"
 
 #### ДОРАБОТКА-2: `GET /api/auth/verify-email` — нет токенов и редиректа
+
 - Сейчас: проверяет токен → возвращает `{ message }`
 - Нужно: verify → get credentials → issueTokenPair → set cookies → redirect `CLIENT_URL`
 - Нужно расширить `VerificationService.verify()` чтобы возвращал `credentialsId`
 - Нужно расширить gateway endpoint чтобы выдавал токены и редиректил
 
 #### ДОРАБОТКА-3: Resilience — надёжная доставка событий
+
 - Полноценная Saga не нужна: если пользователь не подтвердил email → credentials мусор, профиль не нужен
 - Гарантия нужна только в момент когда пользователь кликает по ссылке верификации — к тому моменту UserService уже давно должен был обработать событие
 
@@ -80,12 +87,14 @@ RegisterForm { email, password, username }
 ```
 
 #### Поведение после верификации — решено ✅
+
 - Всегда выдавать свежую пару токенов при verify, независимо от браузера
 - verify token → get credentials → issueTokenPair → set cookies → redirect CLIENT_URL
 
 ### Тесты
 
 #### Backend unit — `libs/backend/auth/src/services/auth.service.spec.ts`
+
 ```
 [ ] register: успешная регистрация → TokenPair
 [ ] register: дублирующий email → ConflictException
@@ -98,6 +107,7 @@ RegisterForm { email, password, username }
 ```
 
 #### Gateway integration — `auth.controller.spec.ts`
+
 ```
 [ ] POST /api/auth/register: 201 + cookies (уже есть ✅)
 [ ] POST /api/auth/register: 400 невалидный email (уже есть ✅)
@@ -108,6 +118,7 @@ RegisterForm { email, password, username }
 ```
 
 #### Frontend unit
+
 ```
 [ ] session.store.spec.ts — начальное состояние, setAuthenticated, селекторы
 [ ] user.api.spec.ts — useRegisterMutation (201, 409), useMeQuery (200, 401)
@@ -118,11 +129,13 @@ RegisterForm { email, password, username }
 ## БЛОК 2: AUTH — Login
 
 ### Требования
+
 - Email+password → только для верифицированных аккаунтов
 - OAuth → всегда разрешён (аккаунт авто-верифицирован)
 - Если email зарегистрирован через email+password, потом попытка войти через OAuth с тем же email → **merge аккаунтов** (уже реализовано в `oauthLogin`)
 
 ### Поток
+
 ```
 LoginForm { email, password }
   → LocalGuard → LocalStrategy.validate() → validateCredentials()
@@ -136,6 +149,7 @@ LoginForm { email, password }
 ### Доработки
 
 #### ДОРАБОТКА-4: Login — проверка isVerified
+
 - Сейчас `validateCredentials` не проверяет `isVerified`
 - Вариант A: блокировать login (403) если не верифицирован
 - Вариант B: пускать, но ограничивать доступ через guard
@@ -143,16 +157,19 @@ LoginForm { email, password }
 - При этом показывать на фронте ссылку на resend-verification
 
 #### ДОРАБОТКА-5: OAuth + существующий email-аккаунт
+
 - Текущее поведение: `oauthLogin` находит credentials по email, линкует OAuth account, авто-верифицирует ✅
 - Корректно — OAuth провайдер подтверждает владение email
 - Нужно: уведомить пользователя "Yandex OAuth добавлен к вашему аккаунту" (notification event)
 
 #### ДОРАБОТКА-6: OAuth пользователь хочет добавить пароль
+
 - Новый endpoint: `POST /api/auth/set-password` (только если `passwordHash = null`)
 - Фронт: в настройках аккаунта — "Add password" форма
 - Валидация: тот же `PASSWORD_REGEX`
 
 ### Тесты
+
 ```
 [ ] auth.service.spec.ts — validateCredentials: успех, неверный пароль, не существует, нет passwordHash (OAuth юзер)
 [ ] auth.service.spec.ts — login: успех, не найден → UnauthorizedException
@@ -167,6 +184,7 @@ LoginForm { email, password }
 ## БЛОК 3: AUTH — Logout / Refresh / Password Reset
 
 ### Поток logout
+
 ```
 POST /api/auth/logout (refresh_token cookie)
   → revokeRefreshToken(hash)
@@ -174,6 +192,7 @@ POST /api/auth/logout (refresh_token cookie)
 ```
 
 ### Поток refresh
+
 ```
 POST /api/auth/refresh (refresh_token cookie)
   → verifyRefreshToken (JWT signature)
@@ -184,6 +203,7 @@ POST /api/auth/refresh (refresh_token cookie)
 ```
 
 ### Поток password reset
+
 ```
 POST /api/auth/forgot-password { email }
   → findByEmail → если нет или нет passwordHash → тихо return (no enumeration)
@@ -199,15 +219,18 @@ POST /api/auth/reset-password { token, newPassword }
 ### Доработки
 
 #### ДОРАБОТКА-7: `reset-password` gateway — не очищает cookies
+
 - После успешного сброса пароля gateway не вызывает `clearTokenCookies`
 - Пользователь остаётся с невалидными cookies до следующего запроса
 - Фикс: добавить `clearTokenCookies(response)` в `resetPassword` handler
 
 #### ДОРАБОТКА-8: UX reset-password
+
 - После успешного сброса → показать "Password changed. Please sign in." → redirect `/auth/login`
 - Уже реализовано в `useResetPassword` ✅
 
 ### Тесты
+
 ```
 [ ] auth.service.spec.ts — logout: revokeRefreshToken вызван; без токена — не падает
 [ ] auth.service.spec.ts — refresh: успех, просроченный, отозванный → 401
@@ -228,29 +251,36 @@ POST /api/auth/reset-password { token, newPassword }
 ### Всё через Redis — инфраструктура уже есть
 
 #### Login brute force — `AuthService.validateCredentials`
+
 ```
 login_attempts:{credentialsId}  →  INCR + TTL 15min
 ```
+
 - 5 неудачных попыток → `TooManyRequestsException` (429) + `Retry-After` header
 - Успешный вход → DEL ключа
 - `lockedAt/lockedUntil` поля в Prisma схеме не используем — Redis чище
 - Нужно добавить `incr(key, ttlSeconds): Promise<number>` в `RedisService`
 
 #### Email resend cooldown — `VerificationService.resend`
+
 ```
 email_verification_cooldown:{credentialsId}  TTL 120s
 ```
+
 - Уже используем Redis для токенов, добавляем cooldown ключ
 - Если ключ есть → `TooManyRequestsException`
 - Ключ ставится ПОСЛЕ успешной генерации
 
 #### Password reset cooldown — `VerificationService.generatePasswordReset`
+
 ```
 password_reset_cooldown:{credentialsId}  TTL 300s
 ```
+
 - Аналогично email resend
 
 ### Изменения в коде
+
 ```
 [ ] RedisService: добавить метод incr(key, ttlSeconds): Promise<number>
 [ ] AuthService.validateCredentials: login attempts counter
@@ -260,6 +290,7 @@ password_reset_cooldown:{credentialsId}  TTL 300s
 ```
 
 ### Тесты
+
 ```
 [ ] validateCredentials: 4 неудачных → не заблокирован
 [ ] validateCredentials: 5-я неудачная → TooManyRequestsException
@@ -274,6 +305,7 @@ password_reset_cooldown:{credentialsId}  TTL 300s
 ## БЛОК 5: AUTH — OAuth
 
 ### Требования
+
 - GitHub / Google / Yandex
 - Нет пароля, авто-верификация
 - Merge с существующим email-аккаунтом
@@ -281,13 +313,16 @@ password_reset_cooldown:{credentialsId}  TTL 300s
 ### Доработки
 
 #### ДОРАБОТКА-9: OAuth credentials в .env
+
 - Убрать `|| 'not-configured'` в стратегиях после заполнения .env
 - Добавить validation: если credentials не заданы → log warning при старте, не крашить
 
 #### ДОРАБОТКА-10: OAuth → уведомление о merge
+
 - Если OAuth привязан к существующему email-аккаунту → emit notification "OAuth provider linked"
 
 ### Тесты
+
 ```
 [ ] GET /api/auth/github → 302 redirect
 [ ] GET /api/auth/google → 302 redirect
@@ -318,6 +353,7 @@ POST /api/auth/set-password { newPassword }  (JwtGuard)
 ## БЛОК 7: CHAT — Advanced Features
 
 ### Online status
+
 ```
 Socket connect → Redis SET user:{id}:online TTL 30s
 Socket disconnect → Redis DEL user:{id}:online
@@ -326,6 +362,7 @@ GET /api/users/:id → включать поле isOnline из Redis
 ```
 
 ### Unread count
+
 ```
 При message.created → INCR unread:{userId}:{chatId}
 При chat:join / открытии чата → DEL unread:{userId}:{chatId}
@@ -333,6 +370,7 @@ GET /api/chats → включать unreadCount из Redis
 ```
 
 ### Typing indicators
+
 ```
 socket.emit('typing:start', { chatId })
   → server broadcast 'typing:start' в room (кроме отправителя)
@@ -343,6 +381,7 @@ socket.emit('typing:stop', { chatId })
 ```
 
 ### Тесты
+
 ```
 [ ] ChatService unit: все 5 методов
 [ ] Gateway chat controller: 4 REST endpoint
@@ -358,11 +397,13 @@ socket.emit('typing:stop', { chatId })
 ### Error UX — FormAlert компонент
 
 **Правило:**
+
 - Клиентская валидация → inline под полями (react-hook-form, уже работает ✅)
 - API ошибки в формах → `FormAlert` компонент внутри формы над кнопкой Submit
 - Фоновые операции (logout, send message, save settings) → toast остаётся ✅
 
 **FormAlert** — новый компонент в `@org/shared`:
+
 ```tsx
 <FormAlert variant="error | warning | info" action?: { label, onClick }>
   {message}
@@ -380,6 +421,7 @@ socket.emit('typing:stop', { chatId })
 | 500 server | FormAlert error | "Something went wrong. Please try again" |
 
 **Существующие компоненты:**
+
 - `StatusScreen` (`@org/shared`) — уже есть, нигде не используется. Variants: error | success | info.
   Использовать для: "Check your email" страница, "Email verified ✓" страница
 - `FormAlert` — нужно создать (inline, внутри формы)
@@ -399,13 +441,13 @@ socket.emit('typing:stop', { chatId })
 
 Auth формы используют сырые HTML теги вместо компонентов из `@org/shared`:
 
-| Файл | Что заменить |
-|---|---|
-| `login-form.tsx` | `<p className="text-sm text-text-muted">` → `<Text size="sm" color="muted">` |
-| `register-form.tsx` | `<p className="text-sm text-text-muted">` → `<Text size="sm" color="muted">` |
-| `forgot-password-form.tsx` | 2× `<p>` → `<Text>` |
-| `reset-password-form.tsx` | `<p className="text-sm text-danger">` → `<Text size="sm" color="danger">`, description `<p>` → `<Text>` |
-| `oauth-buttons.tsx` | `<button className="inline-flex...border-border bg-surface-elevated...">` → `<Button variant="secondary" leftIcon={icon}>` |
+| Файл                       | Что заменить                                                                                                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `login-form.tsx`           | `<p className="text-sm text-text-muted">` → `<Text size="sm" color="muted">`                                               |
+| `register-form.tsx`        | `<p className="text-sm text-text-muted">` → `<Text size="sm" color="muted">`                                               |
+| `forgot-password-form.tsx` | 2× `<p>` → `<Text>`                                                                                                        |
+| `reset-password-form.tsx`  | `<p className="text-sm text-danger">` → `<Text size="sm" color="danger">`, description `<p>` → `<Text>`                    |
+| `oauth-buttons.tsx`        | `<button className="inline-flex...border-border bg-surface-elevated...">` → `<Button variant="secondary" leftIcon={icon}>` |
 
 ```
 [ ] Заменить <p> теги на <Text> во всех auth формах
@@ -414,6 +456,7 @@ Auth формы используют сырые HTML теги вместо ко�
 ```
 
 ### Lazy loading
+
 ```
 [ ] React.lazy() для всех страниц в роутере
 [ ] Suspense с Spinner на уровне роутера
@@ -421,6 +464,7 @@ Auth формы используют сырые HTML теги вместо ко�
 ```
 
 ### Производительность компонентов
+
 ```
 [ ] ChatList → React.memo (ре-рендер при каждом новом сообщении)
 [ ] MessageList → виртуализация если сообщений много (react-virtual или @tanstack/virtual)
@@ -429,6 +473,7 @@ Auth формы используют сырые HTML теги вместо ко�
 ```
 
 ### es-toolkit
+
 ```
 [ ] Найти использование нативных паттернов которые es-toolkit делает чище:
     - debounce для typing indicator (сейчас нет реализации)
@@ -442,6 +487,7 @@ Auth формы используют сырые HTML теги вместо ко�
 ## БЛОК 9: Documentation
 
 ### Swagger (бэкенд)
+
 ```
 [ ] @nestjs/swagger уже установлен (не используется)
 [ ] Подключить SwaggerModule в gateway/main.ts
@@ -451,6 +497,7 @@ Auth формы используют сырые HTML теги вместо ко�
 ```
 
 ### Storybook (фронтенд)
+
 ```
 [ ] Storybook уже установлен
 [ ] Stories для: Button, Input, ChatItem, MessageBubble, LoginForm, RegisterForm

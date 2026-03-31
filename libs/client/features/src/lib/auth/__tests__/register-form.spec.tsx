@@ -1,14 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
+
 import { RegisterForm } from '../ui/register-form';
 
 function renderForm(props: Partial<React.ComponentProps<typeof RegisterForm>> = {}) {
   const onSubmit = vi.fn().mockResolvedValue(undefined);
   render(
     <MemoryRouter>
-      <RegisterForm onSubmit={onSubmit} {...props} />
-    </MemoryRouter>
+      <RegisterForm
+        onSubmit={onSubmit}
+        {...props}
+      />
+    </MemoryRouter>,
   );
   return { onSubmit };
 }
@@ -25,9 +29,7 @@ describe('RegisterForm', () => {
 
   it('displays apiError via FormAlert', () => {
     renderForm({ apiError: 'This email is already registered.' });
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'This email is already registered.'
-    );
+    expect(screen.getByRole('alert')).toHaveTextContent('This email is already registered.');
   });
 
   it('does not show alert when apiError is null', () => {
@@ -66,7 +68,7 @@ describe('RegisterForm', () => {
         password: 'Password1!',
         confirmPassword: 'Password1!',
       }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

@@ -1,4 +1,5 @@
 import { useSessionStore } from '@org/entities';
+
 import { socket } from './socket';
 
 export function initSocketMiddleware(): () => void {
@@ -10,6 +11,6 @@ export function initSocketMiddleware(): () => void {
       } else if (!isAuthenticated && wasAuthenticated) {
         socket.disconnect();
       }
-    }
+    },
   );
 }

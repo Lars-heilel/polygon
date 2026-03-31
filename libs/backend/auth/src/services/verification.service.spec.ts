@@ -6,6 +6,7 @@ import {
   NOTIFICATION_EVENTS,
   RedisService,
 } from '@org/core';
+
 import { VerificationService } from './verification.service';
 
 const mockRepo = {
@@ -52,7 +53,7 @@ describe('VerificationService', () => {
       expect(mockRedis.set).toHaveBeenCalledTimes(2);
       expect(mockNotificationClient.emit).toHaveBeenCalledWith(
         NOTIFICATION_EVENTS.SEND_VERIFICATION_EMAIL,
-        expect.objectContaining({ to: 'user@example.com', token: expect.any(String) })
+        expect.objectContaining({ to: 'user@example.com', token: expect.any(String) }),
       );
     });
   });
@@ -75,9 +76,7 @@ describe('VerificationService', () => {
     it('throws BadRequestException on invalid or expired token', async () => {
       mockRedis.get.mockResolvedValue(null);
 
-      await expect(service.verify('bad-token')).rejects.toThrow(
-        BadRequestException
-      );
+      await expect(service.verify('bad-token')).rejects.toThrow(BadRequestException);
 
       expect(mockRepo.verifyCredentials).not.toHaveBeenCalled();
     });
@@ -95,7 +94,7 @@ describe('VerificationService', () => {
     it('deletes old token, generates new one, sets cooldown', async () => {
       mockRepo.findByEmail.mockResolvedValue(credentials);
       mockRedis.get
-        .mockResolvedValueOnce(null)   // cooldown key → not set
+        .mockResolvedValueOnce(null) // cooldown key → not set
         .mockResolvedValueOnce('old-token'); // old token by id
       mockRedis.del.mockResolvedValue(undefined);
       mockRedis.set.mockResolvedValue(undefined);
@@ -105,13 +104,13 @@ describe('VerificationService', () => {
       expect(mockRedis.del).toHaveBeenCalled();
       expect(mockNotificationClient.emit).toHaveBeenCalledWith(
         NOTIFICATION_EVENTS.SEND_VERIFICATION_EMAIL,
-        expect.objectContaining({ to: 'user@example.com' })
+        expect.objectContaining({ to: 'user@example.com' }),
       );
       // cooldown key set
       expect(mockRedis.set).toHaveBeenCalledWith(
         expect.stringContaining('resend_cooldown'),
         expect.any(Number),
-        '1'
+        '1',
       );
     });
 
@@ -119,9 +118,7 @@ describe('VerificationService', () => {
       mockRepo.findByEmail.mockResolvedValue(credentials);
       mockRedis.get.mockResolvedValueOnce('1'); // cooldown key exists
 
-      await expect(service.resend('user@example.com')).rejects.toThrow(
-        HttpException
-      );
+      await expect(service.resend('user@example.com')).rejects.toThrow(HttpException);
 
       expect(mockNotificationClient.emit).not.toHaveBeenCalled();
     });
@@ -129,17 +126,13 @@ describe('VerificationService', () => {
     it('throws NotFoundException when email is not registered', async () => {
       mockRepo.findByEmail.mockResolvedValue(null);
 
-      await expect(service.resend('unknown@example.com')).rejects.toThrow(
-        NotFoundException
-      );
+      await expect(service.resend('unknown@example.com')).rejects.toThrow(NotFoundException);
     });
 
     it('throws BadRequestException when account is already verified', async () => {
       mockRepo.findByEmail.mockResolvedValue({ ...credentials, isVerified: true });
 
-      await expect(service.resend('user@example.com')).rejects.toThrow(
-        BadRequestException
-      );
+      await expect(service.resend('user@example.com')).rejects.toThrow(BadRequestException);
     });
   });
 });

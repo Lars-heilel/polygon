@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { OrgNotificationModule } from '@org/notification';
 import { HealthModule, LoggerModule, MetricsModule } from '@org/core';
+import { OrgNotificationModule } from '@org/notification';
+
 import { HealthController } from '../controllers/health.controller';
 
 @Module({

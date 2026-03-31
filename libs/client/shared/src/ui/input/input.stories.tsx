@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { Input } from './input';
 
 const meta: Meta<typeof Input> = {
@@ -62,9 +63,18 @@ export const Disabled: Story = {
 export const Sizes: Story = {
   render: () => (
     <div className="space-y-3 w-80">
-      <Input size="sm" placeholder="Small" />
-      <Input size="md" placeholder="Medium" />
-      <Input size="lg" placeholder="Large" />
+      <Input
+        size="sm"
+        placeholder="Small"
+      />
+      <Input
+        size="md"
+        placeholder="Medium"
+      />
+      <Input
+        size="lg"
+        placeholder="Large"
+      />
     </div>
   ),
 };

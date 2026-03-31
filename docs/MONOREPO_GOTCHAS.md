@@ -191,14 +191,15 @@ afterAll(() => server.close());
 **Overriding a handler in a specific test:**
 
 ```ts
-import { http, HttpResponse } from 'msw';
+import { HttpResponse, http } from 'msw';
+
 import { server } from '../test/server';
 
 it('handles login failure', () => {
   server.use(
     http.post('/api/auth/login', () =>
-      HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 })
-    )
+      HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 }),
+    ),
   );
   // ... test
 });

@@ -1,10 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router';
-import {
-  useSessionStore,
-  selectIsAuthenticated,
-  selectIsSessionLoading,
-} from '@org/entities';
+import { selectIsAuthenticated, selectIsSessionLoading, useSessionStore } from '@org/entities';
 import { Spinner } from '@org/shared';
+import { Navigate, Outlet, useLocation } from 'react-router';
 
 export function ProtectedRoute() {
   const isAuthenticated = useSessionStore(selectIsAuthenticated);
@@ -16,7 +12,13 @@ export function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+    return (
+      <Navigate
+        to="/auth/login"
+        state={{ from: location }}
+        replace
+      />
+    );
   }
 
   return <Outlet />;
@@ -31,7 +33,12 @@ export function GuestRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/chats" replace />;
+    return (
+      <Navigate
+        to="/chats"
+        replace
+      />
+    );
   }
 
   return <Outlet />;

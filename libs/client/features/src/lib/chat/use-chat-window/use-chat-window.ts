@@ -1,8 +1,9 @@
-import { useGetMessagesQuery, useMeQuery, useSendMessageMutation } from '@org/entities';
 import { useState } from 'react';
 
+import { useGetMessagesQuery, useMeQuery, useSendMessageMutation } from '@org/entities';
+
 export function useChatWindow(chatId: string | null) {
-  const isEnabled = Boolean(chatId);
+  // const isEnabled = Boolean(chatId);
   const { data: messages, isLoading } = useGetMessagesQuery(chatId ?? '');
   const { data: me } = useMeQuery();
   const [messageText, setMessageText] = useState('');

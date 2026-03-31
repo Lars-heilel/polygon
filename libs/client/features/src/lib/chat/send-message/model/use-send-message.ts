@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+
 import { useSendMessageMutation } from '@org/entities';
 import { toast } from '@org/shared';
 

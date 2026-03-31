@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { StatusScreen } from './status-screen';
+
 import { Button } from '../button/button';
+import { StatusScreen } from './status-screen';
 
 const meta: Meta<typeof StatusScreen> = {
   title: 'UI / StatusScreen',
@@ -53,7 +54,10 @@ export const WithActions: Story = {
   },
   render: (args) => (
     <StatusScreen {...args}>
-      <Button variant="secondary" size="sm">
+      <Button
+        variant="secondary"
+        size="sm"
+      >
         Resend email
       </Button>
     </StatusScreen>
@@ -68,7 +72,10 @@ export const CheckEmailPage: Story = {
       title="Check your email"
       description="We sent a verification link to user@example.com. Click the link to activate your account."
     >
-      <Button variant="secondary" size="sm">
+      <Button
+        variant="secondary"
+        size="sm"
+      >
         Resend email
       </Button>
     </StatusScreen>
@@ -83,7 +90,10 @@ export const EmailVerifiedPage: Story = {
       title="Email verified!"
       description="Your account is now active."
     >
-      <Button variant="primary" size="sm">
+      <Button
+        variant="primary"
+        size="sm"
+      >
         Sign in
       </Button>
     </StatusScreen>
@@ -98,7 +108,10 @@ export const ErrorPage: Story = {
       title="Link expired"
       description="This verification link is invalid or has already been used."
     >
-      <Button variant="secondary" size="sm">
+      <Button
+        variant="secondary"
+        size="sm"
+      >
         Request new link
       </Button>
     </StatusScreen>

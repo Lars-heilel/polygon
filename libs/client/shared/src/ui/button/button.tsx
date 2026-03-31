@@ -1,5 +1,7 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 import { Spinner } from '../spinner/spinner';
 
@@ -9,8 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'bg-primary hover:bg-primary-hover text-white',
-        secondary:
-          'bg-surface-elevated hover:bg-border text-text border border-border',
+        secondary: 'bg-surface-elevated hover:bg-border text-text border border-border',
         ghost: 'text-text-muted hover:text-text hover:bg-surface-elevated',
         danger: 'bg-danger text-white hover:opacity-90',
       },
@@ -24,12 +25,11 @@ const buttonVariants = cva(
       variant: 'primary',
       size: 'md',
     },
-  }
+  },
 );
 
 interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   loading?: boolean;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;

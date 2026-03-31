@@ -6,11 +6,7 @@ interface DividerProps {
   className?: string;
 }
 
-export function Divider({
-  orientation = 'horizontal',
-  label,
-  className,
-}: DividerProps) {
+export function Divider({ orientation = 'horizontal', label, className }: DividerProps) {
   if (orientation === 'vertical') {
     return <div className={cn('w-px self-stretch bg-border', className)} />;
   }

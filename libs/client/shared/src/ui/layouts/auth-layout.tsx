@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+
 import { Heading } from '../typography/heading';
 import { Text } from '../typography/text';
 
@@ -15,7 +16,11 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
         <div className="mb-6">
           <Heading level={4}>{title}</Heading>
           {description && (
-            <Text size="sm" color="muted" className="mt-1">
+            <Text
+              size="sm"
+              color="muted"
+              className="mt-1"
+            >
               {description}
             </Text>
           )}

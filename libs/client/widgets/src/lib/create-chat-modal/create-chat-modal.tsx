@@ -1,4 +1,4 @@
-import { Modal, Input, Avatar, Badge } from '@org/shared';
+import { Avatar, Badge, Input, Modal } from '@org/shared';
 
 interface User {
   id: string;
@@ -27,12 +27,30 @@ export function CreateChatModal({
   isCreating = false,
 }: CreateChatModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-md"
+    >
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
         <h2 className="text-lg font-bold">New Chat</h2>
-        <button onClick={onClose} className="p-2 hover:bg-surface-elevated rounded-lg" disabled={isCreating}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-surface-elevated rounded-lg"
+          disabled={isCreating}
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>
@@ -45,8 +63,18 @@ export function CreateChatModal({
           size="sm"
           disabled={isCreating}
           leftIcon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           }
         />
@@ -61,9 +89,17 @@ export function CreateChatModal({
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors disabled:opacity-50"
           >
             <div className="relative">
-              <Avatar name={user.name} size="md" />
+              <Avatar
+                name={user.name}
+                size="md"
+              />
               {user.online && (
-                <Badge variant="primary" size="sm" dot className="absolute bottom-0 right-0 border-2 border-surface" />
+                <Badge
+                  variant="primary"
+                  size="sm"
+                  dot
+                  className="absolute bottom-0 right-0 border-2 border-surface"
+                />
               )}
             </div>
             <div className="flex-1 text-left">

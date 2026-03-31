@@ -16,9 +16,8 @@ export const useSessionStore = create<SessionStore>()(
   subscribeWithSelector((set) => ({
     isAuthenticated: false,
     isLoading: true,
-    setAuthenticated: (isAuthenticated) =>
-      set({ isAuthenticated, isLoading: false }),
-  }))
+    setAuthenticated: (isAuthenticated) => set({ isAuthenticated, isLoading: false }),
+  })),
 );
 
 export const selectIsAuthenticated = (s: SessionStore) => s.isAuthenticated;

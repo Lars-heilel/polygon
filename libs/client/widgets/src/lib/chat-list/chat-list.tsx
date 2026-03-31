@@ -1,6 +1,7 @@
-import { useNavigate, useLocation } from 'react-router';
-import { Spinner } from '@org/shared';
 import { useGetChatsQuery, useMeQuery } from '@org/entities';
+import { Spinner } from '@org/shared';
+import { useLocation, useNavigate } from 'react-router';
+
 import { ChatItem } from '../chat-item';
 
 export function ChatList() {
@@ -19,16 +20,12 @@ export function ChatList() {
       )}
 
       {!isLoading && chats?.length === 0 && (
-        <p className="text-xs text-text-muted px-4 py-4 text-center">
-          No chats yet
-        </p>
+        <p className="text-xs text-text-muted px-4 py-4 text-center">No chats yet</p>
       )}
 
       {chats?.map((chat) => {
         const otherMember = chat.members.find((m) => m.userId !== me?.id);
-        const displayName = otherMember
-          ? otherMember.userId.slice(0, 8)
-          : chat.name ?? 'Chat';
+        const displayName = otherMember ? otherMember.userId.slice(0, 8) : (chat.name ?? 'Chat');
         const lastMessage = chat.messages[0];
 
         return (

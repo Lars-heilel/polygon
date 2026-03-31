@@ -1,5 +1,7 @@
-import { cva, type VariantProps } from 'class-variance-authority';
 import type { ReactNode } from 'react';
+
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const badgeVariants = cva(
@@ -26,7 +28,7 @@ const badgeVariants = cva(
       size: 'md',
       dot: false,
     },
-  }
+  },
 );
 
 interface BadgeProps extends VariantProps<typeof badgeVariants> {
@@ -36,8 +38,6 @@ interface BadgeProps extends VariantProps<typeof badgeVariants> {
 
 export function Badge({ variant, size, dot, children, className }: BadgeProps) {
   return (
-    <span className={cn(badgeVariants({ variant, size, dot }), className)}>
-      {!dot && children}
-    </span>
+    <span className={cn(badgeVariants({ variant, size, dot }), className)}>{!dot && children}</span>
   );
 }

@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from 'nestjs-pino';
-import cookieParser from 'cookie-parser';
-import passport from 'passport';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter, LoggingInterceptor } from '@org/core';
+import cookieParser from 'cookie-parser';
+import { Logger } from 'nestjs-pino';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
+import passport from 'passport';
+
 import { GatewayModule } from './app/gateway.module';
 
 async function bootstrap() {

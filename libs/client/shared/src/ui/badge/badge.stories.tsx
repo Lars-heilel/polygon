@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Badge } from './badge';
+
 import { Avatar } from '../avatar/avatar';
+import { Badge } from './badge';
 
 const meta: Meta<typeof Badge> = {
   title: 'UI / Badge',
@@ -40,13 +41,20 @@ export const WithAvatar: Story = {
     <div className="flex items-center gap-4">
       <div className="relative inline-flex">
         <Avatar name="Alex Kim" />
-        <Badge variant="danger" className="absolute -top-1 -right-1">
+        <Badge
+          variant="danger"
+          className="absolute -top-1 -right-1"
+        >
           5
         </Badge>
       </div>
       <div className="relative inline-flex">
         <Avatar name="Sam Lee" />
-        <Badge dot variant="primary" className="absolute bottom-0 right-0" />
+        <Badge
+          dot
+          variant="primary"
+          className="absolute bottom-0 right-0"
+        />
       </div>
     </div>
   ),

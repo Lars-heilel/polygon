@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { resolve } from 'path';
+
 import { envSchema } from './env.schema';
 
 function resolveEnvFile(): string {
@@ -13,11 +14,7 @@ function resolveEnvFile(): string {
 function validate(config: Record<string, unknown>) {
   const result = envSchema.safeParse(config);
   if (!result.success) {
-    throw new Error(
-      result.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('\n')
-    );
+    throw new Error(result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n'));
   }
   return result.data;
 }

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AUTH_PRISMA_REPOSITORY_TOKEN } from '@org/core';
+
 import type { IAuthRepository } from '../interfaces/auth.interface';
 
 @Injectable()
@@ -9,7 +10,7 @@ export class CleanupService {
 
   constructor(
     @Inject(AUTH_PRISMA_REPOSITORY_TOKEN)
-    private readonly repo: IAuthRepository
+    private readonly repo: IAuthRepository,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)

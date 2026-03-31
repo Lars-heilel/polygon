@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 const CreateDirectChatSchema = z.object({
   targetUserId: z.string().uuid(),

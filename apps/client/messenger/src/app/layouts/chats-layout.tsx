@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+
 import { ChatListSidebar } from '@org/widgets';
+import { Outlet, useNavigate } from 'react-router';
 
 export function ChatsLayout() {
   const navigate = useNavigate();

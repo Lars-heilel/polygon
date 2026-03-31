@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { TokenService } from './token.service';
+
 import { CoreConfigModule } from '../config/config.module';
+import { TokenService } from './token.service';
 
 @Module({
   imports: [CoreConfigModule, JwtModule.register({})],

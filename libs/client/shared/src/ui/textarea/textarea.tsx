@@ -1,5 +1,7 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { type TextareaHTMLAttributes, forwardRef } from 'react';
+
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const textareaVariants = cva(
@@ -20,11 +22,12 @@ const textareaVariants = cva(
       size: 'md',
       state: 'default',
     },
-  }
+  },
 );
 
 interface TextareaProps
-  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'>,
+  extends
+    Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'>,
     Pick<VariantProps<typeof textareaVariants>, 'size'> {
   label?: string;
   error?: string;
@@ -33,10 +36,7 @@ interface TextareaProps
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  (
-    { size, label, error, hint, maxChars, className, id, value, ...props },
-    ref
-  ) => {
+  ({ size, label, error, hint, maxChars, className, id, value, ...props }, ref) => {
     const textareaId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
     const state = error ? 'error' : 'default';
     const charCount = typeof value === 'string' ? value.length : 0;
@@ -44,7 +44,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1.5 w-full">
         {label && (
-          <label htmlFor={textareaId} className="text-sm font-medium text-text">
+          <label
+            htmlFor={textareaId}
+            className="text-sm font-medium text-text"
+          >
             {label}
           </label>
         )}
@@ -57,20 +60,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
         {(error || hint || maxChars) && (
           <div className="flex justify-between">
-            <p
-              className={cn(
-                'text-xs',
-                error ? 'text-danger' : 'text-text-muted'
-              )}
-            >
+            <p className={cn('text-xs', error ? 'text-danger' : 'text-text-muted')}>
               {error ?? hint}
             </p>
             {maxChars && (
               <p
-                className={cn(
-                  'text-xs',
-                  charCount > maxChars ? 'text-danger' : 'text-text-muted'
-                )}
+                className={cn('text-xs', charCount > maxChars ? 'text-danger' : 'text-text-muted')}
               >
                 {charCount}/{maxChars}
               </p>
@@ -79,7 +74,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Textarea.displayName = 'Textarea';

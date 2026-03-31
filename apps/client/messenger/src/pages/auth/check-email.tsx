@@ -1,5 +1,5 @@
-import { useSearchParams } from 'react-router';
 import { CheckEmailScreen } from '@org/features';
+import { useSearchParams } from 'react-router';
 
 export function CheckEmailPage() {
   const [searchParams] = useSearchParams();

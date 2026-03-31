@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import { authApi, useSessionStore } from '@org/entities';
 import { ThemeProvider } from '@org/features';
 import { ErrorBoundary, Toaster } from '@org/shared';
-import { authApi, useSessionStore } from '@org/entities';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
   defaultOptions: {

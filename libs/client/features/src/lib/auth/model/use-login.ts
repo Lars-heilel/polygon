@@ -1,9 +1,9 @@
-import { useNavigate } from 'react-router';
 import { CLIENT_ROUTES } from '@org/common';
-import { toast } from '@org/shared';
-import { useLoginMutation, useSessionStore } from '@org/entities';
-import type { z } from 'zod';
 import type { loginSchema } from '@org/common';
+import { useLoginMutation, useSessionStore } from '@org/entities';
+import { toast } from '@org/shared';
+import { useNavigate } from 'react-router';
+import type { z } from 'zod';
 
 type LoginValues = z.infer<typeof loginSchema>;
 

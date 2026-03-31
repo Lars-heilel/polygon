@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { FormAlert } from './form-alert';
 
 const meta: Meta<typeof FormAlert> = {
@@ -45,9 +46,18 @@ export const Hidden: Story = {
 export const AllVariants: Story = {
   render: () => (
     <div className="space-y-2 w-96">
-      <FormAlert variant="error" message="This email is already registered." />
-      <FormAlert variant="success" message="Email sent — check your inbox." />
-      <FormAlert variant="info" message="Please wait before requesting another email." />
+      <FormAlert
+        variant="error"
+        message="This email is already registered."
+      />
+      <FormAlert
+        variant="success"
+        message="Email sent — check your inbox."
+      />
+      <FormAlert
+        variant="info"
+        message="Please wait before requesting another email."
+      />
     </div>
   ),
 };
@@ -56,10 +66,22 @@ export const AuthErrors: Story = {
   name: 'Auth error messages',
   render: () => (
     <div className="space-y-2 w-96">
-      <FormAlert variant="error" message="This email is already registered." />
-      <FormAlert variant="error" message="Invalid email or password." />
-      <FormAlert variant="error" message="Too many attempts. Please try again later." />
-      <FormAlert variant="error" message="Registration failed. Please try again." />
+      <FormAlert
+        variant="error"
+        message="This email is already registered."
+      />
+      <FormAlert
+        variant="error"
+        message="Invalid email or password."
+      />
+      <FormAlert
+        variant="error"
+        message="Too many attempts. Please try again later."
+      />
+      <FormAlert
+        variant="error"
+        message="Registration failed. Please try again."
+      />
     </div>
   ),
 };

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import type { Env } from '../config/env.schema';
 import type { Role } from '@org/common';
+
+import type { Env } from '../config/env.schema';
 
 export type JwtPayload = {
   sub: string;
@@ -14,7 +15,7 @@ export type JwtPayload = {
 export class TokenService {
   constructor(
     private readonly jwt: JwtService,
-    private readonly config: ConfigService<Env>
+    private readonly config: ConfigService<Env>,
   ) {}
 
   generateAccessToken(payload: JwtPayload): string {

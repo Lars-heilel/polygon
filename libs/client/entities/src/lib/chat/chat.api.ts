@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_ROUTES } from '@org/common';
 import type {
   Chat as ChatBase,
   ChatMember as ChatMemberBase,
   Message as MessageBase,
 } from '@org/common';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { authedFetch } from '../api/authed-fetch';
 
 export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
@@ -32,8 +33,7 @@ export const chatApi = {
       body: JSON.stringify(body),
     }),
 
-  getMessages: (chatId: string) =>
-    authedFetch<Message[]>(API_ROUTES.chats.messages(chatId)),
+  getMessages: (chatId: string) => authedFetch<Message[]>(API_ROUTES.chats.messages(chatId)),
 
   sendMessage: (chatId: string, text: string) =>
     authedFetch<Message>(API_ROUTES.chats.messages(chatId), {
@@ -73,10 +73,7 @@ export function useSendMessageMutation(chatId: string) {
     mutationFn: (text: string) => chatApi.sendMessage(chatId, text),
     onMutate: async (text) => {
       await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
-      const snapshot = queryClient.getQueryData<Message[]>([
-        'messages',
-        chatId,
-      ]);
+      const snapshot = queryClient.getQueryData<Message[]>(['messages', chatId]);
       queryClient.setQueryData<Message[]>(['messages', chatId], (old = []) => [
         ...old,
         {

@@ -1,5 +1,6 @@
-import { renderHook, act } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
+import { act, renderHook } from '@testing-library/react';
+import { HttpResponse, http } from 'msw';
+
 import { server } from '../../../test/server';
 import { createWrapper } from '../../../test/test-utils';
 import { useRegister } from '../model/use-register';
@@ -29,7 +30,7 @@ describe('useRegister', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/check-email?email=user%40example.com')
+      expect.stringContaining('/auth/check-email?email=user%40example.com'),
     );
     expect(result.current.apiError).toBeNull();
   });
@@ -37,8 +38,8 @@ describe('useRegister', () => {
   it('sets apiError on 409 conflict', async () => {
     server.use(
       http.post('/api/auth/register', () =>
-        HttpResponse.json({ message: 'Email already in use' }, { status: 409 })
-      )
+        HttpResponse.json({ message: 'Email already in use' }, { status: 409 }),
+      ),
     );
 
     const { result } = renderHook(() => useRegister(), { wrapper: createWrapper() });
@@ -54,8 +55,8 @@ describe('useRegister', () => {
   it('sets generic apiError on server error', async () => {
     server.use(
       http.post('/api/auth/register', () =>
-        HttpResponse.json({ message: 'Internal server error' }, { status: 500 })
-      )
+        HttpResponse.json({ message: 'Internal server error' }, { status: 500 }),
+      ),
     );
 
     const { result } = renderHook(() => useRegister(), { wrapper: createWrapper() });
@@ -70,10 +71,11 @@ describe('useRegister', () => {
 
   it('clears apiError on new submission', async () => {
     server.use(
-      http.post('/api/auth/register', () =>
-        HttpResponse.json({ message: 'Email already in use' }, { status: 409 }),
-        { once: true }
-      )
+      http.post(
+        '/api/auth/register',
+        () => HttpResponse.json({ message: 'Email already in use' }, { status: 409 }),
+        { once: true },
+      ),
     );
 
     const { result } = renderHook(() => useRegister(), { wrapper: createWrapper() });

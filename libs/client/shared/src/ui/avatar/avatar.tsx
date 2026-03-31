@@ -1,4 +1,5 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { type VariantProps, cva } from 'class-variance-authority';
+
 import { cn } from '../../lib/utils/cn';
 
 const avatarVariants = cva(
@@ -14,28 +15,25 @@ const avatarVariants = cva(
       },
     },
     defaultVariants: { size: 'md' },
-  }
+  },
 );
 
-const statusDotVariants = cva(
-  'absolute bottom-0 right-0 rounded-full border-2 border-surface',
-  {
-    variants: {
-      status: {
-        online: 'bg-green-500',
-        away: 'bg-yellow-400',
-        offline: 'bg-gray-50',
-      },
-      size: {
-        xs: 'w-1.5 h-1.5',
-        sm: 'w-2   h-2',
-        md: 'w-2.5 h-2.5',
-        lg: 'w-3   h-3',
-        xl: 'w-3.5 h-3.5',
-      },
+const statusDotVariants = cva('absolute bottom-0 right-0 rounded-full border-2 border-surface', {
+  variants: {
+    status: {
+      online: 'bg-green-500',
+      away: 'bg-yellow-400',
+      offline: 'bg-gray-50',
     },
-  }
-);
+    size: {
+      xs: 'w-1.5 h-1.5',
+      sm: 'w-2   h-2',
+      md: 'w-2.5 h-2.5',
+      lg: 'w-3   h-3',
+      xl: 'w-3.5 h-3.5',
+    },
+  },
+});
 
 function getInitials(name: string): string {
   return name
@@ -55,13 +53,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({
-  src,
-  name,
-  size = 'md',
-  status,
-  className,
-}: AvatarProps) {
+export function Avatar({ src, name, size = 'md', status, className }: AvatarProps) {
   return (
     <span className={cn(avatarVariants({ size }), className)}>
       {src ? (

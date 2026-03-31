@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-yandex';
 import { ClientProxy } from '@nestjs/microservices';
-import { lastValueFrom } from 'rxjs';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
+import { PassportStrategy } from '@nestjs/passport';
 import type { TokenPair } from '@org/common';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
+import { Strategy } from 'passport-yandex';
+import { lastValueFrom } from 'rxjs';
 
 // passport-yandex does not ship its own typings
 interface YandexProfile {
@@ -18,13 +18,11 @@ interface YandexProfile {
 export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   constructor(
     @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
-    config: ConfigService<Env>
+    config: ConfigService<Env>,
   ) {
     super({
-      clientID:
-        config.get('YANDEX_CLIENT_ID', { infer: true }) || 'not-configured',
-      clientSecret:
-        config.get('YANDEX_CLIENT_SECRET', { infer: true }) || 'not-configured',
+      clientID: config.get('YANDEX_CLIENT_ID', { infer: true }) || 'not-configured',
+      clientSecret: config.get('YANDEX_CLIENT_SECRET', { infer: true }) || 'not-configured',
       callbackURL: `${config.get('APP_URL', {
         infer: true,
       })}/api/auth/yandex/callback`,
@@ -34,7 +32,7 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   async validate(
     _accessToken: string,
     _refreshToken: string,
-    profile: YandexProfile
+    profile: YandexProfile,
   ): Promise<TokenPair> {
     const email = profile.emails?.[0]?.value ?? `${profile.id}@yandex.noemail`;
 
@@ -44,7 +42,7 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
         providerId: profile.id,
         email,
         name: profile.displayName || email,
-      })
+      }),
     );
   }
 }

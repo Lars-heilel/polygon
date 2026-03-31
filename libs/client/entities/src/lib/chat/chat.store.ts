@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { Message, Chat } from './chat.api';
 
 interface ChatState {
   activeChatId: string | null;
@@ -31,7 +30,7 @@ export const useChatStore = create<ChatStore>()(
         activeMessageId: null,
         isTyping: false,
       }),
-  }))
+  })),
 );
 
 // Selectors

@@ -1,6 +1,7 @@
-import request from 'supertest';
-import { of, throwError } from 'rxjs';
 import type { INestApplication } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+import request from 'supertest';
+
 import { createTestApp } from '../test/create-test-app';
 
 describe('AuthGatewayController', () => {
@@ -25,13 +26,11 @@ describe('AuthGatewayController', () => {
     it('returns 201 with message on valid payload', async () => {
       authClient['send'].mockReturnValue(of(null));
 
-      const res = await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          email: 'user@example.com',
-          password: 'Password1!',
-          username: 'user',
-        });
+      const res = await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'user@example.com',
+        password: 'Password1!',
+        username: 'user',
+      });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ message: 'Registered successfully' });
@@ -40,13 +39,11 @@ describe('AuthGatewayController', () => {
     it('does not set auth cookies on register', async () => {
       authClient['send'].mockReturnValue(of(null));
 
-      const res = await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          email: 'user@example.com',
-          password: 'Password1!',
-          username: 'user',
-        });
+      const res = await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'user@example.com',
+        password: 'Password1!',
+        username: 'user',
+      });
 
       const cookies = (res.headers['set-cookie'] as unknown as string[] | undefined) ?? [];
       expect(cookies.some((c) => c.startsWith('access_token='))).toBe(false);
@@ -54,29 +51,25 @@ describe('AuthGatewayController', () => {
     });
 
     it('returns 400 on invalid email', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          email: 'not-an-email',
-          password: 'Password1!',
-          username: 'user',
-        });
+      const res = await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'not-an-email',
+        password: 'Password1!',
+        username: 'user',
+      });
 
       expect(res.status).toBe(400);
     });
 
     it('returns 409 when auth service throws conflict', async () => {
       authClient['send'].mockReturnValue(
-        throwError(() => ({ statusCode: 409, message: 'Email already in use' }))
+        throwError(() => ({ statusCode: 409, message: 'Email already in use' })),
       );
 
-      const res = await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          email: 'user@example.com',
-          password: 'Password1!',
-          username: 'user',
-        });
+      const res = await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'user@example.com',
+        password: 'Password1!',
+        username: 'user',
+      });
 
       expect(res.status).toBe(409);
     });
@@ -94,12 +87,8 @@ describe('AuthGatewayController', () => {
 
       expect(res.status).toBe(201);
       const cookies = res.headers['set-cookie'] as unknown as string[];
-      expect(cookies.some((c: string) => c.includes('access_token=;'))).toBe(
-        true
-      );
-      expect(cookies.some((c: string) => c.includes('refresh_token=;'))).toBe(
-        true
-      );
+      expect(cookies.some((c: string) => c.includes('access_token=;'))).toBe(true);
+      expect(cookies.some((c: string) => c.includes('refresh_token=;'))).toBe(true);
     });
   });
 
@@ -131,9 +120,7 @@ describe('AuthGatewayController', () => {
     });
 
     it('returns 400 on missing fields', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/auth/reset-password')
-        .send({});
+      const res = await request(app.getHttpServer()).post('/api/auth/reset-password').send({});
 
       expect(res.status).toBe(400);
     });

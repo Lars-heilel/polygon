@@ -1,11 +1,12 @@
 import type {
+  CreateCredentialsInput,
   Credentials,
   CredentialsPayload,
-  CreateCredentialsInput,
-  TokenPair,
   OAuthLoginDto,
   RefreshToken,
+  TokenPair,
 } from '@org/common';
+
 import type { RegisterDto } from '../dto/register.dto';
 
 export interface IAuthRepository {
@@ -15,7 +16,7 @@ export interface IAuthRepository {
   updatePasswordHash(id: string, passwordHash: string): Promise<void>;
   findOAuthAccount(
     provider: string,
-    providerId: string
+    providerId: string,
   ): Promise<{ credentials: Credentials } | null>;
   createOAuthAccount(data: {
     provider: string;
@@ -44,10 +45,7 @@ export interface IVerificationService {
 
 export interface IAuthService {
   register(dto: RegisterDto): Promise<void>;
-  validateCredentials(
-    email: string,
-    password: string
-  ): Promise<CredentialsPayload>;
+  validateCredentials(email: string, password: string): Promise<CredentialsPayload>;
   login(id: string): Promise<TokenPair>;
   logout(refreshToken: string): Promise<void>;
   refresh(refreshToken: string): Promise<TokenPair>;
@@ -60,10 +58,7 @@ export interface IAuthService {
 
 export interface IAuthController {
   register(dto: RegisterDto): Promise<void>;
-  validateCredentials(payload: {
-    email: string;
-    password: string;
-  }): Promise<CredentialsPayload>;
+  validateCredentials(payload: { email: string; password: string }): Promise<CredentialsPayload>;
   login(payload: { id: string }): Promise<TokenPair>;
   logout(payload: { refreshToken: string }): Promise<void>;
   refresh(payload: { refreshToken: string }): Promise<TokenPair>;

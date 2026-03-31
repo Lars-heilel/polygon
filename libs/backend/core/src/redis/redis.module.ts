@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+
 import { CoreConfigModule } from '../config/config.module';
 import { RedisService } from './redis.service';
 
