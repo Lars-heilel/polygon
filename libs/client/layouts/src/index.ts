@@ -1,1 +1,1 @@
-export * from './lib/layouts';
+export { AuthLayout } from './lib/auth-layout';

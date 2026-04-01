@@ -1,10 +1,10 @@
 import { StrictMode } from 'react';
 
+import { initSocketMiddleware } from '@org/features';
 import * as ReactDOM from 'react-dom/client';
 
 import App from './app';
 import './config/env';
-import { initSocketMiddleware } from './socket/socket-middleware';
 import './styles/global.css';
 
 initSocketMiddleware();

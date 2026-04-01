@@ -17,7 +17,6 @@ export { Avatar } from './ui/avatar';
 export { Badge } from './ui/badge';
 export { Divider } from './ui/divider';
 export { Spinner } from './ui/spinner';
-export { AuthLayout } from './ui/layouts';
 export { ErrorBoundary } from './ui/error-boundary';
 export { Toaster, toast } from './ui/toast';
 export { EmptyState } from './ui/empty-state';

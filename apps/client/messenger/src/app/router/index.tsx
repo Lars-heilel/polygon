@@ -1,21 +1,20 @@
-import { ThemeToggle } from '@org/features';
-import { NotFoundPage } from '@org/pages';
-import { DesignSystemPage } from '@org/shared';
-import { Navigate, createBrowserRouter } from 'react-router';
-
+import { OAuthButtons, ThemeToggle } from '@org/features';
 import {
   ChatPage,
-  ChatsPage,
+  ChatsLayout,
   CheckEmailPage,
   EmailVerifiedPage,
   ForgotPasswordPage,
   LoginPage,
+  MessengerMainPage,
+  NotFoundPage,
   RegisterPage,
   ResetPasswordPage,
   SettingsPage,
-} from '../../pages';
-import { ChatsTestPage } from '../../pages/chats-test/chats-test';
-import { ChatsLayout } from '../layouts/chats-layout';
+} from '@org/pages';
+import { DesignSystemPage } from '@org/shared';
+import { Navigate, createBrowserRouter } from 'react-router';
+
 import { GuestRoute, ProtectedRoute } from './protected-route';
 
 export const router = createBrowserRouter([
@@ -45,7 +44,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'login', element: <LoginPage /> },
-          { path: 'register', element: <RegisterPage /> },
+          { path: 'register', element: <RegisterPage oauthSlot={<OAuthButtons />} /> },
           { path: 'check-email', element: <CheckEmailPage /> },
           { path: 'email-verified', element: <EmailVerifiedPage /> },
           { path: 'forgot-password', element: <ForgotPasswordPage /> },
@@ -62,7 +61,7 @@ export const router = createBrowserRouter([
         path: '/chats',
         element: <ChatsLayout />,
         children: [
-          { index: true, element: <ChatsPage /> },
+          { index: true, element: <MessengerMainPage /> },
           { path: ':chatId', element: <ChatPage /> },
         ],
       },
@@ -78,10 +77,6 @@ export const router = createBrowserRouter([
         {
           path: '/ds',
           element: <DesignSystemPage headerSlot={<ThemeToggle />} />,
-        },
-        {
-          path: '/chats-test',
-          element: <ChatsTestPage />,
         },
       ]
     : []),

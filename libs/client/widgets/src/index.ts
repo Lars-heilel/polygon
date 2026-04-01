@@ -1,13 +1,2 @@
-export { UserPanel } from './lib/user-panel';
-export { MessageInput } from './lib/message-input';
-export { MessageList } from './lib/message-list';
-export { ChatHeader } from './lib/chat-header';
-export { ChatWindow } from './lib/chat-window';
-export { ChatList } from './lib/chat-list';
-export { SidebarHeader } from './lib/sidebar-header';
-export { ChatSearch } from './lib/chat-search';
-export { ChatItem } from './lib/chat-item';
-export { ProfileModal } from './lib/profile-modal';
-export { SettingsModal } from './lib/settings-modal';
-export { CreateChatModal } from './lib/create-chat-modal';
-export { ChatListSidebar } from './lib/chat-list-sidebar';
+// All messenger-specific components moved to @org/pages (libs/client/pages/src/lib/messenger/ui)
+// This lib is reserved for truly reusable cross-app widgets
