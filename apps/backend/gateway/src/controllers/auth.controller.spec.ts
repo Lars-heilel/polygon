@@ -1,8 +1,14 @@
 import type { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { of, throwError } from 'rxjs';
 import request from 'supertest';
 
 import { createTestApp } from '../test/create-test-app';
+
+function makeAccessToken(payload = { sub: 'user-id', role: 'USER', isVerified: true }) {
+  const jwt = new JwtService();
+  return jwt.sign(payload, { secret: 'test-access-secret', expiresIn: 900 });
+}
 
 describe('AuthGatewayController', () => {
   let app: INestApplication;
@@ -72,6 +78,108 @@ describe('AuthGatewayController', () => {
       });
 
       expect(res.status).toBe(409);
+    });
+  });
+
+  // ── POST /api/auth/login ──────────────────────────────────────────
+
+  describe('POST /api/auth/login', () => {
+    const validCredentials = { email: 'user@example.com', password: 'Password1!' };
+
+    it('sets access_token and refresh_token cookies on success', async () => {
+      authClient['send'].mockReturnValue(
+        of({ accessToken: 'access-jwt', refreshToken: 'refresh-jwt' }),
+      );
+
+      const accessToken = makeAccessToken();
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .set('Cookie', `access_token=${accessToken}`)
+        .send(validCredentials);
+
+      expect(res.status).toBe(201);
+      const cookies = res.headers['set-cookie'] as unknown as string[];
+      expect(cookies.some((c: string) => c.startsWith('access_token=access-jwt'))).toBe(true);
+      expect(cookies.some((c: string) => c.startsWith('refresh_token=refresh-jwt'))).toBe(true);
+    });
+
+    it('cookies are httpOnly', async () => {
+      authClient['send'].mockReturnValue(
+        of({ accessToken: 'access-jwt', refreshToken: 'refresh-jwt' }),
+      );
+
+      const accessToken = makeAccessToken();
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .set('Cookie', `access_token=${accessToken}`)
+        .send(validCredentials);
+
+      const cookies = res.headers['set-cookie'] as unknown as string[];
+      expect(cookies.every((c: string) => c.includes('HttpOnly'))).toBe(true);
+    });
+
+    it('returns 401 on wrong credentials', async () => {
+      authClient['send'].mockReturnValue(
+        throwError(() => ({ statusCode: 401, message: 'Invalid credentials' })),
+      );
+
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: 'user@example.com', password: 'wrong' });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 401 when email is missing (Passport rejects before strategy)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ password: 'Password1!' });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  // ── POST /api/auth/refresh ────────────────────────────────────────
+
+  describe('POST /api/auth/refresh', () => {
+    it('sets new cookies on valid refresh token', async () => {
+      authClient['send'].mockReturnValue(
+        of({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', 'refresh_token=valid-refresh-token');
+
+      expect(res.status).toBe(201);
+      const cookies = res.headers['set-cookie'] as unknown as string[];
+      expect(cookies.some((c: string) => c.startsWith('access_token=new-access'))).toBe(true);
+      expect(cookies.some((c: string) => c.startsWith('refresh_token=new-refresh'))).toBe(true);
+    });
+
+    it('returns 401 when auth service rejects the refresh token', async () => {
+      authClient['send'].mockReturnValue(
+        throwError(() => ({ statusCode: 401, message: 'Unauthorized' })),
+      );
+
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', 'refresh_token=expired-token');
+
+      expect(res.status).toBe(401);
+    });
+
+    it('does not require a valid access_token cookie (no JwtGuard)', async () => {
+      authClient['send'].mockReturnValue(
+        of({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
+      );
+
+      // No access_token cookie at all — refresh should still work
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', 'refresh_token=some-token');
+
+      expect(res.status).toBe(201);
     });
   });
 
