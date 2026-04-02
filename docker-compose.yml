@@ -6,9 +6,9 @@ services:
     container_name: polygon-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: polygon
-      POSTGRES_PASSWORD: polygon_password
-      POSTGRES_DB: polygon
+      POSTGRES_USER: ${POSTGRES_USER:-polygon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-polygon}
     ports:
       - '5432:5432'
     volumes:
@@ -17,7 +17,7 @@ services:
     networks:
       - polygon-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U polygon']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-polygon}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,8 +46,8 @@ services:
     container_name: polygon-rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: polygon
-      RABBITMQ_DEFAULT_PASS: polygon_password
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-polygon}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
     ports:
       - '5672:5672' # AMQP
       - '15672:15672' # Management UI
@@ -59,6 +59,27 @@ services:
       test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
       interval: 30s
       timeout: 10s
+      retries: 5
+
+  # ==================== ПОИСК ====================
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    container_name: polygon-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-polygon_meilisearch_key}
+      MEILI_ENV: development
+    ports:
+      - '7700:7700'
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - polygon-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:7700/health']
+      interval: 10s
+      timeout: 5s
       retries: 5
 
   # ==================== МОНИТОРИНГ ====================
@@ -87,8 +108,8 @@ services:
     container_name: polygon-grafana
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: polygon_grafana
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:?Set GF_ADMIN_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: 'false'
     ports:
       - '3010:3000' # порт 3010 чтобы не конфликтовать с gateway (3000)
@@ -105,6 +126,7 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  meilisearch_data:
   prometheus_data:
   grafana_data:
 
