@@ -526,4 +526,114 @@ describe('AuthService', () => {
       expect(mockRepo.verifyCredentials).toHaveBeenCalledWith(credentials.id);
     });
   });
+
+  describe('verifyEmail', () => {
+    const token = 'verification-token';
+    const credentials = {
+      id: 'cred-id',
+      email: 'user@example.com',
+      role: 'USER' as const,
+      isVerified: true,
+      passwordHash: null,
+    };
+
+    beforeEach(() => {
+      mockTokenService.generateAccessToken.mockReturnValue('access');
+      mockTokenService.generateRefreshToken.mockReturnValue('refresh');
+      mockRepo.saveRefreshToken.mockResolvedValue(undefined);
+    });
+
+    it('returns a TokenPair after verifying the email token', async () => {
+      mockVerification.verify.mockResolvedValue(credentials.id);
+      mockRepo.findById.mockResolvedValue(credentials);
+
+      const result = await service.verifyEmail(token);
+
+      expect(mockVerification.verify).toHaveBeenCalledWith(token);
+      expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    });
+
+    it('throws UnauthorizedException when credentials not found after verification', async () => {
+      mockVerification.verify.mockResolvedValue('unknown-id');
+      mockRepo.findById.mockResolvedValue(null);
+
+      await expect(service.verifyEmail(token)).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('calls generatePasswordReset when email exists', async () => {
+      mockRepo.findByEmail.mockResolvedValue({
+        id: 'cred-id',
+        email: 'user@example.com',
+        passwordHash: 'hash',
+      });
+      mockVerification.generatePasswordReset.mockResolvedValue(undefined);
+
+      await service.forgotPassword('user@example.com');
+
+      expect(mockVerification.generatePasswordReset).toHaveBeenCalledWith(
+        'cred-id',
+        'user@example.com',
+      );
+    });
+
+    it('does nothing when email is not registered (no info leak)', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+
+      await service.forgotPassword('nobody@example.com');
+
+      expect(mockVerification.generatePasswordReset).not.toHaveBeenCalled();
+    });
+
+    it('does nothing for OAuth-only accounts (no passwordHash)', async () => {
+      mockRepo.findByEmail.mockResolvedValue({
+        id: 'cred-id',
+        email: 'oauth@example.com',
+        passwordHash: null,
+      });
+
+      await service.forgotPassword('oauth@example.com');
+
+      expect(mockVerification.generatePasswordReset).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    const token = 'reset-token';
+    const newPassword = 'NewPassword1!';
+    const credentialsId = 'cred-id';
+    const credentials = {
+      id: credentialsId,
+      email: 'user@example.com',
+      role: 'USER' as const,
+      isVerified: true,
+    };
+
+    beforeEach(() => {
+      mockVerification.consumePasswordResetToken.mockResolvedValue(credentialsId);
+      mockRepo.findById.mockResolvedValue(credentials);
+      mockEncryption.hash.mockResolvedValue('new-hash');
+      mockRepo.updatePasswordHash.mockResolvedValue(undefined);
+      mockRepo.revokeAllRefreshTokens.mockResolvedValue(undefined);
+    });
+
+    it('updates password hash and revokes all refresh tokens', async () => {
+      await service.resetPassword(token, newPassword);
+
+      expect(mockEncryption.hash).toHaveBeenCalledWith(newPassword);
+      expect(mockRepo.updatePasswordHash).toHaveBeenCalledWith(credentialsId, 'new-hash');
+      expect(mockRepo.revokeAllRefreshTokens).toHaveBeenCalledWith(credentialsId);
+    });
+
+    it('throws NotFoundException when credentials not found', async () => {
+      mockRepo.findById.mockResolvedValue(null);
+
+      await expect(service.resetPassword(token, newPassword)).rejects.toThrow(
+        expect.objectContaining({ status: 404 }),
+      );
+    });
+  });
 });
