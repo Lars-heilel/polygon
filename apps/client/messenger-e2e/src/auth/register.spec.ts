@@ -1,7 +1,5 @@
+import { API_ROUTES } from '@org/common';
 import { expect, test } from '@playwright/test';
-
-const REGISTER_URL = '/api/auth/register';
-const RESEND_URL = '/api/auth/resend-verification';
 
 const validForm = {
   username: 'testuser',
@@ -35,7 +33,7 @@ test.describe('Register page', () => {
   });
 
   test('happy path: navigates to check-email with email param', async ({ page }) => {
-    await page.route(REGISTER_URL, (route) => route.fulfill({ status: 201 }));
+    await page.route(API_ROUTES.auth.register, (route) => route.fulfill({ status: 201 }));
 
     await fillRegisterForm(page);
     await page.getByRole('button', { name: /create account/i }).click();
@@ -45,7 +43,7 @@ test.describe('Register page', () => {
   });
 
   test('shows inline error on 409 conflict', async ({ page }) => {
-    await page.route(REGISTER_URL, (route) =>
+    await page.route(API_ROUTES.auth.register, (route) =>
       route.fulfill({
         status: 409,
         contentType: 'application/json',
@@ -63,7 +61,7 @@ test.describe('Register page', () => {
   });
 
   test('shows generic error on server failure', async ({ page }) => {
-    await page.route(REGISTER_URL, (route) =>
+    await page.route(API_ROUTES.auth.register, (route) =>
       route.fulfill({
         status: 500,
         contentType: 'application/json',
@@ -97,7 +95,7 @@ test.describe('Register page', () => {
 
   test('clears error alert on retry after 409', async ({ page }) => {
     let callCount = 0;
-    await page.route(REGISTER_URL, (route) => {
+    await page.route(API_ROUTES.auth.register, (route) => {
       callCount++;
       if (callCount === 1) {
         route.fulfill({
@@ -129,7 +127,7 @@ test.describe('Check-email page', () => {
   });
 
   test('shows success alert after resend', async ({ page }) => {
-    await page.route(RESEND_URL, (route) => route.fulfill({ status: 201 }));
+    await page.route(API_ROUTES.auth.resendVerification, (route) => route.fulfill({ status: 201 }));
 
     await page.getByRole('button', { name: /resend email/i }).click();
 
@@ -139,7 +137,7 @@ test.describe('Check-email page', () => {
   });
 
   test('shows rate-limited alert on 429', async ({ page }) => {
-    await page.route(RESEND_URL, (route) =>
+    await page.route(API_ROUTES.auth.resendVerification, (route) =>
       route.fulfill({
         status: 429,
         contentType: 'application/json',
@@ -155,7 +153,7 @@ test.describe('Check-email page', () => {
   });
 
   test('shows error alert on server failure', async ({ page }) => {
-    await page.route(RESEND_URL, (route) =>
+    await page.route(API_ROUTES.auth.resendVerification, (route) =>
       route.fulfill({
         status: 500,
         contentType: 'application/json',
