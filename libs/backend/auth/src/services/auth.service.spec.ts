@@ -1,6 +1,7 @@
 import { ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import type { OAuthLoginDto } from '@org/common';
 import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   EncryptionService,
@@ -447,6 +448,82 @@ describe('AuthService', () => {
       await service.resendVerification('test@example.com');
 
       expect(mockVerification.resend).toHaveBeenCalledWith('test@example.com');
+    });
+  });
+
+  describe('oauthLogin', () => {
+    const dto: OAuthLoginDto = {
+      provider: 'GITHUB',
+      providerId: 'gh-123',
+      email: 'oauth@example.com',
+      name: 'OAuth User',
+    };
+
+    const credentials = {
+      id: 'cred-id',
+      email: dto.email,
+      role: 'USER' as const,
+      isVerified: true,
+      passwordHash: null,
+    };
+
+    beforeEach(() => {
+      mockTokenService.generateAccessToken.mockReturnValue('access');
+      mockTokenService.generateRefreshToken.mockReturnValue('refresh');
+      mockRepo.saveRefreshToken.mockResolvedValue(undefined);
+    });
+
+    it('returns existing TokenPair when OAuth account already exists', async () => {
+      mockRepo.findOAuthAccount.mockResolvedValue({ credentials });
+
+      const result = await service.oauthLogin(dto);
+
+      expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+      expect(mockRepo.createCredentials).not.toHaveBeenCalled();
+    });
+
+    it('creates new credentials and emits to userClient and searchClient when no existing account', async () => {
+      mockRepo.findOAuthAccount.mockResolvedValue(null);
+      mockRepo.findByEmail.mockResolvedValue(null);
+      mockRepo.createCredentials.mockResolvedValue(credentials);
+      mockRepo.createOAuthAccount.mockResolvedValue(undefined);
+      mockRepo.verifyCredentials.mockResolvedValue(undefined);
+
+      await service.oauthLogin(dto);
+
+      expect(mockUserClient.emit).toHaveBeenCalledWith(
+        USER_EVENTS.REGISTERED,
+        expect.objectContaining({ id: credentials.id, name: dto.name }),
+      );
+      expect(mockSearchClient.emit).toHaveBeenCalledWith(
+        USER_EVENTS.REGISTERED,
+        expect.objectContaining({ id: credentials.id, name: dto.name }),
+      );
+    });
+
+    it('links OAuth account to existing credentials when email matches', async () => {
+      mockRepo.findOAuthAccount.mockResolvedValue(null);
+      mockRepo.findByEmail.mockResolvedValue(credentials);
+      mockRepo.createOAuthAccount.mockResolvedValue(undefined);
+
+      await service.oauthLogin(dto);
+
+      expect(mockRepo.createCredentials).not.toHaveBeenCalled();
+      expect(mockRepo.createOAuthAccount).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: dto.provider, credentialsId: credentials.id }),
+      );
+    });
+
+    it('auto-verifies credentials when linking via OAuth and not yet verified', async () => {
+      const unverified = { ...credentials, isVerified: false };
+      mockRepo.findOAuthAccount.mockResolvedValue(null);
+      mockRepo.findByEmail.mockResolvedValue(unverified);
+      mockRepo.createOAuthAccount.mockResolvedValue(undefined);
+      mockRepo.verifyCredentials.mockResolvedValue(undefined);
+
+      await service.oauthLogin(dto);
+
+      expect(mockRepo.verifyCredentials).toHaveBeenCalledWith(credentials.id);
     });
   });
 });

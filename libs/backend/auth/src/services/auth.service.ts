@@ -141,11 +141,9 @@ export class AuthService implements IAuthService {
 
     if (!credentials) {
       credentials = await this.repo.createCredentials({ email: dto.email });
-      this.userClient.emit(USER_EVENTS.REGISTERED, {
-        id: credentials.id,
-        email: credentials.email,
-        name: dto.name,
-      });
+      const payload = { id: credentials.id, email: credentials.email, name: dto.name };
+      this.userClient.emit(USER_EVENTS.REGISTERED, payload);
+      this.searchClient.emit(USER_EVENTS.REGISTERED, payload);
     }
 
     await this.repo.createOAuthAccount({
