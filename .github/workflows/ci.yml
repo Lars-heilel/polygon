@@ -174,9 +174,9 @@ jobs:
       - name: Run tests
         run: |
           if [ "$NX_TEST_CMD" = "affected" ]; then
-            npx nx affected -t test --base=$NX_AFFECTED_BASE --parallel=3
+            npx nx affected -t test --base=$NX_AFFECTED_BASE --parallel=3 --coverage
           else
-            npx nx run-many -t test --parallel=3
+            npx nx run-many -t test --parallel=3 --coverage
           fi
         env:
           NODE_ENV: test
