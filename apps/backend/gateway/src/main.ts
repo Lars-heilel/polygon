@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter, LoggingInterceptor } from '@org/core';
 import cookieParser from 'cookie-parser';
+import { doubleCsrf } from 'csrf-csrf';
+import type { Request, Response } from 'express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -29,6 +31,28 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+
+  // CSRF protection (double-submit cookie pattern)
+  const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+    getSecret: () => process.env['JWT_ACCESS_SECRET'] ?? 'dev-csrf-secret-min-32-characters-x',
+    getSessionIdentifier: (req) => (req as Request).ip ?? 'unknown',
+    cookieName: '__csrf',
+    cookieOptions: {
+      sameSite: 'strict',
+      secure: process.env['NODE_ENV'] === 'production',
+      httpOnly: true,
+    },
+    getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'] as string,
+  });
+
+  app.use(doubleCsrfProtection);
+
+  // Endpoint for client to fetch a CSRF token
+  app.getHttpAdapter().get('/api/auth/csrf-token', (req: Request, res: Response) => {
+    const token = generateCsrfToken(req, res);
+    res.json({ token });
+  });
+
   app.use(passport.initialize());
   app.useGlobalPipes(new ZodValidationPipe());
   app.setGlobalPrefix('api');
