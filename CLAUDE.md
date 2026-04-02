@@ -197,6 +197,33 @@ Key rules:
   npm install @org/common --workspace @org/my-new-lib
   ```
 
+### ESLint config cleanup after generation
+
+When Nx generates a new library, the local `.eslintrc.json` may include `"!**/*"` inside `ignorePatterns`. This pattern negates the root config's ignore rules — effectively telling ESLint to lint files the root was ignoring. **Always remove it.**
+
+Generated (requires cleanup):
+
+```json
+{
+  "extends": ["plugin:@nx/react", "../../../.eslintrc.json"],
+  "ignorePatterns": ["!**/*", "**/out-tsc", "**/vite.config.*.timestamp*"],
+                   ↑ DELETE THIS, keep the rest
+  "overrides": [...]
+}
+```
+
+After cleanup:
+
+```json
+{
+  "extends": ["plugin:@nx/react", "../../../.eslintrc.json"],
+  "ignorePatterns": ["**/out-tsc", "**/vite.config.*.timestamp*"],
+  "overrides": [...]
+}
+```
+
+Specific per-lib ignores (`out-tsc`, `dist`, `vite.config.*.timestamp*`) are valid and should stay. Only `"!**/*"` must be removed.
+
 ## Code Conventions
 
 - **Files**: kebab-case (`user.service.ts`, `create-user.dto.ts`)

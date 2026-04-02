@@ -1,8 +1,4 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# Legacy source code (reference only, not part of the project)
-LegacySrc/
-
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring file
 # compiled output
 dist
 tmp
