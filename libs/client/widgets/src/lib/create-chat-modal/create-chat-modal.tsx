@@ -1,20 +1,15 @@
-import { Avatar, Badge, Input, Modal } from '@org/shared';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  online?: boolean;
-}
+import type { UserSearchResult } from '@org/common';
+import { Avatar, Input, Modal, Spinner } from '@org/shared';
 
 interface CreateChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  users: User[];
+  users: UserSearchResult[];
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onSelectUser: (userId: string) => void;
   isCreating?: boolean;
+  isSearching?: boolean;
 }
 
 export function CreateChatModal({
@@ -25,6 +20,7 @@ export function CreateChatModal({
   onSearchChange,
   onSelectUser,
   isCreating = false,
+  isSearching = false,
 }: CreateChatModalProps) {
   return (
     <Modal
@@ -59,7 +55,7 @@ export function CreateChatModal({
         <Input
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search users..."
+          placeholder="Search by username..."
           size="sm"
           disabled={isCreating}
           leftIcon={
@@ -81,36 +77,40 @@ export function CreateChatModal({
       </div>
 
       <div className="max-h-96 overflow-y-auto p-2">
-        {users.map((user) => (
-          <button
-            key={user.id}
-            onClick={() => onSelectUser(user.id)}
-            disabled={isCreating}
-            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors disabled:opacity-50"
-          >
-            <div className="relative">
+        {isSearching && (
+          <div className="flex justify-center py-8">
+            <Spinner size="md" />
+          </div>
+        )}
+
+        {!isSearching &&
+          users.map((user) => (
+            <button
+              key={user.id}
+              onClick={() => onSelectUser(user.id)}
+              disabled={isCreating}
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors disabled:opacity-50"
+            >
               <Avatar
-                name={user.name}
+                name={user.displayName ?? user.name}
+                src={user.avatarUrl ?? undefined}
                 size="md"
               />
-              {user.online && (
-                <Badge
-                  variant="primary"
-                  size="sm"
-                  dot
-                  className="absolute bottom-0 right-0 border-2 border-surface"
-                />
-              )}
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-text-muted">{user.email}</p>
-            </div>
-          </button>
-        ))}
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">{user.displayName ?? user.name}</p>
+                <p className="text-xs text-text-muted">@{user.name}</p>
+              </div>
+            </button>
+          ))}
 
-        {users.length === 0 && searchQuery && (
+        {!isSearching && users.length === 0 && searchQuery.trim().length >= 2 && (
           <p className="text-center text-sm text-text-muted py-8">No users found</p>
+        )}
+
+        {!isSearching && searchQuery.trim().length < 2 && (
+          <p className="text-center text-sm text-text-muted py-8">
+            Type at least 2 characters to search
+          </p>
         )}
       </div>
     </Modal>

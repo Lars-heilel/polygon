@@ -1,10 +1,10 @@
-import { Avatar, Badge, Input, Modal } from '@org/shared';
+import { Avatar, Input, Modal } from '@org/shared';
 
 interface User {
   id: string;
   name: string;
-  email: string;
-  online?: boolean;
+  displayName: string | null;
+  avatarUrl: string | null;
 }
 
 interface CreateChatModalProps {
@@ -90,21 +90,13 @@ export function CreateChatModal({
           >
             <div className="relative">
               <Avatar
-                name={user.name}
+                name={user.displayName ?? user.name}
                 size="md"
               />
-              {user.online && (
-                <Badge
-                  variant="primary"
-                  size="sm"
-                  dot
-                  className="absolute bottom-0 right-0 border-2 border-surface"
-                />
-              )}
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-text-muted">{user.email}</p>
+              <p className="text-sm font-medium">{user.displayName ?? user.name}</p>
+              <p className="text-xs text-text-muted">@{user.name}</p>
             </div>
           </button>
         ))}

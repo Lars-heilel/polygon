@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useChatWindow } from '@org/features';
 import { Button, Textarea } from '@org/shared';
 
@@ -10,15 +8,11 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ chatId }: ChatWindowProps) {
-  const { messages, isLoading, currentUserId, messageText, setMessageText, isSending, handleSend } =
-    useChatWindow(chatId);
+  const { messageText, isSending, handleSend } = useChatWindow(chatId);
 
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader
-        chatId={chatId}
-        onMenuClick={() => {}}
-      />
+      <ChatHeader chatId={chatId} />
 
       <MessageListWidget chatId={chatId} />
 

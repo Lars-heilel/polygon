@@ -1,3 +1,4 @@
+import { CLIENT_ROUTES } from '@org/common';
 import { selectIsAuthenticated, selectIsSessionLoading, useSessionStore } from '@org/entities';
 import { Spinner } from '@org/shared';
 import { Navigate, Outlet, useLocation } from 'react-router';
@@ -14,7 +15,7 @@ export function ProtectedRoute() {
   if (!isAuthenticated) {
     return (
       <Navigate
-        to="/auth/login"
+        to={CLIENT_ROUTES.auth.login}
         state={{ from: location }}
         replace
       />
@@ -35,7 +36,7 @@ export function GuestRoute() {
   if (isAuthenticated) {
     return (
       <Navigate
-        to="/chats"
+        to={CLIENT_ROUTES.chats.root}
         replace
       />
     );

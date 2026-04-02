@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { useTheme } from '@org/features';
+import { useLogout, useTheme } from '@org/features';
 import { Button, Modal, Toggle } from '@org/shared';
 
 interface SettingsModalProps {
@@ -15,6 +15,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [notifications, setNotifications] = useState(true);
   const [sound, setSound] = useState(true);
+  const { logout } = useLogout();
 
   return (
     <Modal
@@ -178,6 +179,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <Button
               variant="danger"
               className="w-full"
+              onClick={logout}
             >
               Logout from all devices
             </Button>

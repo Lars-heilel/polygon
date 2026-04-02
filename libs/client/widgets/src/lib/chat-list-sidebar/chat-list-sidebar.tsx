@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
-import { useChatList, useCreateChat } from '@org/features';
+import { useCreateDirectChatMutation } from '@org/entities';
+import { useChatList, useCreateChat, useSearchUsers } from '@org/features';
 
 import {
   ChatItem,
@@ -21,11 +22,12 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
   const {
     chats,
     isLoading,
-    searchQuery,
-    setSearchQuery,
     selectedChatId: internalSelectedChatId,
     setSelectedChatId,
   } = useChatList();
+
+  const search = useSearchUsers();
+  const { mutate: createDirectChat } = useCreateDirectChatMutation();
 
   const {
     isOpen: isCreateChatOpen,
@@ -34,8 +36,11 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
     searchQuery: userSearchQuery,
     setSearchQuery: setUserSearchQuery,
     isCreating,
+    isSearching,
     onSelectUser,
   } = useCreateChat();
+
+  const isSearchActive = search.inputValue.trim().length >= 2;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -59,22 +64,59 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
           onNewChatClick={() => setIsCreateChatOpen(true)}
         />
         <ChatSearch
-          value={searchQuery}
-          onChange={setSearchQuery}
+          value={search.inputValue}
+          onChange={search.onChange}
         />
         <nav className="flex-1 overflow-y-auto">
-          {isLoading && <p className="text-center text-sm text-text-muted py-4">Loading...</p>}
-          {!isLoading && chats.length === 0 && (
-            <p className="text-center text-sm text-text-muted py-4">No chats yet</p>
+          {isSearchActive ? (
+            <>
+              {search.isLoading && (
+                <p className="text-center text-sm text-text-muted py-4">Searching...</p>
+              )}
+              {!search.isLoading && search.results.length === 0 && (
+                <p className="text-center text-sm text-text-muted py-4">No users found</p>
+              )}
+              {search.results.map((user) => (
+                <button
+                  key={user.id}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated text-left transition-colors"
+                  onClick={() =>
+                    createDirectChat(
+                      { targetUserId: user.id },
+                      { onSuccess: () => search.onChange('') },
+                    )
+                  }
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-medium text-primary">
+                      {(user.displayName ?? user.name).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text truncate">
+                      {user.displayName ?? user.name}
+                    </p>
+                    <p className="text-xs text-text-muted truncate">@{user.name}</p>
+                  </div>
+                </button>
+              ))}
+            </>
+          ) : (
+            <>
+              {isLoading && <p className="text-center text-sm text-text-muted py-4">Loading...</p>}
+              {!isLoading && chats.length === 0 && (
+                <p className="text-center text-sm text-text-muted py-4">No chats yet</p>
+              )}
+              {chats.map((chat) => (
+                <ChatItem
+                  key={chat.id}
+                  {...chat}
+                  isActive={chat.id === (selectedChatId ?? internalSelectedChatId)}
+                  onClick={() => handleSelectChat(chat.id)}
+                />
+              ))}
+            </>
           )}
-          {chats.map((chat) => (
-            <ChatItem
-              key={chat.id}
-              {...chat}
-              isActive={chat.id === (selectedChatId ?? internalSelectedChatId)}
-              onClick={() => handleSelectChat(chat.id)}
-            />
-          ))}
         </nav>
         <UserPanel onProfileClick={() => setIsProfileOpen(true)} />
       </aside>
@@ -121,6 +163,7 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
         onSearchChange={setUserSearchQuery}
         onSelectUser={onSelectUser}
         isCreating={isCreating}
+        isSearching={isSearching}
       />
     </>
   );
