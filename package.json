@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "nx:show-projects": "nx show projects"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,css,html}": [
@@ -113,6 +114,7 @@
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^11.0.0",
     "@nestjs/terminus": "^11.1.1",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.17",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
@@ -131,10 +133,13 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
+    "csrf-csrf": "^4.0.3",
     "dayjs": "^1.11.20",
     "dotenv": "^17.3.1",
     "es-toolkit": "^1.45.1",
+    "helmet": "^8.1.0",
     "ioredis": "^5.10.1",
+    "meilisearch": "^0.57.0",
     "nestjs-pino": "^4.6.1",
     "nestjs-zod": "^5.2.1",
     "nodemailer": "^8.0.4",
