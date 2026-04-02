@@ -20,6 +20,9 @@ export const API_ROUTES = {
     byId: (id: string) => `chats/${id}`,
     messages: (id: string) => `chats/${id}/messages`,
   },
+  search: {
+    users: 'search/users',
+  },
 } as const;
 
 export const CLIENT_ROUTES = {

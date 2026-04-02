@@ -27,18 +27,25 @@ export const envSchema = z.object({
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_PASSWORD: z.string().optional(),
 
-  // Ports
-  GATEWAY_PORT: z.coerce.number().default(3000),
-  AUTH_PORT: z.coerce.number().default(3002),
-  USER_PORT: z.coerce.number().default(3001),
-  NOTIFICATION_PORT: z.coerce.number().default(3005),
-
   // SMTP
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   SMTP_FROM: z.string().default('Polygon <noreply@polygon.app>'),
+
+  // Search
+  MEILISEARCH_URL: z.string().default('http://localhost:7700'),
+  MEILISEARCH_MASTER_KEY: z.string().min(1),
+  SEARCH_PORT: z.coerce.number().default(3006),
+
+  // Ports (per service)
+  GATEWAY_PORT: z.coerce.number().default(3000),
+  AUTH_PORT: z.coerce.number().default(3002),
+  USER_PORT: z.coerce.number().default(3001),
+  CHAT_PORT: z.coerce.number().default(3003),
+  MEDIA_PORT: z.coerce.number().default(3004),
+  NOTIFICATION_PORT: z.coerce.number().default(3005),
 
   // App
   APP_URL: z.string().default('http://localhost:3000'),

@@ -16,7 +16,7 @@ export class NodemailerEmailProvider implements IEmailProvider, OnModuleInit {
   onModuleInit(): void {
     const user = this.config.get('SMTP_USER', { infer: true });
     const pass = this.config.get('SMTP_PASSWORD', { infer: true });
-    const port = this.config.get('SMTP_PORT', { infer: true })!;
+    const port = this.config.get('SMTP_PORT', { infer: true });
 
     this.transporter = nodemailer.createTransport({
       host: this.config.get('SMTP_HOST', { infer: true }),

@@ -8,6 +8,7 @@ export * from './constants/queues/auth.queue';
 export * from './constants/queues/user.queue';
 export * from './constants/queues/chat.queue';
 export * from './constants/queues/notification.queue';
+export * from './constants/queues/search.queue';
 
 // Config
 export * from './config/env.schema';
@@ -56,3 +57,8 @@ export * from './health/prisma-health.indicator';
 
 // Metrics
 export * from './metrics/metrics.module';
+
+// Search
+export * from './search/search-provider.interface';
+export * from './search/search-provider.token';
+export * from './search/search.module';
