@@ -6,6 +6,7 @@ export interface IUserRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findPublicById(id: string): Promise<UserPublic | null>;
+  findAllPublic(): Promise<UserPublic[]>;
   searchByName(query: string): Promise<UserPublic[]>;
   upsert(data: CreateUserEventInput): Promise<void>;
   update(id: string, data: UpdateUserInput): Promise<User>;
@@ -17,11 +18,13 @@ export interface IUserService {
   createFromEvent(data: CreateUserEventInput): Promise<void>;
   getById(id: string): Promise<User>;
   getPublicById(id: string): Promise<UserPublic>;
+  getAllPublic(): Promise<UserPublic[]>;
   update(id: string, dto: UpdateUserInput): Promise<User>;
 }
 
 export interface IUserController {
   handleUserRegistered(data: CreateUserEventInput): Promise<void>;
   getById(payload: { id: string }): Promise<User>;
+  getAllPublic(): Promise<UserPublic[]>;
   update(payload: { id: string; dto: UpdateUserDto }): Promise<User>;
 }

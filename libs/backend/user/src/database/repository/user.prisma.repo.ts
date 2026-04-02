@@ -37,6 +37,10 @@ export class UserPrismaRepository implements IUserRepository {
     });
   }
 
+  async findAllPublic(): Promise<UserPublic[]> {
+    return this.prisma.user.findMany({ select: USER_PUBLIC_SELECT_FIELDS });
+  }
+
   async upsert(data: CreateUserEventInput): Promise<void> {
     await this.prisma.user.upsert({
       where: { id: data.id },

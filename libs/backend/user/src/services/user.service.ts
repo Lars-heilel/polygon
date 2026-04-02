@@ -24,6 +24,10 @@ export class UserService implements IUserService {
     return user;
   }
 
+  async getAllPublic(): Promise<UserPublic[]> {
+    return this.repo.findAllPublic();
+  }
+
   async update(id: string, dto: UpdateUserInput): Promise<User> {
     const exists = await this.repo.exists(id);
     if (!exists) throw new NotFoundException('User not found');
