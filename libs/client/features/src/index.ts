@@ -5,3 +5,4 @@ export { useChatSocket, initSocketMiddleware } from './lib/chat/chat-socket';
 export { useChatList } from './lib/chat/use-chat-list';
 export { useChatWindow } from './lib/chat/use-chat-window';
 export { useCreateChat } from './lib/chat/use-create-chat';
+export { useSearchUsers } from './lib/search/use-search-users';
