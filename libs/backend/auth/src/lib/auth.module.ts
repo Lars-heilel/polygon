@@ -12,6 +12,8 @@ import {
   type Env,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_QUEUE,
+  SEARCH_CLIENT_TOKEN,
+  SEARCH_QUEUE,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
   VERIFICATION_SERVICE_TOKEN,
@@ -54,6 +56,7 @@ const rmqClient = (name: string, queue: string) => ({
     ClientsModule.registerAsync([
       rmqClient(USER_CLIENT_TOKEN, USER_QUEUE),
       rmqClient(NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_QUEUE),
+      rmqClient(SEARCH_CLIENT_TOKEN, SEARCH_QUEUE),
     ]),
   ],
   controllers: [AuthController],

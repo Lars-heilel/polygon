@@ -225,8 +225,10 @@ export class AuthGatewayController {
   }
 
   private clearTokenCookies(res: Response): void {
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    const secure = this.config.getOrThrow('NODE_ENV', { infer: true }) === 'production';
+    const opts = { httpOnly: true, sameSite: 'strict' as const, secure };
+    res.clearCookie('access_token', opts);
+    res.clearCookie('refresh_token', opts);
   }
 
   private async send<T>(observable: Observable<T>): Promise<T> {

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PassportStrategy } from '@nestjs/passport';
 import type { CredentialsPayload } from '@org/common';
@@ -12,12 +12,17 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     super({ usernameField: 'email' });
   }
 
-  validate(email: string, password: string): Promise<CredentialsPayload> {
-    return lastValueFrom(
-      this.authClient.send<CredentialsPayload>(AUTH_PATTERNS.VALIDATE_CREDENTIALS, {
-        email,
-        password,
-      }),
-    );
+  async validate(email: string, password: string): Promise<CredentialsPayload> {
+    try {
+      return await lastValueFrom(
+        this.authClient.send<CredentialsPayload>(AUTH_PATTERNS.VALIDATE_CREDENTIALS, {
+          email,
+          password,
+        }),
+      );
+    } catch (err) {
+      const error = err as { statusCode?: number; message?: string };
+      throw new HttpException(error.message ?? 'Invalid credentials', error.statusCode ?? 401);
+    }
   }
 }

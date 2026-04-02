@@ -16,6 +16,7 @@ import {
   type Env,
   type JwtPayload,
   RedisService,
+  SEARCH_CLIENT_TOKEN,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
@@ -45,6 +46,7 @@ export class AuthService implements IAuthService {
     @Inject(VERIFICATION_SERVICE_TOKEN)
     private readonly verification: IVerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
+    @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
   ) {}
 
   async register(dto: RegisterDto): Promise<void> {
@@ -57,11 +59,9 @@ export class AuthService implements IAuthService {
       passwordHash,
     });
 
-    this.userClient.emit(USER_EVENTS.REGISTERED, {
-      id: credentials.id,
-      email: credentials.email,
-      name: dto.username,
-    });
+    const userPayload = { id: credentials.id, email: credentials.email, name: dto.username };
+    this.userClient.emit(USER_EVENTS.REGISTERED, userPayload);
+    this.searchClient.emit(USER_EVENTS.REGISTERED, userPayload);
 
     await this.verification.generateAndSend(credentials.id, credentials.email);
   }
@@ -204,7 +204,7 @@ export class AuthService implements IAuthService {
 
     const tokenHash = this.hashToken(refreshToken);
     const expiresAt = new Date(
-      Date.now() + this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true })! * 1000,
+      Date.now() + this.config.getOrThrow('JWT_REFRESH_TOKEN_EXPIRES', { infer: true }) * 1000,
     );
 
     await this.repo.saveRefreshToken({
