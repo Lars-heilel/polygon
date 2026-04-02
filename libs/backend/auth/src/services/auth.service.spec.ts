@@ -163,6 +163,251 @@ describe('AuthService', () => {
     });
   });
 
+  describe('validateCredentials', () => {
+    const email = 'user@example.com';
+    const password = 'Password1!';
+    const credentials = {
+      id: 'cred-id',
+      email,
+      role: 'USER' as const,
+      isVerified: true,
+      passwordHash: 'hashed',
+    };
+
+    beforeEach(() => {
+      mockRedis.incr.mockResolvedValue(1);
+      mockRepo.findByEmail.mockResolvedValue(credentials);
+      mockEncryption.compare.mockResolvedValue(true);
+      mockRedis.del.mockResolvedValue(undefined);
+    });
+
+    it('returns CredentialsPayload on valid credentials', async () => {
+      const result = await service.validateCredentials(email, password);
+
+      expect(result).toEqual({
+        id: credentials.id,
+        role: credentials.role,
+        isVerified: credentials.isVerified,
+      });
+    });
+
+    it('clears the attempt counter on success', async () => {
+      await service.validateCredentials(email, password);
+
+      expect(mockRedis.del).toHaveBeenCalledWith(`login_attempts:${email}`);
+    });
+
+    it('throws UnauthorizedException when email is not found', async () => {
+      mockRepo.findByEmail.mockResolvedValue(null);
+
+      await expect(service.validateCredentials(email, password)).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+      expect(mockRedis.del).not.toHaveBeenCalled();
+    });
+
+    it('throws UnauthorizedException when password is wrong', async () => {
+      mockEncryption.compare.mockResolvedValue(false);
+
+      await expect(service.validateCredentials(email, password)).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+      expect(mockRedis.del).not.toHaveBeenCalled();
+    });
+
+    it('throws UnauthorizedException when account is not verified', async () => {
+      mockRepo.findByEmail.mockResolvedValue({ ...credentials, isVerified: false });
+
+      await expect(service.validateCredentials(email, password)).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+
+    it('throws 429 on the 6th attempt (limit is 5)', async () => {
+      mockRedis.incr.mockResolvedValue(6);
+
+      await expect(service.validateCredentials(email, password)).rejects.toThrow(
+        expect.objectContaining({ status: 429 }),
+      );
+      // Should not even touch the DB when rate-limited
+      expect(mockRepo.findByEmail).not.toHaveBeenCalled();
+    });
+
+    it('allows the 5th attempt (exactly at limit)', async () => {
+      mockRedis.incr.mockResolvedValue(5);
+
+      const result = await service.validateCredentials(email, password);
+
+      expect(result.id).toBe(credentials.id);
+    });
+
+    it('increments attempt counter on every call', async () => {
+      await service.validateCredentials(email, password);
+
+      expect(mockRedis.incr).toHaveBeenCalledWith(`login_attempts:${email}`, 900);
+    });
+  });
+
+  describe('login', () => {
+    const credentials = {
+      id: 'cred-id',
+      email: 'user@example.com',
+      role: 'USER' as const,
+      isVerified: true,
+      passwordHash: 'hashed',
+    };
+
+    beforeEach(() => {
+      mockRepo.findById.mockResolvedValue(credentials);
+      mockTokenService.generateAccessToken.mockReturnValue('access-token');
+      mockTokenService.generateRefreshToken.mockReturnValue('refresh-token');
+      mockRepo.saveRefreshToken.mockResolvedValue(undefined);
+    });
+
+    it('returns a TokenPair', async () => {
+      const result = await service.login(credentials.id);
+
+      expect(result).toEqual({ accessToken: 'access-token', refreshToken: 'refresh-token' });
+    });
+
+    it('saves the hashed refresh token to DB', async () => {
+      await service.login(credentials.id);
+
+      expect(mockRepo.saveRefreshToken).toHaveBeenCalledWith(
+        expect.objectContaining({
+          credentialsId: credentials.id,
+          expiresAt: expect.any(Date) as Date,
+          tokenHash: expect.any(String) as string,
+        }),
+      );
+    });
+
+    it('throws UnauthorizedException when credentials not found', async () => {
+      mockRepo.findById.mockResolvedValue(null);
+
+      await expect(service.login('unknown-id')).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+  });
+
+  describe('refresh', () => {
+    const credentials = {
+      id: 'cred-id',
+      email: 'user@example.com',
+      role: 'USER' as const,
+      isVerified: true,
+      passwordHash: 'hashed',
+    };
+
+    const jwtPayload = { sub: credentials.id, role: 'USER' as const, isVerified: true };
+
+    const storedToken = {
+      tokenHash: 'some-hash',
+      credentialsId: credentials.id,
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+
+    beforeEach(() => {
+      mockTokenService.verifyRefreshToken.mockReturnValue(jwtPayload);
+      mockRepo.findRefreshToken.mockResolvedValue(storedToken);
+      mockRepo.revokeRefreshToken.mockResolvedValue(undefined);
+      mockRepo.findById.mockResolvedValue(credentials);
+      mockTokenService.generateAccessToken.mockReturnValue('new-access-token');
+      mockTokenService.generateRefreshToken.mockReturnValue('new-refresh-token');
+      mockRepo.saveRefreshToken.mockResolvedValue(undefined);
+    });
+
+    it('returns a new TokenPair on valid token', async () => {
+      const result = await service.refresh('valid-refresh-token');
+
+      expect(result).toEqual({
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      });
+    });
+
+    it('revokes the old token before issuing new one', async () => {
+      await service.refresh('valid-refresh-token');
+
+      expect(mockRepo.revokeRefreshToken).toHaveBeenCalledTimes(1);
+      expect(mockRepo.saveRefreshToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws UnauthorizedException when JWT signature is invalid', async () => {
+      mockTokenService.verifyRefreshToken.mockImplementation(() => {
+        throw new Error('invalid signature');
+      });
+
+      await expect(service.refresh('bad-token')).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+
+    it('throws UnauthorizedException when token hash is not in DB', async () => {
+      mockRepo.findRefreshToken.mockResolvedValue(null);
+
+      await expect(service.refresh('valid-refresh-token')).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+
+    it('throws UnauthorizedException when token is already revoked', async () => {
+      mockRepo.findRefreshToken.mockResolvedValue({ ...storedToken, revokedAt: new Date() });
+
+      await expect(service.refresh('valid-refresh-token')).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+
+    it('throws UnauthorizedException when token is expired in DB', async () => {
+      mockRepo.findRefreshToken.mockResolvedValue({
+        ...storedToken,
+        expiresAt: new Date(Date.now() - 1000),
+      });
+
+      await expect(service.refresh('valid-refresh-token')).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+    });
+  });
+
+  describe('logout', () => {
+    it('revokes the refresh token', async () => {
+      mockRepo.findRefreshToken.mockResolvedValue({
+        tokenHash: 'some-hash',
+        credentialsId: 'cred-id',
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      mockRepo.revokeRefreshToken.mockResolvedValue(undefined);
+
+      await service.logout('valid-refresh-token');
+
+      expect(mockRepo.revokeRefreshToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing when token is not found in DB', async () => {
+      mockRepo.findRefreshToken.mockResolvedValue(null);
+
+      await expect(service.logout('unknown-token')).resolves.toBeUndefined();
+      expect(mockRepo.revokeRefreshToken).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when token is already revoked', async () => {
+      mockRepo.findRefreshToken.mockResolvedValue({
+        tokenHash: 'some-hash',
+        credentialsId: 'cred-id',
+        revokedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await expect(service.logout('already-revoked-token')).resolves.toBeUndefined();
+      expect(mockRepo.revokeRefreshToken).not.toHaveBeenCalled();
+    });
+  });
+
   describe('resendVerification', () => {
     it('delegates to verification service', async () => {
       mockVerification.resend.mockResolvedValue(undefined);

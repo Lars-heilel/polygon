@@ -135,4 +135,73 @@ describe('VerificationService', () => {
       await expect(service.resend('user@example.com')).rejects.toThrow(BadRequestException);
     });
   });
+
+  // ── generatePasswordReset ─────────────────────────────────────────
+
+  describe('generatePasswordReset', () => {
+    it('stores reset token in Redis and emits event', async () => {
+      mockRedis.get
+        .mockResolvedValueOnce(null) // no cooldown
+        .mockResolvedValueOnce(null); // no old reset token
+
+      await service.generatePasswordReset('cred-id', 'user@example.com');
+
+      expect(mockNotificationClient.emit).toHaveBeenCalledWith(
+        NOTIFICATION_EVENTS.SEND_PASSWORD_RESET,
+        expect.objectContaining({ to: 'user@example.com', token: expect.any(String) }),
+      );
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        expect.stringContaining('reset_cooldown'),
+        expect.any(Number),
+        '1',
+      );
+    });
+
+    it('throws 429 when reset cooldown is active', async () => {
+      mockRedis.get.mockResolvedValueOnce('1');
+
+      await expect(service.generatePasswordReset('cred-id', 'user@example.com')).rejects.toThrow(
+        HttpException,
+      );
+
+      expect(mockNotificationClient.emit).not.toHaveBeenCalled();
+    });
+
+    it('deletes old reset token before creating new one', async () => {
+      mockRedis.get
+        .mockResolvedValueOnce(null) // no cooldown
+        .mockResolvedValueOnce('old-token'); // old reset token exists
+
+      await service.generatePasswordReset('cred-id', 'user@example.com');
+
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'password_reset:old-token',
+        'password_reset_id:cred-id',
+      );
+    });
+  });
+
+  // ── consumePasswordResetToken ─────────────────────────────────────
+
+  describe('consumePasswordResetToken', () => {
+    it('returns credentialsId and clears Redis on valid token', async () => {
+      mockRedis.get.mockResolvedValue('cred-id');
+
+      const result = await service.consumePasswordResetToken('valid-token');
+
+      expect(result).toBe('cred-id');
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'password_reset:valid-token',
+        'password_reset_id:cred-id',
+      );
+    });
+
+    it('throws BadRequestException on invalid or expired token', async () => {
+      mockRedis.get.mockResolvedValue(null);
+
+      await expect(service.consumePasswordResetToken('bad-token')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });
