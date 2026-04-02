@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter, LoggingInterceptor } from '@org/core';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
@@ -17,6 +18,8 @@ async function bootstrap() {
 
   // Заменяем встроенный NestJS Logger на Pino
   app.useLogger(app.get(Logger));
+
+  app.use(helmet());
 
   app.enableCors({
     origin: process.env['CLIENT_URL'] ?? 'http://localhost:4200',
