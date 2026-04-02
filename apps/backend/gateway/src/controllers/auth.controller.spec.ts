@@ -200,6 +200,54 @@ describe('AuthGatewayController', () => {
     });
   });
 
+  // ── GET /api/auth/verify-email ────────────────────────────────────
+
+  describe('GET /api/auth/verify-email', () => {
+    it('redirects to /auth/email-verified on valid token', async () => {
+      authClient['send'].mockReturnValue(of({ accessToken: 'access', refreshToken: 'refresh' }));
+
+      const res = await request(app.getHttpServer())
+        .get('/api/auth/verify-email')
+        .query({ token: 'valid-token' });
+
+      expect(res.status).toBe(302);
+      expect(res.headers['location']).toContain('/auth/email-verified');
+    });
+
+    it('sets access_token and refresh_token cookies on success', async () => {
+      authClient['send'].mockReturnValue(of({ accessToken: 'access', refreshToken: 'refresh' }));
+
+      const res = await request(app.getHttpServer())
+        .get('/api/auth/verify-email')
+        .query({ token: 'valid-token' });
+
+      const cookies = (res.headers['set-cookie'] as unknown as string[] | undefined) ?? [];
+      expect(cookies.some((c) => c.startsWith('access_token='))).toBe(true);
+      expect(cookies.some((c) => c.startsWith('refresh_token='))).toBe(true);
+    });
+  });
+
+  // ── POST /api/auth/resend-verification ────────────────────────────
+
+  describe('POST /api/auth/resend-verification', () => {
+    it('returns 201 with message on valid email', async () => {
+      authClient['send'].mockReturnValue(of(null));
+
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/resend-verification')
+        .send({ email: 'user@example.com' });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ message: 'Verification email sent' });
+    });
+
+    it('returns 400 when email is missing', async () => {
+      const res = await request(app.getHttpServer()).post('/api/auth/resend-verification').send({});
+
+      expect(res.status).toBe(400);
+    });
+  });
+
   // ── POST /api/auth/forgot-password ────────────────────────────────
 
   describe('POST /api/auth/forgot-password', () => {

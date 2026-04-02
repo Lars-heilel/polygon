@@ -7,6 +7,7 @@ import {
   CoreConfigModule,
   CoreTokenModule,
   JwtGuard,
+  SEARCH_CLIENT_TOKEN,
   USER_CLIENT_TOKEN,
 } from '@org/core';
 import cookieParser from 'cookie-parser';
@@ -45,6 +46,10 @@ export async function createTestApp(): Promise<{
       { provide: USER_CLIENT_TOKEN, useValue: userClient },
       {
         provide: CHAT_CLIENT_TOKEN,
+        useValue: { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() },
+      },
+      {
+        provide: SEARCH_CLIENT_TOKEN,
         useValue: { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() },
       },
     ],
