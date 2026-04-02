@@ -13,7 +13,12 @@ import { CHAT_CLIENT_TOKEN, CHAT_PATTERNS, TokenService } from '@org/core';
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway({ cors: { origin: '*', credentials: true } })
+@WebSocketGateway({
+  cors: {
+    origin: process.env['CLIENT_URL'] ?? 'http://localhost:4200',
+    credentials: true,
+  },
+})
 export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server!: Server;
@@ -26,7 +31,13 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   ) {}
 
   handleConnection(socket: Socket) {
-    const token = socket.handshake.auth['token'] as string | undefined;
+    const cookieHeader = socket.handshake.headers.cookie ?? '';
+    const token = cookieHeader
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('access_token='))
+      ?.slice('access_token='.length);
+
     if (!token) {
       socket.disconnect();
       return;

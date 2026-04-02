@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { CoreConfigModule, HealthModule, LoggerModule, MetricsModule } from '@org/core';
 
 @Module({
-  imports: [],
+  imports: [CoreConfigModule, LoggerModule, HealthModule, MetricsModule],
 })
 export class MediaModule {}

@@ -14,7 +14,9 @@ import {
   CurrentUser,
   JwtGuard,
   type JwtPayload,
+  SEARCH_CLIENT_TOKEN,
   USER_CLIENT_TOKEN,
+  USER_EVENTS,
   USER_PATTERNS,
 } from '@org/core';
 import { Observable, lastValueFrom } from 'rxjs';
@@ -26,7 +28,10 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 @Controller('users')
 @UseGuards(JwtGuard)
 export class UserGatewayController {
-  constructor(@Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy) {}
+  constructor(
+    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
+    @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
@@ -51,8 +56,17 @@ export class UserGatewayController {
   @ApiResponse({ status: 200, description: 'Updated user profile' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto) {
-    return this.send(this.userClient.send(USER_PATTERNS.UPDATE, { id: user.sub, dto }));
+  async updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto) {
+    const updated = await this.send(
+      this.userClient.send(USER_PATTERNS.UPDATE, { id: user.sub, dto }),
+    );
+    this.searchClient.emit(USER_EVENTS.UPDATED, {
+      id: user.sub,
+      name: (updated as { name: string }).name,
+      displayName: (updated as { displayName: string | null }).displayName,
+      avatarUrl: (updated as { avatarUrl: string | null }).avatarUrl,
+    });
+    return updated;
   }
 
   private async send<T>(observable: Observable<T>): Promise<T> {
