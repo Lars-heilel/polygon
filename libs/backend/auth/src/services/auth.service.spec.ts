@@ -5,6 +5,7 @@ import {
   AUTH_PRISMA_REPOSITORY_TOKEN,
   EncryptionService,
   RedisService,
+  SEARCH_CLIENT_TOKEN,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
@@ -60,11 +61,21 @@ const mockUserClient = {
   send: jest.fn(),
 };
 
+const mockSearchClient = {
+  emit: jest.fn(),
+  send: jest.fn(),
+};
+
 const mockConfig = {
   get: jest.fn((key: string) => {
     if (key === 'JWT_ACCESS_TOKEN_EXPIRES') return 900;
     if (key === 'JWT_REFRESH_TOKEN_EXPIRES') return 604800;
     return undefined;
+  }),
+  getOrThrow: jest.fn((key: string) => {
+    if (key === 'JWT_ACCESS_TOKEN_EXPIRES') return 900;
+    if (key === 'JWT_REFRESH_TOKEN_EXPIRES') return 604800;
+    throw new Error(`Config key not found: ${key}`);
   }),
 };
 
@@ -84,6 +95,7 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: VERIFICATION_SERVICE_TOKEN, useValue: mockVerification },
         { provide: USER_CLIENT_TOKEN, useValue: mockUserClient },
+        { provide: SEARCH_CLIENT_TOKEN, useValue: mockSearchClient },
       ],
     }).compile();
 
@@ -370,6 +382,26 @@ describe('AuthService', () => {
       await expect(service.refresh('valid-refresh-token')).rejects.toThrow(
         expect.objectContaining({ status: 401 }),
       );
+    });
+
+    it('revokes ALL user tokens when a revoked token is replayed', async () => {
+      mockTokenService.verifyRefreshToken.mockReturnValue({
+        sub: 'user-id',
+        role: 'USER',
+        isVerified: true,
+      });
+      mockRepo.findRefreshToken.mockResolvedValue({
+        tokenHash: 'hash',
+        credentialsId: 'user-id',
+        revokedAt: new Date(), // already revoked
+        expiresAt: new Date(Date.now() + 60000),
+      });
+
+      await expect(service.refresh('some-refresh-token')).rejects.toThrow(
+        expect.objectContaining({ status: 401 }),
+      );
+
+      expect(mockRepo.revokeAllRefreshTokens).toHaveBeenCalledWith('user-id');
     });
   });
 

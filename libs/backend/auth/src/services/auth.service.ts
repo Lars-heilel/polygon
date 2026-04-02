@@ -179,8 +179,16 @@ export class AuthService implements IAuthService {
 
     const tokenHash = this.hashToken(refreshToken);
     const stored = await this.repo.findRefreshToken(tokenHash);
-    if (!stored || stored.revokedAt || stored.expiresAt < new Date())
+
+    if (!stored) throw new UnauthorizedException();
+
+    // Replay attack: revoked token reused → invalidate entire token family
+    if (stored.revokedAt) {
+      await this.repo.revokeAllRefreshTokens(stored.credentialsId);
       throw new UnauthorizedException();
+    }
+
+    if (stored.expiresAt < new Date()) throw new UnauthorizedException();
 
     await this.repo.revokeRefreshToken(tokenHash);
 
