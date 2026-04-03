@@ -14,9 +14,8 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
-  setupFiles: ['<rootDir>/../../../jest.setup.env.ts'],
   moduleNameMapper: {
-    '^meilisearch$': '<rootDir>/../../../__mocks__/meilisearch.ts',
+    '^meilisearch$': '<rootDir>/../../../libs/backend/core/src/__mocks__/meilisearch.ts',
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
