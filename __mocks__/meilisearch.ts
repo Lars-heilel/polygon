@@ -1,7 +1,6 @@
-// CJS stub for the ESM-only meilisearch package — used in Jest unit tests
-'use strict';
+// CJS stub for the ESM-only meilisearch package — used in Jest unit tests via moduleNameMapper
 
-class Meilisearch {
+export class Meilisearch {
   index() {
     return {
       addDocuments: () => Promise.resolve({}),
@@ -9,9 +8,8 @@ class Meilisearch {
       deleteDocument: () => Promise.resolve({}),
     };
   }
+
   health() {
     return Promise.resolve({ status: 'available' });
   }
 }
-
-module.exports = { Meilisearch };
