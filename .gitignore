@@ -60,4 +60,4 @@ libs/backend/*/src/database/generated
 apps/backend/*/src/database/generated
 
 
-storybook-static
+storybook-static.worktrees/
