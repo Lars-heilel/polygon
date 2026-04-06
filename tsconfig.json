@@ -16,31 +16,16 @@
       "path": "./apps/client/messenger"
     },
     {
-      "path": "./apps/backend/auth-service-e2e"
-    },
-    {
       "path": "./apps/backend/auth-service"
-    },
-    {
-      "path": "./apps/backend/user-service-e2e"
     },
     {
       "path": "./apps/backend/user-service"
     },
     {
-      "path": "./apps/backend/chat-service-e2e"
-    },
-    {
       "path": "./apps/backend/chat-service"
     },
     {
-      "path": "./apps/backend/notification-service-e2e"
-    },
-    {
       "path": "./apps/backend/notification-service"
-    },
-    {
-      "path": "./apps/backend/media-service-e2e"
     },
     {
       "path": "./apps/backend/media-service"
