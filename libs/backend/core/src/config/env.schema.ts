@@ -17,10 +17,7 @@ export const envSchema = z.object({
   JWT_REFRESH_TOKEN_EXPIRES: z.coerce.number().default(604800),
 
   // RabbitMQ
-  RABBITMQ_HOST: z.string().default('localhost'),
-  RABBITMQ_PORT: z.coerce.number().default(5672),
-  RABBITMQ_USER: z.string().default('polygon'),
-  RABBITMQ_PASSWORD: z.string(),
+  RABBITMQ_URL: z.string().url().default('amqp://polygon:polygon_password@localhost:5672'),
 
   // Redis
   REDIS_HOST: z.string().default('localhost'),

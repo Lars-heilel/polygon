@@ -9,6 +9,7 @@ export * from './constants/queues/user.queue';
 export * from './constants/queues/chat.queue';
 export * from './constants/queues/notification.queue';
 export * from './constants/queues/search.queue';
+export * from './constants/queues/media.queue';
 
 // Config
 export * from './config/env.schema';

@@ -2,10 +2,8 @@ import { Module } from '@nestjs/common';
 import { HealthModule, LoggerModule, MetricsModule } from '@org/core';
 import { OrgNotificationModule } from '@org/notification';
 
-import { HealthController } from '../controllers/health.controller';
-
 @Module({
   imports: [OrgNotificationModule, LoggerModule, HealthModule, MetricsModule],
-  controllers: [HealthController],
+  controllers: [],
 })
 export class NotificationModule {}

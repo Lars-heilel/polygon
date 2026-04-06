@@ -64,9 +64,6 @@
       "path": "./libs/backend/notification"
     },
     {
-      "path": "./libs/backend/media"
-    },
-    {
       "path": "./libs/client/shared"
     },
     {

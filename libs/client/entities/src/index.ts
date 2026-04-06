@@ -29,5 +29,3 @@ export {
 } from './lib/chat';
 
 export { useSearchUsersQuery, searchApi } from './lib/search/search.api';
-
-export { authHandlers } from './test/handlers';

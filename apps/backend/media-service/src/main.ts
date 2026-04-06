@@ -1,17 +1,50 @@
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import {
+  AllExceptionsFilter,
+  ConfigService,
+  Env,
+  LoggingInterceptor,
+  MEDIA_QUEUE,
+} from '@org/core';
+import { Logger } from 'nestjs-pino';
 
 import { MediaModule } from './app/media.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(MediaModule);
-  const globalPrefix = 'api';
-  app.setGlobalPrefix(globalPrefix);
-  const config = app.get(ConfigService);
-  const port = config.get<number>('MEDIA_PORT', 3004);
-  await app.listen(port);
-  Logger.log(`🚀 Media Service is running on: http://localhost:${port}/${globalPrefix}`);
+  const app = await NestFactory.create(MediaModule, { bufferLogs: true });
+
+  // ==========================================
+  // Configuration Service
+  // ==========================================
+  const configService = app.get<ConfigService<Env, true>>(ConfigService);
+  const RABBITMQ_URL = configService.get('RABBITMQ_URL', { infer: true });
+
+  // ==========================================
+  // Logging & Global Interceptors
+  // ==========================================
+  app.useLogger(app.get(Logger));
+  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // ==========================================
+  // RabbitMQ Microservice
+  // ==========================================
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [RABBITMQ_URL],
+      queue: MEDIA_QUEUE,
+      queueOptions: { durable: true },
+    },
+  });
+
+  await app.startAllMicroservices();
+
+  // ==========================================
+  // Service Start Log
+  // ==========================================
+  app.get(Logger).log(`Media Service: RMQ queue=${MEDIA_QUEUE}`);
 }
 
 bootstrap();
