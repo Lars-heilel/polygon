@@ -13,6 +13,13 @@ module.exports = {
   testEnvironment: 'node',
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
+    '^.+\\.mjs$': ['@swc/jest', swcJestConfig],
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@prisma/client/runtime|meilisearch))',
+  ],
+  moduleNameMapper: {
+    '^meilisearch$': '<rootDir>/../../../libs/backend/core/src/__mocks__/meilisearch.ts',
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
