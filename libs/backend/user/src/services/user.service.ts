@@ -29,8 +29,8 @@ export class UserService implements IUserService {
   }
 
   async update(id: string, dto: UpdateUserInput): Promise<User> {
-    const exists = await this.repo.exists(id);
-    if (!exists) throw new NotFoundException('User not found');
-    return this.repo.update(id, dto);
+    const user = await this.repo.update(id, dto);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 }

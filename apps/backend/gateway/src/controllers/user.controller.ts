@@ -42,13 +42,13 @@ export class UserGatewayController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get user profile by ID' })
+  @ApiOperation({ summary: 'Get user public profile by ID' })
   @ApiParam({ name: 'id', description: 'User UUID' })
-  @ApiResponse({ status: 200, description: 'User profile' })
+  @ApiResponse({ status: 200, description: 'User public profile' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   @ApiResponse({ status: 404, description: 'User not found' })
   getById(@Param('id') id: string) {
-    return this.send(this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }));
+    return this.send(this.userClient.send(USER_PATTERNS.GET_PUBLIC_BY_ID, { id }));
   }
 
   @Patch('me')

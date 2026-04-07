@@ -1,0 +1,1 @@
+(tree -a --gitignore -I "project_to_txt.txt"; echo -e "\n\n--- СОДЕРЖИМОЕ ФАЙЛОВ ПРОЕКТА ---\n"; git ls-files | grep -E -v "(\.png|\.img|\.svg|\.ico|README\.md|package-lock\.json)$" | xargs -I {} sh -c 'echo "--- Файл: {} ---"; cat "{}"; echo ""') > project_to_txt.txt && echo "Структура и файлы проекта собраны в project_to_txt.txt"

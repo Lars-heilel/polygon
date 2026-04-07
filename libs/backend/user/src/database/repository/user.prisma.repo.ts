@@ -16,23 +16,9 @@ export class UserPrismaRepository implements IUserRepository {
     });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { email },
-      select: USER_SELECT_FIELDS,
-    });
-  }
-
   async findPublicById(id: string): Promise<UserPublic | null> {
     return this.prisma.user.findUnique({
       where: { id },
-      select: USER_PUBLIC_SELECT_FIELDS,
-    });
-  }
-
-  async searchByName(query: string): Promise<UserPublic[]> {
-    return this.prisma.user.findMany({
-      where: { name: { contains: query, mode: 'insensitive' } },
       select: USER_PUBLIC_SELECT_FIELDS,
     });
   }
@@ -49,23 +35,20 @@ export class UserPrismaRepository implements IUserRepository {
     });
   }
 
-  async update(id: string, data: UpdateUserInput): Promise<User> {
-    return this.prisma.user.update({
-      where: { id },
-      data,
-      select: USER_SELECT_FIELDS,
-    });
+  async update(id: string, data: UpdateUserInput): Promise<User | null> {
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data,
+        select: USER_SELECT_FIELDS,
+      });
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'P2025') return null;
+      throw e;
+    }
   }
 
   async delete(id: string): Promise<void> {
     await this.prisma.user.delete({ where: { id } });
-  }
-
-  async exists(id: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-    return user !== null;
   }
 }
