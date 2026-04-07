@@ -4,14 +4,11 @@ import type { UpdateUserDto } from '../dto/update-user.dto';
 
 export interface IUserRepository {
   findById(id: string): Promise<User | null>;
-  findByEmail(email: string): Promise<User | null>;
   findPublicById(id: string): Promise<UserPublic | null>;
   findAllPublic(): Promise<UserPublic[]>;
-  searchByName(query: string): Promise<UserPublic[]>;
   upsert(data: CreateUserEventInput): Promise<void>;
-  update(id: string, data: UpdateUserInput): Promise<User>;
+  update(id: string, data: UpdateUserInput): Promise<User | null>;
   delete(id: string): Promise<void>;
-  exists(id: string): Promise<boolean>;
 }
 
 export interface IUserService {
@@ -25,6 +22,7 @@ export interface IUserService {
 export interface IUserController {
   handleUserRegistered(data: CreateUserEventInput): Promise<void>;
   getById(payload: { id: string }): Promise<User>;
+  getPublicById(payload: { id: string }): Promise<UserPublic>;
   getAllPublic(): Promise<UserPublic[]>;
   update(payload: { id: string; dto: UpdateUserDto }): Promise<User>;
 }
