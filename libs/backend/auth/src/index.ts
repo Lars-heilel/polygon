@@ -10,3 +10,9 @@ export * from './guards/github.guard';
 export * from './guards/yandex.guard';
 export * from './guards/google.guard';
 export { PrismaService } from './database/prisma/prisma.service';
+
+// DTOs
+export * from './dto/login.dto';
+export * from './dto/register.dto';
+export * from './dto/resend-verification.dto';
+export * from './dto/reset-password.dto';

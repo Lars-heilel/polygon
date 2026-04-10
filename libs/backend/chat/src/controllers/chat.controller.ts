@@ -29,7 +29,7 @@ export class ChatController implements IChatController {
       take?: number;
     },
   ): Promise<Message[]> {
-    return this.chatService.getMessages(payload.chatId, payload.userId, payload.skip, payload.take);
+    return this.chatService.getMessages(payload.chatId, payload.userId, payload.skip ?? 0, payload.take ?? 50);
   }
 
   @MessagePattern(CHAT_PATTERNS.SEND_MESSAGE)

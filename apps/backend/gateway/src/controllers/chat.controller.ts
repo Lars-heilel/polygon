@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { CreateDirectChatDto, SendMessageDto } from '@org/chat';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
@@ -26,9 +27,6 @@ import {
   type JwtPayload,
 } from '@org/core';
 import { Observable, lastValueFrom } from 'rxjs';
-
-import { CreateDirectChatDto } from '../dto/create-direct-chat.dto';
-import { SendMessageDto } from '../dto/send-message.dto';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 @ApiTags('chats')

@@ -20,15 +20,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { GithubGuard, GoogleGuard, LocalGuard, YandexGuard } from '@org/auth';
+import {
+  ForgotPasswordDto,
+  GithubGuard,
+  GoogleGuard,
+  LocalGuard,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  YandexGuard,
+} from '@org/auth';
 import type { CredentialsPayload, TokenPair } from '@org/common';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
 import type { Request, Response } from 'express';
 import { Observable, lastValueFrom } from 'rxjs';
-
-import { RegisterDto } from '../dto/register.dto';
-import { ResendVerificationDto } from '../dto/resend-verification.dto';
-import { ForgotPasswordDto, ResetPasswordDto } from '../dto/reset-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')

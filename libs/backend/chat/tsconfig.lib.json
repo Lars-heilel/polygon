@@ -1,14 +1,14 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "target": "es2021",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -17,7 +17,9 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts"
+  ],
   "references": [
     {
       "path": "../../common/tsconfig.lib.json"
@@ -26,5 +28,10 @@
       "path": "../core/tsconfig.lib.json"
     }
   ],
-  "exclude": ["jest.config.ts", "jest.config.cts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": [
+    "jest.config.ts",
+    "jest.config.cts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts"
+  ]
 }

@@ -19,9 +19,8 @@ import {
   USER_EVENTS,
   USER_PATTERNS,
 } from '@org/core';
+import { UpdateUserDto } from '@org/user';
 import { Observable, lastValueFrom } from 'rxjs';
-
-import { UpdateUserDto } from '../dto/update-user.dto';
 
 @ApiTags('users')
 @ApiCookieAuth('access_token')

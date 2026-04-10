@@ -6,3 +6,5 @@ export * from './register.schema';
 export * from './login.schema';
 export * from './token-pair.schema';
 export * from './oauth-login.schema';
+export * from './resend-verification.schema';
+export * from './reset-password.schema';
