@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { AUTH_QUEUE, AllExceptionsFilter, ConfigService, Env, LoggingInterceptor } from '@org/core';
+import { AUTH_QUEUE, ConfigService, Env, LoggingInterceptor } from '@org/core';
 import { Logger } from 'nestjs-pino';
 
 import { AuthModule } from './app/auth.module';
@@ -18,7 +18,6 @@ async function bootstrap() {
   // Logging & Global Interceptors
   // ==========================================
   app.useLogger(app.get(Logger));
-  app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   // ==========================================

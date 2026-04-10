@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { USER_PUBLIC_SELECT_FIELDS, USER_SELECT_FIELDS } from '@org/common';
-import type { CreateUserEventInput, UpdateUserInput, User, UserPublic } from '@org/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PUBLIC_USER_DATA_SELECT } from '@org/common';
+import type { CreateUserEventInput, User, UserPublic } from '@org/common';
 
+import { UpdateUserDto } from '../../dto/update-user.dto';
 import type { IUserRepository } from '../../interfaces/user.interface';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -12,43 +14,30 @@ export class UserPrismaRepository implements IUserRepository {
   async findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
-      select: USER_SELECT_FIELDS,
     });
   }
 
-  async findPublicById(id: string): Promise<UserPublic | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-      select: USER_PUBLIC_SELECT_FIELDS,
-    });
-  }
-
-  async findAllPublic(): Promise<UserPublic[]> {
-    return this.prisma.user.findMany({ select: USER_PUBLIC_SELECT_FIELDS });
-  }
-
-  async upsert(data: CreateUserEventInput): Promise<void> {
-    await this.prisma.user.upsert({
+  async upsert(data: CreateUserEventInput): Promise<UserPublic> {
+    return await this.prisma.user.upsert({
       where: { id: data.id },
       create: data,
       update: {},
+      select: PUBLIC_USER_DATA_SELECT,
     });
   }
 
-  async update(id: string, data: UpdateUserInput): Promise<User | null> {
+  async update(id: string, data: UpdateUserDto): Promise<UserPublic> {
     try {
       return await this.prisma.user.update({
         where: { id },
         data,
-        select: USER_SELECT_FIELDS,
+        select: PUBLIC_USER_DATA_SELECT,
       });
-    } catch (e) {
-      if ((e as { code?: string })?.code === 'P2025') return null;
-      throw e;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      throw error;
     }
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.prisma.user.delete({ where: { id } });
   }
 }

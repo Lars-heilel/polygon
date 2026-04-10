@@ -4,25 +4,18 @@ import type { UpdateUserDto } from '../dto/update-user.dto';
 
 export interface IUserRepository {
   findById(id: string): Promise<User | null>;
-  findPublicById(id: string): Promise<UserPublic | null>;
-  findAllPublic(): Promise<UserPublic[]>;
-  upsert(data: CreateUserEventInput): Promise<void>;
-  update(id: string, data: UpdateUserInput): Promise<User | null>;
-  delete(id: string): Promise<void>;
+  upsert(data: CreateUserEventInput): Promise<UserPublic>;
+  update(id: string, data: UpdateUserInput): Promise<UserPublic>;
 }
 
 export interface IUserService {
-  createFromEvent(data: CreateUserEventInput): Promise<void>;
+  createFromEvent(data: CreateUserEventInput): Promise<UserPublic>;
   getById(id: string): Promise<User>;
-  getPublicById(id: string): Promise<UserPublic>;
-  getAllPublic(): Promise<UserPublic[]>;
-  update(id: string, dto: UpdateUserInput): Promise<User>;
+  update(id: string, dto: UpdateUserInput): Promise<UserPublic>;
 }
 
 export interface IUserController {
-  handleUserRegistered(data: CreateUserEventInput): Promise<void>;
+  handleUserRegistered(data: CreateUserEventInput): Promise<UserPublic>;
   getById(payload: { id: string }): Promise<User>;
-  getPublicById(payload: { id: string }): Promise<UserPublic>;
-  getAllPublic(): Promise<UserPublic[]>;
-  update(payload: { id: string; dto: UpdateUserDto }): Promise<User>;
+  update(payload: { id: string; dto: UpdateUserDto }): Promise<UserPublic>;
 }

@@ -20,16 +20,6 @@ export class UserController implements IUserController {
     return this.userService.getById(payload.id);
   }
 
-  @MessagePattern(USER_PATTERNS.GET_PUBLIC_BY_ID)
-  getPublicById(@Payload() payload: { id: string }) {
-    return this.userService.getPublicById(payload.id);
-  }
-
-  @MessagePattern(USER_PATTERNS.GET_ALL_PUBLIC)
-  getAllPublic() {
-    return this.userService.getAllPublic();
-  }
-
   @MessagePattern(USER_PATTERNS.UPDATE)
   update(@Payload() payload: { id: string; dto: UpdateUserDto }) {
     return this.userService.update(payload.id, payload.dto);

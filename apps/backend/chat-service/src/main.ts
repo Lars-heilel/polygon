@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { AllExceptionsFilter, CHAT_QUEUE, ConfigService, Env, LoggingInterceptor } from '@org/core';
+import { CHAT_QUEUE, ConfigService, Env, LoggingInterceptor } from '@org/core';
 import { Logger } from 'nestjs-pino';
 
 import { ChatModule } from './app/chat.module';
@@ -18,7 +18,6 @@ async function bootstrap() {
   // Logging & Global Interceptors
   // ==========================================
   app.useLogger(app.get(Logger));
-  app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   // ==========================================
