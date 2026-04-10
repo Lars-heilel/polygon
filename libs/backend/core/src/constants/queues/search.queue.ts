@@ -3,4 +3,5 @@ export const SEARCH_CLIENT_TOKEN = 'SEARCH_CLIENT';
 
 export const SEARCH_PATTERNS = {
   SEARCH_USERS: 'search.users',
+  GET_USER_BY_ID: 'search.getUserById',
 } as const;

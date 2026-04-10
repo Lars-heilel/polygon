@@ -15,6 +15,7 @@ import {
   JwtGuard,
   type JwtPayload,
   SEARCH_CLIENT_TOKEN,
+  SEARCH_PATTERNS,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
   USER_PATTERNS,
@@ -47,7 +48,7 @@ export class UserGatewayController {
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   @ApiResponse({ status: 404, description: 'User not found' })
   getById(@Param('id') id: string) {
-    return this.send(this.userClient.send(USER_PATTERNS.GET_PUBLIC_BY_ID, { id }));
+    return this.send(this.searchClient.send(SEARCH_PATTERNS.GET_USER_BY_ID, { id }));
   }
 
   @Patch('me')

@@ -26,6 +26,10 @@ export class UserPrismaRepository implements IUserRepository {
     });
   }
 
+  async getAllPublic(): Promise<UserPublic[]> {
+    return this.prisma.user.findMany({ select: PUBLIC_USER_DATA_SELECT });
+  }
+
   async update(id: string, data: UpdateUserDto): Promise<UserPublic> {
     try {
       return await this.prisma.user.update({

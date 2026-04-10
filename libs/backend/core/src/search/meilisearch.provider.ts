@@ -36,6 +36,15 @@ export class MeilisearchProvider implements ISearchProvider, OnModuleInit {
     await this.client.index(index).deleteDocument(id);
   }
 
+  async getById<T = SearchDocument>(index: string, id: string): Promise<T | null> {
+    try {
+      const doc = await this.client.index(index).getDocument(id);
+      return doc as T;
+    } catch {
+      return null;
+    }
+  }
+
   async search<T = SearchDocument>(
     index: string,
     query: string,

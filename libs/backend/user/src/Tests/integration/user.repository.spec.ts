@@ -86,7 +86,7 @@ describe('UserPrismaRepository (integration)', () => {
       expect(result).not.toBeNull();
       expect(result!.displayName).toBe('Alice Updated');
 
-      expect(result).not.toHaveProperty(mockUserInput.email);
+      expect(result).not.toHaveProperty('email');
       expect(result!.name).toBe(mockUserInput.name);
     });
   });

@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, NotFoundException } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import type { CreateUserEventInput, SearchUsersQuery, UserSearchResult } from '@org/common';
 import { SEARCH_PATTERNS, USER_EVENTS } from '@org/core';
@@ -8,6 +8,13 @@ import { SearchService } from '../services/search.service';
 @Controller()
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
+
+  @MessagePattern(SEARCH_PATTERNS.GET_USER_BY_ID)
+  async getUserById(@Payload() payload: { id: string }): Promise<UserSearchResult> {
+    const user = await this.searchService.getUserById(payload.id);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
 
   @MessagePattern(SEARCH_PATTERNS.SEARCH_USERS)
   searchUsers(@Payload() payload: SearchUsersQuery): Promise<UserSearchResult[]> {

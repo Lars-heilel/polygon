@@ -6,6 +6,7 @@ export class Meilisearch {
       addDocuments: () => Promise.resolve({}),
       search: () => Promise.resolve({ hits: [] }),
       deleteDocument: () => Promise.resolve({}),
+      getDocument: () => Promise.resolve(null),
     };
   }
 

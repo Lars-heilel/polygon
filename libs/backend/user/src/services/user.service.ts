@@ -30,4 +30,8 @@ export class UserService implements IUserService {
     this.logger.debug(`User ${id} updated`);
     return updatedUser;
   }
+
+  async getAllPublic(): Promise<UserPublic[]> {
+    return this.repo.getAllPublic();
+  }
 }

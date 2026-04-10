@@ -16,6 +16,7 @@ export interface SearchOptions {
 export interface ISearchProvider {
   upsert(index: string, doc: SearchDocument): Promise<void>;
   delete(index: string, id: string): Promise<void>;
+  getById<T = SearchDocument>(index: string, id: string): Promise<T | null>;
   search<T = SearchDocument>(
     index: string,
     query: string,

@@ -19,6 +19,10 @@ export class SearchService implements IUserSearchService {
     await this.provider.delete(USERS_INDEX, id);
   }
 
+  async getUserById(id: string): Promise<UserSearchResult | null> {
+    return this.provider.getById<UserSearchResult>(USERS_INDEX, id);
+  }
+
   async searchUsers(
     query: string,
     options?: { limit?: number; offset?: number },
