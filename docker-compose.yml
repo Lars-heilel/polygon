@@ -122,6 +122,50 @@ services:
     networks:
       - polygon-network
 
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: polygon-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./infra/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks:
+      - polygon-network
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: polygon-tempo
+    restart: unless-stopped
+    user: root
+    command: -config.file=/etc/tempo/tempo.yml
+    ports:
+      - '3200:3200'
+    volumes:
+      - ./infra/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/tmp/tempo
+    networks:
+      - polygon-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    container_name: polygon-otel-collector
+    restart: unless-stopped
+    command: ['--config=/etc/otel/otel-collector.yml']
+    ports:
+      - '4317:4317'
+      - '4318:4318'
+    volumes:
+      - ./infra/otel-collector/otel-collector.yml:/etc/otel/otel-collector.yml:ro
+    depends_on:
+      - tempo
+    networks:
+      - polygon-network
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
 volumes:
   postgres_data:
   redis_data:
@@ -129,6 +173,8 @@ volumes:
   meilisearch_data:
   prometheus_data:
   grafana_data:
+  loki_data:
+  tempo_data:
 
 networks:
   polygon-network:
