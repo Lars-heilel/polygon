@@ -3,7 +3,7 @@ import { HealthModule, LoggerModule, MetricsModule } from '@org/core';
 import { OrgSearchModule } from '@org/search';
 
 @Module({
-  imports: [OrgSearchModule, LoggerModule, HealthModule, MetricsModule],
+  imports: [OrgSearchModule, LoggerModule.forService('search-service'), HealthModule, MetricsModule],
   controllers: [],
 })
 export class SearchAppModule {}

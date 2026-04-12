@@ -3,6 +3,6 @@ import { OrgChatModule } from '@org/chat';
 import { HealthModule, LoggerModule, MetricsModule } from '@org/core';
 
 @Module({
-  imports: [OrgChatModule, LoggerModule, HealthModule, MetricsModule],
+  imports: [OrgChatModule, LoggerModule.forService('chat-service'), HealthModule, MetricsModule],
 })
 export class ChatModule {}

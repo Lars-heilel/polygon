@@ -46,7 +46,7 @@ const rmqClient = (name: string, queue: string) => ({
   imports: [
     CoreConfigModule,
     CoreTokenModule,
-    LoggerModule,
+    LoggerModule.forService('gateway'),
     HealthModule,
     MetricsModule,
     ThrottlerModule.forRoot({

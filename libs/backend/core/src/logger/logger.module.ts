@@ -1,42 +1,60 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { RequestMethod } from '@nestjs/common';
+import { trace } from '@opentelemetry/api';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
+import type pino from 'pino';
 
-// LoggerModule регистрируется один раз в корневом модуле каждого сервиса.
-// В dev — читаемый цветной вывод через pino-pretty.
-// В prod — чистый JSON, который легко парсить любой log-системой.
-@Module({
-  imports: [
-    PinoLoggerModule.forRoot({
-      // path-to-regexp v8 (NestJS 11) требует именованный wildcard вместо bare *
-      forRoutes: [{ path: '/{*splat}', method: RequestMethod.ALL }],
-      pinoHttp: {
-        // В dev включаем красивый вывод, в prod — JSON
-        transport:
-          process.env['NODE_ENV'] !== 'production'
-            ? {
-                target: 'pino-pretty',
-                options: { colorize: true, singleLine: true },
-              }
-            : undefined,
+function buildTransport(
+  serviceName: string,
+): pino.TransportSingleOptions | pino.TransportMultiOptions {
+  const lokiTarget: pino.TransportSingleOptions = {
+    target: 'pino-loki',
+    options: {
+      host: process.env['LOKI_URL'] ?? 'http://localhost:3100',
+      labels: { service: serviceName },
+      batching: { interval: 5 },
+    },
+  };
 
-        // Уровень логирования: в prod не засоряем debug-сообщениями
-        level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
+  if (process.env['NODE_ENV'] !== 'production') {
+    return {
+      targets: [
+        { target: 'pino-pretty', options: { colorize: true, singleLine: true } },
+        lokiTarget,
+      ],
+    };
+  }
 
-        // Автоматически логировать каждый HTTP запрос/ответ
-        autoLogging: true,
+  return lokiTarget;
+}
 
-        // Что включать в каждую строку лога
-        serializers: {
-          req: (req) => ({ method: req.method, url: req.url }),
-          res: (res) => ({ statusCode: res.statusCode }),
-        },
-
-        // Убираем поля которые только шумят
-        redact: ['req.headers.authorization', 'req.headers.cookie'],
-      },
-    }),
-  ],
-  exports: [PinoLoggerModule],
-})
-export class LoggerModule {}
+@Module({})
+export class LoggerModule {
+  static forService(serviceName: string): DynamicModule {
+    return {
+      module: LoggerModule,
+      imports: [
+        PinoLoggerModule.forRoot({
+          forRoutes: [{ path: '/{*splat}', method: RequestMethod.ALL }],
+          pinoHttp: {
+            transport: buildTransport(serviceName),
+            level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
+            autoLogging: true,
+            serializers: {
+              req: (req) => ({ method: req.method, url: req.url }),
+              res: (res) => ({ statusCode: res.statusCode }),
+            },
+            redact: ['req.headers.authorization', 'req.headers.cookie'],
+            customProps: () => {
+              const span = trace.getActiveSpan();
+              if (!span?.isRecording()) return {};
+              const ctx = span.spanContext();
+              return { trace_id: ctx.traceId, span_id: ctx.spanId };
+            },
+          },
+        }),
+      ],
+      exports: [PinoLoggerModule],
+    };
+  }
+}
