@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 import { ConfigService } from '@nestjs/config';
 import { ClientsModule, type RmqOptions, Transport } from '@nestjs/microservices';
 import {
+  AUTH_CACHE_REPOSITORY_TOKEN,
   AUTH_PRISMA_REPOSITORY_TOKEN,
   AUTH_SERVICE_TOKEN,
   CoreConfigModule,
@@ -19,6 +21,7 @@ import {
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
 
+import { AuthRedisCacheRepository } from '../cache/auth.redis.repo';
 import { AuthController } from '../controllers/auth.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
@@ -57,9 +60,15 @@ const rmqClient = (name: string, queue: string) => ({
   providers: [
     PrismaService,
     { provide: AUTH_PRISMA_REPOSITORY_TOKEN, useClass: AuthPrismaRepository },
+    { provide: AUTH_CACHE_REPOSITORY_TOKEN, useClass: AuthRedisCacheRepository },
     { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
     { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
     CleanupService,
+    makeCounterProvider({
+      name: 'auth_events_total',
+      help: 'Total auth events by type',
+      labelNames: ['event'] as const,
+    }),
   ],
   exports: [PrismaService],
 })

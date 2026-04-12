@@ -7,15 +7,18 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import type { Credentials, CredentialsPayload, OAuthLoginDto, TokenPair } from '@org/common';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import type { Counter } from 'prom-client';
 import {
+  AUTH_CACHE_REPOSITORY_TOKEN,
   AUTH_PRISMA_REPOSITORY_TOKEN,
   EncryptionService,
   type Env,
   type JwtPayload,
-  RedisService,
   SEARCH_CLIENT_TOKEN,
   TokenService,
   USER_CLIENT_TOKEN,
@@ -24,6 +27,7 @@ import {
 } from '@org/core';
 import { createHash } from 'crypto';
 
+import type { IAuthCacheRepository } from '../cache/auth.cache.interface';
 import type { RegisterDto } from '../dto/register.dto';
 import type {
   IAuthRepository,
@@ -34,19 +38,20 @@ import type {
 @Injectable()
 export class AuthService implements IAuthService {
   private static readonly LOGIN_ATTEMPTS_LIMIT = 5;
-  private static readonly LOGIN_ATTEMPTS_TTL = 900; // 15 minutes
 
   constructor(
     @Inject(AUTH_PRISMA_REPOSITORY_TOKEN)
     private readonly repo: IAuthRepository,
+    @Inject(AUTH_CACHE_REPOSITORY_TOKEN)
+    private readonly cache: IAuthCacheRepository,
     private readonly encryption: EncryptionService,
     private readonly tokenService: TokenService,
-    private readonly redis: RedisService,
     private readonly config: ConfigService<Env>,
     @Inject(VERIFICATION_SERVICE_TOKEN)
     private readonly verification: IVerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
+    @InjectMetric('auth_events_total') private readonly authCounter: Counter<string>,
   ) {}
 
   async register(dto: RegisterDto): Promise<void> {
@@ -58,6 +63,7 @@ export class AuthService implements IAuthService {
       email: dto.email,
       passwordHash,
     });
+    this.authCounter.inc({ event: 'register' });
 
     const userPayload = { id: credentials.id, email: credentials.email, name: dto.username };
     this.userClient.emit(USER_EVENTS.REGISTERED, userPayload);
@@ -67,9 +73,7 @@ export class AuthService implements IAuthService {
   }
 
   async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
-    const attemptsKey = `login_attempts:${email}`;
-
-    const attempts = await this.redis.incr(attemptsKey, AuthService.LOGIN_ATTEMPTS_TTL);
+    const attempts = await this.cache.incrementLoginAttempts(email);
     if (attempts > AuthService.LOGIN_ATTEMPTS_LIMIT) {
       throw new HttpException(
         'Too many failed login attempts. Please try again in 15 minutes.',
@@ -84,6 +88,7 @@ export class AuthService implements IAuthService {
 
     const valid = await this.encryption.compare(password, credentials.passwordHash);
     if (!valid) {
+      this.authCounter.inc({ event: 'login_failure' });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -91,7 +96,8 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Please verify your email before signing in');
     }
 
-    await this.redis.del(attemptsKey);
+    await this.cache.clearLoginAttempts(email);
+    this.authCounter.inc({ event: 'login_success' });
 
     return {
       id: credentials.id,
@@ -121,6 +127,7 @@ export class AuthService implements IAuthService {
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) return;
     await this.verification.generatePasswordReset(credentials.id, credentials.email);
+    this.authCounter.inc({ event: 'password_reset' });
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
