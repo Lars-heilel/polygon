@@ -32,9 +32,13 @@ export * from './decorators/current-user.decorator';
 
 // Interceptors
 export * from './interceptors/logging.interceptor';
+export * from './interceptors/rpc-error.interceptor';
+
+// Filters
+export * from './filters/all-exceptions.filter';
 
 // Redis
-export * from './redis/redis.service';
+export * from './redis/redis.token';
 export * from './redis/redis.module';
 
 // Schedule
@@ -60,3 +64,6 @@ export * from './metrics/metrics.module';
 export * from './search/search-provider.interface';
 export * from './search/search-provider.token';
 export * from './search/search.module';
+
+// OTel
+export * from './otel/otel.setup';

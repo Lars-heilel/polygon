@@ -1,3 +1,5 @@
+import { setupOtel } from '@org/core';
+setupOtel('media-service');
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import {
@@ -5,6 +7,7 @@ import {
   Env,
   LoggingInterceptor,
   MEDIA_QUEUE,
+  RpcErrorInterceptor,
 } from '@org/core';
 import { Logger } from 'nestjs-pino';
 
@@ -23,19 +26,22 @@ async function bootstrap() {
   // Logging & Global Interceptors
   // ==========================================
   app.useLogger(app.get(Logger));
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(new RpcErrorInterceptor(), new LoggingInterceptor());
 
   // ==========================================
   // RabbitMQ Microservice
   // ==========================================
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [RABBITMQ_URL],
-      queue: MEDIA_QUEUE,
-      queueOptions: { durable: true },
+  app.connectMicroservice<MicroserviceOptions>(
+    {
+      transport: Transport.RMQ,
+      options: {
+        urls: [RABBITMQ_URL],
+        queue: MEDIA_QUEUE,
+        queueOptions: { durable: true },
+      },
     },
-  });
+    { inheritAppConfig: true },
+  );
 
   await app.startAllMicroservices();
 

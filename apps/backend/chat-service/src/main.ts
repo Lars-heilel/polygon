@@ -1,6 +1,8 @@
+import { setupOtel } from '@org/core';
+setupOtel('chat-service');
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { CHAT_QUEUE, ConfigService, Env, LoggingInterceptor } from '@org/core';
+import { CHAT_QUEUE, ConfigService, Env, LoggingInterceptor, RpcErrorInterceptor } from '@org/core';
 import { Logger } from 'nestjs-pino';
 
 import { ChatModule } from './app/chat.module';
@@ -18,19 +20,22 @@ async function bootstrap() {
   // Logging & Global Interceptors
   // ==========================================
   app.useLogger(app.get(Logger));
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(new RpcErrorInterceptor(), new LoggingInterceptor());
 
   // ==========================================
   // RabbitMQ Microservice
   // ==========================================
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [RABBITMQ_URL],
-      queue: CHAT_QUEUE,
-      queueOptions: { durable: true },
+  app.connectMicroservice<MicroserviceOptions>(
+    {
+      transport: Transport.RMQ,
+      options: {
+        urls: [RABBITMQ_URL],
+        queue: CHAT_QUEUE,
+        queueOptions: { durable: true },
+      },
     },
-  });
+    { inheritAppConfig: true },
+  );
 
   await app.startAllMicroservices();
 
