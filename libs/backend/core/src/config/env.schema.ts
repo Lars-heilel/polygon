@@ -4,61 +4,57 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Database
-  AUTH_DATABASE_URL: z.string(),
-  USER_DATABASE_URL: z.string(),
-  CHAT_DATABASE_URL: z.string(),
-  NOTIFICATION_DATABASE_URL: z.string(),
-  MEDIA_DATABASE_URL: z.string(),
+  AUTH_DATABASE_URL: z.url(),
+  USER_DATABASE_URL: z.url(),
+  CHAT_DATABASE_URL: z.url(),
+  NOTIFICATION_DATABASE_URL: z.url(),
+  MEDIA_DATABASE_URL: z.url(),
 
   // JWT
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_ACCESS_TOKEN_EXPIRES: z.coerce.number().default(900),
-  JWT_REFRESH_TOKEN_EXPIRES: z.coerce.number().default(604800),
+  JWT_ACCESS_TOKEN_EXPIRES: z.coerce.number(),
+  JWT_REFRESH_TOKEN_EXPIRES: z.coerce.number(),
 
   // RabbitMQ
-  RABBITMQ_URL: z.string().url().default('amqp://polygon:polygon_password@localhost:5672'),
+  RABBITMQ_URL: z.url(),
 
   // Redis
-  REDIS_HOST: z.string().default('localhost'),
-  REDIS_PORT: z.coerce.number().default(6379),
-  REDIS_PASSWORD: z.string().optional(),
+  REDIS_HOST: z.string().min(1),
+  REDIS_PORT: z.coerce.number(),
+  REDIS_PASSWORD: z.string(),
 
   // SMTP
-  SMTP_HOST: z.string().default('localhost'),
-  SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASSWORD: z.string().optional(),
-  SMTP_FROM: z.string().default('Polygon <noreply@polygon.app>'),
+  SMTP_HOST: z.string().min(1),
+  SMTP_PORT: z.coerce.number(),
+  SMTP_USER: z.string(),
+  SMTP_PASSWORD: z.string(),
+  SMTP_FROM: z.string().min(1),
 
   // Search
-  MEILISEARCH_URL: z.string().default('http://localhost:7700'),
+  MEILISEARCH_URL: z.url(),
   MEILISEARCH_MASTER_KEY: z.string().min(1),
-  SEARCH_PORT: z.coerce.number().default(3006),
+  SEARCH_PORT: z.coerce.number(),
 
   // Ports (per service)
-  GATEWAY_PORT: z.coerce.number().default(3000),
-  AUTH_PORT: z.coerce.number().default(3002),
-  USER_PORT: z.coerce.number().default(3001),
-  CHAT_PORT: z.coerce.number().default(3003),
-  MEDIA_PORT: z.coerce.number().default(3004),
-  NOTIFICATION_PORT: z.coerce.number().default(3005),
+  GATEWAY_PORT: z.coerce.number(),
+  AUTH_PORT: z.coerce.number(),
+  USER_PORT: z.coerce.number(),
+  CHAT_PORT: z.coerce.number(),
+  MEDIA_PORT: z.coerce.number(),
+  NOTIFICATION_PORT: z.coerce.number(),
 
   // App
-  APP_URL: z.string().default('http://localhost:3000'),
-  CLIENT_URL: z.string().default('http://localhost:4200'),
+  APP_URL: z.url(),
+  CLIENT_URL: z.url(),
 
-  // OAuth — GitHub
-  GITHUB_CLIENT_ID: z.string().optional(),
-  GITHUB_CLIENT_SECRET: z.string().optional(),
-
-  // OAuth — Yandex
-  YANDEX_CLIENT_ID: z.string().optional(),
-  YANDEX_CLIENT_SECRET: z.string().optional(),
-
-  // OAuth — Google
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  // OAuth
+  GITHUB_CLIENT_ID: z.string(),
+  GITHUB_CLIENT_SECRET: z.string(),
+  YANDEX_CLIENT_ID: z.string(),
+  YANDEX_CLIENT_SECRET: z.string(),
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
 });
 
 export type Env = z.infer<typeof envSchema>;
