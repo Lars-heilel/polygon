@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CREDENTIALS_FULL_SELECT_FIELDS } from '@org/common';
 import type { CreateCredentialsInput, Credentials, RefreshToken } from '@org/common';
 
 import type { IAuthRepository } from '../../interfaces/auth.interface';
@@ -12,21 +11,18 @@ export class AuthPrismaRepository implements IAuthRepository {
   async findByEmail(email: string): Promise<Credentials | null> {
     return this.prisma.credentials.findUnique({
       where: { email },
-      select: CREDENTIALS_FULL_SELECT_FIELDS,
     });
   }
 
   async findById(id: string): Promise<Credentials | null> {
     return this.prisma.credentials.findUnique({
       where: { id },
-      select: CREDENTIALS_FULL_SELECT_FIELDS,
     });
   }
 
   async createCredentials(data: CreateCredentialsInput): Promise<Credentials> {
     return this.prisma.credentials.create({
       data,
-      select: CREDENTIALS_FULL_SELECT_FIELDS,
     });
   }
 
@@ -36,14 +32,14 @@ export class AuthPrismaRepository implements IAuthRepository {
       data: { passwordHash },
     });
   }
-
+  //! пустой объект кредов
   async findOAuthAccount(
     provider: string,
     providerId: string,
   ): Promise<{ credentials: Credentials } | null> {
     return this.prisma.oAuthAccount.findUnique({
       where: { provider_providerId: { provider, providerId } },
-      select: { credentials: { select: CREDENTIALS_FULL_SELECT_FIELDS } },
+      select: { credentials: {} },
     });
   }
 
