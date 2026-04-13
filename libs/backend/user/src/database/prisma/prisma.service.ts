@@ -32,11 +32,11 @@ export class PrismaService extends PrismaClient {
     });
 
     if (isDev) {
-      // @ts-expect-error
+      // @ts-expect-error  ---
       this.$on('warn', (e: { message: string }) => {
         this.logger.warn(e.message);
       });
-      // @ts-expect-error
+      // @ts-expect-error ---
       this.$on('query', (e: { query: string; params: string; duration: number }) => {
         if (e.duration >= PrismaService.SLOW_QUERY_MS) {
           this.logger.warn({ duration: e.duration, params: e.params }, `Slow query: ${e.query}`);

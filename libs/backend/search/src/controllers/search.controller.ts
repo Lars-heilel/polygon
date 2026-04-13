@@ -51,4 +51,10 @@ export class SearchController {
   async onUserDeleted(@Payload() data: { id: string }): Promise<void> {
     await this.searchService.removeUser(data.id);
   }
+
+  @MessagePattern(SEARCH_PATTERNS.REINDEX_USERS)
+  async reindexUsers(@Payload() users: UserSearchResult[]): Promise<{ indexed: number }> {
+    await this.searchService.reindexUsers(users);
+    return { indexed: users.length };
+  }
 }

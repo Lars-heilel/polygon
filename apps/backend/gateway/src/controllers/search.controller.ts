@@ -8,7 +8,6 @@ import {
   SEARCH_CLIENT_TOKEN,
   SEARCH_PATTERNS,
   USER_CLIENT_TOKEN,
-  USER_EVENTS,
   USER_PATTERNS,
 } from '@org/core';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -40,10 +39,7 @@ export class SearchGatewayController {
     const users = await this.send<UserPublic[]>(
       this.userClient.send(USER_PATTERNS.GET_ALL_PUBLIC, {}),
     );
-    for (const user of users) {
-      this.searchClient.emit(USER_EVENTS.UPDATED, user);
-    }
-    return { indexed: users.length };
+    return this.send(this.searchClient.send(SEARCH_PATTERNS.REINDEX_USERS, users));
   }
 
   private async send<T>(observable: Observable<T>): Promise<T> {

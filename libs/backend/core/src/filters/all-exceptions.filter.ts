@@ -56,10 +56,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const resolved = this.resolveException(exception);
-    const contextType = host.getType<'http' | 'rpc'>();
+    const contextType = host.getType<'http' | 'rpc' | 'ws'>();
 
     if (contextType === 'http') {
       this.handleHttp(exception, resolved, host);
+    } else if (contextType === 'ws') {
+      this.logger.error({
+        message: resolved.message,
+        status: resolved.status,
+        stack: resolved.logStack && exception instanceof Error ? exception.stack : undefined,
+      });
     } else {
       this.handleRpc(exception, resolved);
     }

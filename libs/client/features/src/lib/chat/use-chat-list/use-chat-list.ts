@@ -17,8 +17,8 @@ export function useChatList() {
         return {
           id: chat.id,
           name: otherMember?.userId.slice(0, 8) ?? chat.name ?? 'Chat',
-          lastMessage: chat.messages[0]?.text ?? 'No messages yet',
-          time: chat.messages[0]?.createdAt ?? '',
+          lastMessage: chat.messages?.[0]?.text ?? 'No messages yet',
+          time: chat.messages?.[0]?.createdAt ?? '',
           unread: 0, // TODO: добавить подсчет непрочитанных
           online: false, // TODO: добавить статус online
         };

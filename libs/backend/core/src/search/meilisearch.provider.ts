@@ -4,6 +4,7 @@ import { Meilisearch } from 'meilisearch';
 
 import type { Env } from '../config/env.schema';
 import type {
+  IndexSettings,
   ISearchProvider,
   SearchDocument,
   SearchHit,
@@ -34,6 +35,16 @@ export class MeilisearchProvider implements ISearchProvider, OnModuleInit {
 
   async delete(index: string, id: string): Promise<void> {
     await this.client.index(index).deleteDocument(id);
+  }
+
+  async clearIndex(index: string): Promise<void> {
+    await this.client.index(index).deleteAllDocuments();
+  }
+
+  async configureIndex(index: string, settings: IndexSettings): Promise<void> {
+    await this.client.index(index).updateSettings({
+      searchableAttributes: settings.searchableAttributes,
+    });
   }
 
   async getById<T = SearchDocument>(index: string, id: string): Promise<T | null> {

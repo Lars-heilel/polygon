@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import type { UserSearchResult } from '@org/common';
 import type { ISearchProvider } from '@org/core';
 import { SEARCH_PROVIDER_TOKEN } from '@org/core';
@@ -8,8 +8,14 @@ import type { IUserSearchService } from '../interfaces/search.interface';
 const USERS_INDEX = 'users';
 
 @Injectable()
-export class SearchService implements IUserSearchService {
+export class SearchService implements IUserSearchService, OnModuleInit {
   constructor(@Inject(SEARCH_PROVIDER_TOKEN) private readonly provider: ISearchProvider) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.provider.configureIndex(USERS_INDEX, {
+      searchableAttributes: ['name', 'displayName'],
+    });
+  }
 
   async indexUser(user: UserSearchResult): Promise<void> {
     await this.provider.upsert(USERS_INDEX, user);
@@ -29,5 +35,10 @@ export class SearchService implements IUserSearchService {
   ): Promise<UserSearchResult[]> {
     const hits = await this.provider.search<UserSearchResult>(USERS_INDEX, query, options);
     return hits.map((hit) => hit.document);
+  }
+
+  async reindexUsers(users: UserSearchResult[]): Promise<void> {
+    await this.provider.clearIndex(USERS_INDEX);
+    await this.provider.bulkUpsert(USERS_INDEX, users);
   }
 }
