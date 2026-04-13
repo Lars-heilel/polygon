@@ -15,11 +15,11 @@ export function RegisterPage({ oauthSlot }: RegisterPageProps) {
       title="Create account"
       description="Get started for free"
     >
+      {oauthSlot}
       <RegisterForm
         onSubmit={({ confirmPassword: _, ...values }) => register(values)}
         apiError={apiError}
       />
-      {oauthSlot}
     </AuthLayout>
   );
 }

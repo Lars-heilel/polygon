@@ -5,8 +5,6 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 import { z } from 'zod';
 
-import { OAuthButtons } from './oauth-buttons';
-
 const registerFormSchema = registerSchema
   .extend({
     confirmPassword: z.string(),
@@ -38,8 +36,6 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
       className="space-y-4"
       noValidate
     >
-      <OAuthButtons />
-
       <Divider label="or" />
 
       <div className="space-y-3">

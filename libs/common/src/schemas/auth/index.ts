@@ -1,6 +1,5 @@
 export * from './role.schema';
 export * from './credentials.schema';
-export * from './credentials-select';
 export * from './refresh-token.schema';
 export * from './register.schema';
 export * from './login.schema';

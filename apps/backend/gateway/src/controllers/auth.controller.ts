@@ -9,10 +9,12 @@ import {
   Req,
   Res,
   UseGuards,
+  UsePipes,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  ApiBody,
   ApiCookieAuth,
   ApiExcludeEndpoint,
   ApiOperation,
@@ -25,14 +27,16 @@ import {
   GithubGuard,
   GoogleGuard,
   LocalGuard,
+  LoginDto,
   RegisterDto,
   ResendVerificationDto,
   ResetPasswordDto,
   YandexGuard,
 } from '@org/auth';
-import type { CredentialsPayload, TokenPair } from '@org/common';
+import { type CredentialsPayload, type TokenPair, loginSchema } from '@org/common';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
 import type { Request, Response } from 'express';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
 
 @ApiTags('auth')
@@ -54,7 +58,9 @@ export class AuthGatewayController {
   }
 
   @Post('login')
+  @UsePipes(new ZodValidationPipe(loginSchema))
   @UseGuards(LocalGuard)
+  @ApiBody({ type: LoginDto, description: 'User login credentials' })
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({
     status: 201,

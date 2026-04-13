@@ -11,15 +11,15 @@
 
 ## Stack
 
-| Layer | Tool | Role |
-|---|---|---|
-| Logs | Grafana Loki | Log storage |
-| Log shipping | pino-loki transport | Ships stdout from NestJS processes to Loki over HTTP |
-| Traces | Grafana Tempo | Trace storage |
-| Trace collection | OTel Collector | Receives OTLP spans from services, forwards to Tempo |
-| Instrumentation | @opentelemetry/sdk-node + @opentelemetry/auto-instrumentations-node | Auto-instruments HTTP, amqplib (RabbitMQ), pg (Prisma) |
-| Metrics | Prometheus + @willsoto/nestjs-prometheus | Already in place — custom counters added |
-| UI | Grafana | Already in place — Loki and Tempo datasources added |
+| Layer            | Tool                                                                | Role                                                   |
+| ---------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
+| Logs             | Grafana Loki                                                        | Log storage                                            |
+| Log shipping     | pino-loki transport                                                 | Ships stdout from NestJS processes to Loki over HTTP   |
+| Traces           | Grafana Tempo                                                       | Trace storage                                          |
+| Trace collection | OTel Collector                                                      | Receives OTLP spans from services, forwards to Tempo   |
+| Instrumentation  | @opentelemetry/sdk-node + @opentelemetry/auto-instrumentations-node | Auto-instruments HTTP, amqplib (RabbitMQ), pg (Prisma) |
+| Metrics          | Prometheus + @willsoto/nestjs-prometheus                            | Already in place — custom counters added               |
+| UI               | Grafana                                                             | Already in place — Loki and Tempo datasources added    |
 
 ## Architecture
 
@@ -45,16 +45,19 @@ Grafana :3010
 ### docker-compose.yml additions
 
 **Loki** — log storage
+
 - Image: `grafana/loki:3.0.0`
 - Port: `3100`
 - Config: filesystem storage, single-process mode (sufficient for dev)
 
 **Grafana Tempo** — trace storage
+
 - Image: `grafana/tempo:2.5.0`
 - Port: `3200` (HTTP), `4317` (OTLP gRPC receiver, internal only)
 - Config: local filesystem backend
 
 **OTel Collector** — trace receiver / forwarder
+
 - Image: `otel/opentelemetry-collector-contrib:0.102.0`
 - Port: `4317` (OTLP gRPC, exposed to host so services can reach it)
 - Config: receives OTLP, exports to Tempo
@@ -72,6 +75,7 @@ Grafana :3010
 ### 1. logger.module.ts — add pino-loki transport
 
 `LoggerModule` currently uses a single transport (pino-pretty in dev, none in prod). Change to `targets` array with two entries in dev:
+
 - `pino-pretty` — terminal output (unchanged)
 - `pino-loki` — ships to `http://localhost:3100/loki/api/v1/push` with `service` label set to the service name
 
@@ -84,22 +88,25 @@ Pino-loki config includes `batching: true` and `interval: 5` (5-second batch) to
 Each service gets `apps/backend/<service>/src/otel.ts`:
 
 ```ts
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc'
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { NodeSDK } from '@opentelemetry/sdk-node';
 
 const sdk = new NodeSDK({
   serviceName: '<service-name>',
   traceExporter: new OTLPTraceExporter({ url: 'grpc://localhost:4317' }),
   instrumentations: [getNodeAutoInstrumentations()],
-})
+});
 
-sdk.start()
+sdk.start();
 ```
 
 First import in each `main.ts`:
+
 ```ts
-import './otel'  // must be first
+import './otel';
+
+// must be first
 ```
 
 ### 3. trace_id in pino context
@@ -115,6 +122,7 @@ OTel SDK reads `OTEL_SERVICE_NAME` and `OTEL_EXPORTER_OTLP_ENDPOINT` from `proce
 `LOKI_URL` is read directly in `logger.module.ts` from `process.env` for the same reason.
 
 Both vars are added to all `.env` files with dev defaults:
+
 - `OTEL_SERVICE_NAME=<service-name>` (set per-service in each `main.ts` before SDK init, or via env)
 - `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`
 - `LOKI_URL=http://localhost:3100`
@@ -174,4 +182,5 @@ All installed at repo root (`npm install <pkg>`):
 - Running `npx nx serve @org/auth-service` sends logs to Loki visible in Grafana Explore
 - A `POST /auth/register` request produces a trace in Tempo showing all service hops
 - `email_sent_total`, `auth_events_total`, `rmq_events_total` appear in Prometheus
+
 - SMTP failure in notification-service produces a log line at `error` level
