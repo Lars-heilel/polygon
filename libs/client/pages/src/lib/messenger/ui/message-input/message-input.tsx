@@ -1,4 +1,4 @@
-import { SendMessageForm } from '@org/features';
+import { SendMessageForm } from '../send-message-form/send-message-form';
 
 interface MessageInputProps {
   chatId: string;

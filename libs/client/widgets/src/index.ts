@@ -1,11 +1,1 @@
-export { ChatHeader } from './lib/chat-header';
-export { MessageList } from './lib/message-list';
-export { ChatItem } from './lib/chat-item';
-export { ChatSearch } from './lib/chat-search';
-export { ChatListSidebar } from './lib/chat-list-sidebar';
-export { ChatWindow } from './lib/chat-window';
-export { CreateChatModal } from './lib/create-chat-modal';
-export { ProfileModal } from './lib/profile-modal';
-export { SettingsModal } from './lib/settings-modal';
-export { SidebarHeader } from './lib/sidebar-header';
-export { UserPanel } from './lib/user-panel';
+// Reserved for future reusable widgets shared across apps

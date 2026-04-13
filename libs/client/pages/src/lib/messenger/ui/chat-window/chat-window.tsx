@@ -1,4 +1,4 @@
-import { useChatWindow } from '@org/features';
+import { useChatWindow } from '../../model/use-chat-window';
 import { Button, Textarea } from '@org/shared';
 
 import { ChatHeader } from '../chat-header';

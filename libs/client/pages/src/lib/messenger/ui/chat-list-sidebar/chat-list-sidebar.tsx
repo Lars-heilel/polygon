@@ -1,7 +1,10 @@
 import { useState } from 'react';
 
 import { useCreateDirectChatMutation } from '@org/entities';
-import { useChatList, useCreateChat, useSearchUsers } from '@org/features';
+import { useSearchUsers } from '@org/features';
+
+import { useChatList } from '../../model/use-chat-list';
+import { useCreateChat } from '../../model/use-create-chat';
 
 import { ChatItem } from '../chat-item';
 import { ChatSearch } from '../chat-search';

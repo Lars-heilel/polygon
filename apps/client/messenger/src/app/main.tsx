@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 
-import { initSocketMiddleware } from '@org/features';
+import { initSocketMiddleware } from '@org/pages';
 import * as ReactDOM from 'react-dom/client';
 
 import App from './app';
