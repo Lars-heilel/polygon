@@ -22,7 +22,6 @@ export class NotificationService {
     try {
       await this.email.send({ to, subject, html });
       this.emailCounter.inc({ type: 'verification', status: 'success' });
-      this.logger.log(`Verification email sent to ${to}`);
     } catch (err) {
       this.emailCounter.inc({ type: 'verification', status: 'error' });
       this.logger.error(
@@ -41,7 +40,6 @@ export class NotificationService {
     try {
       await this.email.send({ to, subject, html });
       this.emailCounter.inc({ type: 'password_reset', status: 'success' });
-      this.logger.log(`Password reset email sent to ${to}`);
     } catch (err) {
       this.emailCounter.inc({ type: 'password_reset', status: 'error' });
       this.logger.error(

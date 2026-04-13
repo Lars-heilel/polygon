@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -38,6 +39,7 @@ import type {
 @Injectable()
 export class AuthService implements IAuthService {
   private static readonly LOGIN_ATTEMPTS_LIMIT = 5;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @Inject(AUTH_PRISMA_REPOSITORY_TOKEN)
@@ -75,6 +77,7 @@ export class AuthService implements IAuthService {
   async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
     const attempts = await this.cache.incrementLoginAttempts(email);
     if (attempts > AuthService.LOGIN_ATTEMPTS_LIMIT) {
+      this.logger.warn({ email, attempts }, 'Login blocked — too many attempts');
       throw new HttpException(
         'Too many failed login attempts. Please try again in 15 minutes.',
         HttpStatus.TOO_MANY_REQUESTS,
@@ -83,16 +86,19 @@ export class AuthService implements IAuthService {
 
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) {
+      this.logger.warn({ email }, 'Login failed — email not found');
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const valid = await this.encryption.compare(password, credentials.passwordHash);
     if (!valid) {
+      this.logger.warn({ email }, 'Login failed — wrong password');
       this.authCounter.inc({ event: 'login_failure' });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!credentials.isVerified) {
+      this.logger.warn({ email }, 'Login blocked — email not verified');
       throw new UnauthorizedException('Please verify your email before signing in');
     }
 
