@@ -212,12 +212,12 @@
       },
       "targets": [
         {
-          "expr": "{service=~\".+\", level=~\"warn|error\"}",
+          "expr": "{service=~\".+\", level=~\"$level\"}",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "Errors & warnings — all services",
+      "title": "Logs — all services ($level)",
       "type": "logs"
     },
     {
@@ -236,12 +236,12 @@
       },
       "targets": [
         {
-          "expr": "{service=\"$service\"}",
+          "expr": "{service=\"$service\", level=~\"$level\"}",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "Logs — $service",
+      "title": "Logs — $service ($level)",
       "type": "logs"
     }
 
@@ -265,6 +265,22 @@
         "refresh": 2,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": ["warn", "error"], "value": ["warn", "error"] },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Level",
+        "multi": true,
+        "name": "level",
+        "options": [
+          { "selected": false, "text": "debug", "value": "debug" },
+          { "selected": false, "text": "info",  "value": "info"  },
+          { "selected": true,  "text": "warn",  "value": "warn"  },
+          { "selected": true,  "text": "error", "value": "error" }
+        ],
+        "query": "debug,info,warn,error",
+        "type": "custom"
       }
     ]
   },
