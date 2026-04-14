@@ -1,5 +1,6 @@
-import { Avatar, Badge } from '@org/shared';
-import { formatDate } from '@org/shared';
+import { memo } from 'react';
+
+import { Avatar, Badge, formatDate } from '@org/shared';
 
 interface ChatItemProps {
   id: string;
@@ -12,7 +13,7 @@ interface ChatItemProps {
   onClick?: () => void;
 }
 
-export function ChatItem({
+export const ChatItem = memo(function ChatItem({
   name,
   lastMessage,
   time,
@@ -61,4 +62,4 @@ export function ChatItem({
       </div>
     </button>
   );
-}
+});

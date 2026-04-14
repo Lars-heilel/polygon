@@ -19,5 +19,6 @@
       "layer:entities",
       "scope:client"
     ]
-  }
+  },
+  "sideEffects": false
 }

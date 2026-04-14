@@ -2,6 +2,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
   // Загружаем .env из корня репозитория с префиксом VITE_
@@ -10,6 +11,9 @@ export default defineConfig(({ mode }) => {
   return {
     root: import.meta.dirname,
     envDir: '../../..',
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(mode),
+    },
     cacheDir: '../../../node_modules/.vite/apps/client/messenger',
     server: {
       port: 4200,
@@ -30,7 +34,7 @@ export default defineConfig(({ mode }) => {
       port: 4200,
       host: 'localhost',
     },
-    plugins: [tailwindcss(), react()],
+    plugins: [tailwindcss(), react(), visualizer({ open: true, gzipSize: true, brotliSize: true })],
     resolve: {
       conditions: ['@org/source'],
     },

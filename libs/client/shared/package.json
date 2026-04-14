@@ -23,5 +23,6 @@
       "layer:shared",
       "scope:client"
     ]
-  }
+  },
+  "sideEffects": false
 }

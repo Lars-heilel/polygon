@@ -1,1 +1,1 @@
-export { MessageList } from './message-list';
+export { MessageList, MessageListSkeleton } from './message-list';

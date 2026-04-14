@@ -11,6 +11,7 @@ export {
   useRegisterMutation,
   useLogoutMutation,
   useMeQuery,
+  useMeSuspenseQuery,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useResendVerificationMutation,
@@ -19,8 +20,10 @@ export {
 export type { Chat, ChatMember, Message } from './lib/chat';
 export {
   useGetChatsQuery,
+  useGetChatsSuspenseQuery,
   useCreateDirectChatMutation,
   useGetMessagesQuery,
+  useGetMessagesSuspenseQuery,
   useSendMessageMutation,
   useChatStore,
   selectActiveChatId,

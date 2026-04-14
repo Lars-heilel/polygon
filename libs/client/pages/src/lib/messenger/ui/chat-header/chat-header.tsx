@@ -1,26 +1,37 @@
-import { useGetChatsQuery, useMeQuery } from '@org/entities';
-import { Avatar, Badge } from '@org/shared';
+import { memo } from 'react';
+
+import { useGetChatsSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
+import { Avatar, Badge, Skeleton } from '@org/shared';
 
 interface ChatHeaderProps {
   chatId: string;
   onMenuClick?: () => void;
 }
 
-export function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
-  const { data: chats } = useGetChatsQuery();
-  const { data: me } = useMeQuery();
+export function ChatHeaderSkeleton() {
+  return (
+    <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0 h-[57px]">
+      <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-2.5 w-16" />
+      </div>
+    </header>
+  );
+}
 
-  const chat = chats?.find((c) => c.id === chatId);
-  const otherMember = chat?.members.find((m) => m.userId !== me?.id);
+export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
+  const { data: chats } = useGetChatsSuspenseQuery();
+  const { data: me } = useMeSuspenseQuery();
+
+  const chat = chats.find((c) => c.id === chatId);
+  const otherMember = chat?.members.find((m) => m.userId !== me.id);
   const displayName = otherMember ? otherMember.userId.slice(0, 8) : (chat?.name ?? 'Chat');
 
   return (
     <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
       <div className="relative">
-        <Avatar
-          name={displayName}
-          size="md"
-        />
+        <Avatar name={displayName} size="md" />
         {false && (
           <Badge
             variant="primary"
@@ -36,14 +47,10 @@ export function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
       </div>
       <button
         onClick={onMenuClick}
+        aria-label="More options"
         className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted"
       >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -54,4 +61,4 @@ export function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
       </button>
     </header>
   );
-}
+});

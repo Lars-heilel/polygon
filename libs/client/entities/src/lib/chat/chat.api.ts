@@ -4,7 +4,7 @@ import type {
   ChatMember as ChatMemberBase,
   Message as MessageBase,
 } from '@org/common';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { authedFetch } from '../api/authed-fetch';
 
@@ -54,6 +54,20 @@ export function useGetMessagesQuery(chatId: string) {
     queryKey: ['messages', chatId],
     queryFn: () => chatApi.getMessages(chatId),
     enabled: chatId.length > 0,
+  });
+}
+
+export function useGetChatsSuspenseQuery() {
+  return useSuspenseQuery({
+    queryKey: ['chats'],
+    queryFn: chatApi.getChats,
+  });
+}
+
+export function useGetMessagesSuspenseQuery(chatId: string) {
+  return useSuspenseQuery({
+    queryKey: ['messages', chatId],
+    queryFn: () => chatApi.getMessages(chatId),
   });
 }
 

@@ -7,6 +7,9 @@ import dts from 'vite-plugin-dts';
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/libs/client/features',
+  resolve: {
+    conditions: ['@org/source'],
+  },
   plugins: [
     react(),
     dts({

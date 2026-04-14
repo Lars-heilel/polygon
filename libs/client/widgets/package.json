@@ -19,5 +19,6 @@
       "layer:widgets",
       "scope:client"
     ]
-  }
+  },
+  "sideEffects": false
 }

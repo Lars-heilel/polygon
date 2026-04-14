@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
-import { type Message, useGetMessagesQuery, useMeQuery } from '@org/entities';
-import { Avatar, Spinner, formatTime } from '@org/shared';
+import { type Message, useGetMessagesSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
+import { Avatar, Skeleton, formatTime } from '@org/shared';
 
 interface MessageBubbleProps {
   message: Message;
@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   senderName?: string;
 }
 
-function MessageBubble({ message, isMine, senderName }: MessageBubbleProps) {
+const MessageBubble = memo(function MessageBubble({ message, isMine, senderName }: MessageBubbleProps) {
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isMine && (
@@ -26,12 +26,33 @@ function MessageBubble({ message, isMine, senderName }: MessageBubbleProps) {
         }`}
       >
         <p className="break-words">{message.text}</p>
-        <p
-          className={`text-[10px] mt-1 text-right ${isMine ? 'text-white/60' : 'text-text-muted'}`}
-        >
+        <p className={`text-[10px] mt-1 text-right ${isMine ? 'text-white/60' : 'text-text-muted'}`}>
           {formatTime(message.createdAt)}
         </p>
       </div>
+    </div>
+  );
+});
+
+function MessageBubbleSkeleton({ isMine = false, size = 'md' }: { isMine?: boolean; size?: 'sm' | 'md' | 'lg' }) {
+  const widths = { sm: 'w-24', md: 'w-40', lg: 'w-56' };
+  return (
+    <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+      {!isMine && <Skeleton className="w-6 h-6 rounded-full shrink-0" />}
+      <Skeleton className={`h-10 ${widths[size]} rounded-2xl`} />
+    </div>
+  );
+}
+
+export function MessageListSkeleton() {
+  return (
+    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <MessageBubbleSkeleton isMine={false} size="md" />
+      <MessageBubbleSkeleton isMine={true} size="lg" />
+      <MessageBubbleSkeleton isMine={false} size="sm" />
+      <MessageBubbleSkeleton isMine={true} size="md" />
+      <MessageBubbleSkeleton isMine={false} size="lg" />
+      <MessageBubbleSkeleton isMine={true} size="sm" />
     </div>
   );
 }
@@ -41,8 +62,8 @@ interface MessageListProps {
 }
 
 export function MessageList({ chatId }: MessageListProps) {
-  const { data: messages = [], isLoading } = useGetMessagesQuery(chatId);
-  const { data: me } = useMeQuery();
+  const { data: messages } = useGetMessagesSuspenseQuery(chatId);
+  const { data: me } = useMeSuspenseQuery();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,13 +72,7 @@ export function MessageList({ chatId }: MessageListProps) {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-      {isLoading && (
-        <div className="flex justify-center py-8">
-          <Spinner />
-        </div>
-      )}
-
-      {!isLoading && messages.length === 0 && (
+      {messages.length === 0 && (
         <p className="text-center text-sm text-text-muted py-8">No messages yet. Say hi!</p>
       )}
 
@@ -65,8 +80,8 @@ export function MessageList({ chatId }: MessageListProps) {
         <MessageBubble
           key={msg.id}
           message={msg}
-          isMine={msg.senderId === me?.id}
-          senderName={msg.senderId.slice(0, 8)}
+          isMine={msg.senderId === me.id}
+          senderName={msg.senderId?.slice(0, 8)}
         />
       ))}
 

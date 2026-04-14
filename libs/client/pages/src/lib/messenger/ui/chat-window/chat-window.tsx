@@ -1,8 +1,10 @@
-import { useChatWindow } from '../../model/use-chat-window';
-import { Button, Textarea } from '@org/shared';
+import { Suspense, useCallback } from 'react';
 
-import { ChatHeader } from '../chat-header';
-import { MessageList } from '../message-list';
+import { Button, ErrorBoundary, Textarea } from '@org/shared';
+
+import { useChatWindow } from '../../model/use-chat-window';
+import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
+import { MessageList, MessageListSkeleton } from '../message-list';
 
 interface ChatWindowProps {
   chatId: string;
@@ -11,21 +13,40 @@ interface ChatWindowProps {
 export function ChatWindow({ chatId }: ChatWindowProps) {
   const { messageText, setMessageText, isSending, handleSend } = useChatWindow(chatId);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend],
+  );
+
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader chatId={chatId} />
+      <ErrorBoundary fallback={<ChatHeaderSkeleton />}>
+        <Suspense fallback={<ChatHeaderSkeleton />}>
+          <ChatHeader chatId={chatId} />
+        </Suspense>
+      </ErrorBoundary>
 
-      <MessageList chatId={chatId} />
+      <ErrorBoundary
+        fallback={
+          <div className="flex-1 flex items-center justify-center text-text-muted text-sm">
+            Failed to load messages
+          </div>
+        }
+      >
+        <Suspense fallback={<MessageListSkeleton />}>
+          <MessageList chatId={chatId} />
+        </Suspense>
+      </ErrorBoundary>
 
       <div className="px-4 py-3 border-t border-border shrink-0">
         <div className="flex gap-3 items-end">
           <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -38,12 +59,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
             <Textarea
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              onKeyDown={handleKeyDown}
               placeholder="Write a message..."
               rows={1}
               className="resize-none"
@@ -51,12 +67,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
             />
           </div>
           <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

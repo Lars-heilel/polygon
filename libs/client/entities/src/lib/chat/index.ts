@@ -1,8 +1,10 @@
 export type { Message, Chat, ChatMember } from './chat.api';
 export {
   useGetChatsQuery,
+  useGetChatsSuspenseQuery,
   useCreateDirectChatMutation,
   useGetMessagesQuery,
+  useGetMessagesSuspenseQuery,
   useSendMessageMutation,
 } from './chat.api';
 

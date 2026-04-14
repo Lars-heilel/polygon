@@ -19,5 +19,6 @@
       "layer:pages",
       "scope:client"
     ]
-  }
+  },
+  "sideEffects": false
 }

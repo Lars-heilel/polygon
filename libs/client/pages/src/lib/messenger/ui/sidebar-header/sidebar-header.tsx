@@ -1,14 +1,14 @@
 interface SidebarHeaderProps {
   onMenuClick?: () => void;
-  onNewChatClick?: () => void;
 }
 
-export function SidebarHeader({ onMenuClick, onNewChatClick }: SidebarHeaderProps) {
+export function SidebarHeader({ onMenuClick }: SidebarHeaderProps) {
   return (
     <header className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
+          aria-label="Open menu"
           className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
         >
           <svg
@@ -27,24 +27,6 @@ export function SidebarHeader({ onMenuClick, onNewChatClick }: SidebarHeaderProp
         </button>
         <h1 className="text-lg font-bold">Polygon</h1>
       </div>
-      <button
-        onClick={onNewChatClick}
-        className="p-2 hover:bg-surface-elevated rounded-lg transition-colors text-primary"
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-      </button>
     </header>
   );
 }

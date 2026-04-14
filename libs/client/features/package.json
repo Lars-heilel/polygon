@@ -19,5 +19,6 @@
       "layer:features",
       "scope:client"
     ]
-  }
+  },
+  "sideEffects": false
 }

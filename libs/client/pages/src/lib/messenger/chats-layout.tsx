@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Outlet, useNavigate } from 'react-router';
 
@@ -8,10 +8,13 @@ export function ChatsLayout() {
   const navigate = useNavigate();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
-  const handleSelectChat = (chatId: string) => {
-    setSelectedChatId(chatId);
-    navigate(`/chats/${chatId}`);
-  };
+  const handleSelectChat = useCallback(
+    (chatId: string) => {
+      setSelectedChatId(chatId);
+      navigate(`/chats/${chatId}`);
+    },
+    [navigate],
+  );
 
   return (
     <div className="h-screen flex bg-surface text-text font-sans overflow-hidden">

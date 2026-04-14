@@ -1,6 +1,8 @@
 import { type ReactNode } from 'react';
 
 import { cn } from '../../lib/utils/cn';
+import { Heading } from '../typography/heading';
+import { Text } from '../typography/text';
 
 const variants = {
   error: { icon: '✕', color: 'text-danger' },
@@ -39,8 +41,12 @@ export function StatusScreen({
         {icon}
       </span>
       <div className="space-y-1">
-        <p className="text-lg font-semibold text-text">{title}</p>
-        {description && <p className="text-sm text-text-muted max-w-sm">{description}</p>}
+        <Heading level={5}>{title}</Heading>
+        {description && (
+          <Text size="sm" color="muted" className="max-w-sm">
+            {description}
+          </Text>
+        )}
       </div>
       {children && <div className="mt-2 flex gap-2">{children}</div>}
     </div>
