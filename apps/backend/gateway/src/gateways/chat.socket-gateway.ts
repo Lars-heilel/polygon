@@ -79,6 +79,30 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     await socket.leave(`chat:${payload.chatId}`);
   }
 
+  @SubscribeMessage('message:send')
+  async handleSendMessage(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatId: string; text: string },
+  ) {
+    const userId = socket.data['userId'] as string | undefined;
+    if (!userId) return;
+
+    const message = await lastValueFrom(
+      this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
+        chatId: payload.chatId,
+        senderId: userId,
+        text: payload.text,
+      }),
+    ).catch((err: { message?: string }) => {
+      this.logger.error(`message:send error: ${err?.message}`);
+      return null;
+    });
+
+    if (message) {
+      this.broadcastMessage(payload.chatId, message);
+    }
+  }
+
   broadcastMessage(chatId: string, message: unknown) {
     this.server.to(`chat:${chatId}`).emit('message:new', message);
   }

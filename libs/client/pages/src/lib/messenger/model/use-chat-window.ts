@@ -1,23 +1,19 @@
 import { useState } from 'react';
 
-import { useGetMessagesQuery, useMeQuery, useSendMessageMutation } from '@org/entities';
+import { useGetMessagesQuery, useMeQuery } from '@org/entities';
+import { socket } from '@org/shared';
 
 export function useChatWindow(chatId: string | null) {
   const { data: messages, isLoading } = useGetMessagesQuery(chatId ?? '');
   const { data: me } = useMeQuery();
   const [messageText, setMessageText] = useState('');
 
-  const sendMessageMutation = useSendMessageMutation(chatId ?? '');
-
   const handleSend = () => {
     const trimmed = messageText.trim();
     if (!trimmed || !chatId) return;
 
-    sendMessageMutation.mutate(trimmed, {
-      onError: () => {
-        setMessageText(trimmed);
-      },
-    });
+    setMessageText('');
+    socket.emit('message:send', { chatId, text: trimmed });
   };
 
   return {
@@ -26,7 +22,6 @@ export function useChatWindow(chatId: string | null) {
     currentUserId: me?.id ?? '',
     messageText,
     setMessageText,
-    isSending: sendMessageMutation.isPending,
     handleSend,
   };
 }

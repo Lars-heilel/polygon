@@ -31,3 +31,4 @@ export { socket } from './lib/socket';
 export { Modal } from './ui/modal';
 export { Toggle } from './ui/toggle';
 export { ThemeProvider, useTheme } from './lib/theme/theme';
+export { queryClient } from './lib/query/query-client';

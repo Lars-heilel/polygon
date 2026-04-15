@@ -2,6 +2,7 @@ import { Suspense, useCallback } from 'react';
 
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
+import { useChatSocket } from '../../../model/chat-socket/use-chat-socket';
 import { useChatWindow } from '../../../model/use-chat-window';
 import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
 import { MessageList, MessageListSkeleton } from '../message-list';
@@ -11,7 +12,8 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ chatId }: ChatWindowProps) {
-  const { messageText, setMessageText, isSending, handleSend } = useChatWindow(chatId);
+  useChatSocket(chatId);
+  const { messageText, setMessageText, handleSend } = useChatWindow(chatId);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -63,7 +65,6 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
               placeholder="Write a message..."
               rows={1}
               className="resize-none"
-              disabled={isSending}
             />
           </div>
           <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted">
@@ -78,10 +79,10 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
           </button>
           <Button
             onClick={handleSend}
-            disabled={!messageText.trim() || isSending}
+            disabled={!messageText.trim()}
             size="md"
           >
-            {isSending ? '...' : 'Send'}
+            Send
           </Button>
         </div>
       </div>
