@@ -19,12 +19,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateDirectChatDto, SendMessageDto } from '@org/chat';
+import type { UserPublic } from '@org/common';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
   CurrentUser,
   JwtGuard,
   type JwtPayload,
+  USER_CLIENT_TOKEN,
+  USER_PATTERNS,
 } from '@org/core';
 import { Observable, lastValueFrom } from 'rxjs';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
@@ -36,6 +39,7 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 export class ChatGatewayController {
   constructor(
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
+    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     private readonly socketGateway: ChatSocketGateway,
   ) {}
 
@@ -56,8 +60,28 @@ export class ChatGatewayController {
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  getChats(@CurrentUser() user: JwtPayload) {
-    return this.send(this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub }));
+  async getChats(@CurrentUser() user: JwtPayload) {
+    const chats = await this.send<{ members: { userId: string }[] }[]>(
+      this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub }),
+    );
+
+    const memberIds = [...new Set(chats.flatMap((c) => c.members.map((m) => m.userId)))];
+
+    if (memberIds.length === 0) return chats;
+
+    const profiles = await this.send<UserPublic[]>(
+      this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: memberIds }),
+    );
+
+    const profileMap = new Map(profiles.map((p) => [p.id, p]));
+
+    return chats.map((chat) => ({
+      ...chat,
+      members: chat.members.map((m) => ({
+        ...m,
+        profile: profileMap.get(m.userId) ?? null,
+      })),
+    }));
   }
 
   @Get(':id/messages')

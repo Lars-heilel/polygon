@@ -13,8 +13,17 @@ export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   updatedAt: string;
 };
 
+export type MemberProfile = {
+  id: string;
+  name: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+};
+
 export type ChatMember = Omit<ChatMemberBase, 'joinedAt'> & {
   joinedAt: string;
+  profile: MemberProfile | null;
 };
 
 export type Chat = Omit<ChatBase, 'createdAt' | 'updatedAt'> & {

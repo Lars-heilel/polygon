@@ -20,6 +20,11 @@ export class UserController implements IUserController {
     return this.userService.getById(payload.id);
   }
 
+  @MessagePattern(USER_PATTERNS.GET_MANY_BY_IDS)
+  getManyByIds(@Payload() payload: { ids: string[] }): Promise<UserPublic[]> {
+    return this.userService.getManyByIds(payload.ids);
+  }
+
   @MessagePattern(USER_PATTERNS.GET_ALL_PUBLIC)
   getAllPublic(@Payload() _payload: { skip?: number; take?: number }): Promise<UserPublic[]> {
     return this.userService.getAllPublic();

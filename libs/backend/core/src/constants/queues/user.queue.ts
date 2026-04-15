@@ -3,6 +3,7 @@ export const USER_CLIENT_TOKEN = 'USER_CLIENT';
 
 export const USER_PATTERNS = {
   GET_BY_ID: 'user.getById',
+  GET_MANY_BY_IDS: 'user.getManyByIds',
   GET_ALL_PUBLIC: 'user.getAllPublic',
   UPDATE: 'user.update',
 } as const;

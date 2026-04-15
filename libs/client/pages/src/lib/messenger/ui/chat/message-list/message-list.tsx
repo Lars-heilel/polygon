@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from 'react';
 
-import { type Message, useGetMessagesSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
+import { type Message, useGetChatsSuspenseQuery, useGetMessagesSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
 import { Avatar, Skeleton, Text, formatTime } from '@org/shared';
 
 interface MessageBubbleProps {
@@ -64,7 +64,12 @@ interface MessageListProps {
 export function MessageList({ chatId }: MessageListProps) {
   const { data: messages } = useGetMessagesSuspenseQuery(chatId);
   const { data: me } = useMeSuspenseQuery();
+  const { data: chats } = useGetChatsSuspenseQuery();
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const memberProfileMap = new Map(
+    (chats.find((c) => c.id === chatId)?.members ?? []).map((m) => [m.userId, m.profile]),
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,14 +81,17 @@ export function MessageList({ chatId }: MessageListProps) {
         <Text size="sm" color="muted" className="text-center py-8">No messages yet. Say hi!</Text>
       )}
 
-      {messages.map((msg) => (
+      {messages.map((msg) => {
+        const senderProfile = memberProfileMap.get(msg.senderId);
+        return (
         <MessageBubble
           key={msg.id}
           message={msg}
           isMine={msg.senderId === me.id}
-          senderName={msg.senderId?.slice(0, 8)}
+          senderName={senderProfile?.displayName ?? senderProfile?.name ?? undefined}
         />
-      ))}
+        );
+      })}
 
       <div ref={bottomRef} />
     </div>

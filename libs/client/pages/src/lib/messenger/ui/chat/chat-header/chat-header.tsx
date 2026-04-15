@@ -26,7 +26,8 @@ export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: Chat
 
   const chat = chats.find((c) => c.id === chatId);
   const otherMember = chat?.members.find((m) => m.userId !== me.id);
-  const displayName = otherMember ? otherMember.userId.slice(0, 8) : (chat?.name ?? 'Chat');
+  const otherProfile = otherMember?.profile;
+  const displayName = otherProfile?.displayName ?? otherProfile?.name ?? chat?.name ?? 'Chat';
 
   return (
     <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">

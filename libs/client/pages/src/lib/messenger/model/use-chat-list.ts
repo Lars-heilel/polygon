@@ -12,9 +12,10 @@ export function useChatList() {
     return chats
       .map((chat) => {
         const otherMember = chat.members.find((m) => m.userId !== me.id);
+        const otherProfile = otherMember?.profile;
         return {
           id: chat.id,
-          name: otherMember?.userId.slice(0, 8) ?? chat.name ?? 'Chat',
+          name: otherProfile?.displayName ?? otherProfile?.name ?? chat.name ?? 'Chat',
           lastMessage: chat.messages?.[0]?.text ?? 'No messages yet',
           time: chat.messages?.[0]?.createdAt ?? '',
           unread: 0,

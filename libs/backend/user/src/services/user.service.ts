@@ -25,6 +25,10 @@ export class UserService implements IUserService {
     return user;
   }
 
+  async getManyByIds(ids: string[]): Promise<UserPublic[]> {
+    return this.repo.findManyByIds(ids);
+  }
+
   async update(id: string, dto: UpdateUserDto): Promise<UserPublic> {
     const updatedUser = await this.repo.update(id, dto);
     this.logger.debug(`User ${id} updated`);
