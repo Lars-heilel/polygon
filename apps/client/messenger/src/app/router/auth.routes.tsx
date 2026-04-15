@@ -7,13 +7,7 @@ export const authRoutes: RouteObject[] = [
   },
   {
     path: 'register',
-    lazy: async () => {
-      const [{ RegisterPage }, { OAuthButtons }] = await Promise.all([
-        import('@org/pages'),
-        import('@org/features'),
-      ]);
-      return { Component: () => <RegisterPage oauthSlot={<OAuthButtons />} /> };
-    },
+    lazy: () => import('@org/pages').then((m) => ({ Component: m.RegisterPage })),
   },
   {
     path: 'check-email',

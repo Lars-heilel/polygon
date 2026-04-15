@@ -1,11 +1,16 @@
 /// <reference types='vitest' />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig, loadEnv } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
-  // Загружаем .env из корня репозитория с префиксом VITE_
+  // Nx не выставляет NODE_ENV при запуске vite build, из-за чего @nx/react/babel
+  // выбирает dev-трансформ (jsxDEV) вместо production (jsx/jsxs).
+  if (mode === 'production') {
+    process.env['NODE_ENV'] = 'production';
+  }
+
   loadEnv(mode, '../../..', 'VITE_');
 
   return {
@@ -48,6 +53,34 @@ export default defineConfig(({ mode }) => {
       reportCompressedSize: true,
       commonjsOptions: {
         transformMixedEsModules: true,
+      },
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/scheduler/')
+            ) {
+              return 'vendor-react';
+            }
+            if (id.includes('/react-router/')) {
+              return 'vendor-router';
+            }
+
+            if (id.includes('/@tanstack/')) {
+              return 'vendor-query';
+            }
+
+            if (id.includes('/socket.io') || id.includes('/engine.io')) {
+              return 'vendor-socket';
+            }
+
+            return 'vendor';
+          },
+        },
       },
     },
   };

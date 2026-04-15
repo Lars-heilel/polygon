@@ -32,3 +32,4 @@ export {
 } from './lib/chat';
 
 export { useSearchUsersQuery, searchApi } from './lib/search/search.api';
+export { initSocketMiddleware } from './lib/session/socket-middleware';

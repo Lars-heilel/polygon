@@ -1,13 +1,7 @@
-import { type ReactNode } from 'react';
-
-import { RegisterForm, useRegister } from '@org/features';
+import { OAuthButtons, RegisterForm, useRegister } from '@org/features';
 import { AuthLayout } from '@org/layouts';
 
-interface RegisterPageProps {
-  oauthSlot?: ReactNode;
-}
-
-export function RegisterPage({ oauthSlot }: RegisterPageProps) {
+export function RegisterPage() {
   const { register, apiError } = useRegister();
 
   return (
@@ -15,7 +9,7 @@ export function RegisterPage({ oauthSlot }: RegisterPageProps) {
       title="Create account"
       description="Get started for free"
     >
-      {oauthSlot}
+      <OAuthButtons />
       <RegisterForm
         onSubmit={({ confirmPassword: _, ...values }) => register(values)}
         apiError={apiError}

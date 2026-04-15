@@ -30,3 +30,4 @@ export type { DropdownItem } from './ui/dropdown';
 export { socket } from './lib/socket';
 export { Modal } from './ui/modal';
 export { Toggle } from './ui/toggle';
+export { ThemeProvider, useTheme } from './lib/theme/theme';

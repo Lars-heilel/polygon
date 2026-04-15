@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-import { useLogout, useTheme } from '@org/features';
-import { Button, Modal, Toggle } from '@org/shared';
+import { useLogout } from '@org/features';
+import { Button, Modal, Toggle, useTheme } from '@org/shared';
 
 interface SettingsModalProps {
   isOpen: boolean;

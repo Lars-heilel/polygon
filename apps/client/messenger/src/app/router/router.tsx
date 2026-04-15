@@ -1,5 +1,3 @@
-import { ThemeToggle } from '@org/features';
-import { DesignSystemPage } from '@org/shared';
 import { Navigate, createBrowserRouter } from 'react-router';
 
 import { appRoutes } from './app.routes';
@@ -41,7 +39,13 @@ export const router = createBrowserRouter([
         ? [
             {
               path: '/ds',
-              element: <DesignSystemPage headerSlot={<ThemeToggle />} />,
+              lazy: async () => {
+                const [{ DesignSystemPage }, { ThemeToggle }] = await Promise.all([
+                  import('@org/shared'),
+                  import('@org/features'),
+                ]);
+                return { element: <DesignSystemPage headerSlot={<ThemeToggle />} /> };
+              },
             },
           ]
         : []),

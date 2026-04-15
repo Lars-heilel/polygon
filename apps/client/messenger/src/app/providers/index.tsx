@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect } from 'react';
 
 import { authApi, useSessionStore } from '@org/entities';
-import { ThemeProvider } from '@org/features';
+import { ThemeProvider } from '@org/shared';
 import { ErrorBoundary, Toaster } from '@org/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
