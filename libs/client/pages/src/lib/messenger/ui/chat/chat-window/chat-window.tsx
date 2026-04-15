@@ -2,7 +2,7 @@ import { Suspense, useCallback } from 'react';
 
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
-import { useChatWindow } from '../../model/use-chat-window';
+import { useChatWindow } from '../../../model/use-chat-window';
 import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
 import { MessageList, MessageListSkeleton } from '../message-list';
 

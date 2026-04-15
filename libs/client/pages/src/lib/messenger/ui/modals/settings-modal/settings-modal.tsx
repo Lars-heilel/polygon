@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useLogout } from '@org/features';
-import { Button, Modal, Toggle, useTheme } from '@org/shared';
+import { Button, Heading, Modal, Text, Toggle, useTheme } from '@org/shared';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       className="max-w-lg max-h-[80vh] flex flex-col"
     >
       <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-bold">Settings</h2>
+        <Heading level={5} as="h2">Settings</Heading>
         <button
           onClick={onClose}
           className="p-2 hover:bg-surface-elevated rounded-lg"
@@ -66,8 +66,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Notifications</p>
-                <p className="text-xs text-text-muted">Receive push notifications</p>
+                <Text size="sm" weight="medium">Notifications</Text>
+                <Text size="xs" color="muted">Receive push notifications</Text>
               </div>
               <Toggle
                 checked={notifications}
@@ -76,8 +76,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Sound</p>
-                <p className="text-xs text-text-muted">Play sound for messages</p>
+                <Text size="sm" weight="medium">Sound</Text>
+                <Text size="xs" color="muted">Play sound for messages</Text>
               </div>
               <Toggle
                 checked={sound}
@@ -86,8 +86,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Dark Mode</p>
-                <p className="text-xs text-text-muted">Current: {theme}</p>
+                <Text size="sm" weight="medium">Dark Mode</Text>
+                <Text size="xs" color="muted">Current: {theme}</Text>
               </div>
               <Toggle
                 checked={theme === 'dark'}
@@ -95,7 +95,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               />
             </div>
             <div>
-              <p className="text-sm font-medium mb-2">Language</p>
+              <Text size="sm" weight="medium" className="mb-2">Language</Text>
               <select className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
                 <option>English</option>
                 <option>Русский</option>
@@ -108,7 +108,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {activeTab === 'privacy' && (
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-medium mb-2">Who can add me to chats</p>
+              <Text size="sm" weight="medium" className="mb-2">Who can add me to chats</Text>
               <select className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
                 <option>Everyone</option>
                 <option>Contacts only</option>
@@ -116,7 +116,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </select>
             </div>
             <div>
-              <p className="text-sm font-medium mb-2">Last seen</p>
+              <Text size="sm" weight="medium" className="mb-2">Last seen</Text>
               <select className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
                 <option>Everyone</option>
                 <option>Contacts only</option>
@@ -151,8 +151,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 />
               </svg>
               <div className="flex-1">
-                <p className="text-sm font-medium">Chrome on Windows</p>
-                <p className="text-xs text-text-muted">Last active 2 min ago</p>
+                <Text size="sm" weight="medium">Chrome on Windows</Text>
+                <Text size="xs" color="muted">Last active 2 min ago</Text>
               </div>
               <span className="text-xs text-green-500">Active</span>
             </div>
@@ -171,8 +171,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 />
               </svg>
               <div className="flex-1">
-                <p className="text-sm font-medium">Mobile App</p>
-                <p className="text-xs text-text-muted">Last active 2 hours ago</p>
+                <Text size="sm" weight="medium">Mobile App</Text>
+                <Text size="xs" color="muted">Last active 2 hours ago</Text>
               </div>
               <button className="text-xs text-danger hover:underline">Logout</button>
             </div>

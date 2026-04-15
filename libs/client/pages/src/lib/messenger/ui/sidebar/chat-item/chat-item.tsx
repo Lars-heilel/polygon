@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import { Avatar, Badge, formatDate } from '@org/shared';
+import { Avatar, Badge, Text, formatDate } from '@org/shared';
 
 interface ChatItemProps {
   id: string;
@@ -49,7 +49,7 @@ export const ChatItem = memo(function ChatItem({
           <span className="text-xs text-text-muted shrink-0">{formatDate(time)}</span>
         </div>
         <div className="flex justify-between items-center gap-2">
-          <p className="text-xs text-text-muted truncate">{lastMessage}</p>
+          <Text size="xs" color="muted" className="truncate">{lastMessage}</Text>
           {unread > 0 && (
             <Badge
               variant="primary"

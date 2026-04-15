@@ -1,4 +1,4 @@
-import { Avatar, Input, Modal } from '@org/shared';
+import { Avatar, Heading, Input, Modal, Text } from '@org/shared';
 
 interface User {
   id: string;
@@ -33,7 +33,7 @@ export function CreateChatModal({
       className="max-w-md"
     >
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-        <h2 className="text-lg font-bold">New Chat</h2>
+        <Heading level={5} as="h2">New Chat</Heading>
         <button
           onClick={onClose}
           className="p-2 hover:bg-surface-elevated rounded-lg"
@@ -95,14 +95,14 @@ export function CreateChatModal({
               />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{user.displayName ?? user.name}</p>
-              <p className="text-xs text-text-muted">@{user.name}</p>
+              <Text size="sm" weight="medium">{user.displayName ?? user.name}</Text>
+              <Text size="xs" color="muted">@{user.name}</Text>
             </div>
           </button>
         ))}
 
         {users.length === 0 && searchQuery && (
-          <p className="text-center text-sm text-text-muted py-8">No users found</p>
+          <Text size="sm" color="muted" className="text-center py-8">No users found</Text>
         )}
       </div>
     </Modal>

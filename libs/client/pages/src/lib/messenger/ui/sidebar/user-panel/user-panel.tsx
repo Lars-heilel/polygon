@@ -1,5 +1,5 @@
 import { useMeQuery } from '@org/entities';
-import { Avatar } from '@org/shared';
+import { Avatar, Text } from '@org/shared';
 
 interface UserPanelProps {
   onProfileClick?: () => void;
@@ -23,8 +23,8 @@ export function UserPanel({ onProfileClick }: UserPanelProps) {
           size="sm"
         />
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-sm font-medium truncate">{me.email}</p>
-          <p className="text-xs text-text-muted">Online</p>
+          <Text size="sm" weight="medium" className="truncate">{me.email}</Text>
+          <Text size="xs" color="muted">Online</Text>
         </div>
         <svg
           className="w-4 h-4 text-text-muted"

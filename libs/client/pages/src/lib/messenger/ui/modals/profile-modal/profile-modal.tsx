@@ -1,5 +1,5 @@
 import { useMeQuery } from '@org/entities';
-import { Avatar, Button, Modal } from '@org/shared';
+import { Avatar, Button, Heading, Modal, Text } from '@org/shared';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -50,8 +50,8 @@ export function ProfileModal({ isOpen, onClose, onSettingsClick }: ProfileModalP
 
       <div className="pt-20 pb-6 px-6">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold">{displayName}</h2>
-          <p className="text-text-muted">{me.email}</p>
+          <Heading level={3} as="h2">{displayName}</Heading>
+          <Text color="muted">{me.email}</Text>
         </div>
 
         <div className="space-y-4">

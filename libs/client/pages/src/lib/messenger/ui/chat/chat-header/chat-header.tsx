@@ -1,7 +1,7 @@
 import { memo } from 'react';
 
 import { useGetChatsSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
-import { Avatar, Badge, Skeleton } from '@org/shared';
+import { Avatar, Badge, Heading, Skeleton, Text } from '@org/shared';
 
 interface ChatHeaderProps {
   chatId: string;
@@ -42,8 +42,8 @@ export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: Chat
         )}
       </div>
       <div className="flex-1">
-        <h2 className="text-sm font-semibold">{displayName}</h2>
-        <p className="text-xs text-green-500">Online</p>
+        <Heading level={6} as="h2">{displayName}</Heading>
+        <Text size="xs" className="text-green-500">Online</Text>
       </div>
       <button
         onClick={onMenuClick}

@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef } from 'react';
 
 import { type Message, useGetMessagesSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
-import { Avatar, Skeleton, formatTime } from '@org/shared';
+import { Avatar, Skeleton, Text, formatTime } from '@org/shared';
 
 interface MessageBubbleProps {
   message: Message;
@@ -73,7 +73,7 @@ export function MessageList({ chatId }: MessageListProps) {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
       {messages.length === 0 && (
-        <p className="text-center text-sm text-text-muted py-8">No messages yet. Say hi!</p>
+        <Text size="sm" color="muted" className="text-center py-8">No messages yet. Say hi!</Text>
       )}
 
       {messages.map((msg) => (

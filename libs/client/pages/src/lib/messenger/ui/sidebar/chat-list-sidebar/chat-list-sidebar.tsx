@@ -2,16 +2,15 @@ import { Suspense, useCallback, useState } from 'react';
 
 import { useCreateDirectChatMutation } from '@org/entities';
 import { useSearchUsers } from '@org/features';
-import { ChatItemSkeleton, ErrorBoundary, Spinner } from '@org/shared';
+import { ChatItemSkeleton, ErrorBoundary, Spinner, Text } from '@org/shared';
 
-import { useChatList } from '../../model/use-chat-list';
-import { useCreateChat } from '../../model/use-create-chat';
-
+import { useChatList } from '../../../model/use-chat-list';
+import { useCreateChat } from '../../../model/use-create-chat';
+import { CreateChatModal } from '../../modals/create-chat-modal';
+import { ProfileModal } from '../../modals/profile-modal';
+import { SettingsModal } from '../../modals/settings-modal';
 import { ChatItem } from '../chat-item';
 import { ChatSearch } from '../chat-search';
-import { CreateChatModal } from '../create-chat-modal';
-import { ProfileModal } from '../profile-modal';
-import { SettingsModal } from '../settings-modal';
 import { SidebarHeader } from '../sidebar-header';
 import { UserPanel } from '../user-panel';
 
@@ -25,12 +24,13 @@ interface SidebarContentProps extends ChatListSidebarProps {
   onProfileClick: () => void;
 }
 
-function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileClick }: SidebarContentProps) {
-  const {
-    chats,
-    selectedChatId: internalSelectedChatId,
-    setSelectedChatId,
-  } = useChatList();
+function SidebarContent({
+  selectedChatId,
+  onSelectChat,
+  onMenuClick,
+  onProfileClick,
+}: SidebarContentProps) {
+  const { chats, selectedChatId: internalSelectedChatId, setSelectedChatId } = useChatList();
 
   const search = useSearchUsers();
   const { mutate: createDirectChat } = useCreateDirectChatMutation();
@@ -60,10 +60,7 @@ function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileCl
 
   const handleCreateDirectChat = useCallback(
     (userId: string) => {
-      createDirectChat(
-        { targetUserId: userId },
-        { onSuccess: () => search.onChange('') },
-      );
+      createDirectChat({ targetUserId: userId }, { onSuccess: () => search.onChange('') });
     },
     [createDirectChat, search],
   );
@@ -71,7 +68,10 @@ function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileCl
   return (
     <>
       <SidebarHeader onMenuClick={onMenuClick} />
-      <ChatSearch value={search.inputValue} onChange={search.onChange} />
+      <ChatSearch
+        value={search.inputValue}
+        onChange={search.onChange}
+      />
 
       <nav className="flex-1 overflow-y-auto">
         {isSearchActive ? (
@@ -82,7 +82,13 @@ function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileCl
               </div>
             )}
             {!search.isLoading && search.results.length === 0 && (
-              <p className="text-center text-sm text-text-muted py-4">No users found</p>
+              <Text
+                size="sm"
+                color="muted"
+                className="text-center py-4"
+              >
+                No users found
+              </Text>
             )}
             {search.results.map((user) => (
               <button
@@ -96,10 +102,20 @@ function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileCl
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-text truncate">
+                  <Text
+                    size="sm"
+                    weight="medium"
+                    className="truncate"
+                  >
                     {user.displayName ?? user.name}
-                  </p>
-                  <p className="text-xs text-text-muted truncate">@{user.name}</p>
+                  </Text>
+                  <Text
+                    size="xs"
+                    color="muted"
+                    className="truncate"
+                  >
+                    @{user.name}
+                  </Text>
                 </div>
               </button>
             ))}
@@ -107,7 +123,13 @@ function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileCl
         ) : (
           <>
             {chats.length === 0 && (
-              <p className="text-center text-sm text-text-muted py-4">No chats yet</p>
+              <Text
+                size="sm"
+                color="muted"
+                className="text-center py-4"
+              >
+                No chats yet
+              </Text>
             )}
             {chats.map((chat) => (
               <ChatItem
@@ -139,7 +161,7 @@ function SidebarContent({ selectedChatId, onSelectChat, onMenuClick, onProfileCl
 function SidebarSkeleton() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="h-[57px] border-b border-border" />
+      <div className="h-14.25 border-b border-border" />
       <div className="h-12 border-b border-border" />
       <div className="flex-1 overflow-hidden">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -162,7 +184,13 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
       >
         <ErrorBoundary
           fallback={
-            <p className="text-center text-sm text-text-muted py-8">Failed to load chats</p>
+            <Text
+              size="sm"
+              color="muted"
+              className="text-center py-8"
+            >
+              Failed to load chats
+            </Text>
           }
         >
           <Suspense fallback={<SidebarSkeleton />}>
@@ -182,8 +210,18 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
           aria-label="Open sidebar"
           className="absolute left-4 top-4 z-10 p-2 bg-surface border border-border rounded-lg hover:bg-surface-elevated"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
       )}

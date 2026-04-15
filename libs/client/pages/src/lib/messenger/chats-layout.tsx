@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 import { Outlet, useNavigate } from 'react-router';
 
-import { ChatListSidebar } from './ui/chat-list-sidebar';
+import { ChatListSidebar } from './ui/sidebar';
 
 export function ChatsLayout() {
   const navigate = useNavigate();
