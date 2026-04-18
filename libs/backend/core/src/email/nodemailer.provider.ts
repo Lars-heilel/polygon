@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -7,22 +7,20 @@ import type { Env } from '../config/env.schema';
 import type { IEmailPayload, IEmailProvider } from './email.interface';
 
 @Injectable()
-export class NodemailerEmailProvider implements IEmailProvider, OnModuleInit {
+export class NodemailerEmailProvider implements IEmailProvider {
   private readonly logger = new Logger(NodemailerEmailProvider.name);
-  private transporter!: Transporter;
+  private readonly transporter: Transporter;
 
-  constructor(private readonly config: ConfigService<Env>) {}
-
-  onModuleInit(): void {
-    const user = this.config.get('SMTP_USER', { infer: true });
-    const pass = this.config.get('SMTP_PASSWORD', { infer: true });
-    const port = this.config.get('SMTP_PORT', { infer: true });
+  constructor(private readonly config: ConfigService<Env>) {
+    const user = this.config.getOrThrow('SMTP_USER', { infer: true });
+    const pass = this.config.getOrThrow('SMTP_PASSWORD', { infer: true });
+    const port = this.config.getOrThrow('SMTP_PORT', { infer: true });
 
     this.transporter = nodemailer.createTransport({
-      host: this.config.get('SMTP_HOST', { infer: true }),
+      host: this.config.getOrThrow('SMTP_HOST', { infer: true }),
       port,
       secure: port === 465,
-      auth: user && pass ? { user, pass } : undefined,
+      auth: { user, pass },
     });
   }
 

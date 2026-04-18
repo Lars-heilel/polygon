@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Role } from '@org/common';
+import { randomUUID } from 'crypto';
 
 import type { Env } from '../config/env.schema';
 
@@ -26,10 +27,13 @@ export class TokenService {
   }
 
   generateRefreshToken(payload: JwtPayload): string {
-    return this.jwt.sign(payload, {
-      secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
-      expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true }),
-    });
+    return this.jwt.sign(
+      { ...payload, jti: randomUUID() },
+      {
+        secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
+        expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true }),
+      },
+    );
   }
 
   verifyAccessToken(token: string): JwtPayload {

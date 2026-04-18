@@ -5,6 +5,15 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
 import type { IncomingMessage } from 'http';
 import type pino from 'pino';
 
+const LEVEL_LABELS: Record<number, string> = {
+  10: 'trace',
+  20: 'debug',
+  30: 'info',
+  40: 'warn',
+  50: 'error',
+  60: 'fatal',
+};
+
 function buildTransport(
   serviceName: string,
 ): pino.TransportSingleOptions | pino.TransportMultiOptions {
@@ -13,7 +22,7 @@ function buildTransport(
     options: {
       host: process.env['LOKI_URL'] ?? 'http://localhost:3100',
       labels: { service: serviceName },
-      propsToLabels: ['level'],
+      propsToLabels: ['levelName'],
       batching: { interval: 5 },
     },
   };
@@ -43,6 +52,9 @@ export class LoggerModule {
           pinoHttp: {
             transport: buildTransport(serviceName),
             level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
+            mixin: (_obj: object, level: number) => ({
+              levelName: LEVEL_LABELS[level] ?? String(level),
+            }),
             autoLogging: {
               ignore: (req: IncomingMessage) =>
                 IGNORED_PATHS.some((p) => req.url?.startsWith(p)),

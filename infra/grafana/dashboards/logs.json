@@ -5,6 +5,11 @@
   "version": 1,
   "refresh": "30s",
   "time": { "from": "now-1h", "to": "now" },
+  "links": [
+    { "title": "Overview", "url": "/d/polygon-overview", "keepTime": true, "type": "link", "icon": "dashboard" },
+    { "title": "Tracing", "url": "/d/polygon-tracing", "keepTime": true, "type": "link", "icon": "bolt" },
+    { "title": "Business", "url": "/d/polygon-business", "keepTime": true, "type": "link", "icon": "chart-line" }
+  ],
   "templating": {
     "list": [
       {
@@ -40,7 +45,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "sum by (level) (count_over_time({service=~\"$service\"} | json | level=~\"$level\" [1m]))",
+          "expr": "sum by (levelName) (count_over_time({service=~\"$service\", levelName=~\"$level\"}[1m]))",
           "legendFormat": "{{level}}",
           "queryType": "range"
         }
@@ -54,7 +59,8 @@
           { "matcher": { "id": "byName", "options": "error" }, "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }] },
           { "matcher": { "id": "byName", "options": "warn" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FF9830", "mode": "fixed" } }] },
           { "matcher": { "id": "byName", "options": "info" }, "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "debug" }, "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }] }
+          { "matcher": { "id": "byName", "options": "debug" }, "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "levelName" }, "properties": [{ "id": "color", "value": { "mode": "palette-classic" } }] }
         ]
       }
     },
@@ -66,7 +72,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "{service=~\"$service\"} | json | level=~\"$level\"",
+          "expr": "{service=~\"$service\", levelName=~\"$level\"} | json | label_format level=levelName",
           "queryType": "range"
         }
       ],

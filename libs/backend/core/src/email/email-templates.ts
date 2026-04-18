@@ -5,7 +5,7 @@ interface EmailTemplate {
 
 export const emailTemplates = {
   verification(token: string, appUrl: string): EmailTemplate {
-    const link = `${appUrl}/verify-email?token=${token}`;
+    const link = `${appUrl}/api/auth/verify-email?token=${token}`;
     return {
       subject: 'Подтвердите ваш аккаунт в Polygon',
       html: `

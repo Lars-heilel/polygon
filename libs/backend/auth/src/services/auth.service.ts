@@ -71,7 +71,11 @@ export class AuthService implements IAuthService {
     this.userClient.emit(USER_EVENTS.REGISTERED, userPayload);
     this.searchClient.emit(USER_EVENTS.REGISTERED, userPayload);
 
-    await this.verification.generateAndSend(credentials.id, credentials.email);
+    try {
+      await this.verification.generateAndSend(credentials.id, credentials.email);
+    } catch (err) {
+      this.logger.error('Failed to send verification email', err instanceof Error ? err.stack : String(err));
+    }
   }
 
   async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
