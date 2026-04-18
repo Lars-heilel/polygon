@@ -1,13 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { getToken, makeHistogramProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
 
-// Подключает эндпоинт GET /metrics на каждом сервисе.
-// Prometheus будет дёргать его каждые 15 секунд и собирать данные.
-// По умолчанию включены метрики самого Node.js процесса:
-//   - nodejs_heap_size_used_bytes    (память)
-//   - nodejs_eventloop_lag_seconds   (задержка event loop)
-//   - process_cpu_seconds_total      (CPU)
-//   - nodejs_active_handles_total    (открытые соединения)
+export const HTTP_HISTOGRAM_NAME = 'http_request_duration_seconds';
+
 @Module({
   imports: [
     PrometheusModule.register({
@@ -15,6 +10,14 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
       path: '/metrics',
     }),
   ],
-  exports: [PrometheusModule],
+  providers: [
+    makeHistogramProvider({
+      name: HTTP_HISTOGRAM_NAME,
+      help: 'HTTP request duration in seconds',
+      labelNames: ['method', 'path', 'status_code'],
+      buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+    }),
+  ],
+  exports: [PrometheusModule, getToken(HTTP_HISTOGRAM_NAME)],
 })
 export class MetricsModule {}

@@ -2,6 +2,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { RequestMethod } from '@nestjs/common';
 import { trace } from '@opentelemetry/api';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
+import type { IncomingMessage } from 'http';
 import type pino from 'pino';
 
 function buildTransport(
@@ -29,6 +30,8 @@ function buildTransport(
   return lokiTarget;
 }
 
+const IGNORED_PATHS = ['/health', '/metrics', '/api/metrics'];
+
 @Module({})
 export class LoggerModule {
   static forService(serviceName: string): DynamicModule {
@@ -40,7 +43,10 @@ export class LoggerModule {
           pinoHttp: {
             transport: buildTransport(serviceName),
             level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
-            autoLogging: true,
+            autoLogging: {
+              ignore: (req: IncomingMessage) =>
+                IGNORED_PATHS.some((p) => req.url?.startsWith(p)),
+            },
             serializers: {
               req: (req) => ({ method: req.method, url: req.url }),
               res: (res) => ({ statusCode: res.statusCode }),

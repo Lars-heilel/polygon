@@ -1,0 +1,84 @@
+{
+  "title": "Polygon — Logs",
+  "uid": "polygon-logs",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "custom",
+        "query": "gateway,auth-service,user-service,chat-service,media-service,notification-service,search-service",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "options": []
+      },
+      {
+        "name": "level",
+        "label": "Level",
+        "type": "custom",
+        "query": "error,warn,info,debug",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Volume by Level",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 5 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (level) (count_over_time({service=~\"$service\"} | json | level=~\"$level\" [1m]))",
+          "legendFormat": "{{level}}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "xTickLabelRotation": 0,
+        "stacking": "normal"
+      },
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "error" }, "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "warn" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FF9830", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "info" }, "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "debug" }, "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 22 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{service=~\"$service\"} | json | level=~\"$level\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    }
+  ]
+}

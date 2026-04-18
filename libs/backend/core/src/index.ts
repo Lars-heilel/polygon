@@ -32,6 +32,7 @@ export * from './decorators/current-user.decorator';
 
 // Interceptors
 export * from './interceptors/logging.interceptor';
+export * from './interceptors/http-metrics.interceptor';
 export * from './interceptors/rpc-error.interceptor';
 
 // Filters
