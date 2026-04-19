@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { EMAIL_PROVIDER, type Env, type IEmailProvider, emailTemplates } from '@org/core';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { Counter } from 'prom-client';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class NotificationService {
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     const { subject, html } = emailTemplates.verification(
       token,
-      this.config.getOrThrow('APP_URL', { infer: true }),
+      this.config.getOrThrow('CLIENT_URL', { infer: true }),
     );
     try {
       await this.email.send({ to, subject, html });
@@ -35,7 +35,7 @@ export class NotificationService {
   async sendPasswordReset(to: string, token: string): Promise<void> {
     const { subject, html } = emailTemplates.passwordReset(
       token,
-      this.config.getOrThrow('APP_URL', { infer: true }),
+      this.config.getOrThrow('CLIENT_URL', { infer: true }),
     );
     try {
       await this.email.send({ to, subject, html });
