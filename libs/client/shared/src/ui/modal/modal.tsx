@@ -34,6 +34,7 @@ function ModalHeader({ title, onClose, children, className }: ModalHeaderProps) 
       <div className={cn('px-6 py-4 border-b border-border flex items-center justify-between', className)}>
         <Heading level={5} as="h2">{title}</Heading>
         <button
+          type="button"
           onClick={handleClose}
           className="p-2 hover:bg-surface-elevated rounded-lg"
           aria-label="Close"
@@ -58,7 +59,7 @@ interface ModalBodyProps {
 
 function ModalBody({ children, className }: ModalBodyProps) {
   return (
-    <div className={cn('overflow-y-auto', className)}>
+    <div className={cn('px-6 py-4 overflow-y-auto', className)}>
       {children}
     </div>
   );
@@ -91,9 +92,8 @@ interface ModalProps {
 
 function ModalRoot({ isOpen, onClose, children, className, overlayClassName }: ModalProps) {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };

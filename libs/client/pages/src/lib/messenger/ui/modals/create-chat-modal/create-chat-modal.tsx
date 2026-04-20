@@ -1,4 +1,4 @@
-import { Avatar, Heading, Input, Modal, Text } from '@org/shared';
+import { Avatar, Input, Modal, Text } from '@org/shared';
 
 interface User {
   id: string;
@@ -27,33 +27,8 @@ export function CreateChatModal({
   isCreating = false,
 }: CreateChatModalProps) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="max-w-md"
-    >
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-        <Heading level={5} as="h2">New Chat</Heading>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-surface-elevated rounded-lg"
-          disabled={isCreating}
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+      <Modal.Header title="New Chat" />
 
       <div className="p-4 border-b border-border">
         <Input
@@ -63,37 +38,23 @@ export function CreateChatModal({
           size="sm"
           disabled={isCreating}
           leftIcon={
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           }
         />
       </div>
 
-      <div className="max-h-96 overflow-y-auto p-2">
+      <Modal.Body className="max-h-96 p-2">
         {users.map((user) => (
           <button
             key={user.id}
+            type="button"
             onClick={() => onSelectUser(user.id)}
             disabled={isCreating}
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors disabled:opacity-50"
           >
-            <div className="relative">
-              <Avatar
-                name={user.displayName ?? user.name}
-                size="md"
-              />
-            </div>
+            <Avatar name={user.displayName ?? user.name} size="md" />
             <div className="flex-1 text-left">
               <Text size="sm" weight="medium">{user.displayName ?? user.name}</Text>
               <Text size="xs" color="muted">@{user.name}</Text>
@@ -104,7 +65,7 @@ export function CreateChatModal({
         {users.length === 0 && searchQuery && (
           <Text size="sm" color="muted" className="text-center py-8">No users found</Text>
         )}
-      </div>
+      </Modal.Body>
     </Modal>
   );
 }

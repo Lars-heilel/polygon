@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useLogout } from '@org/features';
-import { Button, Heading, Modal, Text, Toggle, useTheme } from '@org/shared';
+import { Button, Modal, Text, Toggle, useTheme } from '@org/shared';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -18,32 +18,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { logout } = useLogout();
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="max-w-lg max-h-[80vh] flex flex-col"
-    >
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
-        <Heading level={5} as="h2">Settings</Heading>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-surface-elevated rounded-lg"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg max-h-[80vh] flex flex-col">
+      <Modal.Header title="Settings" />
 
       <div className="px-6 py-3 border-b border-border flex gap-4 shrink-0">
         {(['general', 'privacy', 'devices'] as SettingsTab[]).map((tab) => (

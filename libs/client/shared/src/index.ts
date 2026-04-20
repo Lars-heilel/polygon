@@ -25,7 +25,6 @@ export { ResourceList } from './ui/resource-list';
 export { StatusScreen } from './ui/status-screen';
 export { FormAlert } from './ui/form-alert';
 export { Dropdown } from './ui/dropdown';
-export type { DropdownItem } from './ui/dropdown';
 export { socket } from './lib/socket';
 export { Modal } from './ui/modal';
 export { Toggle } from './ui/toggle';

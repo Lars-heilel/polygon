@@ -1,5 +1,5 @@
 import { useMeQuery } from '@org/entities';
-import { Avatar, Button, Heading, Modal, Text } from '@org/shared';
+import { Avatar, Button, Modal, Text, Heading } from '@org/shared';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -15,31 +15,21 @@ export function ProfileModal({ isOpen, onClose, onSettingsClick }: ProfileModalP
   const displayName = me.name ?? me.email.slice(0, 8);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="max-w-md"
-    >
-      <div className="relative h-32 bg-gradient-to-r from-primary to-primary/60">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-2 bg-black/20 hover:bg-black/30 rounded-full transition-colors text-white"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+      <Modal.Header>
+        <div className="relative h-32 bg-gradient-to-r from-primary to-primary/60">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 right-3 p-2 bg-black/20 hover:bg-black/30 rounded-full transition-colors text-white"
+            aria-label="Close"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </Modal.Header>
 
       <div className="absolute left-1/2 -translate-x-1/2 -top-16">
         <Avatar
