@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
               path: '/ds',
               lazy: async () => {
                 const [{ DesignSystemPage }, { ThemeToggle }] = await Promise.all([
-                  import('@org/shared'),
+                  import('@org/pages'),
                   import('@org/features'),
                 ]);
                 return { element: <DesignSystemPage headerSlot={<ThemeToggle />} /> };

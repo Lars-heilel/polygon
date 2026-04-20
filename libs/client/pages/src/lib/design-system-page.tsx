@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Heading } from '../../ui/typography';
+import { Heading } from '@org/shared';
 
 interface DesignSystemPageProps {
   headerSlot?: ReactNode;
