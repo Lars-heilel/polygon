@@ -1,5 +1,6 @@
 import { Suspense, useCallback } from 'react';
 
+import { EmojiPicker } from '@org/features';
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
 import { useChatSocket } from '../../../model/chat-socket/use-chat-socket';
@@ -24,7 +25,9 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
     },
     [handleSend],
   );
-
+  const handleEmojiSelect = ({ native }: { native: string }) => {
+    setMessageText((prev) => prev + native);
+  };
   return (
     <div className="flex flex-col h-full">
       <ErrorBoundary fallback={<ChatHeaderSkeleton />}>
@@ -48,7 +51,12 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
       <div className="px-4 py-3 border-t border-border shrink-0">
         <div className="flex gap-3 items-end">
           <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -67,16 +75,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
               className="resize-none"
             />
           </div>
-          <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </button>
+          <EmojiPicker onSelect={handleEmojiSelect}></EmojiPicker>
           <Button
             onClick={handleSend}
             disabled={!messageText.trim()}

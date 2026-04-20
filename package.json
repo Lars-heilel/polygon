@@ -93,6 +93,8 @@
     "libs/client/*"
   ],
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@hookform/resolvers": "^5.2.2",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.3",
@@ -130,6 +132,7 @@
     "csrf-csrf": "^4.0.3",
     "dayjs": "^1.11.20",
     "dotenv": "^17.3.1",
+    "emoji-mart": "^5.6.0",
     "es-toolkit": "^1.45.1",
     "helmet": "^8.1.0",
     "ioredis": "^5.10.1",
