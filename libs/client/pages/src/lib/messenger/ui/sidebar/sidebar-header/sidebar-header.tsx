@@ -27,7 +27,12 @@ export function SidebarHeader({ onMenuClick }: SidebarHeaderProps) {
             />
           </svg>
         </button>
-        <Heading level={5} as="h1">Polygon</Heading>
+        <Heading
+          level={5}
+          as="h1"
+        >
+          Polygon
+        </Heading>
       </div>
     </header>
   );
