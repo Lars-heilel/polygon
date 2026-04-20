@@ -195,6 +195,7 @@ export function DesignSystemPage({ headerSlot }: DesignSystemPageProps) {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-4">
           Surfaces
         </h2>
+
         <div className="flex gap-3">
           <div className="bg-surface border border-border rounded-lg p-4 text-sm">surface</div>
           <div className="bg-surface-elevated border border-border rounded-lg p-4 text-sm">
