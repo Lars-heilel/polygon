@@ -11,7 +11,8 @@ import {
 
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
-import type { Credentials, CredentialsPayload, OAuthLoginDto, TokenPair } from '@org/common';
+import type { Credentials, CredentialsPayload, OAuthLoginDto, TokenPair, UserPublic } from '@org/common';
+import { lastValueFrom } from 'rxjs';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { Counter } from 'prom-client';
 import {
@@ -24,6 +25,7 @@ import {
   TokenService,
   USER_CLIENT_TOKEN,
   USER_EVENTS,
+  USER_PATTERNS,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
 import { createHash } from 'crypto';
@@ -159,7 +161,7 @@ export class AuthService implements IAuthService {
     if (!credentials) {
       credentials = await this.repo.createCredentials({ email: dto.email });
       const payload = { id: credentials.id, email: credentials.email, name: dto.name };
-      this.userClient.emit(USER_EVENTS.REGISTERED, payload);
+      await lastValueFrom(this.userClient.send<UserPublic>(USER_PATTERNS.CREATE, payload));
       this.searchClient.emit(USER_EVENTS.REGISTERED, payload);
     }
 

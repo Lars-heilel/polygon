@@ -18,12 +18,24 @@ export class UserPrismaRepository implements IUserRepository {
   }
 
   async upsert(data: CreateUserEventInput): Promise<UserPublic> {
-    return await this.prisma.user.upsert({
-      where: { id: data.id },
-      create: data,
-      update: {},
-      select: PUBLIC_USER_DATA_SELECT,
-    });
+    try {
+      return await this.prisma.user.upsert({
+        where: { id: data.id },
+        create: data,
+        update: {},
+        select: PUBLIC_USER_DATA_SELECT,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // email taken by a stale record with a different id — realign it to the new credentials id
+        return this.prisma.user.update({
+          where: { email: data.email },
+          data: { id: data.id },
+          select: PUBLIC_USER_DATA_SELECT,
+        });
+      }
+      throw error;
+    }
   }
 
   async findManyByIds(ids: string[]): Promise<UserPublic[]> {

@@ -19,7 +19,8 @@ export interface IUserService {
 }
 
 export interface IUserController {
-  handleUserRegistered(data: CreateUserEventInput): void;
+  handleUserRegistered(data: CreateUserEventInput): Promise<void>;
+  create(data: CreateUserEventInput): Promise<UserPublic>;
   getById(payload: { id: string }): Promise<User>;
   getManyByIds(payload: { ids: string[] }): Promise<UserPublic[]>;
   getAllPublic(payload: { skip?: number; take?: number }): Promise<UserPublic[]>;

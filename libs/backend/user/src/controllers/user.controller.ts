@@ -11,8 +11,13 @@ export class UserController implements IUserController {
   constructor(@Inject(USER_SERVICE_TOKEN) private readonly userService: IUserService) {}
 
   @EventPattern(USER_EVENTS.REGISTERED)
-  handleUserRegistered(@Payload() data: CreateUserEventInput): void {
-    void this.userService.createFromEvent(data);
+  async handleUserRegistered(@Payload() data: CreateUserEventInput): Promise<void> {
+    await this.userService.createFromEvent(data);
+  }
+
+  @MessagePattern(USER_PATTERNS.CREATE)
+  create(@Payload() data: CreateUserEventInput): Promise<UserPublic> {
+    return this.userService.createFromEvent(data);
   }
 
   @MessagePattern(USER_PATTERNS.GET_BY_ID)

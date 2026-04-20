@@ -2,6 +2,7 @@ export const USER_QUEUE = 'user_queue';
 export const USER_CLIENT_TOKEN = 'USER_CLIENT';
 
 export const USER_PATTERNS = {
+  CREATE: 'user.create',
   GET_BY_ID: 'user.getById',
   GET_MANY_BY_IDS: 'user.getManyByIds',
   GET_ALL_PUBLIC: 'user.getAllPublic',

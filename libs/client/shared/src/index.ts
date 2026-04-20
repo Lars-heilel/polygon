@@ -1,5 +1,4 @@
 export { apiFetch, ApiError } from './lib/api/client';
-export { DesignSystemPage } from './styles/preview/design-system';
 export { cn } from './lib/utils/cn';
 export {
   formatTime,
@@ -32,3 +31,4 @@ export { Modal } from './ui/modal';
 export { Toggle } from './ui/toggle';
 export { ThemeProvider, useTheme } from './lib/theme/theme';
 export { queryClient } from './lib/query/query-client';
+export { useDisclosure } from './lib/hooks/use-disclosure';
