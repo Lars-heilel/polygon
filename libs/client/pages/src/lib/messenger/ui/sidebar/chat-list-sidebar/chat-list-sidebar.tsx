@@ -2,7 +2,7 @@ import { Suspense, useState } from 'react';
 
 import { ErrorBoundary, Text } from '@org/shared';
 
-import { ProfileModal } from '../../modals/profile-modal';
+import { ProfileModal } from '@org/entities';
 import { SettingsModal } from '../../modals/settings-modal';
 import { SidebarContent } from './sidebar-content';
 import { SidebarSkeleton } from './sidebar-skeleton';

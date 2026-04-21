@@ -9,7 +9,7 @@ import { useCreateChat } from '../../../model/use-create-chat';
 import { CreateChatModal } from '../../modals/create-chat-modal';
 import { ChatSearch } from '../chat-search';
 import { SidebarHeader } from '../sidebar-header';
-import { UserPanel } from '../user-panel';
+import { UserPanel } from '@org/entities';
 
 interface SidebarContentProps {
   selectedChatId?: string | null;
