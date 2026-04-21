@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react';
 
 import { Outlet, useNavigate } from 'react-router';
 
+import { SidebarLayout } from '@org/layouts';
+
 import { ChatListSidebar } from './ui/sidebar';
 
 export function ChatsLayout() {
@@ -17,14 +19,15 @@ export function ChatsLayout() {
   );
 
   return (
-    <div className="h-screen flex bg-surface text-text font-sans overflow-hidden">
-      <ChatListSidebar
-        selectedChatId={selectedChatId}
-        onSelectChat={handleSelectChat}
-      />
-      <main className="flex-1 flex flex-col min-w-0 bg-surface">
-        <Outlet />
-      </main>
-    </div>
+    <SidebarLayout
+      sidebar={
+        <ChatListSidebar
+          selectedChatId={selectedChatId}
+          onSelectChat={handleSelectChat}
+        />
+      }
+    >
+      <Outlet />
+    </SidebarLayout>
   );
 }
