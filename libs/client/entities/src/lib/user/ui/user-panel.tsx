@@ -1,5 +1,6 @@
-import { useMeQuery } from '@org/entities';
 import { Avatar, Text } from '@org/shared';
+
+import { useMeQuery } from '../user.api';
 
 interface UserPanelProps {
   onProfileClick?: () => void;

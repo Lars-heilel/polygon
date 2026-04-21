@@ -4,7 +4,7 @@ export {
   selectIsSessionLoading,
 } from './lib/session/session.store';
 
-export type { User } from './lib/user/user.api';
+export type { User } from './lib/user';
 export {
   authApi,
   useLoginMutation,
@@ -15,9 +15,11 @@ export {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useResendVerificationMutation,
-} from './lib/user/user.api';
+  UserPanel,
+  ProfileModal,
+} from './lib/user';
 
-export type { Chat, ChatMember, MemberProfile } from './lib/chat';
+export type { Chat, ChatMember, MemberProfile, ChatItemProps } from './lib/chat';
 export {
   chatApi,
   useGetChatsQuery,
@@ -27,6 +29,8 @@ export {
   selectActiveChatId,
   selectActiveMessageId,
   selectIsTyping,
+  ChatItem,
+  ChatHeaderSkeleton,
 } from './lib/chat';
 
 export type { Message, MessagePage } from './lib/message';

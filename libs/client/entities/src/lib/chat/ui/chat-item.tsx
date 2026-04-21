@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 import { Avatar, Badge, Text, formatDate } from '@org/shared';
 
-interface ChatItemProps {
+export interface ChatItemProps {
   id: string;
   name: string;
   lastMessage: string;

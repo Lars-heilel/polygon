@@ -1,5 +1,6 @@
-import { useMeQuery } from '@org/entities';
 import { Avatar, Button, Modal, Text, Heading } from '@org/shared';
+
+import { useMeQuery } from '../user.api';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ export function ProfileModal({ isOpen, onClose, onSettingsClick }: ProfileModalP
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
       <Modal.Header>
-        <div className="relative h-32 bg-gradient-to-r from-primary to-primary/60">
+        <div className="relative h-32 bg-linear-to-r from-primary to-primary/60">
           <button
             type="button"
             onClick={onClose}
