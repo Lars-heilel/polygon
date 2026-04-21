@@ -1,4 +1,4 @@
-import { useSessionStore } from '@org/entities';
+import { useSessionStore } from './session.store';
 import { socket } from '@org/shared';
 
 import { initChatSocketManager } from '../chat/chat-socket-manager';
