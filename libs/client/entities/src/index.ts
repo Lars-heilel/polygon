@@ -28,6 +28,7 @@ export {
   selectActiveMessageId,
   selectIsTyping,
   ChatItem,
+  ChatHeaderSkeleton,
 } from './lib/chat';
 
 export type { Message, MessagePage } from './lib/message';

@@ -11,3 +11,5 @@ export { selectActiveChatId, selectActiveMessageId, selectIsTyping } from './cha
 
 export type { ChatItemProps } from './ui/chat-item';
 export { ChatItem } from './ui/chat-item';
+
+export { ChatHeaderSkeleton } from './ui/chat-header-skeleton';

@@ -1,23 +1,13 @@
 import { memo } from 'react';
 
-import { useGetChatsSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
-import { Avatar, Badge, Heading, Skeleton, Text } from '@org/shared';
+import { useGetChatsSuspenseQuery, useMeSuspenseQuery, ChatHeaderSkeleton } from '@org/entities';
+import { Avatar, Badge, Heading, Text } from '@org/shared';
+
+export { ChatHeaderSkeleton };
 
 interface ChatHeaderProps {
   chatId: string;
   onMenuClick?: () => void;
-}
-
-export function ChatHeaderSkeleton() {
-  return (
-    <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0 h-[57px]">
-      <Skeleton className="w-9 h-9 rounded-full shrink-0" />
-      <div className="flex-1 space-y-2">
-        <Skeleton className="h-3 w-28" />
-        <Skeleton className="h-2.5 w-16" />
-      </div>
-    </header>
-  );
 }
 
 export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
