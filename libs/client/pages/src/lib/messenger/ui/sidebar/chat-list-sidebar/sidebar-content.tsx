@@ -1,13 +1,12 @@
 import { useCallback } from 'react';
 
-import { useCreateDirectChatMutation } from '@org/entities';
+import { ChatItem, useCreateDirectChatMutation } from '@org/entities';
 import { useSearchUsers } from '@org/features';
 import { Spinner, Text } from '@org/shared';
 
 import { useChatList } from '../../../model/use-chat-list';
 import { useCreateChat } from '../../../model/use-create-chat';
 import { CreateChatModal } from '../../modals/create-chat-modal';
-import { ChatItem } from '../chat-item';
 import { ChatSearch } from '../chat-search';
 import { SidebarHeader } from '../sidebar-header';
 import { UserPanel } from '../user-panel';

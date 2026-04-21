@@ -17,7 +17,7 @@ export {
   useResendVerificationMutation,
 } from './lib/user/user.api';
 
-export type { Chat, ChatMember, MemberProfile } from './lib/chat';
+export type { Chat, ChatMember, MemberProfile, ChatItemProps } from './lib/chat';
 export {
   chatApi,
   useGetChatsQuery,
@@ -27,6 +27,7 @@ export {
   selectActiveChatId,
   selectActiveMessageId,
   selectIsTyping,
+  ChatItem,
 } from './lib/chat';
 
 export type { Message, MessagePage } from './lib/message';
