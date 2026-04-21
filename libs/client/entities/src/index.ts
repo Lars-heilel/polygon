@@ -17,19 +17,27 @@ export {
   useResendVerificationMutation,
 } from './lib/user/user.api';
 
-export type { Chat, ChatMember, Message, MessagePage } from './lib/chat';
+export type { Chat, ChatMember, MemberProfile } from './lib/chat';
 export {
+  chatApi,
   useGetChatsQuery,
   useGetChatsSuspenseQuery,
   useCreateDirectChatMutation,
-  useInfiniteMessagesQuery,
-  useSendMessageMutation,
   useChatStore,
   selectActiveChatId,
   selectActiveMessageId,
   selectIsTyping,
-  MessageBubble,
 } from './lib/chat';
+
+export type { Message, MessagePage } from './lib/message';
+export {
+  messageApi,
+  useInfiniteMessagesQuery,
+  useSendMessageMutation,
+  MessageBubble,
+  MessageBubbleSkeleton,
+  MessageListSkeleton,
+} from './lib/message';
 
 export { useSearchUsersQuery, searchApi } from './lib/search/search.api';
 export { initSocketMiddleware } from './lib/session/socket-middleware';

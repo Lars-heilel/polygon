@@ -1,31 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 
-import { MessageBubble, useGetChatsSuspenseQuery, useInfiniteMessagesQuery, useMeSuspenseQuery } from '@org/entities';
-import { Skeleton, Text } from '@org/shared';
+import {
+  MessageBubble,
+  MessageBubbleSkeleton,
+  MessageListSkeleton,
+  useGetChatsSuspenseQuery,
+  useInfiniteMessagesQuery,
+  useMeSuspenseQuery,
+} from '@org/entities';
+import { Text } from '@org/shared';
 
-function MessageBubbleSkeleton({ isMine = false, size = 'md' }: { isMine?: boolean; size?: 'sm' | 'md' | 'lg' }) {
-  const widths = { sm: 'w-24', md: 'w-40', lg: 'w-56' };
-  return (
-    <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-      {!isMine && <Skeleton className="w-6 h-6 rounded-full shrink-0" />}
-      <Skeleton className={`h-10 ${widths[size]} rounded-2xl`} />
-    </div>
-  );
-}
-
-export function MessageListSkeleton() {
-  return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-      <MessageBubbleSkeleton isMine={false} size="md" />
-      <MessageBubbleSkeleton isMine={true} size="lg" />
-      <MessageBubbleSkeleton isMine={false} size="sm" />
-      <MessageBubbleSkeleton isMine={true} size="md" />
-      <MessageBubbleSkeleton isMine={false} size="lg" />
-      <MessageBubbleSkeleton isMine={true} size="sm" />
-    </div>
-  );
-}
+export { MessageListSkeleton };
 
 interface MessageListProps {
   chatId: string;

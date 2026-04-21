@@ -1,7 +1,10 @@
 import { useState } from 'react';
 
-import { useLogout } from '@org/features';
-import { Button, Modal, Text, Toggle, useTheme } from '@org/shared';
+import { Modal } from '@org/shared';
+
+import { SettingsDevicesTab } from './settings-devices-tab';
+import { SettingsGeneralTab } from './settings-general-tab';
+import { SettingsPrivacyTab } from './settings-privacy-tab';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,19 +13,17 @@ interface SettingsModalProps {
 
 type SettingsTab = 'general' | 'privacy' | 'devices';
 
+const TABS: SettingsTab[] = ['general', 'privacy', 'devices'];
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const [notifications, setNotifications] = useState(true);
-  const [sound, setSound] = useState(true);
-  const { logout } = useLogout();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg max-h-[80vh] flex flex-col">
       <Modal.Header title="Settings" />
 
       <div className="px-6 py-3 border-b border-border flex gap-4 shrink-0">
-        {(['general', 'privacy', 'devices'] as SettingsTab[]).map((tab) => (
+        {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -38,129 +39,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {activeTab === 'general' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Text size="sm" weight="medium">Notifications</Text>
-                <Text size="xs" color="muted">Receive push notifications</Text>
-              </div>
-              <Toggle
-                checked={notifications}
-                onChange={setNotifications}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Text size="sm" weight="medium">Sound</Text>
-                <Text size="xs" color="muted">Play sound for messages</Text>
-              </div>
-              <Toggle
-                checked={sound}
-                onChange={setSound}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Text size="sm" weight="medium">Dark Mode</Text>
-                <Text size="xs" color="muted">Current: {theme}</Text>
-              </div>
-              <Toggle
-                checked={theme === 'dark'}
-                onChange={toggleTheme}
-              />
-            </div>
-            <div>
-              <Text size="sm" weight="medium" className="mb-2">Language</Text>
-              <select className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
-                <option>English</option>
-                <option>Русский</option>
-                <option>Español</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'privacy' && (
-          <div className="space-y-6">
-            <div>
-              <Text size="sm" weight="medium" className="mb-2">Who can add me to chats</Text>
-              <select className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
-                <option>Everyone</option>
-                <option>Contacts only</option>
-                <option>Nobody</option>
-              </select>
-            </div>
-            <div>
-              <Text size="sm" weight="medium" className="mb-2">Last seen</Text>
-              <select className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
-                <option>Everyone</option>
-                <option>Contacts only</option>
-                <option>Nobody</option>
-              </select>
-            </div>
-            <div className="pt-4">
-              <Button
-                variant="danger"
-                className="w-full"
-              >
-                Block User
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'devices' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
-              <svg
-                className="w-8 h-8 text-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-              <div className="flex-1">
-                <Text size="sm" weight="medium">Chrome on Windows</Text>
-                <Text size="xs" color="muted">Last active 2 min ago</Text>
-              </div>
-              <span className="text-xs text-green-500">Active</span>
-            </div>
-            <div className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
-              <svg
-                className="w-8 h-8 text-text-muted"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </svg>
-              <div className="flex-1">
-                <Text size="sm" weight="medium">Mobile App</Text>
-                <Text size="xs" color="muted">Last active 2 hours ago</Text>
-              </div>
-              <button className="text-xs text-danger hover:underline">Logout</button>
-            </div>
-            <Button
-              variant="danger"
-              className="w-full"
-              onClick={logout}
-            >
-              Logout from all devices
-            </Button>
-          </div>
-        )}
+        {activeTab === 'general' && <SettingsGeneralTab />}
+        {activeTab === 'privacy' && <SettingsPrivacyTab />}
+        {activeTab === 'devices' && <SettingsDevicesTab />}
       </div>
     </Modal>
   );
