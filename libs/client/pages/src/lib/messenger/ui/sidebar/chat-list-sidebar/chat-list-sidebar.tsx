@@ -2,7 +2,6 @@ import { Suspense, useState } from 'react';
 
 import { ErrorBoundary, Text } from '@org/shared';
 
-import { ProfileModal } from '@org/entities';
 import { SettingsModal } from '../../modals/settings-modal';
 import { SidebarContent } from './sidebar-content';
 import { SidebarSkeleton } from './sidebar-skeleton';
@@ -14,7 +13,6 @@ interface ChatListSidebarProps {
 
 export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSidebarProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -38,7 +36,7 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
               selectedChatId={selectedChatId}
               onSelectChat={onSelectChat}
               onMenuClick={() => setIsSidebarOpen(false)}
-              onProfileClick={() => setIsProfileOpen(true)}
+              onSettingsClick={() => setIsSettingsOpen(true)}
             />
           </Suspense>
         </ErrorBoundary>
@@ -66,14 +64,6 @@ export function ChatListSidebar({ selectedChatId, onSelectChat }: ChatListSideba
         </button>
       )}
 
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        onSettingsClick={() => {
-          setIsProfileOpen(false);
-          setIsSettingsOpen(true);
-        }}
-      />
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

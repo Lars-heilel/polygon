@@ -3,26 +3,26 @@ import { useCallback } from 'react';
 import { ChatItem, useCreateDirectChatMutation } from '@org/entities';
 import { useSearchUsers } from '@org/features';
 import { Spinner, Text } from '@org/shared';
+import { CurrentUserWidget } from '@org/widgets';
 
 import { useChatList } from '../../../model/use-chat-list';
 import { useCreateChat } from '../../../model/use-create-chat';
 import { CreateChatModal } from '../../modals/create-chat-modal';
 import { ChatSearch } from '../chat-search';
 import { SidebarHeader } from '../sidebar-header';
-import { UserPanel } from '@org/entities';
 
 interface SidebarContentProps {
   selectedChatId?: string | null;
   onSelectChat?: (chatId: string) => void;
   onMenuClick: () => void;
-  onProfileClick: () => void;
+  onSettingsClick?: () => void;
 }
 
 export function SidebarContent({
   selectedChatId,
   onSelectChat,
   onMenuClick,
-  onProfileClick,
+  onSettingsClick,
 }: SidebarContentProps) {
   const { chats, selectedChatId: internalSelectedChatId, setSelectedChatId } = useChatList();
 
@@ -137,7 +137,7 @@ export function SidebarContent({
         )}
       </nav>
 
-      <UserPanel onProfileClick={onProfileClick} />
+      <CurrentUserWidget onSettingsClick={onSettingsClick} />
 
       <CreateChatModal
         isOpen={isCreateChatOpen}

@@ -1,1 +1,1 @@
-// Reserved for future reusable widgets shared across apps
+export { CurrentUserWidget } from './lib/current-user';
