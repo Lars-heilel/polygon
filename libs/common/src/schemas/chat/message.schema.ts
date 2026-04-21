@@ -10,3 +10,8 @@ export const messageSchema = z.object({
 });
 
 export type Message = z.infer<typeof messageSchema>;
+
+export type MessagePage = {
+  messages: Message[];
+  nextCursor: string | null;
+};

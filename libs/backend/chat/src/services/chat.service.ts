@@ -1,5 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { Chat, Message } from '@org/common';
+import type { Chat, Message, MessagePage } from '@org/common';
 import { CHAT_PRISMA_REPOSITORY_TOKEN } from '@org/core';
 
 import type { ChatWithPreview, IChatRepository, IChatService } from '../interfaces/chat.interface';
@@ -26,10 +26,10 @@ export class ChatService implements IChatService {
     return this.repo.findChatsForUser(userId);
   }
 
-  async getMessages(chatId: string, userId: string, skip = 0, take = 50): Promise<Message[]> {
+  async getMessages(chatId: string, userId: string, cursor: string | undefined, take = 50): Promise<MessagePage> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
-    return this.repo.findMessagesByChat(chatId, skip, take);
+    return this.repo.findMessagesByChat(chatId, cursor, take);
   }
 
   async sendMessage(chatId: string, senderId: string, text: string): Promise<Message> {

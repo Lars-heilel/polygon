@@ -4,13 +4,25 @@ import type {
   ChatMember as ChatMemberBase,
   Message as MessageBase,
 } from '@org/common';
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  type InfiniteData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 
 import { authedFetch } from '../api/authed-fetch';
 
 export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
   updatedAt: string;
+};
+
+export type MessagePage = {
+  messages: Message[];
+  nextCursor: string | null;
 };
 
 export type MemberProfile = {
@@ -42,7 +54,12 @@ export const chatApi = {
       body: JSON.stringify(body),
     }),
 
-  getMessages: (chatId: string) => authedFetch<Message[]>(API_ROUTES.chats.messages(chatId)),
+  getMessages: (chatId: string, cursor?: string) => {
+    const url = cursor
+      ? `${API_ROUTES.chats.messages(chatId)}?cursor=${cursor}`
+      : API_ROUTES.chats.messages(chatId);
+    return authedFetch<MessagePage>(url);
+  },
 
   sendMessage: (chatId: string, text: string) =>
     authedFetch<Message>(API_ROUTES.chats.messages(chatId), {
@@ -58,14 +75,6 @@ export function useGetChatsQuery() {
   });
 }
 
-export function useGetMessagesQuery(chatId: string) {
-  return useQuery({
-    queryKey: ['messages', chatId],
-    queryFn: () => chatApi.getMessages(chatId),
-    enabled: chatId.length > 0,
-  });
-}
-
 export function useGetChatsSuspenseQuery() {
   return useSuspenseQuery({
     queryKey: ['chats'],
@@ -73,10 +82,12 @@ export function useGetChatsSuspenseQuery() {
   });
 }
 
-export function useGetMessagesSuspenseQuery(chatId: string) {
-  return useSuspenseQuery({
+export function useInfiniteMessagesQuery(chatId: string) {
+  return useSuspenseInfiniteQuery({
     queryKey: ['messages', chatId],
-    queryFn: () => chatApi.getMessages(chatId),
+    queryFn: ({ pageParam }) => chatApi.getMessages(chatId, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 }
 
@@ -96,21 +107,33 @@ export function useSendMessageMutation(chatId: string) {
     mutationFn: (text: string) => chatApi.sendMessage(chatId, text),
     onMutate: async (text) => {
       await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
-      const snapshot = queryClient.getQueryData<Message[]>(['messages', chatId]);
-      queryClient.setQueryData<Message[]>(['messages', chatId], (old = []) => [
-        ...old,
-        {
+      const snapshot = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', chatId]);
+
+      queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) => {
+        if (!old) return old;
+        const optimistic = {
           id: crypto.randomUUID(),
           chatId,
+          senderId: '',
           text,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        } as Message,
-      ]);
+        } as Message;
+
+        return {
+          ...old,
+          pages: old.pages.map((page, i) =>
+            i === 0 ? { ...page, messages: [...page.messages, optimistic] } : page,
+          ),
+        };
+      });
+
       return { snapshot };
     },
     onError: (_err, _text, ctx) => {
-      queryClient.setQueryData(['messages', chatId], ctx?.snapshot);
+      if (ctx?.snapshot) {
+        queryClient.setQueryData(['messages', chatId], ctx.snapshot);
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', chatId] });

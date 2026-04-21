@@ -85,28 +85,28 @@ export class ChatGatewayController {
   }
 
   @Get(':id/messages')
-  @ApiOperation({ summary: 'Get messages for a chat (paginated)' })
+  @ApiOperation({ summary: 'Get messages for a chat (cursor-paginated)' })
   @ApiParam({ name: 'id', description: 'Chat UUID' })
-  @ApiQuery({ name: 'skip', required: false, description: 'Number of messages to skip' })
+  @ApiQuery({ name: 'cursor', required: false, description: 'ID of the last fetched message' })
   @ApiQuery({
     name: 'take',
     required: false,
     description: 'Number of messages to return (default 50)',
   })
-  @ApiResponse({ status: 200, description: 'Array of message objects' })
+  @ApiResponse({ status: 200, description: '{ messages, nextCursor }' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   @ApiResponse({ status: 403, description: 'Not a member of this chat' })
   getMessages(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
-    @Query('skip') skip?: string,
+    @Query('cursor') cursor?: string,
     @Query('take') take?: string,
   ) {
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.GET_MESSAGES, {
         chatId,
         userId: user.sub,
-        skip: skip ? parseInt(skip, 10) : undefined,
+        cursor,
         take: take ? parseInt(take, 10) : undefined,
       }),
     );

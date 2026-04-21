@@ -1,4 +1,4 @@
-import type { Chat, ChatMember, ChatRole, ChatType, Message } from '@org/common';
+import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage } from '@org/common';
 
 export type ChatWithPreview = Chat & {
   members: ChatMember[];
@@ -19,14 +19,14 @@ export interface IChatRepository {
   findMembersByChat(chatId: string): Promise<ChatMember[]>;
   addChatMember(data: { chatId: string; userId: string; role?: ChatRole }): Promise<ChatMember>;
   removeChatMember(chatId: string, userId: string): Promise<void>;
-  findMessagesByChat(chatId: string, skip: number, take: number): Promise<Message[]>;
+  findMessagesByChat(chatId: string, cursor: string | undefined, take: number): Promise<MessagePage>;
   createMessage(data: { chatId: string; senderId: string; text?: string | null }): Promise<Message>;
 }
 
 export interface IChatService {
   createDirectChat(userId: string, targetUserId: string): Promise<Chat>;
   getChats(userId: string): Promise<ChatWithPreview[]>;
-  getMessages(chatId: string, userId: string, skip: number, take: number): Promise<Message[]>;
+  getMessages(chatId: string, userId: string, cursor: string | undefined, take: number): Promise<MessagePage>;
   sendMessage(chatId: string, senderId: string, text: string): Promise<Message>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
 }
@@ -37,9 +37,9 @@ export interface IChatController {
   getMessages(payload: {
     chatId: string;
     userId: string;
-    skip?: number;
+    cursor?: string;
     take?: number;
-  }): Promise<Message[]>;
+  }): Promise<MessagePage>;
   sendMessage(payload: { chatId: string; senderId: string; text: string }): Promise<Message>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
 }

@@ -1,12 +1,20 @@
+import type { InfiniteData } from '@tanstack/react-query';
 import { queryClient, socket, toast } from '@org/shared';
 
-import type { Chat, Message } from './chat.api';
+import type { Chat, Message, MessagePage } from './chat.api';
 import { useChatStore } from './chat.store';
 
 function handleNewMessage(msg: Message) {
-  queryClient.setQueryData<Message[]>(['messages', msg.chatId], (old = []) => {
-    if (old.some((m) => m.id === msg.id)) return old;
-    return [...old, msg];
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) => {
+    if (!old) return old;
+    if (old.pages.some((page) => page.messages.some((m) => m.id === msg.id))) return old;
+
+    return {
+      ...old,
+      pages: old.pages.map((page, i) =>
+        i === 0 ? { ...page, messages: [...page.messages, msg] } : page,
+      ),
+    };
   });
 
   queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>

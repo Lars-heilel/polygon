@@ -17,18 +17,18 @@ export {
   useResendVerificationMutation,
 } from './lib/user/user.api';
 
-export type { Chat, ChatMember, Message } from './lib/chat';
+export type { Chat, ChatMember, Message, MessagePage } from './lib/chat';
 export {
   useGetChatsQuery,
   useGetChatsSuspenseQuery,
   useCreateDirectChatMutation,
-  useGetMessagesQuery,
-  useGetMessagesSuspenseQuery,
+  useInfiniteMessagesQuery,
   useSendMessageMutation,
   useChatStore,
   selectActiveChatId,
   selectActiveMessageId,
   selectIsTyping,
+  MessageBubble,
 } from './lib/chat';
 
 export { useSearchUsersQuery, searchApi } from './lib/search/search.api';

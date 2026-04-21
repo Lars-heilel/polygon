@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CHAT_MEMBER_SELECT_FIELDS, CHAT_SELECT_FIELDS, MESSAGE_SELECT_FIELDS } from '@org/common';
-import type { Chat, ChatMember, ChatRole, ChatType, Message } from '@org/common';
+import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage } from '@org/common';
 
 import type { ChatWithPreview, IChatRepository } from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
@@ -94,14 +94,19 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
-  async findMessagesByChat(chatId: string, skip: number, take: number): Promise<Message[]> {
-    return this.prisma.message.findMany({
+  async findMessagesByChat(chatId: string, cursor: string | undefined, take: number): Promise<MessagePage> {
+    const messages = await this.prisma.message.findMany({
       where: { chatId },
-      orderBy: { createdAt: 'asc' },
-      skip,
+      orderBy: { createdAt: 'desc' },
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take,
       select: MESSAGE_SELECT_FIELDS,
     });
+
+    return {
+      messages: messages.reverse(),
+      nextCursor: messages.length === take ? messages[0].id : null,
+    };
   }
 
   async createMessage(data: {

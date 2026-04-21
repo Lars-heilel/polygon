@@ -1,12 +1,13 @@
-export type { Message, Chat, ChatMember } from './chat.api';
+export type { Message, MessagePage, Chat, ChatMember } from './chat.api';
 export {
   useGetChatsQuery,
   useGetChatsSuspenseQuery,
   useCreateDirectChatMutation,
-  useGetMessagesQuery,
-  useGetMessagesSuspenseQuery,
+  useInfiniteMessagesQuery,
   useSendMessageMutation,
 } from './chat.api';
 
 export { useChatStore } from './chat.store';
 export { selectActiveChatId, selectActiveMessageId, selectIsTyping } from './chat.store';
+
+export { MessageBubble } from './ui/message-bubble';
