@@ -2,11 +2,14 @@ import { useCallback, useState } from 'react';
 
 import { Outlet, useNavigate } from 'react-router';
 
+import { useMessageNotification } from '@org/features';
 import { SidebarLayout } from '@org/layouts';
 
 import { ChatListSidebar } from './ui/sidebar';
 
 export function ChatsLayout() {
+  useMessageNotification();
+
   const navigate = useNavigate();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 

@@ -1,5 +1,5 @@
 import type { InfiniteData } from '@tanstack/react-query';
-import { queryClient, socket, toast } from '@org/shared';
+import { queryClient, socket } from '@org/shared';
 
 import type { Message, MessagePage } from '../message/message.api';
 import type { Chat } from './chat.api';
@@ -24,10 +24,7 @@ function handleNewMessage(msg: Message) {
     ),
   );
 
-  const activeChatId = useChatStore.getState().activeChatId;
-  if (msg.chatId !== activeChatId) {
-    toast('New message');
-  }
+  useChatStore.getState().setLastReceivedMessage(msg);
 }
 
 export function initChatSocketManager(): () => void {
