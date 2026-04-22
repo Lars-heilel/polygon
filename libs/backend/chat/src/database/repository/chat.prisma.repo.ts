@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CHAT_MEMBER_SELECT_FIELDS, CHAT_SELECT_FIELDS, MESSAGE_SELECT_FIELDS } from '@org/common';
 import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage } from '@org/common';
+import { handlePrismaError } from '@org/core';
 
 import type { ChatWithPreview, IChatRepository } from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
@@ -82,16 +83,24 @@ export class ChatPrismaRepository implements IChatRepository {
     userId: string;
     role?: ChatRole;
   }): Promise<ChatMember> {
-    return this.prisma.chatMember.create({
-      data,
-      select: CHAT_MEMBER_SELECT_FIELDS,
-    });
+    try {
+      return await this.prisma.chatMember.create({
+        data,
+        select: CHAT_MEMBER_SELECT_FIELDS,
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async removeChatMember(chatId: string, userId: string): Promise<void> {
-    await this.prisma.chatMember.delete({
-      where: { chatId_userId: { chatId, userId } },
-    });
+    try {
+      await this.prisma.chatMember.delete({
+        where: { chatId_userId: { chatId, userId } },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async findMessagesByChat(chatId: string, cursor: string | undefined, take: number): Promise<MessagePage> {
@@ -114,6 +123,10 @@ export class ChatPrismaRepository implements IChatRepository {
     senderId: string;
     text?: string | null;
   }): Promise<Message> {
-    return this.prisma.message.create({ data, select: MESSAGE_SELECT_FIELDS });
+    try {
+      return await this.prisma.message.create({ data, select: MESSAGE_SELECT_FIELDS });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 }

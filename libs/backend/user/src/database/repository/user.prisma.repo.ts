@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PUBLIC_USER_DATA_SELECT } from '@org/common';
 import type { CreateUserEventInput, User, UserPublic } from '@org/common';
+import { handlePrismaError } from '@org/core';
 
 import { UpdateUserDto } from '../../dto/update-user.dto';
 import type { IUserRepository } from '../../interfaces/user.interface';
@@ -57,10 +58,7 @@ export class UserPrismaRepository implements IUserRepository {
         select: PUBLIC_USER_DATA_SELECT,
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException('User not found');
-      }
-      throw error;
+      handlePrismaError(error);
     }
   }
 }

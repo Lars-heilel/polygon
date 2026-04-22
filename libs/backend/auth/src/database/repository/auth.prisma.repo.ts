@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { CreateCredentialsInput, Credentials, RefreshToken } from '@org/common';
+import { handlePrismaError } from '@org/core';
 
 import type { IAuthRepository } from '../../interfaces/auth.interface';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,16 +22,24 @@ export class AuthPrismaRepository implements IAuthRepository {
   }
 
   async createCredentials(data: CreateCredentialsInput): Promise<Credentials> {
-    return this.prisma.credentials.create({
-      data,
-    });
+    try {
+      return await this.prisma.credentials.create({
+        data,
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
-    await this.prisma.credentials.update({
-      where: { id },
-      data: { passwordHash },
-    });
+    try {
+      await this.prisma.credentials.update({
+        where: { id },
+        data: { passwordHash },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
   //! пустой объект кредов
   async findOAuthAccount(
@@ -48,7 +57,11 @@ export class AuthPrismaRepository implements IAuthRepository {
     providerId: string;
     credentialsId: string;
   }): Promise<void> {
-    await this.prisma.oAuthAccount.create({ data });
+    try {
+      await this.prisma.oAuthAccount.create({ data });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async saveRefreshToken(data: {
@@ -56,7 +69,11 @@ export class AuthPrismaRepository implements IAuthRepository {
     credentialsId: string;
     expiresAt: Date;
   }): Promise<void> {
-    await this.prisma.refreshToken.create({ data });
+    try {
+      await this.prisma.refreshToken.create({ data });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async findRefreshToken(tokenHash: string): Promise<RefreshToken | null> {
@@ -64,17 +81,25 @@ export class AuthPrismaRepository implements IAuthRepository {
   }
 
   async revokeRefreshToken(tokenHash: string): Promise<void> {
-    await this.prisma.refreshToken.update({
-      where: { tokenHash },
-      data: { revokedAt: new Date() },
-    });
+    try {
+      await this.prisma.refreshToken.update({
+        where: { tokenHash },
+        data: { revokedAt: new Date() },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async verifyCredentials(id: string): Promise<void> {
-    await this.prisma.credentials.update({
-      where: { id },
-      data: { isVerified: true },
-    });
+    try {
+      await this.prisma.credentials.update({
+        where: { id },
+        data: { isVerified: true },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async revokeAllRefreshTokens(credentialsId: string): Promise<void> {

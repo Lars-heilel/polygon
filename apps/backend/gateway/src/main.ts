@@ -2,7 +2,7 @@ import { setupOtel } from '@org/core';
 setupOtel('gateway');
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AllExceptionsFilter, ConfigService, Env, LoggingInterceptor } from '@org/core';
+import { ConfigService, Env, LoggingInterceptor } from '@org/core';
 import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { ZodValidationPipe, cleanupOpenApiDoc } from 'nestjs-zod';
@@ -33,7 +33,6 @@ async function bootstrap() {
   });
   app.use(cookieParser());
   app.useGlobalPipes(new ZodValidationPipe());
-  app.useGlobalFilters(new AllExceptionsFilter());
 
   // ==========================================
   // Logging (Pino)
