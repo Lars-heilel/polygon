@@ -1,79 +1,79 @@
----
 # Messenger
 
-React 19 SPA — клиентское приложение платформы Polygon.
+React 19 SPA — client application for the Polygon platform.
+
 ---
 
-## Реализовано
+## Features Implemented
 
-**Аутентификация**
+**Authentication**
 
-- Регистрация, вход по email + пароль.
+- Registration and Login via email + password.
 - OAuth — GitHub, Google, Yandex.
-- Сброс пароля и подтверждение email (интерфейс).
-- Cookie-сессия, автообновление токена.
+- Password reset and email confirmation (UI).
+- Cookie-based sessions with automatic token refresh.
 
-**Чаты и Сообщения**
+**Chats & Messaging**
 
-- Список чатов в боковой панели.
-- Создание чата через поиск пользователя.
-- История сообщений.
-- **Курсорная пагинация + Infinite scroll** (бесконечная загрузка истории).
-- Отправка и получение сообщений в реальном времени.
-- **Emoji picker** (вставка эмодзи в сообщения).
+- Sidebar chat list.
+- Chat creation via user search.
+- Message history.
+- **Cursor pagination + Infinite scroll** (seamless history loading).
+- Real-time message sending and receiving.
+- **Emoji picker** (inserting emojis into messages).
 
-**Уведомления и API**
+**Notifications & API**
 
-- **Browser Notification API**: всплывающие уведомления в браузере.
-- **Звуковые оповещения**: звуковой сигнал при входящем сообщении.
+- **Browser Notification API**: pop-up notifications in the browser.
+- **Sound Alerts**: audio signals for incoming messages.
 
 **UI/UX**
 
-- Тёмная / светлая тема.
-- Профиль пользователя (модальное окно).
-- Адаптивный дизайн (Mobile/Desktop).
-- 404 страница.
+- Dark / Light theme support.
+- User Profile (modal window).
+- Responsive design (Mobile/Desktop).
+- Custom 404 page.
 
 ---
 
-## Заглушки (UI есть, функционала нет)
+## Placeholders (UI exists, functionality pending)
 
-| Страница / фича        | Состояние                |
-| ---------------------- | ------------------------ |
-| Settings               | Пустой экран-placeholder |
-| Редактирование профиля | Модалка без сохранения   |
-| Аватар                 | Системная заглушка       |
-
----
-
-## В разработке
-
-Полный roadmap с деталями реализации — [`Todo.md`](../../Todo.md).
-
-| #   | Фича                                | Сложность |
-| --- | ----------------------------------- | --------- |
-| 1   | Markdown + подсветка кода           | 🟢        |
-| 2   | Soft delete сообщений/пользователей | 🟢        |
-| 3   | Редактирование и удаление сообщений | 🟢        |
-| 4   | Виртуализация списков (сообщения)   | 🟡        |
-| 5   | Аватар пользователя (загрузка)      | 🟡        |
-| 6   | Блокировка пользователей            | 🟡        |
-| 7   | Read status / непрочитанные         | 🟡        |
-| 8   | Файлы и изображения в чате          | 🟡        |
-| 9   | Реакции на сообщения                | 🟡        |
-| 10  | Онлайн-статус                       | 🔴        |
-| 11  | Push-уведомления (Service Workers)  | 🔴        |
-| 12  | Групповые чаты                      | 🔴        |
-| 13  | Голосовые звонки 1-на-1 (WebRTC)    | 🔴        |
-| 14  | Система дружбы                      | 🔴        |
-| 15  | Групповые звонки                    | 🔥        |
+| Page / Feature    | Status                    |
+| ----------------- | ------------------------- |
+| Settings          | Empty placeholder screen  |
+| Profile Editing   | Modal without saving logic |
+| Avatar            | System placeholder        |
 
 ---
 
-## Скриншоты
+## In Development
 
-### Desktop (Десктопная версия)
+Full roadmap with implementation details — [`Todo.md`](../../Todo.md).
 
-| Светлая тема                                               | Тёмная тема                                                       |
+| #   | Feature                               | Complexity |
+| --- | ------------------------------------- | ---------- |
+| 1   | Markdown + Syntax highlighting        | 🟢         |
+| 2   | Soft delete (messages/users)          | 🟢         |
+| 3   | Edit and delete messages              | 🟢         |
+| 4   | List virtualization (messages)        | 🟡         |
+| 5   | User avatar (uploading)               | 🟡         |
+| 6   | User blocking                         | 🟡         |
+| 7   | Read status / Unread counters         | 🟡         |
+| 8   | Files and images in chat              | 🟡         |
+| 9   | Message reactions                     | 🟡         |
+| 10  | Online status                         | 🔴         |
+| 11  | Push notifications (Service Workers)  | 🔴         |
+| 12  | Group chats                           | 🔴         |
+| 13  | 1-on-1 Voice calls (WebRTC)           | 🔴         |
+| 14  | Friendship system                     | 🔴         |
+| 15  | Group calls                           | 🔥         |
+
+---
+
+## Screenshots
+
+### Desktop Version
+
+| Light Mode                                                 | Dark Mode                                                         |
 | :--------------------------------------------------------- | :---------------------------------------------------------------- |
 | ![Light Mode](../../../docs/screenshots/Light-desktop.png) | ![Dark Mode](../../../docs/screenshots/ChatList%26ChatWindow.png) |
