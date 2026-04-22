@@ -1,14 +1,24 @@
 import { useEffect, useRef } from 'react';
 
-import { queryClient, toast } from '@org/shared';
-import { useChatStore } from '@org/entities';
+import { queryClient, socket, toast } from '@org/shared';
+import { useChatStore, selectLastReceivedMessage, useGetChatsQuery } from '@org/entities';
 import type { Chat } from '@org/entities';
 
 import { useNotificationStore } from './notification.store';
 
+let notificationAudio: HTMLAudioElement | null = null;
+
+function getAudio(): HTMLAudioElement {
+  if (!notificationAudio) {
+    notificationAudio = new Audio('/sounds/pda_4LbLWWH.mp3');
+    notificationAudio.volume = 0.6;
+  }
+  return notificationAudio;
+}
+
 function playNotificationSound() {
-  const audio = new Audio('/sounds/pda_4LbLWWH.mp3');
-  audio.volume = 0.6;
+  const audio = getAudio();
+  audio.currentTime = 0;
   audio.play().catch(() => {});
 }
 
@@ -18,35 +28,52 @@ function isMobile() {
 
 export function useMessageNotification() {
   const isMuted = useNotificationStore((s) => s.isMuted);
-  const isMutedRef = useRef(isMuted);
-  isMutedRef.current = isMuted;
+  const lastMsg = useChatStore(selectLastReceivedMessage);
+  const processedIdRef = useRef<string | null>(null);
+  const { data: chats } = useGetChatsQuery();
+  const activeChatId = useChatStore((s) => s.activeChatId);
+
+  // Unlock audio on first user interaction (browser autoplay policy)
+  useEffect(() => {
+    const unlock = () => {
+      const audio = getAudio();
+      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+    };
+    document.addEventListener('pointerdown', unlock, { once: true });
+    return () => document.removeEventListener('pointerdown', unlock);
+  }, []);
+
+  // Rejoin all chat rooms whenever active chat changes (use-chat-socket emits chat:leave on navigation)
+  useEffect(() => {
+    if (!chats?.length) return;
+    chats.forEach((chat) => socket.emit('chat:join', { chatId: chat.id }));
+  }, [chats, activeChatId]);
 
   useEffect(() => {
-    return useChatStore.subscribe(
-      (state) => state.lastReceivedMessage,
-      (msg) => {
-        if (!msg) return;
+    if (!lastMsg || lastMsg.id === processedIdRef.current) return;
+    processedIdRef.current = lastMsg.id;
 
-        const activeChatId = useChatStore.getState().activeChatId;
-        if (msg.chatId === activeChatId) return;
+    const activeChatId = useChatStore.getState().activeChatId;
+    const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
 
-        if (isMutedRef.current) return;
+    if (lastMsg.chatId === activeChatId && tabVisible) return;
 
-        playNotificationSound();
+    if (isMuted) return;
 
-        if (isMobile()) return;
+    playNotificationSound();
 
-        const chats = queryClient.getQueryData<Chat[]>(['chats']) ?? [];
-        const chat = chats.find((c) => c.id === msg.chatId);
-        const sender = chat?.members.find((m) => m.userId === msg.senderId)?.profile;
-        const senderName = sender?.displayName ?? sender?.name ?? 'New message';
-        const preview = msg.text ? (msg.text.length > 60 ? msg.text.slice(0, 60) + '…' : msg.text) : '📎';
+    if (isMobile()) return;
 
-        toast(senderName, {
-          description: preview,
-          duration: 4000,
-        });
-      },
-    );
-  }, []);
+    const allChats = queryClient.getQueryData<Chat[]>(['chats']) ?? [];
+    const chat = allChats.find((c) => c.id === lastMsg.chatId);
+    const sender = chat?.members.find((m) => m.userId === lastMsg.senderId)?.profile;
+    const senderName = sender?.displayName ?? sender?.name ?? 'New message';
+    const preview = lastMsg.text
+      ? lastMsg.text.length > 60
+        ? lastMsg.text.slice(0, 60) + '…'
+        : lastMsg.text
+      : '📎';
+
+    toast(senderName, { description: preview, duration: 4000 });
+  }, [lastMsg, isMuted]);
 }

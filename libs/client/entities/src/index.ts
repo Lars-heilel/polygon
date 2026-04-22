@@ -29,6 +29,7 @@ export {
   selectActiveChatId,
   selectActiveMessageId,
   selectIsTyping,
+  selectLastReceivedMessage,
   ChatItem,
   ChatHeaderSkeleton,
 } from './lib/chat';
