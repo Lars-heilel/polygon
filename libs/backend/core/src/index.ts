@@ -35,6 +35,9 @@ export * from './interceptors/logging.interceptor';
 export * from './interceptors/http-metrics.interceptor';
 export * from './interceptors/rpc-error.interceptor';
 
+// Prisma
+export { handlePrismaError } from './prisma/prisma-error.handler';
+
 // Filters
 export * from './filters/all-exceptions.filter';
 
