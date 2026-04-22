@@ -2,54 +2,52 @@
 
 _By Lars Heilel (Igor Shevchenko)_
 
+## Applications
 > **Status:** 🚧 In Development
-
-## Приложения
-
-| Приложение      | README                                                               |
+| Application     | README                                                               |
 | --------------- | -------------------------------------------------------------------- |
 | Messenger (SPA) | [apps/client/messenger/README.md](./apps/client/messenger/README.md) |
 
-## Стек
+## Tech Stack
 
-| Категория          | Технология             | Версия |
-| ------------------ | ---------------------- | ------ |
-| **Runtime**        | Node.js                | 20.x   |
-| **Язык**           | TypeScript             | ~5.9   |
-| **Backend**        | NestJS                 | ^11.0  |
-| **База данных**    | PostgreSQL             | 17     |
-| **ORM**            | Prisma                 | ^7.5   |
-| **Кеш**            | Redis                  | 7      |
-| **Message Broker** | RabbitMQ               | 3      |
-| **Монорепо**       | Nx                     | 22.6   |
-| **Frontend**       | React 19 + Vite        | ^7.0   |
-| **CSS**            | Tailwind CSS           | v4     |
-| **Валидация**      | Zod                    | ^4.3   |
-| **Инфраструктура** | Docker, Docker Compose | —      |
+| Category           | Technology             | Version |
+| ------------------ | ---------------------- | ------- |
+| **Runtime**        | Node.js                | 20.x    |
+| **Language**       | TypeScript             | ~5.9    |
+| **Backend**        | NestJS                 | ^11.0   |
+| **Database**       | PostgreSQL             | 17      |
+| **ORM**            | Prisma                 | ^7.5    |
+| **Cache**          | Redis                  | 7       |
+| **Message Broker** | RabbitMQ               | 3       |
+| **Monorepo**       | Nx                     | 22.6    |
+| **Frontend**       | React 19 + Vite        | ^7.0    |
+| **CSS**            | Tailwind CSS           | v4      |
+| **Validation**     | Zod                    | ^4.3    |
+| **Infrastructure** | Docker, Docker Compose | —       |
 
 ---
 
-## Быстрый старт
+## Quick Start
 
 ```bash
-# Первичная настройка — Docker, БД, Prisma, миграции
+# Initial setup — Docker, DB, Prisma, migrations
 ./scripts/bootstrap.sh
 
 cp .env.example .env
 docker compose up -d
 
-# Запустить любой сервис
+# Run any service
 npx nx serve @org/gateway
 npx nx serve @org/messenger
 ```
 
 ---
 
-## Документация
+## Documentation
 
-| Файл | Описание |
+| File | Description |
 |------|----------|
-| [docs/SETUP.md](./docs/SETUP.md) | Настройка окружения, Docker, базы данных |
-| [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Структура проекта, стандарты кода, Nx команды |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Микросервисы, FSD, межсервисное взаимодействие |
-| [docs/MONOREPO_GOTCHAS.md](./docs/MONOREPO_GOTCHAS.md) | Tailwind v4 в Nx, env-переменные, Prisma пути |
+| [docs/SETUP.md](./docs/SETUP.md) | Environment setup, Docker, and database configuration |
+| [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Project structure, coding standards, and Nx commands |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Microservices, FSD, and inter-service communication |
+| [docs/MONOREPO_GOTCHAS.md](./docs/MONOREPO_GOTCHAS.md) | Tailwind v4 in Nx, environment variables, and Prisma paths |
