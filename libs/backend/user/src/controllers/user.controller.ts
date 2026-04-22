@@ -3,7 +3,7 @@ import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import type { CreateUserEventInput, UserPublic } from '@org/common';
 import { USER_EVENTS, USER_PATTERNS, USER_SERVICE_TOKEN } from '@org/core';
 
-import { UpdateUserDto } from '../dto/update-user.dto';
+import { type UpdateUserDto } from '../dto/update-user.dto';
 import type { IUserController, IUserService } from '../interfaces/user.interface';
 
 @Controller()

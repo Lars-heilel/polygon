@@ -39,10 +39,24 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 4200,
       host: 'localhost',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/socket.io': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          ws: true,
+        },
+      },
     },
     plugins: [tailwindcss(), react(), visualizer({ open: true, gzipSize: true, brotliSize: true })],
     resolve: {
       conditions: ['@org/source'],
+    },
+    optimizeDeps: {
+      include: ['@emoji-mart/react', '@emoji-mart/data'],
     },
     // Uncomment this if you are using workers.
     // worker: {
@@ -77,6 +91,10 @@ export default defineConfig(({ mode }) => {
 
             if (id.includes('/socket.io') || id.includes('/engine.io')) {
               return 'vendor-socket';
+            }
+
+            if (id.includes('/emoji-mart') || id.includes('@emoji-mart')) {
+              return 'vendor-emoji';
             }
 
             return 'vendor';

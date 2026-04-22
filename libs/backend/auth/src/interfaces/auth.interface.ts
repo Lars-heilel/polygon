@@ -57,14 +57,14 @@ export interface IAuthService {
 }
 
 export interface IAuthController {
-  register(dto: RegisterDto): Promise<void>;
+  register(dto: RegisterDto): Promise<null>;
   validateCredentials(payload: { email: string; password: string }): Promise<CredentialsPayload>;
   login(payload: { id: string }): Promise<TokenPair>;
-  logout(payload: { refreshToken: string }): Promise<void>;
+  logout(payload: { refreshToken: string }): Promise<null>;
   refresh(payload: { refreshToken: string }): Promise<TokenPair>;
   verifyEmail(payload: { token: string }): Promise<TokenPair>;
-  resendVerification(payload: { email: string }): Promise<void>;
-  forgotPassword(payload: { email: string }): Promise<void>;
-  resetPassword(payload: { token: string; newPassword: string }): Promise<void>;
+  resendVerification(payload: { email: string }): Promise<null>;
+  forgotPassword(payload: { email: string }): Promise<null>;
+  resetPassword(payload: { token: string; newPassword: string }): Promise<null>;
   oauthLogin(dto: OAuthLoginDto): Promise<TokenPair>;
 }
