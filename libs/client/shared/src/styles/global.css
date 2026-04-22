@@ -76,6 +76,46 @@ em-emoji-picker {
   --color-border: #dbcefd; /* --color-purple-90 */
 }
 
+/* ── Sonner toast overrides ─────────────────────────────── */
+
+[data-sonner-toaster] {
+  --width: 360px;
+  font-family: var(--font-sans) !important;
+}
+
+[data-sonner-toast] {
+  --normal-bg: var(--color-surface-elevated);
+  --normal-border: var(--color-border);
+  --normal-text: #ffffff;
+}
+
+[data-sonner-toast] [data-title] {
+  color: var(--color-purple-65) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+}
+
+[data-sonner-toast] [data-description] {
+  color: #ffffff !important;
+  font-size: 0.875rem !important;
+  opacity: 0.9;
+}
+
+.theme-light [data-sonner-toast] {
+  --normal-bg: rgba(255, 255, 255, 0.95);
+  --normal-border: var(--color-purple-90);
+  --normal-text: #141414;
+}
+
+.theme-light [data-sonner-toast] [data-title] {
+  color: var(--color-purple-60) !important;
+}
+
+.theme-light [data-sonner-toast] [data-description] {
+  color: #141414 !important;
+  opacity: 0.8;
+}
+
 @layer base {
   body {
     @apply bg-surface text-text font-sans;
