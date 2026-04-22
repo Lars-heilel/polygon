@@ -10,11 +10,12 @@ permissions:
   actions: read
   contents: read
 
-# On PR: nx affected (only changed projects)
-# On push to dev/main: nx run-many (full check)
 env:
   NX_TEST_CMD: ${{ github.event_name == 'pull_request' && 'affected' || 'run-many' }}
   NX_AFFECTED_BASE: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
+  # Добавляем явные переменные для NX
+  NX_BASE: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+  NX_HEAD: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
 jobs:
   # ── Job 1: Lint, format, typecheck ──────────────────────────────────
@@ -38,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Format check
-        run: npx nx format:check
+        run: npx nx format:check --base=$NX_BASE --head=$NX_HEAD
 
       - name: Lint
         run: |
