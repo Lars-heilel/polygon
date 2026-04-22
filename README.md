@@ -4,6 +4,7 @@ _By Lars Heilel (Igor Shevchenko)_
 
 ## Applications
 > **Status:** 🚧 In Development
+
 | Application     | README                                                               |
 | --------------- | -------------------------------------------------------------------- |
 | Messenger (SPA) | [apps/client/messenger/README.md](./apps/client/messenger/README.md) |
