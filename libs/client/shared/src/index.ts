@@ -1,4 +1,5 @@
 export { apiFetch, ApiError } from './lib/api/client';
+export { authedFetch, configureAuthedFetch } from './lib/api/authed-fetch';
 export { cn } from './lib/utils/cn';
 export {
   formatTime,
@@ -17,7 +18,6 @@ export { Badge } from './ui/badge';
 export { Divider } from './ui/divider';
 export { Spinner } from './ui/spinner';
 export { Skeleton } from './ui/skeleton/skeleton';
-export { ChatItemSkeleton } from './ui/skeleton/chat-item-skeleton';
 export { ErrorBoundary } from './ui/error-boundary';
 export { Toaster, toast } from './ui/toast';
 export { EmptyState } from './ui/empty-state';

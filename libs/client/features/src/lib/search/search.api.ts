@@ -1,8 +1,7 @@
 import { API_ROUTES } from '@org/common';
 import type { UserSearchResult } from '@org/common';
+import { authedFetch } from '@org/shared';
 import { useQuery } from '@tanstack/react-query';
-
-import { authedFetch } from '../api/authed-fetch';
 
 export const searchApi = {
   users: (q: string, limit = 20, offset = 0) =>

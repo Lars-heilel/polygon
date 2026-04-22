@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-import { authedFetch } from '../api/authed-fetch';
+import { authedFetch } from '@org/shared';
 
 export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;

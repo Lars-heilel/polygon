@@ -4,7 +4,7 @@ import { apiFetch } from '@org/shared';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type z } from 'zod';
 
-import { authedFetch } from '../api/authed-fetch';
+import { authedFetch } from '@org/shared';
 
 export type User = Omit<UserBase, 'createdAt' | 'updatedAt'>;
 

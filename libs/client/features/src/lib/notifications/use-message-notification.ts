@@ -19,7 +19,7 @@ function getAudio(): HTMLAudioElement {
 function playNotificationSound() {
   const audio = getAudio();
   audio.currentTime = 0;
-  audio.play().catch(() => {});
+  audio.play().catch((_err: unknown) => { void _err; });
 }
 
 function isMobile() {
@@ -37,7 +37,7 @@ export function useMessageNotification() {
   useEffect(() => {
     const unlock = () => {
       const audio = getAudio();
-      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch((_err: unknown) => { void _err; });
     };
     document.addEventListener('pointerdown', unlock, { once: true });
     return () => document.removeEventListener('pointerdown', unlock);

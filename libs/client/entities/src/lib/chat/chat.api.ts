@@ -10,7 +10,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 
-import { authedFetch } from '../api/authed-fetch';
+import { authedFetch } from '@org/shared';
 import type { Message } from '../message/message.api';
 
 export type MemberProfile = {

@@ -1,4 +1,4 @@
-import { Skeleton } from './skeleton';
+import { Skeleton } from '@org/shared';
 
 export function ChatItemSkeleton() {
   return (

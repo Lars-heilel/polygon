@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useSearchUsersQuery } from '@org/entities';
+import { useSearchUsersQuery } from './search.api';
 import { debounce } from 'es-toolkit';
 
 export function useSearchUsers() {

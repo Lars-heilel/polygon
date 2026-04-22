@@ -1,10 +1,15 @@
-import { API_ROUTES } from '@org/common';
-import { ApiError, apiFetch } from '@org/shared';
 import { Mutex } from 'async-mutex';
 
-import { useSessionStore } from '../session/session.store';
+import { API_ROUTES } from '@org/common';
+
+import { ApiError, apiFetch } from './client';
 
 const refreshMutex = new Mutex();
+let onUnauthenticated: (() => void) | null = null;
+
+export function configureAuthedFetch(cb: () => void): void {
+  onUnauthenticated = cb;
+}
 
 export async function authedFetch<T>(path: string, init?: RequestInit): Promise<T> {
   try {
@@ -17,7 +22,7 @@ export async function authedFetch<T>(path: string, init?: RequestInit): Promise<
         await apiFetch<void>(API_ROUTES.auth.refresh, { method: 'POST' });
         return apiFetch<T>(path, init);
       } catch {
-        useSessionStore.getState().setAuthenticated(false);
+        onUnauthenticated?.();
         throw err;
       }
     });

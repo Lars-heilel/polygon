@@ -18,3 +18,4 @@ export type { ChatItemProps } from './ui/chat-item';
 export { ChatItem } from './ui/chat-item';
 
 export { ChatHeaderSkeleton } from './ui/chat-header-skeleton';
+export { ChatItemSkeleton } from './ui/chat-item-skeleton';

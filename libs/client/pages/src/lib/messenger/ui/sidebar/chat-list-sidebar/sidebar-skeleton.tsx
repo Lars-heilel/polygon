@@ -1,4 +1,4 @@
-import { ChatItemSkeleton } from '@org/shared';
+import { ChatItemSkeleton } from '@org/entities';
 
 export function SidebarSkeleton() {
   return (

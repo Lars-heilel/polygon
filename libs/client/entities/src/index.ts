@@ -32,6 +32,7 @@ export {
   selectLastReceivedMessage,
   ChatItem,
   ChatHeaderSkeleton,
+  ChatItemSkeleton,
 } from './lib/chat';
 
 export type { Message, MessagePage } from './lib/message';
@@ -43,6 +44,3 @@ export {
   MessageBubbleSkeleton,
   MessageListSkeleton,
 } from './lib/message';
-
-export { useSearchUsersQuery, searchApi } from './lib/search/search.api';
-export { initSocketMiddleware } from './lib/session/socket-middleware';

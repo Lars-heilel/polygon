@@ -1,7 +1,7 @@
-import { useSessionStore } from './session.store';
+import { useSessionStore } from '@org/entities';
 import { socket } from '@org/shared';
 
-import { initChatSocketManager } from '../chat/chat-socket-manager';
+import { initChatSocketManager } from './chat-socket-manager';
 
 export function initSocketMiddleware(): () => void {
   let cleanupChatManager: (() => void) | null = null;
