@@ -1,0 +1,71 @@
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: var(--color-gray-50);
+}
+
+.token.punctuation,
+.token.delimiter {
+  color: var(--color-gray-50);
+}
+
+.token.keyword,
+.token.operator,
+.token.important,
+.token.atrule {
+  color: var(--color-purple-70);
+}
+
+.token.string,
+.token.attr-value,
+.token.char,
+.token.regex,
+.token.template-string {
+  color: var(--color-purple-90);
+}
+
+.token.function,
+.token.class-name,
+.token.selector,
+.token.tag {
+  color: var(--color-purple-65);
+}
+
+.token.number,
+.token.boolean,
+.token.constant,
+.token.symbol,
+.token.builtin {
+  color: var(--color-purple-80);
+}
+
+.token.variable,
+.token.parameter,
+.token.attr-name,
+.token.property {
+  color: var(--color-text);
+}
+
+.token.namespace {
+  color: var(--color-purple-80);
+  opacity: 0.85;
+}
+
+.token.inserted {
+  color: var(--color-purple-90);
+}
+
+.token.deleted {
+  color: var(--color-gray-50);
+  text-decoration: line-through;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.bold,
+.token.important {
+  font-weight: 600;
+}
