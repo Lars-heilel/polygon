@@ -16,6 +16,9 @@ export default defineConfig(() => ({
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
     }),
   ],
+  resolve: {
+    conditions: ['@org/source'],
+  },
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [],
