@@ -35,11 +35,7 @@ export function CodeToMarkdown({ content }: { content: string }) {
             );
           }
 
-          return (
-            <code className="px-1.5 py-0.5 rounded text-xs font-mono bg-surface-elevated text-purple-70">
-              {children}
-            </code>
-          );
+          return <code className="inline-code">{children}</code>;
         },
       }}
     >

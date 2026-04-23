@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 
+import { prismTheme } from './prism-theme';
+
 interface CodeBlockProps {
   language: string;
   value: string;
@@ -30,8 +32,8 @@ export default function CodeBlock({ language, value }: CodeBlockProps) {
       </div>
       <SyntaxHighlighter
         language={language}
+        style={prismTheme}
         PreTag="div"
-        useInlineStyles={false}
         customStyle={{
           margin: 0,
           padding: '0.75rem 1rem',
@@ -39,7 +41,6 @@ export default function CodeBlock({ language, value }: CodeBlockProps) {
           fontSize: '0.75rem',
           lineHeight: '1.6',
         }}
-        codeTagProps={{ style: { fontFamily: 'ui-monospace, monospace' } }}
       >
         {value}
       </SyntaxHighlighter>
