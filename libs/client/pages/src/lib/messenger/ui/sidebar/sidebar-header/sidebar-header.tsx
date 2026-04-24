@@ -1,4 +1,4 @@
-import { Heading } from '@org/shared';
+import { Logo } from '@org/shared';
 
 interface SidebarHeaderProps {
   onMenuClick?: () => void;
@@ -27,12 +27,7 @@ export function SidebarHeader({ onMenuClick }: SidebarHeaderProps) {
             />
           </svg>
         </button>
-        <Heading
-          level={5}
-          as="h1"
-        >
-          Polygon
-        </Heading>
+        <Logo />
       </div>
     </header>
   );

@@ -1,12 +1,11 @@
 import { useCallback } from 'react';
 
-import { ChatItem, useCreateDirectChatMutation } from '@org/entities';
-import { useSearchUsers } from '@org/features';
+import { ChatItem } from '@org/entities';
+import { useCreateChat, useSearchUsers } from '@org/features';
 import { Spinner, Text } from '@org/shared';
 import { CurrentUserWidget } from '@org/widgets';
 
 import { useChatList } from '../../../model/use-chat-list';
-import { useCreateChat } from '../../../model/use-create-chat';
 import { CreateChatModal } from '../../modals/create-chat-modal';
 import { ChatSearch } from '../chat-search';
 import { SidebarHeader } from '../sidebar-header';
@@ -25,10 +24,7 @@ export function SidebarContent({
   onSettingsClick,
 }: SidebarContentProps) {
   const { chats, selectedChatId: internalSelectedChatId, setSelectedChatId } = useChatList();
-
   const search = useSearchUsers();
-  const { mutate: createDirectChat } = useCreateDirectChatMutation();
-
   const {
     isOpen: isCreateChatOpen,
     setIsOpen: setIsCreateChatOpen,
@@ -50,13 +46,6 @@ export function SidebarContent({
       }
     },
     [onSelectChat, setSelectedChatId],
-  );
-
-  const handleCreateDirectChat = useCallback(
-    (userId: string) => {
-      createDirectChat({ targetUserId: userId }, { onSuccess: () => search.onChange('') });
-    },
-    [createDirectChat, search],
   );
 
   return (
@@ -88,7 +77,7 @@ export function SidebarContent({
               <button
                 key={user.id}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated text-left transition-colors"
-                onClick={() => handleCreateDirectChat(user.id)}
+                onClick={() => onSelectUser(user.id)}
               >
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <span className="text-sm font-medium text-primary">

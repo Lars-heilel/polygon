@@ -15,8 +15,4 @@ export const appRoutes: RouteObject[] = [
       },
     ],
   },
-  {
-    path: '/settings',
-    lazy: () => import('@org/pages').then((m) => ({ Component: m.SettingsPage })),
-  },
 ];

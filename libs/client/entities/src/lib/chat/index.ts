@@ -17,5 +17,7 @@ export {
 export type { ChatItemProps } from './ui/chat-item';
 export { ChatItem } from './ui/chat-item';
 
-export { ChatHeaderSkeleton } from './ui/chat-header-skeleton';
+export { getChatDisplayName } from './chat.utils';
+
+export { ChatHeader, ChatHeaderSkeleton } from './ui/chat-header';
 export { ChatItemSkeleton } from './ui/chat-item-skeleton';

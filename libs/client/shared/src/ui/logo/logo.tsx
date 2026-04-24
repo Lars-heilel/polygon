@@ -1,4 +1,4 @@
-import logoUrl from '@org/common/assets/icons/favicon.svg';
+import logoUrl from './favicon.svg';
 
 import { Heading } from '../typography';
 

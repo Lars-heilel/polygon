@@ -1,0 +1,11 @@
+<svg width="60" height="100" viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="polyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:var(--color-purple-60, #703bf7);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:var(--color-purple-75, #a685fa);stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <path d="M30 10 L60 50 L30 90 L0 50 Z" fill="url(#polyGrad)" />
+  <path d="M30 10 L45 50 L30 70 L15 50 Z" fill="#f4f0fe" opacity="0.8" />
+</svg>

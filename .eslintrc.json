@@ -1,6 +1,6 @@
 {
   "root": true,
-  "ignorePatterns": ["node_modules", "dist", ".nx"],
+  "ignorePatterns": ["node_modules", "dist", ".nx", "**/out-tsc"],
   "plugins": ["@nx"],
   "overrides": [
     {
@@ -12,6 +12,30 @@
             "enforceBuildableLibDependency": true,
             "allow": [],
             "depConstraints": [
+              {
+                "sourceTag": "layer:shared",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "layer:entities",
+                "onlyDependOnLibsWithTags": ["layer:shared", "scope:shared"]
+              },
+              {
+                "sourceTag": "layer:features",
+                "onlyDependOnLibsWithTags": ["layer:entities", "layer:shared", "scope:shared"]
+              },
+              {
+                "sourceTag": "layer:widgets",
+                "onlyDependOnLibsWithTags": ["layer:features", "layer:entities", "layer:shared", "scope:shared"]
+              },
+              {
+                "sourceTag": "layer:layouts",
+                "onlyDependOnLibsWithTags": ["layer:widgets", "layer:features", "layer:entities", "layer:shared", "scope:shared"]
+              },
+              {
+                "sourceTag": "layer:pages",
+                "onlyDependOnLibsWithTags": ["layer:layouts", "layer:widgets", "layer:features", "layer:entities", "layer:shared", "scope:shared"]
+              },
               {
                 "sourceTag": "*",
                 "onlyDependOnLibsWithTags": ["*"]

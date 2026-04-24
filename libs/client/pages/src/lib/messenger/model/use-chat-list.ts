@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { useGetChatsSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
+import { getChatDisplayName, useGetChatsSuspenseQuery, useMeSuspenseQuery } from '@org/entities';
 
 export function useChatList() {
   const { data: chats } = useGetChatsSuspenseQuery();
@@ -10,18 +10,14 @@ export function useChatList() {
 
   const filteredChats = useMemo(() => {
     return chats
-      .map((chat) => {
-        const otherMember = chat.members.find((m) => m.userId !== me.id);
-        const otherProfile = otherMember?.profile;
-        return {
-          id: chat.id,
-          name: otherProfile?.displayName ?? otherProfile?.name ?? chat.name ?? 'Chat',
-          lastMessage: chat.messages?.[0]?.text ?? 'No messages yet',
-          time: chat.messages?.[0]?.createdAt ?? '',
-          unread: 0,
-          online: false,
-        };
-      })
+      .map((chat) => ({
+        id: chat.id,
+        name: getChatDisplayName(chat, me.id),
+        lastMessage: chat.messages?.[0]?.text ?? 'No messages yet',
+        time: chat.messages?.[0]?.createdAt ?? '',
+        unread: 0,
+        online: false,
+      }))
       .filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [chats, me, searchQuery]);
 

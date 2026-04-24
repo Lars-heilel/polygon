@@ -3,8 +3,7 @@ import { Suspense, useCallback } from 'react';
 import { EmojiPicker } from '@org/features';
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
-import { useChatSocket } from '../../../model/chat-socket/use-chat-socket';
-import { useChatWindow } from '../../../model/use-chat-window';
+import { useChatSocket, useSendMessage } from '@org/features';
 import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
 import { MessageList, MessageListSkeleton } from '../message-list';
 
@@ -14,7 +13,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({ chatId }: ChatWindowProps) {
   useChatSocket(chatId);
-  const { messageText, setMessageText, handleSend } = useChatWindow(chatId);
+  const { messageText, setMessageText, handleSend } = useSendMessage(chatId);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
