@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 
 import { Avatar, formatTime } from '@org/shared';
 
@@ -8,12 +8,14 @@ interface MessageBubbleProps {
   message: Message;
   isMine: boolean;
   senderName?: string;
+  contentSlot?: ReactNode;
 }
 
 export const MessageBubble = memo(function MessageBubble({
   message,
   isMine,
   senderName,
+  contentSlot,
 }: MessageBubbleProps) {
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -30,7 +32,7 @@ export const MessageBubble = memo(function MessageBubble({
             : 'bg-surface-elevated text-text rounded-bl-md'
         }`}
       >
-        <div className="warp-break-words">{message.text}</div>
+        <div className="wrap-break-words">{contentSlot ?? message.text}</div>
         <p
           className={`text-[10px] mt-1 text-right ${isMine ? 'text-white/60' : 'text-text-muted'}`}
         >

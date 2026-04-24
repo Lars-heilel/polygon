@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import {
   MessageBubble,
   MessageBubbleSkeleton,
@@ -6,8 +8,26 @@ import {
   useInfiniteMessagesQuery,
   useMeSuspenseQuery,
 } from '@org/entities';
-import { useInfiniteScrollList } from '@org/features';
+import type { Message } from '@org/entities';
+import { MarkdownMessage, useInfiniteScrollList } from '@org/features';
 import { Text } from '@org/shared';
+
+interface MessageItemProps {
+  message: Message;
+  isMine: boolean;
+  senderName?: string;
+}
+
+const MessageItem = memo(function MessageItem({ message, isMine, senderName }: MessageItemProps) {
+  return (
+    <MessageBubble
+      message={message}
+      isMine={isMine}
+      senderName={senderName}
+      contentSlot={<MarkdownMessage content={message.text ?? ''} />}
+    />
+  );
+});
 
 export { MessageListSkeleton };
 
@@ -75,7 +95,7 @@ export function MessageList({ chatId }: MessageListProps) {
         {messages.map((msg) => {
           const senderProfile = memberProfileMap.get(msg.senderId);
           return (
-            <MessageBubble
+            <MessageItem
               key={msg.id}
               message={msg}
               isMine={msg.senderId === me.id}

@@ -9,3 +9,4 @@ export { useSendMessage } from './lib/chat/send-message/use-send-message';
 export { useInfiniteScrollList } from './lib/chat/infinite-scroll/use-infinite-scroll-list';
 export { useNotificationStore, selectIsMuted } from './lib/notifications/notification.store';
 export { useMessageNotification } from './lib/notifications/use-message-notification';
+export { MarkdownMessage } from './lib/chat/markdown-message';
