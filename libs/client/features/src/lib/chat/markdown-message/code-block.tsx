@@ -1,41 +1,69 @@
 import { useState } from 'react';
 
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import c from 'react-syntax-highlighter/dist/esm/languages/prism/c';
+import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
+import csharp from 'react-syntax-highlighter/dist/esm/languages/prism/csharp';
+import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
+import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
+import java from 'react-syntax-highlighter/dist/esm/languages/prism/java';
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
+import kotlin from 'react-syntax-highlighter/dist/esm/languages/prism/kotlin';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
+import php from 'react-syntax-highlighter/dist/esm/languages/prism/php';
+import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import regex from 'react-syntax-highlighter/dist/esm/languages/prism/regex';
+import ruby from 'react-syntax-highlighter/dist/esm/languages/prism/ruby';
+import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
+import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
+import swift from 'react-syntax-highlighter/dist/esm/languages/prism/swift';
+import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
 import { toast } from 'sonner';
 
 import { appPrismTheme } from './prism-theme';
 
-const SUPPORTED_LANGUAGES = new Set([
-  'bash',
-  'c',
-  'cpp',
-  'csharp',
-  'css',
-  'go',
-  'html',
-  'java',
-  'javascript',
-  'js',
-  'json',
-  'jsx',
-  'kotlin',
-  'markdown',
-  'md',
-  'php',
-  'python',
-  'py',
-  'regex',
-  'ruby',
-  'rb',
-  'rust',
-  'sh',
-  'sql',
-  'swift',
-  'ts',
-  'tsx',
-  'typescript',
-  'yaml',
-  'yml',
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
+SyntaxHighlighter.registerLanguage('c', c);
+SyntaxHighlighter.registerLanguage('cpp', cpp);
+SyntaxHighlighter.registerLanguage('csharp', csharp);
+SyntaxHighlighter.registerLanguage('css', css);
+SyntaxHighlighter.registerLanguage('go', go);
+SyntaxHighlighter.registerLanguage('html', markup);
+SyntaxHighlighter.registerLanguage('java', java);
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('js', javascript);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('jsx', jsx);
+SyntaxHighlighter.registerLanguage('kotlin', kotlin);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
+SyntaxHighlighter.registerLanguage('php', php);
+SyntaxHighlighter.registerLanguage('python', python);
+SyntaxHighlighter.registerLanguage('py', python);
+SyntaxHighlighter.registerLanguage('regex', regex);
+SyntaxHighlighter.registerLanguage('ruby', ruby);
+SyntaxHighlighter.registerLanguage('rb', ruby);
+SyntaxHighlighter.registerLanguage('rust', rust);
+SyntaxHighlighter.registerLanguage('sql', sql);
+SyntaxHighlighter.registerLanguage('swift', swift);
+SyntaxHighlighter.registerLanguage('ts', typescript);
+SyntaxHighlighter.registerLanguage('tsx', tsx);
+SyntaxHighlighter.registerLanguage('typescript', typescript);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage('yml', yaml);
+
+const LABELED_LANGUAGES = new Set([
+  'bash', 'c', 'cpp', 'csharp', 'css', 'go', 'html', 'java',
+  'javascript', 'js', 'json', 'jsx', 'kotlin', 'markdown', 'md',
+  'php', 'python', 'py', 'regex', 'ruby', 'rb', 'rust', 'sh',
+  'sql', 'swift', 'ts', 'tsx', 'typescript', 'yaml', 'yml',
 ]);
 
 interface CodeBlockProps {
@@ -45,8 +73,7 @@ interface CodeBlockProps {
 
 export default function CodeBlock({ language, value }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
-  const lang = SUPPORTED_LANGUAGES.has(language) ? language : 'text';
-  const showLabel = SUPPORTED_LANGUAGES.has(language);
+  const showLabel = LABELED_LANGUAGES.has(language);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value).then(() => {
@@ -75,7 +102,7 @@ export default function CodeBlock({ language, value }: CodeBlockProps) {
       </div>
       <div className="bg-[#1a1a1a] p-3 overflow-x-auto">
         <SyntaxHighlighter
-          language={lang}
+          language={language}
           style={appPrismTheme}
           PreTag="div"
           useInlineStyles={true}

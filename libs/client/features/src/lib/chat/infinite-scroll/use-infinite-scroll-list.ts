@@ -15,7 +15,6 @@ export function useInfiniteScrollList({
 }: UseInfiniteScrollListOptions) {
   const [scrollEl, setScrollEl] = useState<Element | null>(null);
   const scrollRef = useCallback((node: HTMLDivElement | null) => setScrollEl(node), []);
-
   const { ref: newestSentinelRef, inView: isAtNewest } = useInView({
     root: scrollEl,
     threshold: 0,
