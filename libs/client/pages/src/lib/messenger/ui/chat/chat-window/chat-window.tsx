@@ -1,11 +1,12 @@
 import { Suspense, useCallback } from 'react';
 
+import { MessageListSkeleton } from '@org/entities';
 import { EmojiPicker } from '@org/features';
+import { useChatSocket, useSendMessage } from '@org/features';
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
-import { useChatSocket, useSendMessage } from '@org/features';
 import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
-import { MessageList, MessageListSkeleton } from '../message-list';
+import { MessageList } from '../message-list';
 
 interface ChatWindowProps {
   chatId: string;

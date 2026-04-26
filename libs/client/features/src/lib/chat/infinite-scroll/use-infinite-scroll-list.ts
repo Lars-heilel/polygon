@@ -42,6 +42,7 @@ export function useInfiniteScrollList({
 
   return {
     scrollRef,
+    scrollEl,
     newestSentinelRef,
     olderSentinelRef,
     isAtNewest,

@@ -11,7 +11,6 @@ import {
 import type { Message } from '@org/entities';
 import { MarkdownMessage, useInfiniteScrollList } from '@org/features';
 import { Text } from '@org/shared';
-import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface MessageItemProps {
   message: Message;
@@ -49,12 +48,7 @@ export function MessageList({ chatId }: MessageListProps) {
   );
 
   const messages = data.pages.flatMap((p) => [...p.messages].reverse());
-  const rowVirtualizer = useVirtualizer({
-    count: messages.length,
-    getScrollElement: () => scrollRef,
-    estimateSize: () => 80, // Примерная высота сообщения
-    overscan: 5, // Сколько элементов рендерить за пределами видимости
-  });
+
   return (
     <div className="relative flex-1 overflow-hidden">
       {!isAtNewest && (
