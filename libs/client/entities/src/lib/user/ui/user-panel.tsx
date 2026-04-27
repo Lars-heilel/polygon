@@ -1,6 +1,6 @@
 import { Avatar, Text } from '@org/shared';
 
-import { useMeQuery } from '../user.api';
+import { useMeQuery } from '../api/user.api';
 
 interface UserPanelProps {
   onProfileClick?: () => void;
@@ -24,8 +24,19 @@ export function UserPanel({ onProfileClick }: UserPanelProps) {
           size="sm"
         />
         <div className="flex-1 min-w-0 text-left">
-          <Text size="sm" weight="medium" className="truncate">{me.email}</Text>
-          <Text size="xs" color="muted">Online</Text>
+          <Text
+            size="sm"
+            weight="medium"
+            className="truncate"
+          >
+            {me.email}
+          </Text>
+          <Text
+            size="xs"
+            color="muted"
+          >
+            Online
+          </Text>
         </div>
         <svg
           className="w-4 h-4 text-text-muted"

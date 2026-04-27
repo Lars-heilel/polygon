@@ -1,4 +1,4 @@
-export type { User } from './user.api';
+export type { User } from './api/user.api';
 export {
   authApi,
   useLoginMutation,
@@ -9,7 +9,7 @@ export {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useResendVerificationMutation,
-} from './user.api';
+} from './api/user.api';
 
 export { UserPanel } from './ui/user-panel';
 export { ProfileModal } from './ui/profile-modal';

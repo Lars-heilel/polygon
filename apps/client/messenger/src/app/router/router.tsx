@@ -7,14 +7,17 @@ import { RouteError } from './route-error';
 
 export const router = createBrowserRouter([
   {
-    // корневой роут — сам ничего не рендерит (нет element),
-    // но errorElement здесь ловит ошибки из ЛЮБОГО дочернего роута
     path: '/',
     errorElement: <RouteError />,
     children: [
       {
         index: true,
-        element: <Navigate to="/chats" replace />,
+        element: (
+          <Navigate
+            to="/chats"
+            replace
+          />
+        ),
       },
 
       {
@@ -23,7 +26,15 @@ export const router = createBrowserRouter([
           {
             path: '/auth',
             children: [
-              { index: true, element: <Navigate to="/auth/login" replace /> },
+              {
+                index: true,
+                element: (
+                  <Navigate
+                    to="/auth/login"
+                    replace
+                  />
+                ),
+              },
               ...authRoutes,
             ],
           },

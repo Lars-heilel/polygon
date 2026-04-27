@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 import { Avatar, Badge, Heading, Text } from '@org/shared';
 
-import { useMeSuspenseQuery } from '../../user/user.api';
+import { useMeSuspenseQuery } from '../../user/api/user.api';
 import { useGetChatsSuspenseQuery } from '../chat.api';
 import { getChatDisplayName } from '../chat.utils';
 import { ChatHeaderSkeleton } from './chat-header-skeleton';

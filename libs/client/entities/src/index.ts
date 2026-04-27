@@ -2,7 +2,7 @@ export {
   useSessionStore,
   selectIsAuthenticated,
   selectIsSessionLoading,
-} from './lib/session/session.store';
+} from './lib/user/model/session.store';
 
 export type { User } from './lib/user';
 export {
@@ -46,3 +46,4 @@ export {
   MessageBubbleSkeleton,
   MessageListSkeleton,
 } from './lib/message';
+export { AuthBootstrap } from './lib/user/ui/auth-provider';

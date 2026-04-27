@@ -1,6 +1,6 @@
-import { Avatar, Button, Modal, Text, Heading } from '@org/shared';
+import { Avatar, Button, Heading, Modal, Text } from '@org/shared';
 
-import { useMeQuery } from '../user.api';
+import { useMeQuery } from '../api/user.api';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -16,7 +16,11 @@ export function ProfileModal({ isOpen, onClose, onSettingsClick }: ProfileModalP
   const displayName = me.name ?? me.email.slice(0, 8);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-md"
+    >
       <Modal.Header>
         <div className="relative h-32 bg-linear-to-r from-primary to-primary/60">
           <button
@@ -25,8 +29,18 @@ export function ProfileModal({ isOpen, onClose, onSettingsClick }: ProfileModalP
             className="absolute top-3 right-3 p-2 bg-black/20 hover:bg-black/30 rounded-full transition-colors text-white"
             aria-label="Close"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -41,7 +55,12 @@ export function ProfileModal({ isOpen, onClose, onSettingsClick }: ProfileModalP
 
       <div className="pt-20 pb-6 px-6">
         <div className="text-center mb-6">
-          <Heading level={3} as="h2">{displayName}</Heading>
+          <Heading
+            level={3}
+            as="h2"
+          >
+            {displayName}
+          </Heading>
           <Text color="muted">{me.email}</Text>
         </div>
 
