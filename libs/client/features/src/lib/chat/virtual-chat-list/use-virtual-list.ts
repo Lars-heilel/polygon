@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import type { Virtualizer } from '@tanstack/react-virtual';
 
@@ -21,75 +21,65 @@ export function useVirtualChat<TItem extends { id: string | number }>({
   isFetchingNextPage,
   fetchNextPage,
 }: UseVirtualChatOptions<TItem>) {
-  const isFirstLoad = useRef(true);
+  const [isReady, setIsReady] = useState(false);
+  const isAutoScrolling = useRef(false);
+  const prevTotalSize = useRef(0);
 
-  // Сброс состояния при смене чата
   useLayoutEffect(() => {
-    isFirstLoad.current = true;
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
-    return;
+    setIsReady(false);
+    isAutoScrolling.current = false;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [chatId, scrollRef]);
 
-  // 1. Первый прыжок вниз при загрузке сообщений
-  useLayoutEffect(() => {
-    let raf: number;
-    if (messages.length > 0 && isFirstLoad.current) {
-      virtualizer.scrollToIndex(messages.length - 1, { align: 'end' });
-      raf = requestAnimationFrame(() => {
-        isFirstLoad.current = false;
-      });
-      return () => {
-        if (raf) cancelAnimationFrame(raf);
-      };
-    }
-    return;
-  }, [messages.length, virtualizer, chatId]);
+  const totalSize = virtualizer.getTotalSize();
 
-  // 2. Подгрузка истории вверх
+  useLayoutEffect(() => {
+    if (messages.length === 0) return;
+
+    if (!isReady || isAutoScrolling.current) {
+      virtualizer.scrollToOffset(totalSize, { align: 'end' });
+
+      const raf = requestAnimationFrame(() => {
+        if (!isReady) setIsReady(true);
+        if (totalSize === prevTotalSize.current) {
+          isAutoScrolling.current = false;
+        }
+      });
+
+      prevTotalSize.current = totalSize;
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [totalSize, messages.length, isReady, virtualizer]);
+
   const virtualItems = virtualizer.getVirtualItems();
   const firstItem = virtualItems[0];
   useLayoutEffect(() => {
-    if (
-      !isFirstLoad.current &&
-      firstItem &&
-      firstItem.index === 0 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
+    if (isReady && firstItem?.index === 0 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-    return;
-  }, [firstItem, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [firstItem?.index, hasNextPage, isFetchingNextPage, fetchNextPage, isReady]);
 
-  // 3. Stick to Bottom при новых сообщениях
-  const lastMessageId = messages[messages.length - 1]?.id;
   useLayoutEffect(() => {
-    if (isFirstLoad.current || !scrollRef.current || !lastMessageId) {
-      return;
-    }
+    if (!isReady || !scrollRef.current) return;
 
     const scrollEl = scrollRef.current;
-    const isAtBottom = scrollEl.scrollHeight - scrollEl.scrollTop <= scrollEl.clientHeight + 200;
+
+    const isAtBottom = scrollEl.scrollHeight - scrollEl.scrollTop <= scrollEl.clientHeight + 150;
 
     if (isAtBottom) {
-      virtualizer.scrollToIndex(messages.length - 1, { align: 'end' });
+      isAutoScrolling.current = true;
+      virtualizer.scrollToOffset(virtualizer.getTotalSize(), { align: 'end' });
     }
-    return;
-  }, [lastMessageId, messages.length, virtualizer, scrollRef]);
+  }, [messages.length, isReady, virtualizer, scrollRef]);
 
   const scrollToBottom = useCallback(() => {
-    virtualizer.scrollToIndex(messages.length - 1, { align: 'end' });
-  }, [messages.length, virtualizer]);
+    isAutoScrolling.current = true;
 
-  // Расчет: оторван ли пользователь от низа чата
+    virtualizer.scrollToOffset(virtualizer.getTotalSize(), { align: 'end', behavior: 'smooth' });
+  }, [virtualizer]);
+
   const lastVisibleItem = virtualItems.at(-1);
-  const isUserUp = (lastVisibleItem?.index ?? 0) < messages.length - 1;
+  const isUserUp = isReady && lastVisibleItem && lastVisibleItem.index < messages.length - 1;
 
-  return {
-    isFirstLoad: isFirstLoad.current,
-    isUserUp: isUserUp && !isFirstLoad.current,
-    scrollToBottom,
-  };
+  return { isReady, isUserUp, scrollToBottom };
 }

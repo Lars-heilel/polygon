@@ -2,8 +2,8 @@ import { memo } from 'react';
 
 import { Avatar, Badge, Heading, Text } from '@org/shared';
 
-import { useGetChatsSuspenseQuery } from '../chat.api';
 import { useMeSuspenseQuery } from '../../user/user.api';
+import { useGetChatsSuspenseQuery } from '../chat.api';
 import { getChatDisplayName } from '../chat.utils';
 import { ChatHeaderSkeleton } from './chat-header-skeleton';
 
@@ -22,7 +22,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: Chat
   const displayName = chat ? getChatDisplayName(chat, me.id) : 'Chat';
 
   return (
-    <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
+    <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky shrink-0">
       <div className="relative">
         <Avatar
           name={displayName}

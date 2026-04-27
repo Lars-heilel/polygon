@@ -10,7 +10,7 @@ import {
 } from '@org/entities';
 import type { Message } from '@org/entities';
 import { MarkdownMessage, useVirtualChat } from '@org/features';
-import { type VirtualItem, useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 export { MessageListSkeleton };
 
@@ -59,7 +59,6 @@ export function VirtualMessageList({ chatId }: { chatId: string }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteMessagesQuery(chatId);
   const { data: me } = useMeSuspenseQuery();
   const { data: chats } = useGetChatsSuspenseQuery();
-
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const messages = useMemo(
@@ -82,13 +81,13 @@ export function VirtualMessageList({ chatId }: { chatId: string }) {
   const rowVirtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 85,
-    overscan: 12,
+    estimateSize: () => 100,
+    overscan: 15,
+    getItemKey: (index) => `${chatId}-${messages[index]?.id ?? index}`,
     measureElement: (el) => (el as HTMLElement).offsetHeight,
-    getItemKey: (index: number) => `${chatId}-${messages[index]?.id ?? index}`,
   });
 
-  const { isUserUp, scrollToBottom } = useVirtualChat({
+  const { isUserUp, scrollToBottom, isReady } = useVirtualChat({
     chatId,
     messages,
     virtualizer: rowVirtualizer,
@@ -114,8 +113,13 @@ export function VirtualMessageList({ chatId }: { chatId: string }) {
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto"
-        style={{ contain: 'strict' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{
+          contain: 'strict',
+          opacity: isReady ? 1 : 0,
+          transition: 'opacity 0.2s ease-in',
+          overflowAnchor: 'none',
+        }}
       >
         {isFetchingNextPage && (
           <div className="w-full py-4 px-4 flex flex-col gap-2">
@@ -133,7 +137,7 @@ export function VirtualMessageList({ chatId }: { chatId: string }) {
             position: 'relative',
           }}
         >
-          {rowVirtualizer.getVirtualItems().map((virtualItem: VirtualItem) => {
+          {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const msg = messages[virtualItem.index];
             if (!msg) return null;
             const senderProfile = memberProfileMap.get(msg.senderId);

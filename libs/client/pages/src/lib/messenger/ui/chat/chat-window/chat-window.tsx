@@ -1,12 +1,11 @@
 import { Suspense, useCallback } from 'react';
 
-import { MessageListSkeleton } from '@org/entities';
+import { ChatHeader, ChatHeaderSkeleton, MessageListSkeleton } from '@org/entities';
 import { EmojiPicker } from '@org/features';
 import { useChatSocket, useSendMessage } from '@org/features';
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
-import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
-import { MessageList } from '../message-list';
+import { VirtualMessageList } from '../message-list';
 
 interface ChatWindowProps {
   chatId: string;
@@ -44,11 +43,11 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
         }
       >
         <Suspense fallback={<MessageListSkeleton />}>
-          <MessageList chatId={chatId} />
+          <VirtualMessageList chatId={chatId} />
         </Suspense>
       </ErrorBoundary>
 
-      <div className="px-4 py-3 border-t border-border shrink-0">
+      <div className="px-4 py-3 border-t border-border sticky shrink-0">
         <div className="flex gap-3 items-end">
           <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted">
             <svg

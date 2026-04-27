@@ -1,3 +1,4 @@
 {
-  "tailwindCSS.experimental.configFile": "libs/client/shared/src/styles/global.css"
+  "tailwindCSS.experimental.configFile": "libs/client/shared/src/styles/global.css",
+  "markdown.validate.enabled": true
 }

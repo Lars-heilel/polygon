@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-import { queryClient, socket, toast } from '@org/shared';
-import { useChatStore, selectLastReceivedMessage, useGetChatsQuery } from '@org/entities';
+import { selectLastReceivedMessage, useChatStore, useGetChatsQuery } from '@org/entities';
 import type { Chat } from '@org/entities';
+import { queryClient, socket, toast } from '@org/shared';
 
 import { useNotificationStore } from './notification.store';
 
@@ -19,7 +19,9 @@ function getAudio(): HTMLAudioElement {
 function playNotificationSound() {
   const audio = getAudio();
   audio.currentTime = 0;
-  audio.play().catch((_err: unknown) => { void _err; });
+  audio.play().catch((_err: unknown) => {
+    void _err;
+  });
 }
 
 function isMobile() {
@@ -33,17 +35,23 @@ export function useMessageNotification() {
   const { data: chats } = useGetChatsQuery();
   const activeChatId = useChatStore((s) => s.activeChatId);
 
-  // Unlock audio on first user interaction (browser autoplay policy)
   useEffect(() => {
     const unlock = () => {
       const audio = getAudio();
-      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch((_err: unknown) => { void _err; });
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        })
+        .catch((_err: unknown) => {
+          void _err;
+        });
     };
     document.addEventListener('pointerdown', unlock, { once: true });
     return () => document.removeEventListener('pointerdown', unlock);
   }, []);
 
-  // Rejoin all chat rooms whenever active chat changes (use-chat-socket emits chat:leave on navigation)
   useEffect(() => {
     if (!chats?.length) return;
     chats.forEach((chat) => socket.emit('chat:join', { chatId: chat.id }));
