@@ -74,10 +74,9 @@ Full roadmap with implementation details — [`Todo.md`](../../Todo.md).
 
 ### Desktop Version
 
-| Light Mode                                                                                                                     | Dark Mode                                                         |
-| :----------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------- |
-| ![Light Mode](../../../docs/screenshots/Light-desktop.png)                                                                     | ![Dark Mode](../../../docs/screenshots/ChatList%26ChatWindow.png) |
-| Features                                                                                                                       |
-| :----------------------------------------------------------------------------------------------------------------------------- |
-| ![Emoji-Desktop-Picker](../../../docs/screenshots/Desktop-emoji-feature.png)                                                   |
-| ![Text-to-Markdown](../../../docs/screenshots/MarkdownFeature.png)                                                             |
+| Light Mode                                                                         | Dark Mode                                                                                                          |
+| :----------------------------------------------------------------------------------| :------------------------------------------------------------------------------------------------------------------|
+| ![Light Mode](../../../docs/screenshots/Light-desktop.png)                         | ![Dark Mode](../../../docs/screenshots/ChatList%26ChatWindow.png)                                                  |
+| Features:                                                                                                                                                                                               |
+| Emoji picker for desktop                                                           | Markdown transformation and syntax highlighting. Wrap your text in triple backticks (```) to use.                  |
+| ![Emoji-Desktop-Picker](../../../docs/screenshots/Desktop-emoji-feature.png)       | ![Text-to-Markdown](../../../docs/screenshots/MarkdownFeature.png)                                                 |
