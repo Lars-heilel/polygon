@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
@@ -59,40 +59,28 @@ SyntaxHighlighter.registerLanguage('typescript', typescript);
 SyntaxHighlighter.registerLanguage('yaml', yaml);
 SyntaxHighlighter.registerLanguage('yml', yaml);
 
-const LABELED_LANGUAGES = new Set([
-  'bash', 'c', 'cpp', 'csharp', 'css', 'go', 'html', 'java',
-  'javascript', 'js', 'json', 'jsx', 'kotlin', 'markdown', 'md',
-  'php', 'python', 'py', 'regex', 'ruby', 'rb', 'rust', 'sh',
-  'sql', 'swift', 'ts', 'tsx', 'typescript', 'yaml', 'yml',
-]);
-
 interface CodeBlockProps {
   language: string;
   value: string;
 }
 
-export default function CodeBlock({ language, value }: CodeBlockProps) {
+const CodeBlock = memo(function CodeBlock({ language, value }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
-  const showLabel = LABELED_LANGUAGES.has(language);
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
-      toast.info(`Успешное копирование`);
+      toast.info(`Скопировано`);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
+  }, [value]);
 
   return (
-    <div className="rounded-lg overflow-hidden border border-[#262626] my-2">
+    <div className="rounded-lg overflow-hidden border border-[#262626] my-2 bg-[#1a1a1a] isolate">
       <div className="flex items-center justify-between px-3 py-1.5 bg-[#141414] border-b border-[#262626]">
-        {showLabel ? (
-          <span className="text-[10px] text-[#808080] font-mono uppercase tracking-wide">
-            {language}
-          </span>
-        ) : (
-          <span />
-        )}
+        <span className="text-[10px] text-[#808080] font-mono uppercase tracking-wide">
+          {language}
+        </span>
         <button
           onClick={handleCopy}
           className="text-[10px] text-[#808080] hover:text-white transition-colors"
@@ -100,7 +88,7 @@ export default function CodeBlock({ language, value }: CodeBlockProps) {
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <div className="bg-[#1a1a1a] p-3 overflow-x-auto">
+      <div className="p-3 overflow-x-auto">
         <SyntaxHighlighter
           language={language}
           style={appPrismTheme}
@@ -113,15 +101,12 @@ export default function CodeBlock({ language, value }: CodeBlockProps) {
             fontSize: '0.75rem',
             lineHeight: '1.6',
           }}
-          codeTagProps={{
-            style: {
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            },
-          }}
         >
           {value}
         </SyntaxHighlighter>
       </div>
     </div>
   );
-}
+});
+
+export default CodeBlock;

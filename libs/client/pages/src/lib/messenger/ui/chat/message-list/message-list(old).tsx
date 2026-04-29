@@ -35,11 +35,10 @@ interface MessageListProps {
   chatId: string;
 }
 
-export function MessageList({ chatId }: MessageListProps) {
+export const MessageList = memo(function MessageList({ chatId }: MessageListProps) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteMessagesQuery(chatId);
   const { data: me } = useMeSuspenseQuery();
   const { data: chats } = useGetChatsSuspenseQuery();
-
   const { scrollRef, newestSentinelRef, olderSentinelRef, isAtNewest, scrollToNewest } =
     useInfiniteScrollList({ fetchNextPage, hasNextPage, isFetchingNextPage });
 
@@ -48,7 +47,6 @@ export function MessageList({ chatId }: MessageListProps) {
   );
 
   const messages = data.pages.flatMap((p) => [...p.messages].reverse());
-
   return (
     <div className="relative flex-1 overflow-hidden">
       {!isAtNewest && (
@@ -124,4 +122,4 @@ export function MessageList({ chatId }: MessageListProps) {
       </div>
     </div>
   );
-}
+});

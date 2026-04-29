@@ -10,4 +10,3 @@ export { useInfiniteScrollList } from './lib/chat/infinite-scroll/use-infinite-s
 export { useNotificationStore, selectIsMuted } from './lib/notifications/notification.store';
 export { useMessageNotification } from './lib/notifications/use-message-notification';
 export { MarkdownMessage } from './lib/chat/markdown-message';
-export { useVirtualChat } from './lib/chat/virtual-chat-list/use-virtual-list';

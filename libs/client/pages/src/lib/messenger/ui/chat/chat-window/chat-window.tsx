@@ -5,9 +5,10 @@ import { EmojiPicker } from '@org/features';
 import { useChatSocket, useSendMessage } from '@org/features';
 import { Button, ErrorBoundary, Textarea } from '@org/shared';
 
-import { MessageList } from '../message-list/message-list';
+import { VirtualMessageList } from '../message-list/virtual-message-list';
 
-// VirtualMessageList
+// import { MessageList } from '../message-list/message-list';
+
 interface ChatWindowProps {
   chatId: string;
 }
@@ -44,8 +45,8 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
         }
       >
         <Suspense fallback={<MessageListSkeleton />}>
-          {/* <VirtualMessageList chatId={chatId} /> */}
-          <MessageList chatId={chatId} />
+          <VirtualMessageList chatId={chatId} />
+          {/* <MessageList chatId={chatId} /> */}
         </Suspense>
       </ErrorBoundary>
 

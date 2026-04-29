@@ -6,8 +6,8 @@ import * as ReactDOM from 'react-dom/client';
 
 import App from './app';
 import './config/env';
-import './styles/global.css';
 import { initSocketMiddleware } from './socket/socket-middleware';
+import './styles/global.css';
 
 configureAuthedFetch(() => useSessionStore.getState().setAuthenticated(false));
 initSocketMiddleware();
