@@ -15,8 +15,8 @@ export const MessageBubble = memo(function MessageBubble({
   message,
   isMine,
   senderName,
-  contentSlot,
-}: MessageBubbleProps) {
+  children,
+}: MessageBubbleProps & { children: React.ReactNode }) {
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isMine && (
@@ -32,7 +32,7 @@ export const MessageBubble = memo(function MessageBubble({
             : 'bg-surface-elevated text-text rounded-bl-md'
         }`}
       >
-        <div className="wrap-break-words">{contentSlot ?? message.text}</div>
+        <div className="wrap-break-words">{children}</div>
         <p
           className={`text-[10px] mt-1 text-right ${isMine ? 'text-white/60' : 'text-text-muted'}`}
         >
