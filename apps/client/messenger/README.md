@@ -1,7 +1,4 @@
 # Messenger
-
-React 19 SPA — client application for the Polygon platform.
-
 ---
 ## Tech Stack
 
