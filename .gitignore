@@ -64,3 +64,4 @@ apps/backend/*/src/database/generated
 storybook-static.worktrees/
 .worktrees
 .superpowers
+stats.html

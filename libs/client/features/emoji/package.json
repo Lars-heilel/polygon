@@ -1,0 +1,17 @@
+{
+  "name": "@org/features-emoji",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@org/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": ["layer:features", "scope:client"]
+  },
+  "sideEffects": false
+}

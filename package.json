@@ -91,7 +91,12 @@
     "apps/client/*",
     "libs/*",
     "libs/backend/*",
-    "libs/client/*"
+    "libs/client/*",
+    "libs/client/features/*",
+    "libs/client/pages/*/*",
+    "libs/client/entities/*",
+    "libs/client/layouts/*",
+    "libs/client/widgets/*"
   ],
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",

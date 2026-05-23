@@ -1,7 +1,8 @@
 import type { InfiniteData } from '@tanstack/react-query';
 
-import type { Chat, Message, MessagePage } from '@org/entities';
-import { useChatStore } from '@org/entities';
+import type { Chat } from '@org/entities-chat';
+import type { Message, MessagePage } from '@org/entities-message';
+import { useChatStore } from '@org/entities-chat';
 import { queryClient, socket } from '@org/shared';
 
 function handleNewMessage(msg: Message) {

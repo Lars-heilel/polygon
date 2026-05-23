@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 
-import { useSessionStore } from '@org/entities';
+import { useSessionStore } from '@org/entities-user';
 import { configureAuthedFetch } from '@org/shared';
 import * as ReactDOM from 'react-dom/client';
 

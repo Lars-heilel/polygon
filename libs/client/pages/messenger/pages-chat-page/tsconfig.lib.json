@@ -1,0 +1,52 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "types": [
+      "node",
+      "@nx/react/typings/cssmodule.d.ts",
+      "@nx/react/typings/image.d.ts",
+      "vite/client"
+    ],
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo"
+  },
+  "exclude": [
+    "out-tsc",
+    "dist",
+    "**/*.spec.ts",
+    "src/**/*.spec.ts",
+    "**/*.test.ts",
+    "src/**/*.test.ts"
+  ],
+  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
+  "references": [
+    {
+      "path": "../../../features/markdown-message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../entities/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../entities/chat/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../features/chat-socket/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../entities/message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../shared/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../features/send-message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../features/emoji/tsconfig.lib.json"
+    }
+  ]
+}

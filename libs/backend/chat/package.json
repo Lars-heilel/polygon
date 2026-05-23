@@ -17,6 +17,11 @@
     "tags": [
       "scope:backend",
       "type:business"
-    ]
+    ],
+    "targets": {
+      "prisma-generate": {
+        "command": "prisma generate --config prisma.config.ts"
+      }
+    }
   }
 }

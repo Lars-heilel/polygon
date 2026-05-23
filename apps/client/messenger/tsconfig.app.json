@@ -35,19 +35,55 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
+      "path": "../../../libs/client/entities/message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/entities/chat/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/system/pages-not-found/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/features/theme/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/system/pages-design-system/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/common/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/pages/tsconfig.lib.json"
+      "path": "../../../libs/client/pages/auth/pages-reset-password/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/auth/pages-forgot-password/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/auth/pages-email-verified/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/auth/pages-check-email/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/auth/pages-register/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/auth/pages-login/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/messenger/pages-chat-page/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/messenger/pages-messenger-main/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/messenger/pages-chats-layout/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/shared/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/entities/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../libs/client/features/tsconfig.lib.json"
+      "path": "../../../libs/client/entities/user/tsconfig.lib.json"
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 
 import { CLIENT_ROUTES } from '@org/common';
-import { selectIsAuthenticated, selectIsSessionLoading, useSessionStore } from '@org/entities';
+import { selectIsAuthenticated, selectIsSessionLoading, useSessionStore } from '@org/entities-user';
 import { Spinner } from '@org/shared';
 import { Navigate, Outlet, useLocation } from 'react-router';
 

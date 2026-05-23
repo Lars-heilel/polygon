@@ -52,25 +52,91 @@
       "path": "./libs/client/shared"
     },
     {
-      "path": "./libs/client/entities"
-    },
-    {
-      "path": "./libs/client/features"
-    },
-    {
-      "path": "./libs/client/widgets"
-    },
-    {
-      "path": "./libs/client/layouts"
-    },
-    {
-      "path": "./libs/client/pages"
-    },
-    {
       "path": "./apps/backend/search-service"
     },
     {
       "path": "./libs/backend/search"
+    },
+    {
+      "path": "./libs/client/pages/messenger/pages-messenger-main"
+    },
+    {
+      "path": "./libs/client/pages/messenger/pages-chats-layout"
+    },
+    {
+      "path": "./libs/client/pages/system/pages-design-system"
+    },
+    {
+      "path": "./libs/client/pages/auth/pages-forgot-password"
+    },
+    {
+      "path": "./libs/client/pages/messenger/pages-chat-page"
+    },
+    {
+      "path": "./libs/client/pages/auth/pages-email-verified"
+    },
+    {
+      "path": "./libs/client/pages/auth/pages-reset-password"
+    },
+    {
+      "path": "./libs/client/pages/auth/pages-check-email"
+    },
+    {
+      "path": "./libs/client/pages/system/pages-not-found"
+    },
+    {
+      "path": "./libs/client/features/markdown-message"
+    },
+    {
+      "path": "./libs/client/pages/auth/pages-register"
+    },
+    {
+      "path": "./libs/client/pages/auth/pages-login"
+    },
+    {
+      "path": "./libs/client/features/infinite-scroll"
+    },
+    {
+      "path": "./libs/client/features/notifications"
+    },
+    {
+      "path": "./libs/client/features/send-message"
+    },
+    {
+      "path": "./libs/client/features/chat-socket"
+    },
+    {
+      "path": "./libs/client/features/create-chat"
+    },
+    {
+      "path": "./libs/client/features/search"
+    },
+    {
+      "path": "./libs/client/features/emoji"
+    },
+    {
+      "path": "./libs/client/features/theme"
+    },
+    {
+      "path": "./libs/client/features/auth"
+    },
+    {
+      "path": "./libs/client/entities/message"
+    },
+    {
+      "path": "./libs/client/entities/chat"
+    },
+    {
+      "path": "./libs/client/entities/user"
+    },
+    {
+      "path": "./libs/client/layouts/sidebar"
+    },
+    {
+      "path": "./libs/client/layouts/auth"
+    },
+    {
+      "path": "./libs/client/widgets/current-user"
     }
   ]
 }

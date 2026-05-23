@@ -72,32 +72,10 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (!id.includes('node_modules')) return;
-
-            if (
-              id.includes('/react/') ||
-              id.includes('/react-dom/') ||
-              id.includes('/scheduler/')
-            ) {
-              return 'vendor-react';
-            }
-            if (id.includes('/react-router/')) {
-              return 'vendor-router';
-            }
-
-            if (id.includes('/@tanstack/')) {
-              return 'vendor-query';
-            }
-
-            if (id.includes('/socket.io') || id.includes('/engine.io')) {
-              return 'vendor-socket';
-            }
-
-            if (id.includes('/emoji-mart') || id.includes('@emoji-mart')) {
-              return 'vendor-emoji';
-            }
-
-            return 'vendor';
+            if (id.includes('react-virtuoso')) return 'chunk-virtuoso'
+            if (id.includes('react-markdown') || id.includes('react-syntax-highlighter') || id.includes('features-markdown')) return 'chunk-markdown'
+            if (id.includes('react-hook-form') || id.includes('@hookform/resolvers')) return 'chunk-auth-vendor'
+            if (id.includes('socket.io-client') || id.includes('engine.io-client')) return 'chunk-socket'
           },
         },
       },

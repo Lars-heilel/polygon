@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 
-import { AuthBootstrap } from '@org/entities';
+import { AuthBootstrap } from '@org/entities-user';
 import { ErrorBoundary, ThemeProvider, Toaster, queryClient } from '@org/shared';
 import { QueryClientProvider } from '@tanstack/react-query';
 
