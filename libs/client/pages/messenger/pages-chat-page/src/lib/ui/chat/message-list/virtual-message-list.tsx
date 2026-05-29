@@ -1,18 +1,18 @@
-import { lazy, memo, Suspense, useCallback, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, memo, useCallback, useMemo, useRef, useState } from 'react';
 
+import { useGetChatsSuspenseQuery } from '@org/entities-chat';
 import {
   MessageBubble,
   MessageBubbleSkeleton,
   useInfiniteMessagesQuery,
 } from '@org/entities-message';
-import { useGetChatsSuspenseQuery } from '@org/entities-chat';
-import { useMeSuspenseQuery } from '@org/entities-user';
 import type { Message } from '@org/entities-message';
+import { useMeSuspenseQuery } from '@org/entities-user';
 import { Text } from '@org/shared';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 
 const MarkdownMessage = lazy(() =>
-  import('@org/features-markdown').then((m) => ({ default: m.MarkdownMessage }))
+  import('@org/features-markdown').then((m) => ({ default: m.MarkdownMessage })),
 );
 
 interface ChatMessageRowProps {
@@ -83,7 +83,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
         </div>
       ),
       EmptyPlaceholder: () => (
-        <div className="flex justify-center py-20">
+        <div className="min-h-full flex justify-center content-center items-center">
           <Text
             size="sm"
             color="muted"
