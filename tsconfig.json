@@ -4,13 +4,7 @@
   "files": [],
   "references": [
     {
-      "path": "./apps/backend/gateway-e2e"
-    },
-    {
       "path": "./apps/backend/gateway"
-    },
-    {
-      "path": "./apps/client/messenger-e2e"
     },
     {
       "path": "./apps/client/messenger"

@@ -1,10 +1,9 @@
 import { memo } from 'react';
 
+import { useGetChatsSuspenseQuery, getChatDisplayName } from '@org/entities-chat';
+import { useMeSuspenseQuery } from '@org/entities-user';
 import { Avatar, Badge, Heading, Text } from '@org/shared';
 
-import { useMeSuspenseQuery } from '@org/entities-user';
-import { useGetChatsSuspenseQuery } from '../chat.api';
-import { getChatDisplayName } from '../chat.utils';
 import { ChatHeaderSkeleton } from './chat-header-skeleton';
 
 export { ChatHeaderSkeleton };

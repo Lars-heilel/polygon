@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import type { Message } from '@org/entities-message';
+import type { Message as MessageBase } from '@org/common';
+
+type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+};
 
 interface ChatState {
   activeChatId: string | null;

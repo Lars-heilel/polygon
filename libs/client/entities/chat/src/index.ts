@@ -19,5 +19,4 @@ export { ChatItem } from './ui/chat-item';
 
 export { getChatDisplayName } from './chat.utils';
 
-export { ChatHeader, ChatHeaderSkeleton } from './ui/chat-header';
 export { ChatItemSkeleton } from './ui/chat-item-skeleton';

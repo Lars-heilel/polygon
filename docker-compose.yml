@@ -3,7 +3,7 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    container_name: polygon-postgres
+    container_name: polygon-dev-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-polygon}
@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/db/init:/docker-entrypoint-initdb.d:ro
     networks:
-      - polygon-network
+      - polygon-dev-network
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-polygon}']
       interval: 10s
@@ -24,7 +24,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: polygon-redis
+    container_name: polygon-dev-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
@@ -32,7 +32,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - polygon-network
+      - polygon-dev-network
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -43,7 +43,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: polygon-rabbitmq
+    container_name: polygon-dev-rabbitmq
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-polygon}
@@ -54,7 +54,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - polygon-network
+      - polygon-dev-network
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
       interval: 30s
@@ -65,7 +65,7 @@ services:
 
   meilisearch:
     image: getmeili/meilisearch:v1.11
-    container_name: polygon-meilisearch
+    container_name: polygon-dev-meilisearch
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-polygon_meilisearch_key}
@@ -75,7 +75,7 @@ services:
     volumes:
       - meilisearch_data:/meili_data
     networks:
-      - polygon-network
+      - polygon-dev-network
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:7700/health']
       interval: 10s
@@ -86,7 +86,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.53.0
-    container_name: polygon-prometheus
+    container_name: polygon-dev-prometheus
     restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -101,11 +101,11 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway' # доступ к сервисам на хост-машине
     networks:
-      - polygon-network
+      - polygon-dev-network
 
   grafana:
     image: grafana/grafana:11.1.0
-    container_name: polygon-grafana
+    container_name: polygon-dev-grafana
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
@@ -120,11 +120,11 @@ services:
     depends_on:
       - prometheus
     networks:
-      - polygon-network
+      - polygon-dev-network
 
   loki:
     image: grafana/loki:3.0.0
-    container_name: polygon-loki
+    container_name: polygon-dev-loki
     restart: unless-stopped
     command: -config.file=/etc/loki/loki.yml
     ports:
@@ -133,11 +133,11 @@ services:
       - ./infra/loki/loki.yml:/etc/loki/loki.yml:ro
       - loki_data:/loki
     networks:
-      - polygon-network
+      - polygon-dev-network
 
   tempo:
     image: grafana/tempo:2.5.0
-    container_name: polygon-tempo
+    container_name: polygon-dev-tempo
     restart: unless-stopped
     user: root
     command: -config.file=/etc/tempo/tempo.yml
@@ -147,11 +147,11 @@ services:
       - ./infra/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo_data:/tmp/tempo
     networks:
-      - polygon-network
+      - polygon-dev-network
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.102.0
-    container_name: polygon-otel-collector
+    container_name: polygon-dev-otel-collector
     restart: unless-stopped
     command: ['--config=/etc/otel/otel-collector.yml']
     ports:
@@ -162,7 +162,7 @@ services:
     depends_on:
       - tempo
     networks:
-      - polygon-network
+      - polygon-dev-network
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
@@ -177,7 +177,7 @@ volumes:
   tempo_data:
 
 networks:
-  polygon-network:
+  polygon-dev-network:
     driver: bridge
     ipam:
       config:

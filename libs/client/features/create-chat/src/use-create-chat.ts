@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useCreateDirectChatMutation } from '@org/entities-chat';
 
-import { useSearchUsers } from '@org/features-search';
+import { useSearchUsers } from '@org/entities-user';
 
 export function useCreateChat() {
   const [isOpen, setIsOpen] = useState(false);

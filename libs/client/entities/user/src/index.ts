@@ -20,3 +20,6 @@ export {
 export { UserPanel } from './ui/user-panel';
 export { ProfileModal } from './ui/profile-modal';
 export { AuthBootstrap } from './ui/auth-provider';
+
+export { useSearchUsers } from './api/use-search-users';
+export { useSearchUsersQuery, searchApi } from './api/search.api';

@@ -10,8 +10,13 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 
+import type { Message as MessageBase } from '@org/common';
 import { authedFetch } from '@org/shared';
-import type { Message } from '@org/entities-message';
+
+type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type MemberProfile = {
   id: string;

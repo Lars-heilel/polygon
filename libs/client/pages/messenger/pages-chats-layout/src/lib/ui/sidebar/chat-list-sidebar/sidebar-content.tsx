@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 import { ChatItem } from '@org/entities-chat';
 import { useCreateChat } from '@org/features-create-chat';
-import { useSearchUsers } from '@org/features-search';
+import { useSearchUsers } from '@org/entities-user';
 import { Spinner, Text } from '@org/shared';
 import { CurrentUserWidget } from '@org/widgets-current-user';
 

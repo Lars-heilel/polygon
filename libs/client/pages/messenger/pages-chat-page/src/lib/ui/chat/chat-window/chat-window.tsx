@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 
-import { ChatHeader, ChatHeaderSkeleton } from '@org/entities-chat';
+import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
 import { ErrorBoundary } from '@org/shared';
 
 import { ChatFooter } from './ChatFooter';

@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: polygon-postgres
+    container_name: polygon-demo-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -11,7 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ../../infra/db/init:/docker-entrypoint-initdb.d:ro
     networks:
-      - polygon-network
+      - polygon-demo-network
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
       interval: 5s
@@ -24,13 +24,13 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: polygon-redis
+    container_name: polygon-demo-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     networks:
-      - polygon-network
+      - polygon-demo-network
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -43,7 +43,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: polygon-rabbitmq
+    container_name: polygon-demo-rabbitmq
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
@@ -51,7 +51,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - polygon-network
+      - polygon-demo-network
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
       interval: 10s
@@ -64,7 +64,7 @@ services:
 
   meilisearch:
     image: getmeili/meilisearch:v1.11
-    container_name: polygon-meilisearch
+    container_name: polygon-demo-meilisearch
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
@@ -72,7 +72,7 @@ services:
     volumes:
       - meilisearch_data:/meili_data
     networks:
-      - polygon-network
+      - polygon-demo-network
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:7700/health']
       interval: 10s
@@ -87,7 +87,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    container_name: polygon-nginx
+    container_name: polygon-demo-nginx
     restart: unless-stopped
     ports:
       - '80:80'
@@ -95,7 +95,7 @@ services:
       backend:
         condition: service_started
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -117,7 +117,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/demo/Dockerfile
-    container_name: polygon-backend
+    container_name: polygon-demo-backend
     restart: unless-stopped
     env_file: ../../.env.production
     environment:
@@ -143,7 +143,7 @@ services:
       meilisearch:
         condition: service_healthy
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -151,7 +151,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.53.0
-    container_name: polygon-prometheus
+    container_name: polygon-demo-prometheus
     restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -164,7 +164,7 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -172,7 +172,7 @@ services:
 
   grafana:
     image: grafana/grafana:11.1.0
-    container_name: polygon-grafana
+    container_name: polygon-demo-grafana
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
@@ -185,7 +185,7 @@ services:
     depends_on:
       - prometheus
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -193,14 +193,14 @@ services:
 
   loki:
     image: grafana/loki:3.0.0
-    container_name: polygon-loki
+    container_name: polygon-demo-loki
     restart: unless-stopped
     command: -config.file=/etc/loki/loki.yml
     volumes:
       - ../../infra/loki/loki.yml:/etc/loki/loki.yml:ro
       - loki_data:/loki
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -208,7 +208,7 @@ services:
 
   tempo:
     image: grafana/tempo:2.5.0
-    container_name: polygon-tempo
+    container_name: polygon-demo-tempo
     restart: unless-stopped
     user: root
     command: -config.file=/etc/tempo/tempo.yml
@@ -216,7 +216,7 @@ services:
       - ../../infra/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo_data:/tmp/tempo
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -224,7 +224,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.102.0
-    container_name: polygon-otel-collector
+    container_name: polygon-demo-otel-collector
     restart: unless-stopped
     command: ['--config=/etc/otel/otel-collector.yml']
     volumes:
@@ -232,7 +232,7 @@ services:
     depends_on:
       - tempo
     networks:
-      - polygon-network
+      - polygon-demo-network
     deploy:
       resources:
         limits:
@@ -249,7 +249,7 @@ volumes:
   tempo_data:
 
 networks:
-  polygon-network:
+  polygon-demo-network:
     driver: bridge
     ipam:
       config:
