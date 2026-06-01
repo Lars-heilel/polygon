@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.gitmodules
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+out-tsc
+tmp
+coverage
+test-output
+
+# Nx cache
+.nx/cache
+.nx/workspace-data
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.test
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+README.md
+AGENTS.md
+CLAUDE.md
+
+# CI
+.github
+
+# Scripts
+scripts
+
+# Docker compose (not needed for app image)
+docker-compose.yml
+
+# Client (not needed for backend image)
+apps/client
+libs/client
+
+# E2E tests
+apps/backend/*-e2e
+
+# Prisma generated (recreated in build)
+libs/backend/*/src/database/prisma/generated
+
+# Storybook
+storybook-static

@@ -43,21 +43,22 @@ async function bootstrap() {
   // ==========================================
   // Swagger API Documentation
   // ==========================================
-  const config = new DocumentBuilder()
-    .setTitle('Polygon API')
-    .setDescription('Polygon messaging platform REST API')
-    .setVersion('1.0')
-    .addCookieAuth('access_token')
-    .build();
-  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
-  SwaggerModule.setup('api/docs', app, document);
+  if (process.env['NODE_ENV'] !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Polygon API')
+      .setDescription('Polygon messaging platform REST API')
+      .setVersion('1.0')
+      .addCookieAuth('access_token')
+      .build();
+    const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // ==========================================
   // HTTP Server Start
   // ==========================================
   await app.listen(GATEWAY_PORT);
   app.get(Logger).log(`Gateway is running on: http://localhost:${GATEWAY_PORT}`);
-  app.get(Logger).log(`Swagger docs: http://localhost:${GATEWAY_PORT}/api/docs`);
 }
 
 bootstrap();

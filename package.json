@@ -3,6 +3,13 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "demo:build": "make -C docker/demo build",
+    "demo:start": "make -C docker/demo start",
+    "demo:stop": "make -C docker/demo stop",
+    "demo:restart": "make -C docker/demo restart",
+    "demo:logs": "make -C docker/demo logs",
+    "demo:backup": "make -C docker/demo backup",
+    "demo:clean": "make -C docker/demo clean",
     "nx:show-projects": "nx show projects"
   },
   "private": true,
