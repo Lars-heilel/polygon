@@ -18,7 +18,7 @@ export const MessageBubble = memo(function MessageBubble({
   children,
 }: MessageBubbleProps & { children: React.ReactNode }) {
   return (
-    <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse lg:flex-row' : 'flex-row'}`}>
       {!isMine && (
         <Avatar
           name={senderName?.slice(0, 2) ?? '?'}
@@ -28,7 +28,7 @@ export const MessageBubble = memo(function MessageBubble({
       <div
         className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${
           isMine
-            ? 'bg-primary text-white rounded-br-md'
+            ? 'bg-primary text-white rounded-br-md lg:rounded-bl-md'
             : 'bg-surface-elevated text-text rounded-bl-md'
         }`}
       >

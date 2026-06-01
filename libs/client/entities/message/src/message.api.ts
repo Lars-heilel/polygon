@@ -6,6 +6,7 @@ import {
   useMutation,
   useQueryClient,
   useSuspenseInfiniteQuery,
+  useSuspenseQuery,
 } from '@tanstack/react-query';
 
 export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
@@ -39,6 +40,14 @@ export function useInfiniteMessagesQuery(chatId: string) {
     queryFn: ({ pageParam }) => messageApi.getMessages(chatId, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+}
+
+export function useMessagesQuery(chatId: string) {
+  return useSuspenseQuery({
+    queryKey: ['messages', chatId],
+    queryFn: () => messageApi.getMessages(chatId),
+    select: (data) => data.messages,
   });
 }
 
