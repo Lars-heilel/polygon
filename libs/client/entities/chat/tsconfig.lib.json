@@ -25,12 +25,6 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../user/tsconfig.lib.json"
-    },
-    {
-      "path": "../message/tsconfig.lib.json"
-    },
-    {
       "path": "../../shared/tsconfig.lib.json"
     },
     {

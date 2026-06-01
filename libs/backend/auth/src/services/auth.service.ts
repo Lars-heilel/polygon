@@ -8,13 +8,15 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
-import type { Credentials, CredentialsPayload, OAuthLoginDto, TokenPair, UserPublic } from '@org/common';
-import { lastValueFrom } from 'rxjs';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import type { Counter } from 'prom-client';
+import type {
+  Credentials,
+  CredentialsPayload,
+  OAuthLoginDto,
+  TokenPair,
+  UserPublic,
+} from '@org/common';
 import {
   AUTH_CACHE_REPOSITORY_TOKEN,
   AUTH_PRISMA_REPOSITORY_TOKEN,
@@ -28,7 +30,10 @@ import {
   USER_PATTERNS,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { createHash } from 'crypto';
+import type { Counter } from 'prom-client';
+import { lastValueFrom } from 'rxjs';
 
 import type { IAuthCacheRepository } from '../cache/auth.cache.interface';
 import type { RegisterDto } from '../dto/register.dto';
@@ -76,7 +81,10 @@ export class AuthService implements IAuthService {
     try {
       await this.verification.generateAndSend(credentials.id, credentials.email);
     } catch (err) {
-      this.logger.error('Failed to send verification email', err instanceof Error ? err.stack : String(err));
+      this.logger.error(
+        'Failed to send verification email',
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 

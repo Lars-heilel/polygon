@@ -58,7 +58,13 @@ describe('UserService (unit)', () => {
 
   describe('createFromEvent', () => {
     it('should call repo.upsert with event data', async () => {
-      const publicUser = { id: mockUserInput.id, name: mockUserInput.name, displayName: null, avatarUrl: null, bio: null };
+      const publicUser = {
+        id: mockUserInput.id,
+        name: mockUserInput.name,
+        displayName: null,
+        avatarUrl: null,
+        bio: null,
+      };
       repoMock.upsert.mockResolvedValue(publicUser);
 
       const result = await service.createFromEvent(mockUserInput);

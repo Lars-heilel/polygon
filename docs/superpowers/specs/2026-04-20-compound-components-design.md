@@ -31,7 +31,7 @@ File: `libs/client/shared/src/ui/modal/modal.tsx`
 
 ```ts
 interface ModalContextValue {
-  onClose: () => void
+  onClose: () => void;
 }
 ```
 
@@ -42,6 +42,7 @@ Provided by `<Modal>`, consumed by subcomponents.
 Props: `isOpen`, `onClose`, `className?`, `overlayClassName?`, `children`
 
 Behaviour:
+
 - Renders via `createPortal` into `document.body`
 - Returns `null` when `!isOpen`
 - Locks `document.body` scroll when open
@@ -101,8 +102,8 @@ File: `libs/client/shared/src/ui/dropdown/dropdown.tsx`
 
 ```ts
 interface DropdownContextValue {
-  isOpen: boolean
-  close: () => void
+  isOpen: boolean;
+  close: () => void;
 }
 ```
 
@@ -111,6 +112,7 @@ interface DropdownContextValue {
 Props: `isOpen`, `onOpenChange`, `children`, `className?`
 
 Behaviour:
+
 - Controlled — caller manages state via `useDisclosure`
 - Closes on outside click (via `useEffect` + `mousedown`)
 - Provides context to subcomponents

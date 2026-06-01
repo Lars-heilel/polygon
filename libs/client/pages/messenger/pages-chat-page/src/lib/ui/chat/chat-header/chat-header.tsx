@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import { useGetChatsSuspenseQuery, getChatDisplayName } from '@org/entities-chat';
+import { getChatDisplayName, useGetChatsSuspenseQuery } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import { Avatar, Badge, Heading, Text } from '@org/shared';
 

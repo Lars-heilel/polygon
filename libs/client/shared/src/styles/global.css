@@ -179,8 +179,12 @@ em-emoji-picker {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideInLeft {
@@ -206,19 +210,34 @@ em-emoji-picker {
 }
 
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(112, 59, 247, 0); }
-  50%       { box-shadow: var(--glow-primary); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(112, 59, 247, 0);
+  }
+  50% {
+    box-shadow: var(--glow-primary);
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes gradientFlow {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* ── Animation utilities ────────────────────────────────── */
@@ -256,11 +275,7 @@ em-emoji-picker {
 @layer base {
   /* Sidebar: subtle purple tint at top */
   aside {
-    background: linear-gradient(
-      180deg,
-      rgba(112, 59, 247, 0.06) 0%,
-      transparent 120px
-    );
+    background: linear-gradient(180deg, rgba(112, 59, 247, 0.06) 0%, transparent 120px);
   }
 
   /* Active chat item — gradient highlight */
@@ -312,12 +327,16 @@ em-emoji-picker {
   /* Input focus glow */
   input:focus,
   textarea:focus {
-    box-shadow: 0 0 0 1px var(--color-purple-65), var(--glow-primary-sm);
+    box-shadow:
+      0 0 0 1px var(--color-purple-65),
+      var(--glow-primary-sm);
   }
 
   /* Online badge — animated glow */
   .bg-green-500 {
-    box-shadow: 0 0 0 2px var(--color-surface), 0 0 8px rgba(34, 197, 94, 0.5);
+    box-shadow:
+      0 0 0 2px var(--color-surface),
+      0 0 8px rgba(34, 197, 94, 0.5);
     animation: glowPulse 2.5s ease-in-out infinite;
   }
 
@@ -325,12 +344,13 @@ em-emoji-picker {
   .border-b.border-border,
   .border-t.border-border {
     border-image: linear-gradient(
-      90deg,
-      transparent,
-      var(--color-border) 30%,
-      var(--color-border) 70%,
-      transparent
-    ) 1;
+        90deg,
+        transparent,
+        var(--color-border) 30%,
+        var(--color-border) 70%,
+        transparent
+      )
+      1;
   }
 }
 

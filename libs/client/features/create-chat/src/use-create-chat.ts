@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import { useCreateDirectChatMutation } from '@org/entities-chat';
-
 import { useSearchUsers } from '@org/entities-user';
 
 export function useCreateChat() {

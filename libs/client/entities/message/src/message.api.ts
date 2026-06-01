@@ -1,13 +1,12 @@
 import { API_ROUTES } from '@org/common';
 import type { Message as MessageBase } from '@org/common';
+import { authedFetch } from '@org/shared';
 import {
   type InfiniteData,
   useMutation,
-  useSuspenseInfiniteQuery,
   useQueryClient,
+  useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
-
-import { authedFetch } from '@org/shared';
 
 export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;

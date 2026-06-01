@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
-import Redis from 'ioredis';
-
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 
 import { CoreConfigModule } from '../config/config.module';
 import type { Env } from '../config/env.schema';

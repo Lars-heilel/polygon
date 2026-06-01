@@ -103,7 +103,11 @@ export class ChatPrismaRepository implements IChatRepository {
     }
   }
 
-  async findMessagesByChat(chatId: string, cursor: string | undefined, take: number): Promise<MessagePage> {
+  async findMessagesByChat(
+    chatId: string,
+    cursor: string | undefined,
+    take: number,
+  ): Promise<MessagePage> {
     const messages = await this.prisma.message.findMany({
       where: { chatId },
       orderBy: { createdAt: 'desc' },

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 import { CoreConfigModule, CoreEmailModule } from '@org/core';
+import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 
 import { NotificationController } from '../controllers/notification.controller';
 import { NotificationService } from '../services/notification.service';

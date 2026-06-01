@@ -1,7 +1,6 @@
+import type { Message as MessageBase } from '@org/common';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-
-import type { Message as MessageBase } from '@org/common';
 
 type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;

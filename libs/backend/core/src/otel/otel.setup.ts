@@ -1,7 +1,7 @@
-import { EventEmitter } from 'events';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { NodeSDK } from '@opentelemetry/sdk-node';
+import { EventEmitter } from 'events';
 
 // OTel HTTP instrumentation + pino-http each attach finish listeners per request
 EventEmitter.defaultMaxListeners = 25;

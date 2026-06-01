@@ -5,6 +5,7 @@
 `AllExceptionsFilter` на гейтвее содержит `PRISMA_CODE_MAP` для маппинга Prisma-ошибок в HTTP-статусы, но Prisma работает только в микросервисах — не в гейтвее. Маппинг никогда не выполняется.
 
 Фактическая цепочка при Prisma-ошибке (например, P2002):
+
 1. Микросервис: Prisma бросает `PrismaClientKnownRequestError`
 2. `RpcErrorInterceptor` ловит её в catch-all → оборачивает в `RpcException({ statusCode: 500 })`
 3. Гейтвей `send()` → `HttpException(500)`
@@ -19,11 +20,13 @@
 ## Architecture
 
 **До:**
+
 ```
 Prisma error → RpcErrorInterceptor (catch-all → 500) → Gateway send() → AllExceptionsFilter (мёртвый маппинг) → 500
 ```
 
 **После:**
+
 ```
 Prisma error → handlePrismaError() → NestJS HttpException → RpcErrorInterceptor (корректная обёртка) → Gateway send() → HttpException(правильный статус) → NestJS built-in filter → клиент
 ```
@@ -41,39 +44,40 @@ Prisma error → handlePrismaError() → NestJS HttpException → RpcErrorInterc
 
 Маппинг кодов:
 
-| Prisma код | NestJS исключение | HTTP статус |
-|---|---|---|
-| P2002 | `ConflictException` | 409 |
-| P2025 | `NotFoundException` | 404 |
-| P2003 | `BadRequestException` | 400 |
-| P2014 | `BadRequestException` | 400 |
-| P2000 | `BadRequestException` | 400 |
-| Неизвестный Prisma / не Prisma | re-throw | — |
+| Prisma код                     | NestJS исключение     | HTTP статус |
+| ------------------------------ | --------------------- | ----------- |
+| P2002                          | `ConflictException`   | 409         |
+| P2025                          | `NotFoundException`   | 404         |
+| P2003                          | `BadRequestException` | 400         |
+| P2014                          | `BadRequestException` | 400         |
+| P2000                          | `BadRequestException` | 400         |
+| Неизвестный Prisma / не Prisma | re-throw              | —           |
 
 ### 2. Изменения в репозиториях
 
 **`auth.prisma.repo.ts`** — добавить `try/catch` + `handlePrismaError`:
 
-| Метод | Возможная ошибка Prisma |
-|---|---|
-| `createCredentials` | P2002 — email unique |
-| `saveRefreshToken` | P2002 — tokenHash unique |
+| Метод                | Возможная ошибка Prisma            |
+| -------------------- | ---------------------------------- |
+| `createCredentials`  | P2002 — email unique               |
+| `saveRefreshToken`   | P2002 — tokenHash unique           |
 | `createOAuthAccount` | P2002 — provider_providerId unique |
-| `updatePasswordHash` | P2025 — запись не найдена |
-| `revokeRefreshToken` | P2025 — токен не найден |
-| `verifyCredentials` | P2025 — credentials не найден |
+| `updatePasswordHash` | P2025 — запись не найдена          |
+| `revokeRefreshToken` | P2025 — токен не найден            |
+| `verifyCredentials`  | P2025 — credentials не найден      |
 
 **`user.prisma.repo.ts`** — частичная обработка уже есть:
+
 - `update` — заменить ручной `instanceof` на `handlePrismaError`
 - `upsert` — **оставить как есть**: P2002 здесь — бизнес-логика (realign id), не HTTP-маппинг
 
 **`chat.prisma.repo.ts`** — добавить `try/catch` + `handlePrismaError`:
 
-| Метод | Возможная ошибка Prisma |
-|---|---|
-| `addChatMember` | P2002 — chatId_userId unique |
-| `removeChatMember` | P2025 — не найден |
-| `createMessage` | P2003 — chatId FK |
+| Метод              | Возможная ошибка Prisma      |
+| ------------------ | ---------------------------- |
+| `addChatMember`    | P2002 — chatId_userId unique |
+| `removeChatMember` | P2025 — не найден            |
+| `createMessage`    | P2003 — chatId FK            |
 
 **`notification.prisma.repo.ts`** — пропустить (реализация пуста).
 

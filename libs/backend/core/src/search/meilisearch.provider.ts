@@ -4,8 +4,8 @@ import { Meilisearch } from 'meilisearch';
 
 import type { Env } from '../config/env.schema';
 import type {
-  IndexSettings,
   ISearchProvider,
+  IndexSettings,
   SearchDocument,
   SearchHit,
   SearchOptions,

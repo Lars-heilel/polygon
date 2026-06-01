@@ -11,7 +11,10 @@
     }
   },
   "nx": {
-    "tags": ["layer:features", "scope:client"]
+    "tags": [
+      "layer:features",
+      "scope:client"
+    ]
   },
   "sideEffects": false
 }

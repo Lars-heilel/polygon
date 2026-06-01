@@ -6,9 +6,21 @@
   "refresh": "15s",
   "time": { "from": "now-1h", "to": "now" },
   "links": [
-    { "title": "Overview", "url": "/d/polygon-overview", "keepTime": true, "type": "link", "icon": "dashboard" },
+    {
+      "title": "Overview",
+      "url": "/d/polygon-overview",
+      "keepTime": true,
+      "type": "link",
+      "icon": "dashboard"
+    },
     { "title": "Logs", "url": "/d/polygon-logs", "keepTime": true, "type": "link", "icon": "doc" },
-    { "title": "Tracing", "url": "/d/polygon-tracing", "keepTime": true, "type": "link", "icon": "bolt" }
+    {
+      "title": "Tracing",
+      "url": "/d/polygon-tracing",
+      "keepTime": true,
+      "type": "link",
+      "icon": "bolt"
+    }
   ],
   "panels": [
     {
@@ -26,9 +38,18 @@
       "fieldConfig": {
         "defaults": { "color": { "mode": "palette-classic" } },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "login_failure" }, "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "login_success" }, "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "register" }, "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }] }
+          {
+            "matcher": { "id": "byName", "options": "login_failure" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "login_success" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "register" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }]
+          }
         ]
       },
       "options": {
@@ -45,10 +66,22 @@
       "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "rate(auth_events_total{event=\"login_success\"}[1m]) * 60", "legendFormat": "login_success" },
-        { "expr": "rate(auth_events_total{event=\"login_failure\"}[1m]) * 60", "legendFormat": "login_failure" },
-        { "expr": "rate(auth_events_total{event=\"register\"}[1m]) * 60", "legendFormat": "register" },
-        { "expr": "rate(auth_events_total{event=\"password_reset\"}[1m]) * 60", "legendFormat": "password_reset" }
+        {
+          "expr": "rate(auth_events_total{event=\"login_success\"}[1m]) * 60",
+          "legendFormat": "login_success"
+        },
+        {
+          "expr": "rate(auth_events_total{event=\"login_failure\"}[1m]) * 60",
+          "legendFormat": "login_failure"
+        },
+        {
+          "expr": "rate(auth_events_total{event=\"register\"}[1m]) * 60",
+          "legendFormat": "register"
+        },
+        {
+          "expr": "rate(auth_events_total{event=\"password_reset\"}[1m]) * 60",
+          "legendFormat": "password_reset"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -56,9 +89,18 @@
           "custom": { "lineWidth": 2, "fillOpacity": 10 }
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "login_failure" }, "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "login_success" }, "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "register" }, "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }] }
+          {
+            "matcher": { "id": "byName", "options": "login_failure" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "login_success" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "register" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }]
+          }
         ]
       }
     },

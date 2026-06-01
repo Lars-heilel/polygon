@@ -15,14 +15,17 @@ export const authRoutes: RouteObject[] = [
   },
   {
     path: 'email-verified',
-    lazy: () => import('@org/pages-email-verified').then((m) => ({ Component: m.EmailVerifiedPage })),
+    lazy: () =>
+      import('@org/pages-email-verified').then((m) => ({ Component: m.EmailVerifiedPage })),
   },
   {
     path: 'forgot-password',
-    lazy: () => import('@org/pages-forgot-password').then((m) => ({ Component: m.ForgotPasswordPage })),
+    lazy: () =>
+      import('@org/pages-forgot-password').then((m) => ({ Component: m.ForgotPasswordPage })),
   },
   {
     path: 'reset-password',
-    lazy: () => import('@org/pages-reset-password').then((m) => ({ Component: m.ResetPasswordPage })),
+    lazy: () =>
+      import('@org/pages-reset-password').then((m) => ({ Component: m.ResetPasswordPage })),
   },
 ];

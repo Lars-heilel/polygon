@@ -1,10 +1,9 @@
 import { API_ROUTES, loginSchema, registerSchema } from '@org/common';
 import type { User as UserBase } from '@org/common';
 import { apiFetch } from '@org/shared';
+import { authedFetch } from '@org/shared';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type z } from 'zod';
-
-import { authedFetch } from '@org/shared';
 
 export type User = Omit<UserBase, 'createdAt' | 'updatedAt'>;
 

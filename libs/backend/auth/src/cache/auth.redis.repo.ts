@@ -5,21 +5,21 @@ import type Redis from 'ioredis';
 import type { IAuthCacheRepository } from './auth.cache.interface';
 
 const TTL = {
-  VERIFICATION: 86_400,   // 24 hours
-  PASSWORD_RESET: 3_600,  // 1 hour
+  VERIFICATION: 86_400, // 24 hours
+  PASSWORD_RESET: 3_600, // 1 hour
   RESEND_COOLDOWN: 60,
   RESET_COOLDOWN: 60,
-  LOGIN_ATTEMPTS: 900,    // 15 minutes
+  LOGIN_ATTEMPTS: 900, // 15 minutes
 } as const;
 
 const KEY = {
-  verificationByToken:  (token: string)        => `email_verification:${token}`,
-  verificationById:     (credentialsId: string) => `email_verification_id:${credentialsId}`,
-  resetByToken:         (token: string)        => `password_reset:${token}`,
-  resetById:            (credentialsId: string) => `password_reset_id:${credentialsId}`,
-  resendCooldown:       (email: string)        => `resend_cooldown:${email}`,
-  resetCooldown:        (email: string)        => `reset_cooldown:${email}`,
-  loginAttempts:        (email: string)        => `login_attempts:${email}`,
+  verificationByToken: (token: string) => `email_verification:${token}`,
+  verificationById: (credentialsId: string) => `email_verification_id:${credentialsId}`,
+  resetByToken: (token: string) => `password_reset:${token}`,
+  resetById: (credentialsId: string) => `password_reset_id:${credentialsId}`,
+  resendCooldown: (email: string) => `resend_cooldown:${email}`,
+  resetCooldown: (email: string) => `reset_cooldown:${email}`,
+  loginAttempts: (email: string) => `login_attempts:${email}`,
 } as const;
 
 @Injectable()

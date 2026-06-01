@@ -7,8 +7,20 @@
   "time": { "from": "now-1h", "to": "now" },
   "links": [
     { "title": "Logs", "url": "/d/polygon-logs", "keepTime": true, "type": "link", "icon": "doc" },
-    { "title": "Tracing", "url": "/d/polygon-tracing", "keepTime": true, "type": "link", "icon": "bolt" },
-    { "title": "Business", "url": "/d/polygon-business", "keepTime": true, "type": "link", "icon": "chart-line" }
+    {
+      "title": "Tracing",
+      "url": "/d/polygon-tracing",
+      "keepTime": true,
+      "type": "link",
+      "icon": "bolt"
+    },
+    {
+      "title": "Business",
+      "url": "/d/polygon-business",
+      "keepTime": true,
+      "type": "link",
+      "icon": "chart-line"
+    }
   ],
   "panels": [
     {
@@ -36,7 +48,10 @@
           ],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }]
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
           }
         }
       },

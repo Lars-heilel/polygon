@@ -12,21 +12,22 @@
 
 ## File Map
 
-| Action | Path |
-|--------|------|
-| Create | `libs/client/shared/src/lib/hooks/use-disclosure.ts` |
-| Rewrite | `libs/client/shared/src/ui/modal/modal.tsx` |
-| Rewrite | `libs/client/shared/src/ui/dropdown/dropdown.tsx` |
-| Modify | `libs/client/shared/src/index.ts` |
+| Action  | Path                                                                                    |
+| ------- | --------------------------------------------------------------------------------------- |
+| Create  | `libs/client/shared/src/lib/hooks/use-disclosure.ts`                                    |
+| Rewrite | `libs/client/shared/src/ui/modal/modal.tsx`                                             |
+| Rewrite | `libs/client/shared/src/ui/dropdown/dropdown.tsx`                                       |
+| Modify  | `libs/client/shared/src/index.ts`                                                       |
 | Migrate | `libs/client/pages/src/lib/messenger/ui/modals/create-chat-modal/create-chat-modal.tsx` |
-| Migrate | `libs/client/pages/src/lib/messenger/ui/modals/settings-modal/settings-modal.tsx` |
-| Migrate | `libs/client/pages/src/lib/messenger/ui/modals/profile-modal/profile-modal.tsx` |
+| Migrate | `libs/client/pages/src/lib/messenger/ui/modals/settings-modal/settings-modal.tsx`       |
+| Migrate | `libs/client/pages/src/lib/messenger/ui/modals/profile-modal/profile-modal.tsx`         |
 
 ---
 
 ## Task 1: useDisclosure hook
 
 **Files:**
+
 - Create: `libs/client/shared/src/lib/hooks/use-disclosure.ts`
 
 - [ ] **Создай файл хука**
@@ -65,12 +66,14 @@ git commit -m "feat(shared): add useDisclosure hook"
 ## Task 2: Modal — compound components + createPortal
 
 **Files:**
+
 - Rewrite: `libs/client/shared/src/ui/modal/modal.tsx`
 
 - [ ] **Перепиши modal.tsx целиком**
 
 ```tsx
-import { createContext, useContext, useEffect, type MouseEvent, type ReactNode } from 'react';
+import { type MouseEvent, type ReactNode, createContext, useContext, useEffect } from 'react';
+
 import { createPortal } from 'react-dom';
 
 import { cn } from '../../lib/utils/cn';
@@ -103,15 +106,35 @@ function ModalHeader({ title, onClose, children, className }: ModalHeaderProps) 
 
   if (title !== undefined) {
     return (
-      <div className={cn('px-6 py-4 border-b border-border flex items-center justify-between', className)}>
-        <Heading level={5} as="h2">{title}</Heading>
+      <div
+        className={cn(
+          'px-6 py-4 border-b border-border flex items-center justify-between',
+          className,
+        )}
+      >
+        <Heading
+          level={5}
+          as="h2"
+        >
+          {title}
+        </Heading>
         <button
           onClick={handleClose}
           className="p-2 hover:bg-surface-elevated rounded-lg"
           aria-label="Close"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>
@@ -129,11 +152,7 @@ interface ModalBodyProps {
 }
 
 function ModalBody({ children, className }: ModalBodyProps) {
-  return (
-    <div className={cn('overflow-y-auto', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('overflow-y-auto', className)}>{children}</div>;
 }
 
 // --- Footer ---
@@ -190,11 +209,17 @@ function ModalRoot({ isOpen, onClose, children, className, overlayClassName }: M
   return createPortal(
     <ModalContext.Provider value={{ onClose }}>
       <div
-        className={cn('fixed inset-0 z-50 flex items-center justify-center bg-black/50', overlayClassName)}
+        className={cn(
+          'fixed inset-0 z-50 flex items-center justify-center bg-black/50',
+          overlayClassName,
+        )}
         onClick={handleOverlayClick}
       >
         <div
-          className={cn('bg-surface rounded-2xl shadow-2xl overflow-hidden max-w-md w-full mx-4', className)}
+          className={cn(
+            'bg-surface rounded-2xl shadow-2xl overflow-hidden max-w-md w-full mx-4',
+            className,
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           {children}
@@ -232,12 +257,13 @@ git commit -m "feat(shared): refactor Modal to compound components with createPo
 ## Task 3: Dropdown — compound components
 
 **Files:**
+
 - Rewrite: `libs/client/shared/src/ui/dropdown/dropdown.tsx`
 
 - [ ] **Перепиши dropdown.tsx целиком**
 
 ```tsx
-import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useRef } from 'react';
 
 import { cn } from '../../lib/utils/cn';
 import { Divider } from '../divider';
@@ -259,11 +285,7 @@ function useDropdownContext(): DropdownContextValue {
 
 function DropdownTrigger({ children }: { children: ReactNode }) {
   const { isOpen, onOpenChange } = useDropdownContext();
-  return (
-    <div onClick={() => onOpenChange(!isOpen)}>
-      {children}
-    </div>
-  );
+  return <div onClick={() => onOpenChange(!isOpen)}>{children}</div>;
 }
 
 // --- Menu ---
@@ -357,7 +379,10 @@ function DropdownRoot({ isOpen, onOpenChange, children, className }: DropdownPro
 
   return (
     <DropdownContext.Provider value={{ isOpen, onOpenChange }}>
-      <div ref={containerRef} className={cn('relative inline-block text-left', className)}>
+      <div
+        ref={containerRef}
+        className={cn('relative inline-block text-left', className)}
+      >
         {children}
       </div>
     </DropdownContext.Provider>
@@ -392,6 +417,7 @@ git commit -m "feat(shared): refactor Dropdown to compound components"
 ## Task 4: Обнови экспорты @org/shared
 
 **Files:**
+
 - Modify: `libs/client/shared/src/index.ts`
 
 - [ ] **Удали экспорт DropdownItem из index.ts**
@@ -424,6 +450,7 @@ git commit -m "chore(shared): remove DropdownItem from public exports"
 ## Task 5: Мигрируй существующие модалки
 
 **Files:**
+
 - Migrate: `libs/client/pages/src/lib/messenger/ui/modals/create-chat-modal/create-chat-modal.tsx`
 - Migrate: `libs/client/pages/src/lib/messenger/ui/modals/settings-modal/settings-modal.tsx`
 - Migrate: `libs/client/pages/src/lib/messenger/ui/modals/profile-modal/profile-modal.tsx`
@@ -462,7 +489,11 @@ export function CreateChatModal({
   isCreating = false,
 }: CreateChatModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-md"
+    >
       <Modal.Header title="New Chat" />
 
       <div className="p-4 border-b border-border">
@@ -473,8 +504,18 @@ export function CreateChatModal({
           size="sm"
           disabled={isCreating}
           leftIcon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           }
         />
@@ -488,16 +529,35 @@ export function CreateChatModal({
             disabled={isCreating}
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors disabled:opacity-50"
           >
-            <Avatar name={user.displayName ?? user.name} size="md" />
+            <Avatar
+              name={user.displayName ?? user.name}
+              size="md"
+            />
             <div className="flex-1 text-left">
-              <Text size="sm" weight="medium">{user.displayName ?? user.name}</Text>
-              <Text size="xs" color="muted">@{user.name}</Text>
+              <Text
+                size="sm"
+                weight="medium"
+              >
+                {user.displayName ?? user.name}
+              </Text>
+              <Text
+                size="xs"
+                color="muted"
+              >
+                @{user.name}
+              </Text>
             </div>
           </button>
         ))}
 
         {users.length === 0 && searchQuery && (
-          <Text size="sm" color="muted" className="text-center py-8">No users found</Text>
+          <Text
+            size="sm"
+            color="muted"
+            className="text-center py-8"
+          >
+            No users found
+          </Text>
         )}
       </Modal.Body>
     </Modal>

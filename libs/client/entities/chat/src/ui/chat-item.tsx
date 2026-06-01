@@ -49,7 +49,13 @@ export const ChatItem = memo(function ChatItem({
           <span className="text-xs text-text-muted shrink-0">{formatDate(time)}</span>
         </div>
         <div className="flex justify-between items-center gap-2">
-          <Text size="xs" color="muted" className="truncate">{lastMessage}</Text>
+          <Text
+            size="xs"
+            color="muted"
+            className="truncate"
+          >
+            {lastMessage}
+          </Text>
           {unread > 0 && (
             <Badge
               variant="primary"

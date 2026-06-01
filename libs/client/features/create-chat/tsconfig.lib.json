@@ -25,7 +25,7 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../search/tsconfig.lib.json"
+      "path": "../../entities/user/tsconfig.lib.json"
     },
     {
       "path": "../../entities/chat/tsconfig.lib.json"

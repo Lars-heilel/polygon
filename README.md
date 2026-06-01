@@ -12,8 +12,6 @@ _By Lars Heilel (Igor Shevchenko)_
 
 ---
 
-
-
 ## Quick Start
 
 ```bash

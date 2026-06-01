@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 import { ConfigService } from '@nestjs/config';
 import { ClientsModule, type RmqOptions, Transport } from '@nestjs/microservices';
 import {
@@ -20,6 +19,7 @@ import {
   USER_QUEUE,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
+import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 
 import { AuthRedisCacheRepository } from '../cache/auth.redis.repo';
 import { AuthController } from '../controllers/auth.controller';

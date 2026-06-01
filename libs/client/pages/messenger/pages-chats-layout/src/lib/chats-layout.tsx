@@ -1,9 +1,8 @@
 import { useCallback, useState } from 'react';
 
-import { Outlet, useNavigate } from 'react-router';
-
 import { useMessageNotification } from '@org/features-notifications';
 import { SidebarLayout } from '@org/layouts-sidebar';
+import { Outlet, useNavigate } from 'react-router';
 
 import { ChatListSidebar } from './ui/sidebar';
 

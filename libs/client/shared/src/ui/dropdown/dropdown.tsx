@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useRef } from 'react';
 
 import { cn } from '../../lib/utils/cn';
 import { Divider } from '../divider';
@@ -19,7 +19,12 @@ function useDropdownContext(): DropdownContextValue {
 function DropdownTrigger({ children }: { children: ReactNode }) {
   const { isOpen, onOpenChange } = useDropdownContext();
   return (
-    <div onClick={(e) => { e.stopPropagation(); onOpenChange(!isOpen); }}>
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpenChange(!isOpen);
+      }}
+    >
       {children}
     </div>
   );
@@ -110,7 +115,10 @@ function DropdownRoot({ isOpen, onOpenChange, children, className }: DropdownPro
 
   return (
     <DropdownContext.Provider value={{ isOpen, onOpenChange }}>
-      <div ref={containerRef} className={cn('relative inline-block text-left', className)}>
+      <div
+        ref={containerRef}
+        className={cn('relative inline-block text-left', className)}
+      >
         {children}
       </div>
     </DropdownContext.Provider>

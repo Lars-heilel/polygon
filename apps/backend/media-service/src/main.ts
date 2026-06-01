@@ -1,7 +1,6 @@
-import { setupOtel } from '@org/core';
-setupOtel('media-service');
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { setupOtel } from '@org/core';
 import {
   ConfigService,
   Env,
@@ -12,6 +11,8 @@ import {
 import { Logger } from 'nestjs-pino';
 
 import { MediaModule } from './app/media.module';
+
+setupOtel('media-service');
 
 async function bootstrap() {
   const app = await NestFactory.create(MediaModule, { bufferLogs: true });

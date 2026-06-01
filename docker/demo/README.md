@@ -15,14 +15,14 @@ Cloudflare (опционально) → nginx:80
 
 ## Состав
 
-| Файл | Назначение |
-|------|-----------|
-| `Dockerfile` | Мультистейдж сборка бэкенда (7 микросервисов в одном контейнере) |
-| `docker-compose.yml` | Оркестрация: БД, бэкенд, nginx, мониторинг |
-| `Makefile` | `make build` / `make start` / `make stop` / `make logs` / `make backup` |
-| `start.sh` | Точка входа — миграции + запуск всех сервисов |
-| `nginx/Dockerfile` | nginx:alpine со статикой фронта |
-| `nginx/conf/default.conf` | Прокси API, WebSocket, SPA fallback |
+| Файл                      | Назначение                                                              |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `Dockerfile`              | Мультистейдж сборка бэкенда (7 микросервисов в одном контейнере)        |
+| `docker-compose.yml`      | Оркестрация: БД, бэкенд, nginx, мониторинг                              |
+| `Makefile`                | `make build` / `make start` / `make stop` / `make logs` / `make backup` |
+| `start.sh`                | Точка входа — миграции + запуск всех сервисов                           |
+| `nginx/Dockerfile`        | nginx:alpine со статикой фронта                                         |
+| `nginx/conf/default.conf` | Прокси API, WebSocket, SPA fallback                                     |
 
 ## Требования
 
@@ -32,6 +32,7 @@ Cloudflare (опционально) → nginx:80
 ## Переменные окружения
 
 Единственный источник — `.env.production` в корне проекта. В нём:
+
 - Пароли к БД, JWT секреты, OAuth ключи
 - SMTP, Redis, RabbitMQ, Meilisearch
 

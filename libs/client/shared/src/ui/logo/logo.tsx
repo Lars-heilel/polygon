@@ -1,6 +1,5 @@
-import logoUrl from './favicon.svg';
-
 import { Heading } from '../typography';
+import logoUrl from './favicon.svg';
 
 interface LogoProps {
   className?: string;

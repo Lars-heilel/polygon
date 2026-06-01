@@ -26,15 +26,33 @@
               },
               {
                 "sourceTag": "layer:widgets",
-                "onlyDependOnLibsWithTags": ["layer:features", "layer:entities", "layer:shared", "scope:shared"]
+                "onlyDependOnLibsWithTags": [
+                  "layer:features",
+                  "layer:entities",
+                  "layer:shared",
+                  "scope:shared"
+                ]
               },
               {
                 "sourceTag": "layer:layouts",
-                "onlyDependOnLibsWithTags": ["layer:widgets", "layer:features", "layer:entities", "layer:shared", "scope:shared"]
+                "onlyDependOnLibsWithTags": [
+                  "layer:widgets",
+                  "layer:features",
+                  "layer:entities",
+                  "layer:shared",
+                  "scope:shared"
+                ]
               },
               {
                 "sourceTag": "layer:pages",
-                "onlyDependOnLibsWithTags": ["layer:layouts", "layer:widgets", "layer:features", "layer:entities", "layer:shared", "scope:shared"]
+                "onlyDependOnLibsWithTags": [
+                  "layer:layouts",
+                  "layer:widgets",
+                  "layer:features",
+                  "layer:entities",
+                  "layer:shared",
+                  "scope:shared"
+                ]
               },
               {
                 "sourceTag": "*",
@@ -49,7 +67,10 @@
       "files": ["*.ts", "*.tsx"],
       "extends": ["plugin:@nx/typescript", "prettier"],
       "rules": {
-        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+        ],
         "no-console": ["warn", { "allow": ["warn", "error"] }],
         "@typescript-eslint/no-empty-function": ["error", { "allow": ["constructors"] }]
       }

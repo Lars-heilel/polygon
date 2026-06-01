@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useSearchUsersQuery } from './search.api';
 import { debounce } from 'es-toolkit';
+
+import { useSearchUsersQuery } from './search.api';
 
 export function useSearchUsers() {
   const [inputValue, setInputValue] = useState('');

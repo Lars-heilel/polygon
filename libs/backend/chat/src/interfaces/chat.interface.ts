@@ -19,14 +19,23 @@ export interface IChatRepository {
   findMembersByChat(chatId: string): Promise<ChatMember[]>;
   addChatMember(data: { chatId: string; userId: string; role?: ChatRole }): Promise<ChatMember>;
   removeChatMember(chatId: string, userId: string): Promise<void>;
-  findMessagesByChat(chatId: string, cursor: string | undefined, take: number): Promise<MessagePage>;
+  findMessagesByChat(
+    chatId: string,
+    cursor: string | undefined,
+    take: number,
+  ): Promise<MessagePage>;
   createMessage(data: { chatId: string; senderId: string; text?: string | null }): Promise<Message>;
 }
 
 export interface IChatService {
   createDirectChat(userId: string, targetUserId: string): Promise<Chat>;
   getChats(userId: string): Promise<ChatWithPreview[]>;
-  getMessages(chatId: string, userId: string, cursor: string | undefined, take: number): Promise<MessagePage>;
+  getMessages(
+    chatId: string,
+    userId: string,
+    cursor: string | undefined,
+    take: number,
+  ): Promise<MessagePage>;
   sendMessage(chatId: string, senderId: string, text: string): Promise<Message>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
 }

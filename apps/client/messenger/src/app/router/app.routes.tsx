@@ -7,7 +7,8 @@ export const appRoutes: RouteObject[] = [
     children: [
       {
         index: true,
-        lazy: () => import('@org/pages-messenger-main').then((m) => ({ Component: m.MessengerMainPage })),
+        lazy: () =>
+          import('@org/pages-messenger-main').then((m) => ({ Component: m.MessengerMainPage })),
       },
       {
         path: ':chatId',

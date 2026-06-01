@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router';
+
 import { appRoutes } from './app.routes';
 import { authRoutes } from './auth.routes';
 import { AppGuard, GuestGuard } from './guards';
@@ -9,7 +10,15 @@ export const router = createBrowserRouter([
     path: '/',
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Navigate to="/chats" replace /> },
+      {
+        index: true,
+        element: (
+          <Navigate
+            to="/chats"
+            replace
+          />
+        ),
+      },
 
       // Guest routes (login, register, etc.)
       {
@@ -18,7 +27,15 @@ export const router = createBrowserRouter([
           {
             path: '/auth',
             children: [
-              { index: true, element: <Navigate to="/auth/login" replace /> },
+              {
+                index: true,
+                element: (
+                  <Navigate
+                    to="/auth/login"
+                    replace
+                  />
+                ),
+              },
               ...authRoutes,
             ],
           },
@@ -45,7 +62,10 @@ export const router = createBrowserRouter([
         : []),
 
       // 404 catch-all
-      { path: '*', lazy: () => import('@org/pages-not-found').then((m) => ({ Component: m.NotFoundPage })) },
+      {
+        path: '*',
+        lazy: () => import('@org/pages-not-found').then((m) => ({ Component: m.NotFoundPage })),
+      },
     ],
   },
 ]);

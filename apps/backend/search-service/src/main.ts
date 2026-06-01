@@ -1,7 +1,6 @@
-import { setupOtel } from '@org/core';
-setupOtel('search-service');
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { setupOtel } from '@org/core';
 import {
   ConfigService,
   Env,
@@ -12,6 +11,8 @@ import {
 import { Logger } from 'nestjs-pino';
 
 import { SearchAppModule } from './app/search.module';
+
+setupOtel('search-service');
 
 async function bootstrap() {
   const app = await NestFactory.create(SearchAppModule, { bufferLogs: true });

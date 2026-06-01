@@ -19,7 +19,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg max-h-[80vh] flex flex-col">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-lg max-h-[80vh] flex flex-col"
+    >
       <Modal.Header title="Settings" />
 
       <div className="px-6 py-3 border-b border-border flex gap-4 shrink-0">

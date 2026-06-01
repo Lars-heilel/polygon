@@ -26,7 +26,12 @@ export class ChatService implements IChatService {
     return this.repo.findChatsForUser(userId);
   }
 
-  async getMessages(chatId: string, userId: string, cursor: string | undefined, take = 50): Promise<MessagePage> {
+  async getMessages(
+    chatId: string,
+    userId: string,
+    cursor: string | undefined,
+    take = 50,
+  ): Promise<MessagePage> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
     return this.repo.findMessagesByChat(chatId, cursor, take);

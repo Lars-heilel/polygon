@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { NOTIFICATION_EVENTS } from '@org/core';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { Counter } from 'prom-client';
 
 import { NotificationService } from '../services/notification.service';
@@ -17,9 +17,15 @@ export class NotificationController {
   async sendVerificationEmail(@Payload() payload: { to: string; token: string }): Promise<void> {
     try {
       await this.notificationService.sendVerificationEmail(payload.to, payload.token);
-      this.rmqCounter.inc({ pattern: NOTIFICATION_EVENTS.SEND_VERIFICATION_EMAIL, status: 'success' });
+      this.rmqCounter.inc({
+        pattern: NOTIFICATION_EVENTS.SEND_VERIFICATION_EMAIL,
+        status: 'success',
+      });
     } catch (error) {
-      this.rmqCounter.inc({ pattern: NOTIFICATION_EVENTS.SEND_VERIFICATION_EMAIL, status: 'error' });
+      this.rmqCounter.inc({
+        pattern: NOTIFICATION_EVENTS.SEND_VERIFICATION_EMAIL,
+        status: 'error',
+      });
       throw error;
     }
   }

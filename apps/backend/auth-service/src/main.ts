@@ -1,11 +1,12 @@
-import { setupOtel } from '@org/core';
-setupOtel('auth-service');
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { setupOtel } from '@org/core';
 import { AUTH_QUEUE, ConfigService, Env, LoggingInterceptor, RpcErrorInterceptor } from '@org/core';
 import { Logger } from 'nestjs-pino';
 
 import { AuthModule } from './app/auth.module';
+
+setupOtel('auth-service');
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthModule, { bufferLogs: true });

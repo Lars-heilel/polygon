@@ -43,7 +43,11 @@ export function StatusScreen({
       <div className="space-y-1">
         <Heading level={5}>{title}</Heading>
         {description && (
-          <Text size="sm" color="muted" className="max-w-sm">
+          <Text
+            size="sm"
+            color="muted"
+            className="max-w-sm"
+          >
             {description}
           </Text>
         )}

@@ -5,6 +5,7 @@
 /.nx/workspace-data
 .agents
 .github
+*.swcrc
 .claude
 .husky
 .nx

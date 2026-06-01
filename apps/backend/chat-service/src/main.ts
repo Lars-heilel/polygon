@@ -1,11 +1,12 @@
-import { setupOtel } from '@org/core';
-setupOtel('chat-service');
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { setupOtel } from '@org/core';
 import { CHAT_QUEUE, ConfigService, Env, LoggingInterceptor, RpcErrorInterceptor } from '@org/core';
 import { Logger } from 'nestjs-pino';
 
 import { ChatModule } from './app/chat.module';
+
+setupOtel('chat-service');
 
 async function bootstrap() {
   const app = await NestFactory.create(ChatModule, { bufferLogs: true });

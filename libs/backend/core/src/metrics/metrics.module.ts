@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { getToken, makeHistogramProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { PrometheusModule, getToken, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 
 export const HTTP_HISTOGRAM_NAME = 'http_request_duration_seconds';
 

@@ -30,6 +30,7 @@ import {
   USER_PATTERNS,
 } from '@org/core';
 import { Observable, lastValueFrom } from 'rxjs';
+
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 @ApiTags('chats')

@@ -25,6 +25,9 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
+      "path": "../../../widgets/current-user/tsconfig.lib.json"
+    },
+    {
       "path": "../../../features/create-chat/tsconfig.lib.json"
     },
     {
@@ -32,9 +35,6 @@
     },
     {
       "path": "../../../shared/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../features/search/tsconfig.lib.json"
     },
     {
       "path": "../../../entities/user/tsconfig.lib.json"
