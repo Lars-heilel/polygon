@@ -79,9 +79,6 @@
       "path": "./libs/client/pages/system/pages-not-found"
     },
     {
-      "path": "./libs/client/features/markdown-message"
-    },
-    {
       "path": "./libs/client/pages/auth/pages-register"
     },
     {
