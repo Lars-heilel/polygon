@@ -126,7 +126,9 @@ Add `"jsx": "react-jsx"` — in `tsconfig.base.json` for single-framework worksp
 
 ```js
 import nx from '@nx/eslint-plugin';
+
 import baseConfig from '../../eslint.config.mjs';
+
 export default [
   ...baseConfig,
   ...nx.configs['flat/react'],
@@ -190,10 +192,12 @@ Both `@nx/js/typescript` and `@nx/vite/plugin` auto-detect `vue-tsc` when instal
 ### Vue ESLint Config Pattern
 
 ```js
+import tsParser from '@typescript-eslint/parser';
 import vue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
-import tsParser from '@typescript-eslint/parser';
+
 import baseConfig from '../../eslint.config.mjs';
+
 export default [
   ...baseConfig,
   ...vue.configs['flat/recommended'],
