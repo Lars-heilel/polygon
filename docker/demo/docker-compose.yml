@@ -129,8 +129,8 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       REDIS_HOST: redis
       MEILISEARCH_URL: http://meilisearch:7700
-      APP_URL: http://localhost:80
-      CLIENT_URL: http://localhost:80
+      APP_URL: https://www.polygon-by-lars-heilel.ru
+      CLIENT_URL: https://www.polygon-by-lars-heilel.ru
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       LOKI_URL: http://loki:3100
     depends_on:

@@ -1,17 +1,17 @@
 # Polygon Demo
 
-Production-ready Docker-развёртывание мессенджера Polygon для домашнего сервера.
+Production-ready Docker-развёртывание мессенджера Polygon на [polygon-by-lars-heilel.ru](https://www.polygon-by-lars-heilel.ru).
 
 ## Архитектура
 
 ```
-Cloudflare (опционально) → nginx:80
+Cloudflare Tunnel → nginx:80
   ├── /api/*            → gateway:3000
   ├── /socket.io/*      → gateway:3000 (WebSocket)
   └── /*                → SPA (React, статика из dist)
 ```
 
-Из портов наружу торчит **только nginx (80)**. Все сервисы бэкенда внутри Docker сети, наружу не вылезают.
+Наружу торчит **только nginx (80)** через Cloudflare Tunnel. Cloudflare даёт HTTPS, все сервисы бэкенда внутри Docker сети.
 
 ## Состав
 
@@ -23,6 +23,20 @@ Cloudflare (опционально) → nginx:80
 | `start.sh`                | Точка входа — миграции + запуск всех сервисов                           |
 | `nginx/Dockerfile`        | nginx:alpine со статикой фронта                                         |
 | `nginx/conf/default.conf` | Прокси API, WebSocket, SPA fallback                                     |
+
+## Домен
+
+Домен: `https://www.polygon-by-lars-heilel.ru`
+
+Настроен через Cloudflare Tunnel — сервис `cloudflared` в `docker-compose.yml` (раскомментирован, требует токен).
+
+### OAuth колбеки (зарегистрировать в провайдерах)
+
+| Провайдер | Callback URL                                                                 |
+| --------- | ---------------------------------------------------------------------------- |
+| GitHub    | `https://www.polygon-by-lars-heilel.ru/api/auth/github/callback`              |
+| Google    | `https://www.polygon-by-lars-heilel.ru/api/auth/google/callback`              |
+| Yandex    | `https://www.polygon-by-lars-heilel.ru/api/auth/yandex/callback`              |
 
 ## Требования
 
@@ -73,19 +87,17 @@ cp -r apps/client/messenger/dist/* docker/demo/nginx/html/
 docker compose -f docker/demo/docker-compose.yml --env-file .env.production up -d
 ```
 
-Фронт будет доступен на `http://localhost`, API на `http://localhost/api`.
-
 ## Безопасность
 
 - **tini** — корректная обработка сигналов внутри контейнера
 - **HEALTHCHECK** — проверка gateway через curl
 - **Resource limits** — каждый контейнер ограничен по памяти (см. `deploy.resources`)
-- **Только nginx наружу** — бэкенд не торчит портами
+- **Только nginx + Cloudflare наружу** — бэкенд не торчит портами
 - **Secrets** — все в `.env.production`, в гите только плейсхолдеры
 
-### Когда будет домен
+### Cloudflare Tunnel
 
-Раскомментируй сервис `cloudflared` в `docker-compose.yml` и вставь токен туннеля:
+Туннель уже настроен в `docker-compose.yml`. Нужен только токен:
 
 ```yaml
 cloudflared:
@@ -94,7 +106,7 @@ cloudflared:
   restart: unless-stopped
   command: tunnel run --token YOUR_TOKEN
   networks:
-    - polygon-network
+    - polygon-demo-network
 ```
 
-Cloudflare даст HTTPS и защиту. Grafana/Swagger/админку скроешь через Cloudflare Access без единой строчки кода.
+Cloudflare даёт HTTPS, защиту от DDoS, и скрытие портов. Grafana/Swagger/админку можно дополнительно закрыть через Cloudflare Access.
