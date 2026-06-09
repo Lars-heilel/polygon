@@ -1,9 +1,12 @@
 import { useState } from 'react';
 
+import type { Chat } from '@org/entities-chat';
 import { useCreateDirectChatMutation } from '@org/entities-chat';
 import { useSearchUsers } from '@org/entities-user';
+import { useNavigate } from 'react-router';
 
 export function useCreateChat() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const { mutate: createChat, isPending } = useCreateDirectChatMutation();
   const search = useSearchUsers();
@@ -12,9 +15,10 @@ export function useCreateChat() {
     createChat(
       { targetUserId },
       {
-        onSuccess: () => {
+        onSuccess: (data: Chat) => {
           setIsOpen(false);
           search.onChange('');
+          navigate(`/chats/${data.id}`);
         },
       },
     );

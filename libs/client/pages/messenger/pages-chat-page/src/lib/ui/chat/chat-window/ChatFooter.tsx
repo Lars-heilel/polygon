@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react';
 
 import { EmojiPicker } from '@org/features-emoji';
 import { useSendMessage } from '@org/features-send-message';
-import { Button, Textarea } from '@org/shared';
+import { Button, Textarea, showComingSoonToast } from '@org/shared';
 
 interface ChatFooterProps {
   chatId: string;
@@ -31,7 +31,7 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
   return (
     <div className="px-4 py-3 border-t border-border sticky shrink-0 bg-background">
       <div className="flex gap-3 items-end">
-        <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted transition-colors">
+        <button onClick={showComingSoonToast} className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted transition-colors">
           <svg
             className="w-5 h-5"
             fill="none"

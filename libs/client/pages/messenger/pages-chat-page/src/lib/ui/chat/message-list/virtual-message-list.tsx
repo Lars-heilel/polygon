@@ -1,14 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
-import {
-  MessageBubble,
-  useInfiniteMessagesQuery,
-} from '@org/entities-message';
+import { MessageBubble, useInfiniteMessagesQuery } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
-import { socket, Text } from '@org/shared';
+import { Text, socket } from '@org/shared';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 
 const INITIAL_OFFSET = 10_000;
 
@@ -35,7 +32,12 @@ const ChatMessageRow = memo(({ msg, isMine, senderName }: ChatMessageRowProps) =
 const EmptyState = memo(() => (
   <div className="relative flex-1 h-full w-full overflow-hidden">
     <div className="h-full flex justify-center content-center items-center">
-      <Text size="sm" color="muted">No messages yet. Say hi!</Text>
+      <Text
+        size="sm"
+        color="muted"
+      >
+        No messages yet. Say hi!
+      </Text>
     </div>
   </div>
 ));
@@ -113,7 +115,9 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
     };
 
     socket.on('message:new', handler);
-    return () => { socket.off('message:new', handler); };
+    return () => {
+      socket.off('message:new', handler);
+    };
   }, [chatId, me.id]);
 
   if (allMessages.length === 0) {

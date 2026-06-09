@@ -33,3 +33,4 @@ export { queryClient } from './lib/query/query-client';
 export { useDisclosure } from './lib/hooks/use-disclosure';
 export { useLogger } from './lib/hooks/use-logger';
 export { Logo } from './ui/logo/logo';
+export { showComingSoonToast } from './ui/coming-soon';

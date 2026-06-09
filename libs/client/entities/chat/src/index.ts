@@ -10,7 +10,8 @@ export {
   useChatStore,
   selectActiveChatId,
   selectActiveMessageId,
-  selectIsTyping,
+  selectIsUserTyping,
+  selectAnyTypingInChat,
   selectLastReceivedMessage,
 } from './chat.store';
 
@@ -18,5 +19,7 @@ export type { ChatItemProps } from './ui/chat-item';
 export { ChatItem } from './ui/chat-item';
 
 export { getChatDisplayName } from './chat.utils';
+
+export { usePresenceStore } from './presence.store';
 
 export { ChatItemSkeleton } from './ui/chat-item-skeleton';

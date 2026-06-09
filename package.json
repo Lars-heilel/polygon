@@ -12,7 +12,9 @@
     "demo:clean": "make -C docker/demo clean",
     "dev:all": "nx run-many --target serve --all --parallel",
     "dev:all:skip-cache": "nx run-many --target serve --all --parallel --skip-nx-cache",
-    "nx:show-projects": "nx show projects"
+    "nx:show-projects": "nx show projects",
+    "format:write": "nx format:write",
+    "format:check": "nx format:check"
   },
   "private": true,
   "devDependencies": {
@@ -54,7 +56,6 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-
     "@types/supertest": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",

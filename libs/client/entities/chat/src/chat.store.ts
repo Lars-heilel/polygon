@@ -10,14 +10,14 @@ type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
 interface ChatState {
   activeChatId: string | null;
   activeMessageId: string | null;
-  isTyping: boolean;
+  typingUsers: Record<string, boolean>;
   lastReceivedMessage: Message | null;
 }
 
 interface ChatActions {
   setActiveChat: (chatId: string | null) => void;
   setActiveMessage: (messageId: string | null) => void;
-  setIsTyping: (isTyping: boolean) => void;
+  setIsTyping: (userId: string, isTyping: boolean) => void;
   setLastReceivedMessage: (msg: Message) => void;
   reset: () => void;
 }
@@ -28,17 +28,22 @@ export const useChatStore = create<ChatStore>()(
   subscribeWithSelector((set) => ({
     activeChatId: null,
     activeMessageId: null,
-    isTyping: false,
+    typingUsers: {},
     lastReceivedMessage: null,
     setActiveChat: (chatId) => set({ activeChatId: chatId }),
     setActiveMessage: (messageId) => set({ activeMessageId: messageId }),
-    setIsTyping: (isTyping) => set({ isTyping }),
+    setIsTyping: (userId, isTyping) =>
+      set((state) => ({
+        typingUsers: isTyping
+          ? { ...state.typingUsers, [userId]: true }
+          : Object.fromEntries(Object.entries(state.typingUsers).filter(([k]) => k !== userId)),
+      })),
     setLastReceivedMessage: (msg) => set({ lastReceivedMessage: msg }),
     reset: () =>
       set({
         activeChatId: null,
         activeMessageId: null,
-        isTyping: false,
+        typingUsers: {},
         lastReceivedMessage: null,
       }),
   })),
@@ -47,5 +52,8 @@ export const useChatStore = create<ChatStore>()(
 // Selectors
 export const selectActiveChatId = (s: ChatStore) => s.activeChatId;
 export const selectActiveMessageId = (s: ChatStore) => s.activeMessageId;
-export const selectIsTyping = (s: ChatStore) => s.isTyping;
+export const selectIsUserTyping = (userId: string) => (s: ChatStore) =>
+  s.typingUsers[userId] ?? false;
+export const selectAnyTypingInChat = (members: string[]) => (s: ChatStore) =>
+  members.some((id) => s.typingUsers[id]);
 export const selectLastReceivedMessage = (s: ChatStore) => s.lastReceivedMessage;

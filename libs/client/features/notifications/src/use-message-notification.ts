@@ -66,6 +66,9 @@ export function useMessageNotification() {
 
     if (lastMsg.chatId === activeChatId && tabVisible) return;
 
+    const me = queryClient.getQueryData<{ id: string }>(['me']);
+    if (lastMsg.senderId === me?.id) return;
+
     if (isMuted) return;
 
     playNotificationSound();

@@ -1,21 +1,26 @@
 /// <reference types='vitest' />
+import { resolve } from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => {
-  // Nx не выставляет NODE_ENV при запуске vite build, из-за чего @nx/react/babel
-  // выбирает dev-трансформ (jsxDEV) вместо production (jsx/jsxs).
   if (mode === 'production') {
     process.env['NODE_ENV'] = 'production';
   }
 
-  loadEnv(mode, '../../..', 'VITE_');
+  // Nx автоматически грузит .env в process.env до Vite.
+  // Vite отдаёт приоритет process.env, из-за чего .env.production не перебивает .env.
+  // Удаляем, чтобы Vite сам прочитал правильный файл по mode.
+  delete process.env['VITE_API_URL'];
+  delete process.env['VITE_SOCKET_URL'];
+
+  const repoRoot = resolve(import.meta.dirname, '../../..');
 
   return {
     root: import.meta.dirname,
-    envDir: '../../..',
+    envDir: repoRoot,
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode),
     },
@@ -73,7 +78,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('react-virtuoso')) return 'chunk-virtuoso';
-if (id.includes('react-hook-form') || id.includes('@hookform/resolvers'))
+            if (id.includes('react-hook-form') || id.includes('@hookform/resolvers'))
               return 'chunk-auth-vendor';
             if (id.includes('socket.io-client') || id.includes('engine.io-client'))
               return 'chunk-socket';

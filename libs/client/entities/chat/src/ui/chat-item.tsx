@@ -6,7 +6,7 @@ export interface ChatItemProps {
   id: string;
   name: string;
   lastMessage: string;
-  time: string;
+  time: string | null;
   unread?: number;
   online?: boolean;
   isActive?: boolean;
@@ -46,7 +46,7 @@ export const ChatItem = memo(function ChatItem({
       <div className="flex-1 min-w-0 text-left">
         <div className="flex justify-between items-baseline gap-2">
           <span className="text-sm font-medium truncate">{name}</span>
-          <span className="text-xs text-text-muted shrink-0">{formatDate(time)}</span>
+          {time && <span className="text-xs text-text-muted shrink-0">{formatDate(time)}</span>}
         </div>
         <div className="flex justify-between items-center gap-2">
           <Text

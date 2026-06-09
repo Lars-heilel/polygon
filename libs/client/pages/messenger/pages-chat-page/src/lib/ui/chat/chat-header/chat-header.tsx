@@ -1,8 +1,13 @@
 import { memo } from 'react';
 
-import { getChatDisplayName, useGetChatsSuspenseQuery } from '@org/entities-chat';
+import {
+  getChatDisplayName,
+  useChatStore,
+  useGetChatsSuspenseQuery,
+  usePresenceStore,
+} from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
-import { Avatar, Badge, Heading, Text } from '@org/shared';
+import { Avatar, Badge, Heading, Text, showComingSoonToast } from '@org/shared';
 
 import { ChatHeaderSkeleton } from './chat-header-skeleton';
 
@@ -16,9 +21,15 @@ interface ChatHeaderProps {
 export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
   const { data: chats } = useGetChatsSuspenseQuery();
   const { data: me } = useMeSuspenseQuery();
+  const onlineUsers = usePresenceStore((s) => s.onlineUsers);
+  const typingUsers = useChatStore((s) => s.typingUsers);
 
   const chat = chats.find((c) => c.id === chatId);
   const displayName = chat ? getChatDisplayName(chat, me.id) : 'Chat';
+
+  const otherUserId = chat?.members.find((m) => m.userId !== me.id)?.userId;
+  const isOnline = otherUserId ? (onlineUsers[otherUserId] ?? false) : false;
+  const isTyping = otherUserId ? (typingUsers[otherUserId] ?? false) : false;
 
   return (
     <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky shrink-0">
@@ -27,7 +38,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: Chat
           name={displayName}
           size="md"
         />
-        {false && (
+        {isOnline && (
           <Badge
             variant="primary"
             size="sm"
@@ -43,15 +54,24 @@ export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: Chat
         >
           {displayName}
         </Heading>
-        <Text
-          size="xs"
-          className="text-green-500"
-        >
-          Online
-        </Text>
+        {isTyping ? (
+          <Text
+            size="xs"
+            className="text-text-muted"
+          >
+            печатает...
+          </Text>
+        ) : isOnline ? (
+          <Text
+            size="xs"
+            className="text-green-500"
+          >
+            Online
+          </Text>
+        ) : null}
       </div>
       <button
-        onClick={onMenuClick}
+        onClick={showComingSoonToast}
         aria-label="More options"
         className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted"
       >

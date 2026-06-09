@@ -32,11 +32,11 @@ Cloudflare Tunnel → nginx:80
 
 ### OAuth колбеки (зарегистрировать в провайдерах)
 
-| Провайдер | Callback URL                                                                 |
-| --------- | ---------------------------------------------------------------------------- |
-| GitHub    | `https://www.polygon-by-lars-heilel.ru/api/auth/github/callback`              |
-| Google    | `https://www.polygon-by-lars-heilel.ru/api/auth/google/callback`              |
-| Yandex    | `https://www.polygon-by-lars-heilel.ru/api/auth/yandex/callback`              |
+| Провайдер | Callback URL                                                     |
+| --------- | ---------------------------------------------------------------- |
+| GitHub    | `https://www.polygon-by-lars-heilel.ru/api/auth/github/callback` |
+| Google    | `https://www.polygon-by-lars-heilel.ru/api/auth/google/callback` |
+| Yandex    | `https://www.polygon-by-lars-heilel.ru/api/auth/yandex/callback` |
 
 ## Требования
 
