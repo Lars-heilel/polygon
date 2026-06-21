@@ -31,7 +31,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "up{job=~\"auth-service|user-service|chat-service|media-service|notification-service|search-service|gateway\"}",
+          "expr": "up{job=~\"auth-service|user-service|chat-service|notification-service|search-service|gateway\"}",
           "legendFormat": "{{job}}"
         }
       ],
@@ -136,7 +136,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "nodejs_heap_size_used_bytes{job=~\"auth-service|user-service|chat-service|media-service|notification-service|search-service|gateway\"}",
+          "expr": "nodejs_heap_size_used_bytes{job=~\"auth-service|user-service|chat-service|notification-service|search-service|gateway\"}",
           "legendFormat": "{{job}}"
         }
       ],
@@ -155,7 +155,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{job=~\"auth-service|user-service|chat-service|media-service|notification-service|search-service|gateway\"}[1m])",
+          "expr": "rate(process_cpu_seconds_total{job=~\"auth-service|user-service|chat-service|notification-service|search-service|gateway\"}[1m])",
           "legendFormat": "{{job}}"
         }
       ],
@@ -174,7 +174,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "nodejs_eventloop_lag_seconds{job=~\"auth-service|user-service|chat-service|media-service|notification-service|search-service|gateway\"}",
+          "expr": "nodejs_eventloop_lag_seconds{job=~\"auth-service|user-service|chat-service|notification-service|search-service|gateway\"}",
           "legendFormat": "{{job}}"
         }
       ],

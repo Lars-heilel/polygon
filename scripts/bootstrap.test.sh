@@ -41,21 +41,18 @@ run_psql "
     WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_user_test')\gexec
   SELECT 'CREATE DATABASE polygon_chat_test'
     WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_chat_test')\gexec
-  SELECT 'CREATE DATABASE polygon_media_test'
-    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_media_test')\gexec
   SELECT 'CREATE DATABASE polygon_notification_test'
     WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'polygon_notification_test')\gexec
 
   GRANT ALL PRIVILEGES ON DATABASE polygon_auth_test TO polygon;
   GRANT ALL PRIVILEGES ON DATABASE polygon_user_test TO polygon;
   GRANT ALL PRIVILEGES ON DATABASE polygon_chat_test TO polygon;
-  GRANT ALL PRIVILEGES ON DATABASE polygon_media_test TO polygon;
   GRANT ALL PRIVILEGES ON DATABASE polygon_notification_test TO polygon;
 "
 
 echo "Applying migrations to test databases..."
 
-SERVICES=("user" "auth" "chat" "media" "notification")
+SERVICES=("user" "auth" "chat" "notification")
 
 for SERVICE in "${SERVICES[@]}"; do
   SERVICE_PATH="libs/backend/$SERVICE"

@@ -2,14 +2,12 @@
 export * from './constants/di/auth.di';
 export * from './constants/di/user.di';
 export * from './constants/di/chat.di';
-export * from './constants/di/media.di';
 export * from './constants/di/notification.di';
 export * from './constants/queues/auth.queue';
 export * from './constants/queues/user.queue';
 export * from './constants/queues/chat.queue';
 export * from './constants/queues/notification.queue';
 export * from './constants/queues/search.queue';
-export * from './constants/queues/media.queue';
 
 // Config
 export * from './config/env.schema';
@@ -65,6 +63,8 @@ export * from './metrics/metrics.module';
 export * from './search/search-provider.interface';
 export * from './search/search-provider.token';
 export * from './search/search.module';
+
+
 
 // OTel
 export * from './otel/otel.setup';

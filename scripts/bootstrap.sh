@@ -49,7 +49,7 @@ fi
 echo "📋 Checking databases..."
 DB_COUNT=$(docker exec polygon-postgres psql -U polygon -d postgres -t -c "SELECT count(*) FROM pg_database WHERE datname LIKE 'polygon_%'" 2>/dev/null | tr -d ' ')
 
-if [ "$DB_COUNT" -lt 5 ]; then
+if [ "$DB_COUNT" -lt 4 ]; then
     echo "⚠️  Databases not found. Running initialization..."
     ./scripts/init-db.sh
 else
@@ -62,7 +62,7 @@ echo ""
 echo "📋 Applying Prisma migrations and generating clients..."
 
 # Backend services list (libs/backend/<name>)
-SERVICES=("user" "auth" "chat" "media" "notification")
+SERVICES=("user" "auth" "chat" "notification")
 
 for SERVICE in "${SERVICES[@]}"; do
     SERVICE_PATH="libs/backend/$SERVICE"

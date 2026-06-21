@@ -54,7 +54,7 @@ run_migrations "libs/backend/chat/prisma.config.ts" "CHAT_DATABASE_URL"
 run_migrations "libs/backend/notification/prisma.config.ts" "NOTIFICATION_DATABASE_URL"
 
 log "Starting services..."
-SERVICES="auth-service user-service chat-service media-service notification-service search-service gateway"
+SERVICES="auth-service user-service chat-service notification-service search-service gateway"
 
 for svc in $SERVICES; do
   log "Starting $svc..."

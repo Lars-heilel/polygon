@@ -101,18 +101,6 @@ services:
         limits:
           memory: 128M
 
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   container_name: polygon-cloudflared
-  #   restart: unless-stopped
-  #   command: tunnel run --token YOUR_CLOUDFLARE_TUNNEL_TOKEN
-  #   networks:
-  #     - polygon-network
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 64M
-
   backend:
     build:
       context: ../..
@@ -125,7 +113,6 @@ services:
       USER_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_user
       CHAT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_chat
       NOTIFICATION_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_notification
-      MEDIA_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_media
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       REDIS_HOST: redis
       MEILISEARCH_URL: http://meilisearch:7700

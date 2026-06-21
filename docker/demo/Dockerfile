@@ -17,7 +17,6 @@ COPY apps/backend/gateway/package.json apps/backend/gateway/
 COPY apps/backend/auth-service/package.json apps/backend/auth-service/
 COPY apps/backend/user-service/package.json apps/backend/user-service/
 COPY apps/backend/chat-service/package.json apps/backend/chat-service/
-COPY apps/backend/media-service/package.json apps/backend/media-service/
 COPY apps/backend/notification-service/package.json apps/backend/notification-service/
 COPY apps/backend/search-service/package.json apps/backend/search-service/
 COPY libs/common/package.json libs/common/
@@ -49,7 +48,6 @@ RUN ./node_modules/.bin/nx sync && \
     ./node_modules/.bin/nx build @org/auth-service --skip-nx-cache && \
     ./node_modules/.bin/nx build @org/user-service --skip-nx-cache && \
     ./node_modules/.bin/nx build @org/chat-service --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/media-service --skip-nx-cache && \
     ./node_modules/.bin/nx build @org/notification-service --skip-nx-cache && \
     ./node_modules/.bin/nx build @org/search-service --skip-nx-cache
 
@@ -71,7 +69,6 @@ COPY --from=builder /app/apps/backend/gateway/dist/main.js ./gateway/main.js
 COPY --from=builder /app/apps/backend/auth-service/dist/main.js ./auth-service/main.js
 COPY --from=builder /app/apps/backend/user-service/dist/main.js ./user-service/main.js
 COPY --from=builder /app/apps/backend/chat-service/dist/main.js ./chat-service/main.js
-COPY --from=builder /app/apps/backend/media-service/dist/main.js ./media-service/main.js
 COPY --from=builder /app/apps/backend/notification-service/dist/main.js ./notification-service/main.js
 COPY --from=builder /app/apps/backend/search-service/dist/main.js ./search-service/main.js
 
@@ -103,7 +100,7 @@ COPY docker/demo/start.sh ./
 
 RUN chmod +x start.sh
 
-EXPOSE 3000 3001 3002 3003 3004 3005 3006
+EXPOSE 3000 3001 3002 3003 3005 3006
 
 ENV NODE_ENV=production
 

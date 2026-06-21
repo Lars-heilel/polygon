@@ -22,9 +22,6 @@
       "path": "./apps/backend/notification-service"
     },
     {
-      "path": "./apps/backend/media-service"
-    },
-    {
       "path": "./libs/common"
     },
     {
