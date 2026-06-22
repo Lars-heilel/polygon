@@ -39,6 +39,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==================== ХРАНИЛИЩЕ ====================
+
+  minio:
+    image: quay.io/minio/minio
+    container_name: polygon-dev-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    networks:
+      - polygon-dev-network
+
   # ==================== MESSAGE BROKER ====================
 
   rabbitmq:
@@ -169,6 +184,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:
   rabbitmq_data:
   meilisearch_data:
   prometheus_data:

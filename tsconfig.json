@@ -125,6 +125,12 @@
     },
     {
       "path": "./libs/client/widgets/current-user"
+    },
+    {
+      "path": "./libs/backend/media"
+    },
+    {
+      "path": "./apps/backend/media-service"
     }
   ]
 }

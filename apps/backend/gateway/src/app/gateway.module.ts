@@ -16,6 +16,8 @@ import {
   HttpMetricsInterceptor,
   JwtGuard,
   LoggerModule,
+  MEDIA_CLIENT_TOKEN,
+  MEDIA_QUEUE,
   MetricsModule,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
@@ -25,6 +27,7 @@ import {
 
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
+import { MediaGatewayController } from '../controllers/media.controller';
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
@@ -63,10 +66,12 @@ const rmqClient = (name: string, queue: string) => ({
       rmqClient(USER_CLIENT_TOKEN, USER_QUEUE),
       rmqClient(CHAT_CLIENT_TOKEN, CHAT_QUEUE),
       rmqClient(SEARCH_CLIENT_TOKEN, SEARCH_QUEUE),
+      rmqClient(MEDIA_CLIENT_TOKEN, MEDIA_QUEUE),
     ]),
   ],
   controllers: [
     AuthGatewayController,
+    MediaGatewayController,
     UserGatewayController,
     ChatGatewayController,
     SearchGatewayController,

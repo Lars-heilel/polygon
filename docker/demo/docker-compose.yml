@@ -125,7 +125,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rabbitmq:
+  minio:
+    image: quay.io/minio/minio
+    container_name: polygon-demo-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - polygon-demo-network
+
+  rabbitmq:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
@@ -228,6 +238,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:
   rabbitmq_data:
   meilisearch_data:
   prometheus_data:

@@ -8,6 +8,8 @@ export * from './constants/queues/user.queue';
 export * from './constants/queues/chat.queue';
 export * from './constants/queues/notification.queue';
 export * from './constants/queues/search.queue';
+export * from './constants/queues/media.queue';
+export * from './constants/di/media.di';
 
 // Config
 export * from './config/env.schema';
@@ -65,6 +67,11 @@ export * from './search/search-provider.token';
 export * from './search/search.module';
 
 
+
+// Storage
+export * from './storage/storage-provider.interface';
+export * from './storage/storage-provider.token';
+export * from './storage/storage.module';
 
 // OTel
 export * from './otel/otel.setup';

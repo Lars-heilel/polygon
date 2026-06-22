@@ -103,7 +103,10 @@
         "apps/backend/auth-service-e2e/**/*",
         "apps/backend/user-service-e2e/**/*",
         "apps/backend/chat-service-e2e/**/*",
-        "apps/backend/notification-service-e2e/**/*"
+        "apps/backend/notification-service-e2e/**/*",
+        "apps/backend/media-storage-service-e2e/**/*",
+        "apps/backend/file-service-e2e/**/*",
+        "apps/backend/media-service-e2e/**/*"
       ]
     },
     {
