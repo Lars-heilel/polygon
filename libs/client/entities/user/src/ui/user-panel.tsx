@@ -20,6 +20,7 @@ export function UserPanel({ onProfileClick }: UserPanelProps) {
         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
       >
         <Avatar
+          src={me.avatarUrl ?? undefined}
           name={displayName}
           size="sm"
         />

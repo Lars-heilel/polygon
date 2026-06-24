@@ -7,6 +7,7 @@ export const fileResponseSchema = z.object({
   originalName: z.string(),
   mimeType: z.string(),
   size: z.number(),
+  createdAt: z.date(),
 });
 
 export class FileResponseDto extends createZodDto(fileResponseSchema) {}

@@ -5,6 +5,7 @@ import { Avatar, Badge, Text, formatDate } from '@org/shared';
 export interface ChatItemProps {
   id: string;
   name: string;
+  avatarUrl?: string;
   lastMessage: string;
   time: string | null;
   unread?: number;
@@ -15,6 +16,7 @@ export interface ChatItemProps {
 
 export const ChatItem = memo(function ChatItem({
   name,
+  avatarUrl,
   lastMessage,
   time,
   unread = 0,
@@ -31,6 +33,7 @@ export const ChatItem = memo(function ChatItem({
     >
       <div className="relative shrink-0">
         <Avatar
+          src={avatarUrl}
           name={name}
           size="md"
         />

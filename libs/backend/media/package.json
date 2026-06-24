@@ -14,8 +14,7 @@
   },
   "dependencies": {
     "@org/common": "*",
-    "@org/core": "*",
-    "minio": "^8.0.0"
+    "@org/core": "*"
   },
   "nx": {
     "tags": [

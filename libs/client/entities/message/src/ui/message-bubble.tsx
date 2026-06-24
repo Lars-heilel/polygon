@@ -8,6 +8,7 @@ interface MessageBubbleProps {
   message: Message;
   isMine: boolean;
   senderName?: string;
+  senderAvatarUrl?: string;
   contentSlot?: ReactNode;
 }
 
@@ -15,12 +16,14 @@ export const MessageBubble = memo(function MessageBubble({
   message,
   isMine,
   senderName,
+  senderAvatarUrl,
   children,
 }: MessageBubbleProps & { children: React.ReactNode }) {
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse lg:flex-row' : 'flex-row'}`}>
       {!isMine && (
         <Avatar
+          src={senderAvatarUrl}
           name={senderName?.slice(0, 2) ?? '?'}
           size="xs"
         />

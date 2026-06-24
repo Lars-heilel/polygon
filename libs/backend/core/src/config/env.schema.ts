@@ -10,6 +10,15 @@ export const envSchema = z.object({
   NOTIFICATION_DATABASE_URL: z.url(),
   MEDIA_DATABASE_URL: z.url(),
 
+  // MinIO
+  MINIO_ENDPOINT: z.string().min(1),
+  MINIO_PORT: z.coerce.number().default(9000),
+  MINIO_ACCESS_KEY: z.string().min(1),
+  MINIO_SECRET_KEY: z.string().min(1),
+  MINIO_USE_SSL: z.preprocess((v) => v === 'true' || v === true || v === '1' || v === 1, z.boolean()).default(false),
+  MINIO_PUBLIC_BUCKET: z.string().default('polygon-public'),
+  MINIO_PRIVATE_BUCKET: z.string().default('polygon-private'),
+
   // JWT
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),

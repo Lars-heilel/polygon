@@ -6,7 +6,7 @@ CREATE TABLE "User" (
     "display_name" TEXT,
     "avatar_url" TEXT,
     "bio" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")

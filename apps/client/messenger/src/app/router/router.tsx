@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
       // Authenticated routes (chats, chat page)
       { element: <AppGuard />, children: appRoutes },
 
-      // Dev-only design system page
+      // Dev-only pages
       ...(import.meta.env.DEV
         ? [
             {
@@ -57,6 +57,10 @@ export const router = createBrowserRouter([
                 ]);
                 return { element: <DesignSystemPage headerSlot={<ThemeToggle />} /> };
               },
+            },
+            {
+              path: '/media-test',
+              lazy: () => import('@org/pages-media-test').then((m) => ({ Component: m.MediaTestPage })),
             },
           ]
         : []),

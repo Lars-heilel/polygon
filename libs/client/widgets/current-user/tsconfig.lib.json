@@ -26,6 +26,9 @@
   "references": [
     {
       "path": "../../entities/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../features/upload-avatar/tsconfig.lib.json"
     }
   ]
 }

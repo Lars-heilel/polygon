@@ -72,6 +72,7 @@ export * from './search/search.module';
 export * from './storage/storage-provider.interface';
 export * from './storage/storage-provider.token';
 export * from './storage/storage.module';
+export * from './storage/minio-storage.provider';
 
 // OTel
 export * from './otel/otel.setup';

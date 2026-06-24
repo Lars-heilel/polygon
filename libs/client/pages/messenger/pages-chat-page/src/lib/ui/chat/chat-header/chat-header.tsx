@@ -18,7 +18,7 @@ interface ChatHeaderProps {
   onMenuClick?: () => void;
 }
 
-export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: ChatHeaderProps) {
+export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) {
   const { data: chats } = useGetChatsSuspenseQuery();
   const { data: me } = useMeSuspenseQuery();
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
@@ -27,14 +27,17 @@ export const ChatHeader = memo(function ChatHeader({ chatId, onMenuClick }: Chat
   const chat = chats.find((c) => c.id === chatId);
   const displayName = chat ? getChatDisplayName(chat, me.id) : 'Chat';
 
-  const otherUserId = chat?.members.find((m) => m.userId !== me.id)?.userId;
+  const otherMember = chat?.members.find((m) => m.userId !== me.id);
+  const otherUserId = otherMember?.userId;
+  const otherAvatarUrl = otherMember?.profile?.avatarUrl;
   const isOnline = otherUserId ? (onlineUsers[otherUserId] ?? false) : false;
   const isTyping = otherUserId ? (typingUsers[otherUserId] ?? false) : false;
 
   return (
     <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky shrink-0">
-      <div className="relative">
+      <div className="relative ">
         <Avatar
+          src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}
           name={displayName}
           size="md"
         />

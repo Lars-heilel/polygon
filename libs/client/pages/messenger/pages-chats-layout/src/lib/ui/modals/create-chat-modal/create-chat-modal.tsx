@@ -69,6 +69,7 @@ export function CreateChatModal({
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-elevated rounded-lg transition-colors disabled:opacity-50"
           >
             <Avatar
+              src={user.avatarUrl ?? undefined}
               name={user.displayName ?? user.name}
               size="md"
             />

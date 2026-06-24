@@ -41,6 +41,12 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
+
+  updateProfile: (data: { displayName?: string; bio?: string }) =>
+    authedFetch<void>(API_ROUTES.users.me, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 };
 
 export function useMeQuery() {

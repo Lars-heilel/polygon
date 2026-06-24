@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const fileStatusSchema = z.enum(['PENDING', 'READY']);
+export type FileStatus = z.infer<typeof fileStatusSchema>;
+
 export const fileSchema = z.object({
   id: z.string().uuid(),
   bucket: z.string(),
@@ -7,8 +10,9 @@ export const fileSchema = z.object({
   originalName: z.string(),
   mimeType: z.string(),
   size: z.number().int().positive(),
-  url: z.string(),
+  url: z.string().nullable(),
   uploaderId: z.string().uuid().nullable(),
+  status: fileStatusSchema,
   createdAt: z.date(),
   updatedAt: z.date(),
 });

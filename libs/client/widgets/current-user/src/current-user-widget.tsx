@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
-import { ProfileModal, UserPanel } from '@org/entities-user';
+import { ProfileModal, UserPanel, EditProfileModal } from '@org/entities-user';
+import { AvatarCarousel } from '@org/features-upload-avatar';
 
 interface CurrentUserWidgetProps {
   onSettingsClick?: () => void;
@@ -8,6 +9,8 @@ interface CurrentUserWidgetProps {
 
 export function CurrentUserWidget({ onSettingsClick }: CurrentUserWidgetProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isCarouselOpen, setIsCarouselOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleSettingsClick = useCallback(() => {
     setIsProfileOpen(false);
@@ -21,6 +24,14 @@ export function CurrentUserWidget({ onSettingsClick }: CurrentUserWidgetProps) {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onSettingsClick={handleSettingsClick}
+        onAvatarClick={() => setIsCarouselOpen(true)}
+        onEditProfileClick={() => setIsEditOpen(true)}
+      />
+      <AvatarCarousel isOpen={isCarouselOpen} onClose={() => setIsCarouselOpen(false)} />
+      <EditProfileModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSaved={() => setIsEditOpen(false)}
       />
     </>
   );

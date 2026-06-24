@@ -13,15 +13,17 @@ interface ChatMessageRowProps {
   msg: Message;
   isMine: boolean;
   senderName?: string;
+  senderAvatarUrl?: string;
 }
 
-const ChatMessageRow = memo(({ msg, isMine, senderName }: ChatMessageRowProps) => {
+const ChatMessageRow = memo(({ msg, isMine, senderName, senderAvatarUrl }: ChatMessageRowProps) => {
   return (
     <div className="px-4 pb-3">
       <MessageBubble
         message={msg}
         isMine={isMine}
         senderName={senderName}
+        senderAvatarUrl={senderAvatarUrl}
       >
         <span className="whitespace-pre-wrap wrap-break-word">{msg.text ?? ''}</span>
       </MessageBubble>
@@ -150,6 +152,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
               msg={msg}
               isMine={msg.senderId === me.id}
               senderName={profile?.displayName ?? profile?.name ?? undefined}
+              senderAvatarUrl={profile?.avatarUrl ?? undefined}
             />
           );
         }}

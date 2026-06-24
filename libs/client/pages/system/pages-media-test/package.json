@@ -1,0 +1,28 @@
+{
+  "name": "@org/pages-media-test",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@org/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "layer:pages",
+      "scope:client"
+    ]
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@org/shared": "*",
+    "@org/entities-user": "*",
+    "react-router": "*",
+    "react": "*",
+    "zustand": "*",
+    "clsx": "*"
+  }
+}

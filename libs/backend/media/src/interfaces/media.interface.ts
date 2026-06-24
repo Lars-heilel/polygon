@@ -2,17 +2,42 @@ import type { File } from '@org/common';
 
 export interface IMediaRepository {
   findById(id: string): Promise<File | null>;
+  findByUploaderId(uploaderId: string): Promise<File[]>;
   create(data: {
     bucket: string;
     key: string;
     originalName: string;
     mimeType: string;
     size: number;
-    url: string;
+    url?: string | null;
     uploaderId?: string | null;
+    status?: 'PENDING' | 'READY';
   }): Promise<File>;
+  updateStatus(id: string, status: 'PENDING' | 'READY', url: string): Promise<File>;
   delete(id: string): Promise<void>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface IMediaService {}
+export interface FileResponse {
+  id: string;
+  url: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: Date;
+}
+
+export interface InitUploadResult {
+  fileId: string;
+  presignedUrl: string;
+}
+
+export interface IMediaService {
+  initUpload(
+    input: { originalName: string; mimeType: string; size: number },
+    uploaderId?: string,
+  ): Promise<InitUploadResult>;
+  confirmUpload(fileId: string): Promise<FileResponse>;
+  getById(id: string): Promise<FileResponse | null>;
+  delete(id: string): Promise<{ success: boolean }>;
+  getHistory(uploaderId: string): Promise<FileResponse[]>;
+}

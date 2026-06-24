@@ -14,17 +14,47 @@ export class MediaPrismaRepository implements IMediaRepository {
     return this.prisma.file.findUnique({ where: { id } });
   }
 
+  async findByUploaderId(uploaderId: string): Promise<File[]> {
+    return this.prisma.file.findMany({
+      where: { uploaderId, status: 'READY' },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async create(data: {
     bucket: string;
     key: string;
     originalName: string;
     mimeType: string;
     size: number;
-    url: string;
+    url?: string | null;
     uploaderId?: string | null;
+    status?: 'PENDING' | 'READY';
   }): Promise<File> {
     try {
-      return await this.prisma.file.create({ data });
+      return await this.prisma.file.create({
+        data: {
+          bucket: data.bucket,
+          key: data.key,
+          originalName: data.originalName,
+          mimeType: data.mimeType,
+          size: data.size,
+          url: data.url ?? null,
+          uploaderId: data.uploaderId ?? null,
+          status: data.status ?? 'PENDING',
+        },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async updateStatus(id: string, status: 'PENDING' | 'READY', url: string): Promise<File> {
+    try {
+      return await this.prisma.file.update({
+        where: { id },
+        data: { status, url },
+      });
     } catch (error) {
       handlePrismaError(error);
     }

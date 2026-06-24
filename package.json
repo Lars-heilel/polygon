@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "dev:docker:up": "docker compose up -d",
+    "dev:docker:down": "docker compose down",
     "demo:build": "make -C docker/demo build",
     "demo:start": "make -C docker/demo start",
     "demo:stop": "make -C docker/demo stop",
@@ -10,8 +12,8 @@
     "demo:logs": "make -C docker/demo logs",
     "demo:backup": "make -C docker/demo backup",
     "demo:clean": "make -C docker/demo clean",
-    "dev:all": "nx run-many --target serve --all --parallel",
-    "dev:all:skip-cache": "nx run-many --target serve --all --parallel --skip-nx-cache",
+    "dev:all": "nx run-many --target serve --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
+    "dev:all:skip-cache": "nx run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
     "nx:show-projects": "nx show projects",
     "format:write": "nx format:write",
     "format:check": "nx format:check"
@@ -64,6 +66,7 @@
     "@vitest/ui": "~4.0.0",
     "ajv": "^8.0.0",
     "babel-jest": "^30.0.2",
+    "embla-carousel-react": "^8.5.2",
     "eslint": "~8.57.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "2.31.0",

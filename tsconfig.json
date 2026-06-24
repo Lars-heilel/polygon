@@ -131,6 +131,12 @@
     },
     {
       "path": "./apps/backend/media-service"
+    },
+    {
+      "path": "./libs/client/pages/system/pages-media-test"
+    },
+    {
+      "path": "./libs/client/features/upload-avatar"
     }
   ]
 }

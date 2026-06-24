@@ -10,7 +10,10 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}/${path}`, {
+  const url = `${BASE_URL}/${path}`;
+  console.log(`[apiFetch] → ${url}`, { method: init?.method ?? 'GET', credentials: 'include' });
+
+  const res = await fetch(url, {
     ...init,
     credentials: 'include',
     headers: {
@@ -18,6 +21,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       ...(init?.headers ?? {}),
     },
   });
+
+  console.log(`[apiFetch] ← ${url} → ${res.status} ${res.statusText}`);
 
   if (!res.ok) {
     const data = await res.json().catch(() => null);

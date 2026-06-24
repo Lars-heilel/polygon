@@ -44,6 +44,9 @@
       "path": "../../../libs/client/pages/system/pages-not-found/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/client/pages/system/pages-media-test/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/client/features/theme/tsconfig.lib.json"
     },
     {
