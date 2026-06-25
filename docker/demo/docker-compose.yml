@@ -113,6 +113,7 @@ services:
       USER_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_user
       CHAT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_chat
       NOTIFICATION_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_notification
+      MEDIA_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/polygon_media
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       REDIS_HOST: redis
       MEILISEARCH_URL: http://meilisearch:7700
@@ -120,22 +121,19 @@ services:
       CLIENT_URL: https://www.polygon-by-lars-heilel.ru
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       LOKI_URL: http://loki:3100
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_USE_SSL: false
+      MINIO_PUBLIC_BUCKET: polygon-public
+      MINIO_PRIVATE_BUCKET: polygon-private
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-  minio:
-    image: quay.io/minio/minio
-    container_name: polygon-demo-minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - polygon-demo-network
-
-  rabbitmq:
+      rabbitmq:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
@@ -145,6 +143,16 @@ services:
       resources:
         limits:
           memory: 2G
+
+  minio:
+    image: quay.io/minio/minio
+    container_name: polygon-demo-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - polygon-demo-network
 
   prometheus:
     image: prom/prometheus:v2.53.0
