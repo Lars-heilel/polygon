@@ -1,9 +1,30 @@
-import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage } from '@org/common';
+import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage, MessageType } from '@org/common';
 
 export type ChatWithPreview = Chat & {
   members: ChatMember[];
   lastMessage: Message | null;
 };
+
+export interface CreateMessageData {
+  chatId: string;
+  senderId: string;
+  type?: MessageType;
+  text?: string | null;
+  fileId?: string | null;
+  fileBucket?: string | null;
+  fileKey?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  fileMime?: string | null;
+  forwardedFromId?: string | null;
+}
+
+export interface ForwardMessagesData {
+  sourceChatId: string;
+  targetChatId: string;
+  messageIds: string[];
+  userId: string;
+}
 
 export interface IChatRepository {
   findChatById(id: string): Promise<Chat | null>;
@@ -24,7 +45,9 @@ export interface IChatRepository {
     cursor: string | undefined,
     take: number,
   ): Promise<MessagePage>;
-  createMessage(data: { chatId: string; senderId: string; text?: string | null }): Promise<Message>;
+  findMessageById(id: string): Promise<Message | null>;
+  createMessage(data: CreateMessageData): Promise<Message>;
+  createMessagesMany(data: CreateMessageData[]): Promise<number>;
 }
 
 export interface IChatService {
@@ -36,7 +59,21 @@ export interface IChatService {
     cursor: string | undefined,
     take: number,
   ): Promise<MessagePage>;
-  sendMessage(chatId: string, senderId: string, text: string): Promise<Message>;
+  sendMessage(
+    chatId: string,
+    senderId: string,
+    input: {
+      type: string;
+      text?: string | null;
+      fileId?: string | null;
+      fileBucket?: string | null;
+      fileKey?: string | null;
+      fileName?: string | null;
+      fileSize?: number | null;
+      fileMime?: string | null;
+    },
+  ): Promise<Message>;
+  forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
 }
 
@@ -49,6 +86,18 @@ export interface IChatController {
     cursor?: string;
     take?: number;
   }): Promise<MessagePage>;
-  sendMessage(payload: { chatId: string; senderId: string; text: string }): Promise<Message>;
+  sendMessage(payload: {
+    chatId: string;
+    senderId: string;
+    type: string;
+    text?: string | null;
+    fileId?: string | null;
+    fileBucket?: string | null;
+    fileKey?: string | null;
+    fileName?: string | null;
+    fileSize?: number | null;
+    fileMime?: string | null;
+  }): Promise<Message>;
+  forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
 }

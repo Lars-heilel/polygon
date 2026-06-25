@@ -3,9 +3,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { socket } from '@org/shared';
 import { debounce } from 'es-toolkit';
 
+export interface FileAttachment {
+  fileId: string;
+  fileBucket: string;
+  fileKey: string;
+  fileName: string;
+  fileSize: number;
+  fileMime: string;
+}
+
 export function useSendMessage(chatId: string | null) {
   const [messageText, setMessageText] = useState('');
   const isTypingRef = useRef(false);
+  const pendingFileRef = useRef<FileAttachment | null>(null);
 
   const chatIdRef = useRef(chatId);
   chatIdRef.current = chatId;
@@ -42,9 +52,34 @@ export function useSendMessage(chatId: string | null) {
     [debouncedStopTyping, messageText],
   );
 
+  const setFileAttachment = useCallback((file: FileAttachment | null) => {
+    pendingFileRef.current = file;
+  }, []);
+
   const handleSend = useCallback(() => {
+    if (!chatIdRef.current) return;
+
+    const file = pendingFileRef.current;
+
+    if (file) {
+      pendingFileRef.current = null;
+      setMessageText('');
+      socket.emit('message:send', {
+        chatId: chatIdRef.current,
+        type: file.fileMime.startsWith('image/') ? 'IMAGE' : 'FILE',
+        fileId: file.fileId,
+        fileBucket: file.fileBucket,
+        fileKey: file.fileKey,
+        fileName: file.fileName,
+        fileSize: file.fileSize,
+        fileMime: file.fileMime,
+      });
+      stopTyping();
+      return;
+    }
+
     const trimmed = messageText.trim();
-    if (!trimmed || !chatIdRef.current) return;
+    if (!trimmed) return;
     setMessageText('');
     socket.emit('message:send', { chatId: chatIdRef.current, text: trimmed });
     stopTyping();
@@ -54,5 +89,6 @@ export function useSendMessage(chatId: string | null) {
     messageText,
     setMessageText: handleChange,
     handleSend,
+    setFileAttachment,
   };
 }

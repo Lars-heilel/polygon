@@ -6,6 +6,7 @@ import { MEDIA_PRISMA_REPOSITORY_TOKEN, STORAGE_PROVIDER_TOKEN } from '@org/core
 import type { IStorageProvider } from '@org/core';
 import type {
   FileResponse,
+  FileUrlResult,
   IMediaRepository,
   IMediaService,
   InitUploadResult,
@@ -23,7 +24,7 @@ export class MediaService implements IMediaService {
   }
 
   async initUpload(
-    input: { originalName: string; mimeType: string; size: number },
+    input: { originalName: string; mimeType: string; size: number; chatId?: string },
     uploaderId?: string,
   ): Promise<InitUploadResult> {
     const ext = extname(input.originalName);
@@ -39,6 +40,7 @@ export class MediaService implements IMediaService {
       size: input.size,
       uploaderId: uploaderId ?? null,
       status: 'PENDING',
+      chatId: input.chatId ?? null,
     });
 
     return { fileId: file.id, presignedUrl };
@@ -61,6 +63,14 @@ export class MediaService implements IMediaService {
       size: updated.size,
       createdAt: updated.createdAt,
     };
+  }
+
+  async getFileUrl(id: string): Promise<FileUrlResult> {
+    const file = await this.repo.findById(id);
+    if (!file) throw new Error('File not found');
+    const expiresIn = 900;
+    const url = await this.storage.getPresignedUrl(file.bucket, file.key, expiresIn);
+    return { url, expiresIn };
   }
 
   async getById(id: string): Promise<FileResponse | null> {

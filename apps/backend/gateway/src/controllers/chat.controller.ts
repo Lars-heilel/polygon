@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpException,
+  HttpStatus,
   Inject,
   Param,
   Post,
@@ -19,7 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateDirectChatDto, SendMessageDto } from '@org/chat';
-import type { UserPublic } from '@org/common';
+import type { ForwardMessageInput, UserPublic } from '@org/common';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
@@ -129,13 +130,45 @@ export class ChatGatewayController {
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId,
         senderId: user.sub,
-        text: dto.text,
+        type: dto.type ?? 'TEXT',
+        text: dto.text ?? null,
+        fileId: dto.fileId ?? null,
+        fileBucket: dto.fileBucket ?? null,
+        fileKey: dto.fileKey ?? null,
+        fileName: dto.fileName ?? null,
+        fileSize: dto.fileSize ?? null,
+        fileMime: dto.fileMime ?? null,
       }),
     );
 
     this.socketGateway.broadcastMessage(chatId, message);
 
     return message;
+  }
+
+  @Post(':id/forward')
+  @ApiOperation({ summary: 'Forward messages to a chat' })
+  @ApiParam({ name: 'id', description: 'Target chat UUID' })
+  @ApiResponse({ status: 201, description: 'Array of created messages' })
+  async forwardMessages(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') targetChatId: string,
+    @Body() dto: ForwardMessageInput,
+  ) {
+    const messages = await this.send<unknown[]>(
+      this.chatClient.send(CHAT_PATTERNS.FORWARD_MESSAGES, {
+        sourceChatId: dto.sourceChatId ?? targetChatId,
+        targetChatId,
+        messageIds: dto.messageIds,
+        userId: user.sub,
+      }),
+    );
+
+    for (const msg of messages) {
+      this.socketGateway.broadcastMessage(targetChatId, msg);
+    }
+
+    return messages;
   }
 
   private async send<T>(observable: Observable<T>): Promise<T> {

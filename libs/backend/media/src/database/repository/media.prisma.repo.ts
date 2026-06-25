@@ -30,6 +30,7 @@ export class MediaPrismaRepository implements IMediaRepository {
     url?: string | null;
     uploaderId?: string | null;
     status?: 'PENDING' | 'READY';
+    chatId?: string | null;
   }): Promise<File> {
     try {
       return await this.prisma.file.create({
@@ -42,6 +43,7 @@ export class MediaPrismaRepository implements IMediaRepository {
           url: data.url ?? null,
           uploaderId: data.uploaderId ?? null,
           status: data.status ?? 'PENDING',
+          chatId: data.chatId ?? null,
         },
       });
     } catch (error) {

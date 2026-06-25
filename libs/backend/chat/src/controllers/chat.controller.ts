@@ -3,7 +3,12 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import type { Chat, Message, MessagePage } from '@org/common';
 import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
 
-import type { ChatWithPreview, IChatController, IChatService } from '../interfaces/chat.interface';
+import type {
+  ChatWithPreview,
+  ForwardMessagesData,
+  IChatController,
+  IChatService,
+} from '../interfaces/chat.interface';
 
 @Controller()
 export class ChatController implements IChatController {
@@ -39,9 +44,35 @@ export class ChatController implements IChatController {
 
   @MessagePattern(CHAT_PATTERNS.SEND_MESSAGE)
   sendMessage(
-    @Payload() payload: { chatId: string; senderId: string; text: string },
+    @Payload()
+    payload: {
+      chatId: string;
+      senderId: string;
+      type: string;
+      text?: string | null;
+      fileId?: string | null;
+      fileBucket?: string | null;
+      fileKey?: string | null;
+      fileName?: string | null;
+      fileSize?: number | null;
+      fileMime?: string | null;
+    },
   ): Promise<Message> {
-    return this.chatService.sendMessage(payload.chatId, payload.senderId, payload.text);
+    return this.chatService.sendMessage(payload.chatId, payload.senderId, {
+      type: payload.type,
+      text: payload.text,
+      fileId: payload.fileId,
+      fileBucket: payload.fileBucket,
+      fileKey: payload.fileKey,
+      fileName: payload.fileName,
+      fileSize: payload.fileSize,
+      fileMime: payload.fileMime,
+    });
+  }
+
+  @MessagePattern(CHAT_PATTERNS.FORWARD_MESSAGES)
+  forwardMessages(@Payload() payload: ForwardMessagesData): Promise<Message[]> {
+    return this.chatService.forwardMessages(payload);
   }
 
   @MessagePattern(CHAT_PATTERNS.CHECK_MEMBERSHIP)

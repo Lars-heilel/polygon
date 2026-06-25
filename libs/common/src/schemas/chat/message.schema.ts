@@ -1,10 +1,21 @@
 import * as z from 'zod';
 
+export const messageTypeSchema = z.enum(['TEXT', 'IMAGE', 'AUDIO', 'VIDEO', 'VOICE', 'FILE', 'SYSTEM']);
+export type MessageType = z.infer<typeof messageTypeSchema>;
+
 export const messageSchema = z.object({
   id: z.uuid(),
   chatId: z.uuid(),
   senderId: z.uuid(),
+  type: messageTypeSchema,
   text: z.string().nullable(),
+  fileId: z.string().uuid().nullable(),
+  fileBucket: z.string().nullable(),
+  fileKey: z.string().nullable(),
+  fileName: z.string().nullable(),
+  fileSize: z.number().int().positive().nullable(),
+  fileMime: z.string().nullable(),
+  forwardedFromId: z.string().uuid().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

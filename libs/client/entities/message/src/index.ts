@@ -8,3 +8,4 @@ export {
 export { MessageBubble } from './ui/message-bubble';
 export { MessageBubbleSkeleton } from './ui/message-bubble-skeleton';
 export { MessageListSkeleton } from './ui/message-list-skeleton';
+export { FileMessage } from './ui/file-message';

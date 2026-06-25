@@ -1,7 +1,7 @@
 import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
-import { MEDIA_SERVICE_TOKEN } from '@org/core';
+import { MEDIA_PATTERNS, MEDIA_SERVICE_TOKEN } from '@org/core';
 import type { IMediaService } from '../interfaces/media.interface';
 import { FileResponseDto } from '../dto/file-response.dto';
 
@@ -14,10 +14,15 @@ export class MediaController {
   @MessagePattern('media.initUpload')
   async initUpload(
     @Payload()
-    payload: { originalName: string; mimeType: string; size: number; uploaderId?: string },
+    payload: { originalName: string; mimeType: string; size: number; chatId?: string; uploaderId?: string },
   ) {
     return this.mediaService.initUpload(
-      { originalName: payload.originalName, mimeType: payload.mimeType, size: payload.size },
+      {
+        originalName: payload.originalName,
+        mimeType: payload.mimeType,
+        size: payload.size,
+        chatId: payload.chatId,
+      },
       payload.uploaderId,
     );
   }
@@ -25,6 +30,11 @@ export class MediaController {
   @MessagePattern('media.confirmUpload')
   async confirmUpload(@Payload() { fileId }: { fileId: string }): Promise<FileResponseDto> {
     return this.mediaService.confirmUpload(fileId);
+  }
+
+  @MessagePattern(MEDIA_PATTERNS.GET_FILE_URL)
+  async getFileUrl(@Payload() { id }: { id: string }) {
+    return this.mediaService.getFileUrl(id);
   }
 
   @MessagePattern('media.getById')

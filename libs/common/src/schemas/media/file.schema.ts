@@ -13,6 +13,7 @@ export const fileSchema = z.object({
   url: z.string().nullable(),
   uploaderId: z.string().uuid().nullable(),
   status: fileStatusSchema,
+  chatId: z.string().uuid().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

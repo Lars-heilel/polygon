@@ -130,7 +130,18 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { chatId: string; text: string },
+    @MessageBody()
+    payload: {
+      chatId: string;
+      text?: string;
+      type?: string;
+      fileId?: string;
+      fileBucket?: string;
+      fileKey?: string;
+      fileName?: string;
+      fileSize?: number;
+      fileMime?: string;
+    },
   ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
@@ -139,7 +150,14 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId: payload.chatId,
         senderId: userId,
-        text: payload.text,
+        type: payload.type ?? 'TEXT',
+        text: payload.text ?? null,
+        fileId: payload.fileId ?? null,
+        fileBucket: payload.fileBucket ?? null,
+        fileKey: payload.fileKey ?? null,
+        fileName: payload.fileName ?? null,
+        fileSize: payload.fileSize ?? null,
+        fileMime: payload.fileMime ?? null,
       }),
     ).catch((err: { message?: string }) => {
       this.logger.error(`message:send error: ${err?.message}`);

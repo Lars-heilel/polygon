@@ -20,6 +20,16 @@ enum ChatRole {
   MEMBER
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  VIDEO
+  VOICE
+  FILE
+  SYSTEM
+}
+
 model Chat {
   id        String   @id @default(uuid())
   type      ChatType @map("type")
@@ -28,7 +38,7 @@ model Chat {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  members ChatMember[]
+  members  ChatMember[]
   messages Message[]
 
   @@index([type])
@@ -47,12 +57,20 @@ model ChatMember {
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  chatId    String   @map("chat_id")
-  senderId  String   @map("sender_id")
-  text      String?  @map("text")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id              String      @id @default(uuid())
+  chatId          String      @map("chat_id")
+  senderId        String      @map("sender_id")
+  type            MessageType @default(TEXT) @map("type")
+  text            String?     @map("text")
+  fileId          String?     @map("file_id")
+  fileBucket      String?     @map("file_bucket")
+  fileKey         String?     @map("file_key")
+  fileName        String?     @map("file_name")
+  fileSize        Int?        @map("file_size")
+  fileMime        String?     @map("file_mime")
+  forwardedFromId String?     @map("forwarded_from_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 

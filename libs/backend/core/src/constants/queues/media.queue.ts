@@ -5,6 +5,7 @@ export const MEDIA_PATTERNS = {
   INIT_UPLOAD: 'media.initUpload',
   CONFIRM_UPLOAD: 'media.confirmUpload',
   GET_BY_ID: 'media.getById',
+  GET_FILE_URL: 'media.getFileUrl',
   DELETE: 'media.delete',
   GET_HISTORY: 'media.getHistory',
 } as const;

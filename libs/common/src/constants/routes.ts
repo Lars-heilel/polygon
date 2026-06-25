@@ -23,6 +23,13 @@ export const API_ROUTES = {
   search: {
     users: 'search/users',
   },
+  media: {
+    initUpload: 'media/init-upload',
+    confirm: 'media/confirm',
+    fileUrl: (fileId: string) => `media/files/${fileId}/url`,
+    delete: (id: string) => `media/${id}`,
+    history: 'media/history',
+  },
 } as const;
 
 export const CLIENT_ROUTES = {

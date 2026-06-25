@@ -22,6 +22,7 @@ model File {
   url          String?    @map("url")
   uploaderId   String?    @map("uploader_id")
   status       FileStatus @default(PENDING) @map("status")
+  chatId       String?    @map("chat_id")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 }

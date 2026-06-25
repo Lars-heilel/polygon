@@ -12,6 +12,7 @@ export interface IMediaRepository {
     url?: string | null;
     uploaderId?: string | null;
     status?: 'PENDING' | 'READY';
+    chatId?: string | null;
   }): Promise<File>;
   updateStatus(id: string, status: 'PENDING' | 'READY', url: string): Promise<File>;
   delete(id: string): Promise<void>;
@@ -31,13 +32,19 @@ export interface InitUploadResult {
   presignedUrl: string;
 }
 
+export interface FileUrlResult {
+  url: string;
+  expiresIn: number;
+}
+
 export interface IMediaService {
   initUpload(
-    input: { originalName: string; mimeType: string; size: number },
+    input: { originalName: string; mimeType: string; size: number; chatId?: string },
     uploaderId?: string,
   ): Promise<InitUploadResult>;
   confirmUpload(fileId: string): Promise<FileResponse>;
   getById(id: string): Promise<FileResponse | null>;
+  getFileUrl(id: string): Promise<FileUrlResult>;
   delete(id: string): Promise<{ success: boolean }>;
   getHistory(uploaderId: string): Promise<FileResponse[]>;
 }

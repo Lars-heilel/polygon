@@ -3,7 +3,7 @@ import { CHAT_MEMBER_SELECT_FIELDS, CHAT_SELECT_FIELDS, MESSAGE_SELECT_FIELDS } 
 import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage } from '@org/common';
 import { handlePrismaError } from '@org/core';
 
-import type { ChatWithPreview, IChatRepository } from '../../interfaces/chat.interface';
+import type { ChatWithPreview, CreateMessageData, IChatRepository } from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -122,13 +122,54 @@ export class ChatPrismaRepository implements IChatRepository {
     };
   }
 
-  async createMessage(data: {
-    chatId: string;
-    senderId: string;
-    text?: string | null;
-  }): Promise<Message> {
+  async findMessageById(id: string): Promise<Message | null> {
+    return this.prisma.message.findUnique({
+      where: { id },
+      select: MESSAGE_SELECT_FIELDS,
+    });
+  }
+
+  async createMessage(data: CreateMessageData): Promise<Message> {
     try {
-      return await this.prisma.message.create({ data, select: MESSAGE_SELECT_FIELDS });
+      return await this.prisma.message.create({
+        data: {
+          chatId: data.chatId,
+          senderId: data.senderId,
+          type: data.type ?? 'TEXT',
+          text: data.text ?? null,
+          fileId: data.fileId ?? null,
+          fileBucket: data.fileBucket ?? null,
+          fileKey: data.fileKey ?? null,
+          fileName: data.fileName ?? null,
+          fileSize: data.fileSize ?? null,
+          fileMime: data.fileMime ?? null,
+          forwardedFromId: data.forwardedFromId ?? null,
+        },
+        select: MESSAGE_SELECT_FIELDS,
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async createMessagesMany(data: CreateMessageData[]): Promise<number> {
+    try {
+      const result = await this.prisma.message.createMany({
+        data: data.map((d) => ({
+          chatId: d.chatId,
+          senderId: d.senderId,
+          type: d.type ?? 'TEXT',
+          text: d.text ?? null,
+          fileId: d.fileId ?? null,
+          fileBucket: d.fileBucket ?? null,
+          fileKey: d.fileKey ?? null,
+          fileName: d.fileName ?? null,
+          fileSize: d.fileSize ?? null,
+          fileMime: d.fileMime ?? null,
+          forwardedFromId: d.forwardedFromId ?? null,
+        })),
+      });
+      return result.count;
     } catch (error) {
       handlePrismaError(error);
     }

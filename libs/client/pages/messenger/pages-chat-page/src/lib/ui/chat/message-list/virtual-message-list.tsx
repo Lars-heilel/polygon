@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
-import { MessageBubble, useInfiniteMessagesQuery } from '@org/entities-message';
+import { FileMessage, MessageBubble, useInfiniteMessagesQuery } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import { Text, socket } from '@org/shared';
@@ -25,7 +25,11 @@ const ChatMessageRow = memo(({ msg, isMine, senderName, senderAvatarUrl }: ChatM
         senderName={senderName}
         senderAvatarUrl={senderAvatarUrl}
       >
-        <span className="whitespace-pre-wrap wrap-break-word">{msg.text ?? ''}</span>
+        {msg.type === 'TEXT' || (!msg.fileId && !msg.fileMime) ? (
+          <span className="whitespace-pre-wrap wrap-break-word">{msg.text ?? ''}</span>
+        ) : (
+          <FileMessage message={msg} isMine={isMine} />
+        )}
       </MessageBubble>
     </div>
   );

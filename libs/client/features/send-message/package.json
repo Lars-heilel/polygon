@@ -16,5 +16,9 @@
       "scope:client"
     ]
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@org/common": "*",
+    "@org/shared": "*"
+  }
 }
