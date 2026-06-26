@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectMinio } from 'nestjs-minio';
 import * as Minio from 'minio';
@@ -7,29 +7,20 @@ import type { Env } from '../config/env.schema';
 import type { IStorageProvider, UploadResult } from './storage-provider.interface';
 
 @Injectable()
-export class MinioStorageProvider implements IStorageProvider, OnModuleInit {
+export class MinioStorageProvider implements IStorageProvider {
   private readonly logger = new Logger(MinioStorageProvider.name);
-  private readonly config: ConfigService<Env, true>;
-  private publicBucket: string;
-  private privateBucket: string;
-  private publicEndpoint: string;
+  private readonly avatarsBucket: string;
+  private readonly publicEndpoint: string;
 
   constructor(
     @InjectMinio() private readonly minioClient: Minio.Client,
-    config: ConfigService<Env, true>,
+    private readonly config: ConfigService<Env, true>,
   ) {
-    this.config = config;
-    this.publicBucket = config.get('MINIO_PUBLIC_BUCKET', { infer: true });
-    this.privateBucket = config.get('MINIO_PRIVATE_BUCKET', { infer: true });
+    this.avatarsBucket = config.get('MINIO_PUBLIC_BUCKET', { infer: true });
     this.publicEndpoint = config.get('MINIO_PUBLIC_ENDPOINT', { infer: true });
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.ensureBucket(this.publicBucket);
-    await this.ensureBucket(this.privateBucket);
-  }
-
-  private async ensureBucket(name: string): Promise<void> {
+  async ensureBucket(name: string): Promise<void> {
     const exists = await this.minioClient.bucketExists(name);
     if (!exists) {
       await this.minioClient.makeBucket(name);
@@ -68,5 +59,13 @@ export class MinioStorageProvider implements IStorageProvider, OnModuleInit {
     await this.ensureBucket(bucket);
     const url = await this.minioClient.presignedPutObject(bucket, key, expiresIn);
     return this.replaceEndpoint(url);
+  }
+
+  getAvatarsBucket(): string {
+    return this.avatarsBucket;
+  }
+
+  getChatBucketName(chatId: string): string {
+    return `polygon-chat-${chatId}`;
   }
 }

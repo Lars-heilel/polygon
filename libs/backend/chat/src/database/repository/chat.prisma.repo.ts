@@ -143,6 +143,7 @@ export class ChatPrismaRepository implements IChatRepository {
           fileName: data.fileName ?? null,
           fileSize: data.fileSize ?? null,
           fileMime: data.fileMime ?? null,
+          fileCategory: data.fileCategory ?? null,
           forwardedFromId: data.forwardedFromId ?? null,
         },
         select: MESSAGE_SELECT_FIELDS,
@@ -166,6 +167,7 @@ export class ChatPrismaRepository implements IChatRepository {
           fileName: d.fileName ?? null,
           fileSize: d.fileSize ?? null,
           fileMime: d.fileMime ?? null,
+          fileCategory: d.fileCategory ?? null,
           forwardedFromId: d.forwardedFromId ?? null,
         })),
       });

@@ -2,12 +2,16 @@ import { memo, useCallback, useRef, useState } from 'react';
 
 import { EmojiPicker } from '@org/features-emoji';
 import {
+  type FileAttachment,
   confirmChatFileUpload,
+  getCategoryFromMime,
   initChatFileUpload,
   uploadFileToMinio,
+  useCircleRecorder,
   useSendMessage,
+  useVoiceRecorder,
 } from '@org/features-send-message';
-import { Button, Textarea } from '@org/shared';
+import { Textarea } from '@org/shared';
 import { cn } from '@org/shared';
 
 interface ChatFooterProps {
@@ -21,14 +25,28 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{ name: string; size: number } | null>(null);
 
+  const sendWithAttachment = useCallback(
+    (attachment: FileAttachment) => {
+      setFileAttachment(attachment);
+      requestAnimationFrame(() => handleSend());
+    },
+    [setFileAttachment, handleSend],
+  );
+
+  const voiceRecorder = useVoiceRecorder(chatId, sendWithAttachment);
+  const circleRecorder = useCircleRecorder(chatId, sendWithAttachment);
+
+  const isRecording = voiceRecorder.isRecording || circleRecorder.isRecording;
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+        if (isRecording) return;
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend, isRecording],
   );
 
   const handleEmojiSelect = useCallback(
@@ -52,29 +70,31 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
       setPendingFile({ name: file.name, size: file.size });
 
       try {
+        const category = getCategoryFromMime(file.type);
         const { fileId, presignedUrl } = await initChatFileUpload(
           file.name,
           file.type,
           file.size,
           chatId,
+          category,
         );
 
         await uploadFileToMinio(presignedUrl, file, setUploadProgress);
 
         const confirmed = await confirmChatFileUpload(fileId);
 
-        setFileAttachment({
+        sendWithAttachment({
           fileId: confirmed.id,
-          fileBucket: 'polygon-public',
-          fileKey: presignedUrl.split('/').pop()!.split('?')[0]!,
+          fileBucket: confirmed.bucket,
+          fileKey: confirmed.key,
           fileName: confirmed.originalName,
           fileSize: confirmed.size,
           fileMime: confirmed.mimeType,
+          fileCategory: category,
         });
 
         setPendingFile(null);
         setUploadProgress(0);
-        handleSend();
       } catch {
         setPendingFile(null);
         setUploadProgress(0);
@@ -85,9 +105,26 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
         }
       }
     },
-    [chatId, setFileAttachment, handleSend],
+    [chatId, sendWithAttachment],
   );
 
+  const handleRecordVoice = useCallback(() => {
+    if (voiceRecorder.isRecording) {
+      voiceRecorder.stop();
+    } else {
+      voiceRecorder.start();
+    }
+  }, [voiceRecorder]);
+
+  const handleRecordCircle = useCallback(() => {
+    if (circleRecorder.isRecording) {
+      circleRecorder.stop();
+    } else {
+      circleRecorder.start();
+    }
+  }, [circleRecorder]);
+
+  const hasText = messageText.trim().length > 0;
   const hasAttachment = pendingFile !== null;
 
   return (
@@ -135,13 +172,33 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
         </div>
       )}
 
+      {voiceRecorder.isRecording && (
+        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg text-sm">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-red-400 font-medium">Recording voice...</span>
+          <span className="text-text-muted ml-auto tabular-nums">
+            {voiceRecorder.formatDuration(voiceRecorder.duration)}
+          </span>
+        </div>
+      )}
+
+      {circleRecorder.isRecording && (
+        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-purple-500/10 border border-purple-500/30 rounded-lg text-sm">
+          <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+          <span className="text-purple-400 font-medium">Recording circle...</span>
+          <span className="text-text-muted ml-auto tabular-nums">
+            {circleRecorder.formatDuration(circleRecorder.duration)}
+          </span>
+        </div>
+      )}
+
       <div className="flex gap-3 items-end">
         <button
           onClick={handleAttachClick}
-          disabled={uploading}
+          disabled={uploading || isRecording}
           className={cn(
             'p-2 hover:bg-surface-elevated rounded-lg text-text-muted transition-colors',
-            uploading && 'opacity-50 pointer-events-none',
+            (uploading || isRecording) && 'opacity-50 pointer-events-none',
           )}
         >
           <svg
@@ -164,7 +221,7 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Write a message..."
+            placeholder={isRecording ? 'Recording...' : 'Write a message...'}
             rows={1}
             className="resize-none"
           />
@@ -172,13 +229,71 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
 
         <EmojiPicker onSelect={handleEmojiSelect} />
 
-        <Button
-          onClick={handleSend}
-          disabled={!messageText.trim() && !pendingFile}
-          size="md"
-        >
-          Send
-        </Button>
+        {hasText ? (
+          <button
+            onClick={handleSend}
+            disabled={isRecording}
+            className={cn(
+              'p-2.5 rounded-full transition-colors shrink-0',
+              isRecording
+                ? 'opacity-50 pointer-events-none'
+                : 'bg-primary hover:bg-primary/80 text-white',
+            )}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              />
+            </svg>
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <button
+              onClick={handleRecordVoice}
+              disabled={isRecording && !voiceRecorder.isRecording}
+              className={cn(
+                'p-2.5 rounded-full transition-colors shrink-0',
+                voiceRecorder.isRecording
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : 'hover:bg-surface-elevated text-text-muted',
+              )}
+              title="Voice message"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-4 0h8m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleRecordCircle}
+              disabled={isRecording && !circleRecorder.isRecording}
+              className={cn(
+                'p-2.5 rounded-full transition-colors shrink-0',
+                circleRecorder.isRecording
+                  ? 'bg-purple-500 text-white animate-pulse'
+                  : 'hover:bg-surface-elevated text-text-muted',
+              )}
+              title="Circle video"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" strokeWidth={2} />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 9l5 3-5 3V9z"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

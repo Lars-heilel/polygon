@@ -3,14 +3,27 @@ import type { ConfirmUploadResponse, InitUploadResponse, MediaFile } from '../mo
 
 const BASE = 'media';
 
+export function getCategoryFromMime(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return 'IMAGE';
+  if (mimeType.startsWith('audio/')) return 'AUDIO';
+  if (mimeType.startsWith('video/')) return 'VIDEO';
+  return 'FILE';
+}
+
 export async function initUpload(
   originalName: string,
   mimeType: string,
   size: number,
+  category?: string,
 ): Promise<InitUploadResponse> {
   return authedFetch<InitUploadResponse>(`${BASE}/init-upload`, {
     method: 'POST',
-    body: JSON.stringify({ originalName, mimeType, size }),
+    body: JSON.stringify({
+      originalName,
+      mimeType,
+      size,
+      category: category ?? getCategoryFromMime(mimeType),
+    }),
   });
 }
 

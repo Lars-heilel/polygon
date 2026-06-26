@@ -9,10 +9,19 @@ interface InitUploadResponse {
 interface ConfirmUploadResponse {
   id: string;
   url: string;
+  bucket: string;
+  key: string;
   originalName: string;
   mimeType: string;
   size: number;
   createdAt: string;
+}
+
+export function getCategoryFromMime(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return 'IMAGE';
+  if (mimeType.startsWith('audio/')) return 'AUDIO';
+  if (mimeType.startsWith('video/')) return 'VIDEO';
+  return 'FILE';
 }
 
 export async function initChatFileUpload(
@@ -20,10 +29,17 @@ export async function initChatFileUpload(
   mimeType: string,
   size: number,
   chatId?: string,
+  category?: string,
 ): Promise<InitUploadResponse> {
   return authedFetch<InitUploadResponse>(API_ROUTES.media.initUpload, {
     method: 'POST',
-    body: JSON.stringify({ originalName, mimeType, size, chatId }),
+    body: JSON.stringify({
+      originalName,
+      mimeType,
+      size,
+      chatId,
+      category: category ?? getCategoryFromMime(mimeType),
+    }),
   });
 }
 

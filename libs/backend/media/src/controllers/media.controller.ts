@@ -2,6 +2,7 @@ import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { MEDIA_PATTERNS, MEDIA_SERVICE_TOKEN } from '@org/core';
+import type { FileCategory } from '@org/common';
 import type { IMediaService } from '../interfaces/media.interface';
 import { FileResponseDto } from '../dto/file-response.dto';
 
@@ -14,13 +15,14 @@ export class MediaController {
   @MessagePattern('media.initUpload')
   async initUpload(
     @Payload()
-    payload: { originalName: string; mimeType: string; size: number; chatId?: string; uploaderId?: string },
+    payload: { originalName: string; mimeType: string; size: number; category: FileCategory; chatId?: string; uploaderId?: string },
   ) {
     return this.mediaService.initUpload(
       {
         originalName: payload.originalName,
         mimeType: payload.mimeType,
         size: payload.size,
+        category: payload.category,
         chatId: payload.chatId,
       },
       payload.uploaderId,
@@ -49,8 +51,15 @@ export class MediaController {
 
   @MessagePattern('media.getHistory')
   async getHistory(
-    @Payload() { uploaderId }: { uploaderId: string },
+    @Payload() { uploaderId, category }: { uploaderId: string; category?: FileCategory },
   ): Promise<FileResponseDto[]> {
-    return this.mediaService.getHistory(uploaderId);
+    return this.mediaService.getHistory(uploaderId, category);
+  }
+
+  @MessagePattern('media.getChatHistory')
+  async getChatHistory(
+    @Payload() { chatId, uploaderId }: { chatId: string; uploaderId: string },
+  ): Promise<FileResponseDto[]> {
+    return this.mediaService.getChatHistory(chatId, uploaderId);
   }
 }

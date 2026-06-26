@@ -16,6 +16,7 @@ export interface CreateMessageData {
   fileName?: string | null;
   fileSize?: number | null;
   fileMime?: string | null;
+  fileCategory?: string | null;
   forwardedFromId?: string | null;
 }
 
@@ -71,6 +72,7 @@ export interface IChatService {
       fileName?: string | null;
       fileSize?: number | null;
       fileMime?: string | null;
+      fileCategory?: string | null;
     },
   ): Promise<Message>;
   forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
@@ -97,6 +99,7 @@ export interface IChatController {
     fileName?: string | null;
     fileSize?: number | null;
     fileMime?: string | null;
+    fileCategory?: string | null;
   }): Promise<Message>;
   forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;

@@ -68,6 +68,7 @@ model Message {
   fileName        String?     @map("file_name")
   fileSize        Int?        @map("file_size")
   fileMime        String?     @map("file_mime")
+  fileCategory    String?     @map("file_category")
   forwardedFromId String?     @map("forwarded_from_id")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")

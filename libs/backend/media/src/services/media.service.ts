@@ -4,36 +4,51 @@ import { extname } from 'node:path';
 
 import { MEDIA_PRISMA_REPOSITORY_TOKEN, STORAGE_PROVIDER_TOKEN } from '@org/core';
 import type { IStorageProvider } from '@org/core';
+import type { FileCategory } from '@org/common';
 import type {
   FileResponse,
   FileUrlResult,
   IMediaRepository,
   IMediaService,
   InitUploadResult,
+  UploadInput,
 } from '../interfaces/media.interface';
+
+const CATEGORY_PREFIX: Record<FileCategory, string> = {
+  AVATAR: 'avatars',
+  IMAGE: 'images',
+  AUDIO: 'audio',
+  VIDEO: 'video',
+  FILE: 'files',
+  VOICE: 'voice',
+  CIRCLE: 'circles',
+};
 
 @Injectable()
 export class MediaService implements IMediaService {
-  private readonly publicBucket: string;
-
   constructor(
     @Inject(MEDIA_PRISMA_REPOSITORY_TOKEN) private readonly repo: IMediaRepository,
     @Inject(STORAGE_PROVIDER_TOKEN) private readonly storage: IStorageProvider,
-  ) {
-    this.publicBucket = 'polygon-public';
-  }
+  ) {}
 
   async initUpload(
-    input: { originalName: string; mimeType: string; size: number; chatId?: string },
+    input: UploadInput,
     uploaderId?: string,
   ): Promise<InitUploadResult> {
     const ext = extname(input.originalName);
-    const key = `${randomUUID()}${ext}`;
+    const prefix = CATEGORY_PREFIX[input.category];
+    const key = input.chatId
+      ? `${prefix}/${randomUUID()}${ext}`
+      : `${uploaderId ?? 'unknown'}/${randomUUID()}${ext}`;
 
-    const presignedUrl = await this.storage.getPresignedPutUrl(this.publicBucket, key);
+    const bucket = input.chatId
+      ? this.storage.getChatBucketName(input.chatId)
+      : this.storage.getAvatarsBucket();
+
+    const presignedUrl = await this.storage.getPresignedPutUrl(bucket, key);
 
     const file = await this.repo.create({
-      bucket: this.publicBucket,
+      bucket,
       key,
       originalName: input.originalName,
       mimeType: input.mimeType,
@@ -41,6 +56,7 @@ export class MediaService implements IMediaService {
       uploaderId: uploaderId ?? null,
       status: 'PENDING',
       chatId: input.chatId ?? null,
+      category: input.category,
     });
 
     return { fileId: file.id, presignedUrl };
@@ -58,9 +74,12 @@ export class MediaService implements IMediaService {
     return {
       id: updated.id,
       url: updated.url!,
+      bucket: updated.bucket,
+      key: updated.key,
       originalName: updated.originalName,
       mimeType: updated.mimeType,
       size: updated.size,
+      category: updated.category as FileCategory,
       createdAt: updated.createdAt,
     };
   }
@@ -79,9 +98,12 @@ export class MediaService implements IMediaService {
     return {
       id: file.id,
       url: file.url,
+      bucket: file.bucket,
+      key: file.key,
       originalName: file.originalName,
       mimeType: file.mimeType,
       size: file.size,
+      category: file.category as FileCategory,
       createdAt: file.createdAt,
     };
   }
@@ -94,14 +116,32 @@ export class MediaService implements IMediaService {
     return { success: true };
   }
 
-  async getHistory(uploaderId: string): Promise<FileResponse[]> {
-    const files = await this.repo.findByUploaderId(uploaderId);
+  async getHistory(uploaderId: string, category?: FileCategory): Promise<FileResponse[]> {
+    const files = await this.repo.findByUploaderId(uploaderId, category);
     return files.map((f) => ({
       id: f.id,
       url: f.url!,
+      bucket: f.bucket,
+      key: f.key,
       originalName: f.originalName,
       mimeType: f.mimeType,
       size: f.size,
+      category: f.category as FileCategory,
+      createdAt: f.createdAt,
+    }));
+  }
+
+  async getChatHistory(chatId: string, uploaderId: string): Promise<FileResponse[]> {
+    const files = await this.repo.findByChatId(chatId, uploaderId);
+    return files.map((f) => ({
+      id: f.id,
+      url: f.url!,
+      bucket: f.bucket,
+      key: f.key,
+      originalName: f.originalName,
+      mimeType: f.mimeType,
+      size: f.size,
+      category: f.category as FileCategory,
       createdAt: f.createdAt,
     }));
   }

@@ -56,6 +56,7 @@ export class ChatController implements IChatController {
       fileName?: string | null;
       fileSize?: number | null;
       fileMime?: string | null;
+      fileCategory?: string | null;
     },
   ): Promise<Message> {
     return this.chatService.sendMessage(payload.chatId, payload.senderId, {
@@ -67,6 +68,7 @@ export class ChatController implements IChatController {
       fileName: payload.fileName,
       fileSize: payload.fileSize,
       fileMime: payload.fileMime,
+      fileCategory: payload.fileCategory,
     });
   }
 

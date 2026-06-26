@@ -9,6 +9,8 @@ interface InitUploadResponse {
 interface ConfirmUploadResponse {
   id: string;
   url: string;
+  bucket: string;
+  key: string;
   originalName: string;
   mimeType: string;
   size: number;
@@ -22,7 +24,7 @@ export async function initUpload(
 ): Promise<InitUploadResponse> {
   return authedFetch<InitUploadResponse>('media/init-upload', {
     method: 'POST',
-    body: JSON.stringify({ originalName, mimeType, size }),
+    body: JSON.stringify({ originalName, mimeType, size, category: 'AVATAR' }),
   });
 }
 
@@ -67,7 +69,7 @@ export async function updateUserProfile(data: { displayName?: string; bio?: stri
 }
 
 export async function fetchHistory(): Promise<AvatarItem[]> {
-  return authedFetch<AvatarItem[]>('media/history');
+  return authedFetch<AvatarItem[]>('media/history?category=AVATAR');
 }
 
 export async function deleteFile(fileId: string): Promise<void> {

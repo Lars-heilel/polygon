@@ -54,6 +54,7 @@ export class ChatService implements IChatService {
       fileName?: string | null;
       fileSize?: number | null;
       fileMime?: string | null;
+      fileCategory?: string | null;
     },
   ): Promise<Message> {
     const member = await this.repo.findChatMember(chatId, senderId);
@@ -70,6 +71,7 @@ export class ChatService implements IChatService {
       fileName: input.fileName ?? null,
       fileSize: input.fileSize ?? null,
       fileMime: input.fileMime ?? null,
+      fileCategory: input.fileCategory ?? null,
     });
   }
 
@@ -98,6 +100,7 @@ export class ChatService implements IChatService {
         fileName: original.fileName,
         fileSize: original.fileSize,
         fileMime: original.fileMime,
+        fileCategory: original.fileCategory ?? null,
         forwardedFromId: original.id,
       });
       messages.push(copied);

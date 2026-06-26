@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@org/shared';
 import { authedFetch } from '@org/shared';
@@ -34,6 +34,14 @@ function getFileIcon(fileName: string): string {
 }
 
 export const FileMessage = memo(function FileMessage({ message, isMine }: FileMessageProps) {
+  if (message.fileCategory === 'VOICE') {
+    return <VoiceMessage message={message} isMine={isMine} />;
+  }
+
+  if (message.fileCategory === 'CIRCLE') {
+    return <CircleMessage message={message} isMine={isMine} />;
+  }
+
   if (message.type === 'IMAGE' && message.fileMime?.startsWith('image/')) {
     return <ImageMessage message={message} isMine={isMine} />;
   }
@@ -94,6 +102,144 @@ const ImageMessage = memo(function ImageMessage({ message, isMine }: FileMessage
         />
       )}
     </>
+  );
+});
+
+const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessageProps) {
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    authedFetch<{ url: string }>(`media/files/${message.fileId}/url`)
+      .then((res) => { setAudioUrl(res.url); })
+      .catch(() => {});
+  }, [message.fileId]);
+
+  const togglePlay = () => {
+    if (!audioRef.current || !audioUrl) return;
+    if (playing) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setPlaying(!playing);
+  };
+
+  const onTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const onEnded = () => {
+    setPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className={cn('flex items-center gap-2 px-2 py-1 rounded-lg min-w-[200px]', isMine ? 'bg-white/10' : 'bg-surface-elevated')}>
+      <audio
+        ref={audioRef}
+        src={audioUrl ?? undefined}
+        onTimeUpdate={onTimeUpdate}
+        onLoadedMetadata={onLoadedMetadata}
+        onEnded={onEnded}
+        preload="metadata"
+      />
+      <button
+        onClick={togglePlay}
+        className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors shrink-0"
+      >
+        {playing ? (
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-all', isMine ? 'bg-white/60' : 'bg-primary')}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <span className={cn('text-xs tabular-nums shrink-0', isMine ? 'text-white/60' : 'text-text-muted')}>
+        {duration > 0 ? formatTime(playing ? currentTime : duration) : '...'}
+      </span>
+    </div>
+  );
+});
+
+const CircleMessage = memo(function CircleMessage({ message, isMine }: FileMessageProps) {
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    authedFetch<{ url: string }>(`media/files/${message.fileId}/url`)
+      .then((res) => { setVideoUrl(res.url); })
+      .catch(() => {});
+  }, [message.fileId]);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setMuted(!muted);
+    }
+  };
+
+  return (
+    <div className="relative w-24 h-24">
+      {videoUrl ? (
+        <>
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="w-full h-full object-cover rounded-full"
+            loop
+            autoPlay
+            muted={muted}
+            playsInline
+          />
+          <button
+            onClick={toggleMute}
+            className="absolute bottom-0 right-0 w-6 h-6 flex items-center justify-center rounded-full bg-black/50 text-white text-xs"
+          >
+            {muted ? (
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              </svg>
+            ) : (
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+            )}
+          </button>
+        </>
+      ) : (
+        <div className="w-full h-full rounded-full bg-surface-elevated animate-pulse" />
+      )}
+    </div>
   );
 });
 

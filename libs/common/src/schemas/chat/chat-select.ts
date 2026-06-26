@@ -26,6 +26,7 @@ export const MESSAGE_SELECT_FIELDS = {
   fileName: true,
   fileSize: true,
   fileMime: true,
+  fileCategory: true,
   forwardedFromId: true,
   createdAt: true,
   updatedAt: true,

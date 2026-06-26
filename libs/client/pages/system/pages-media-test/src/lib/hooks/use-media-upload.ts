@@ -18,7 +18,8 @@ export function useMediaUpload() {
       setProgress(0);
 
       try {
-        const { fileId, presignedUrl } = await initUpload(file.name, file.type, file.size);
+        const category = file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('audio/') ? 'AUDIO' : file.type.startsWith('video/') ? 'VIDEO' : 'FILE';
+        const { fileId, presignedUrl } = await initUpload(file.name, file.type, file.size, category);
 
         setStep('uploading');
         await uploadToMinio(presignedUrl, file, (pct) => setProgress(pct));

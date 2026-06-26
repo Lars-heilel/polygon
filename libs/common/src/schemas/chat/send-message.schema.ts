@@ -10,6 +10,7 @@ export const sendMessageSchema = z.object({
   fileName: z.string().nullable().optional(),
   fileSize: z.number().int().positive().nullable().optional(),
   fileMime: z.string().nullable().optional(),
+  fileCategory: z.string().nullable().optional(),
 }).refine(
   (data) => {
     if (data.type === 'SYSTEM') return true;

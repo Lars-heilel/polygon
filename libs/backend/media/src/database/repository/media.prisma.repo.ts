@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type { File } from '@org/common';
+import type { File, FileCategory } from '@org/common';
 import { handlePrismaError } from '@org/core';
 
 import type { IMediaRepository } from '../../interfaces/media.interface';
@@ -14,9 +14,24 @@ export class MediaPrismaRepository implements IMediaRepository {
     return this.prisma.file.findUnique({ where: { id } });
   }
 
-  async findByUploaderId(uploaderId: string): Promise<File[]> {
+  async findByUploaderId(uploaderId: string, category?: FileCategory): Promise<File[]> {
     return this.prisma.file.findMany({
-      where: { uploaderId, status: 'READY' },
+      where: {
+        uploaderId,
+        status: 'READY',
+        ...(category ? { category } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findByChatId(chatId: string, uploaderId?: string): Promise<File[]> {
+    return this.prisma.file.findMany({
+      where: {
+        chatId,
+        status: 'READY',
+        ...(uploaderId ? { uploaderId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -31,6 +46,7 @@ export class MediaPrismaRepository implements IMediaRepository {
     uploaderId?: string | null;
     status?: 'PENDING' | 'READY';
     chatId?: string | null;
+    category: FileCategory;
   }): Promise<File> {
     try {
       return await this.prisma.file.create({
@@ -44,6 +60,7 @@ export class MediaPrismaRepository implements IMediaRepository {
           uploaderId: data.uploaderId ?? null,
           status: data.status ?? 'PENDING',
           chatId: data.chatId ?? null,
+          category: data.category,
         },
       });
     } catch (error) {

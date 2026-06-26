@@ -15,6 +15,7 @@ export const messageSchema = z.object({
   fileName: z.string().nullable(),
   fileSize: z.number().int().positive().nullable(),
   fileMime: z.string().nullable(),
+  fileCategory: z.string().nullable(),
   forwardedFromId: z.string().uuid().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),

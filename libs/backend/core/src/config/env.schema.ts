@@ -16,8 +16,7 @@ export const envSchema = z.object({
   MINIO_ACCESS_KEY: z.string().min(1),
   MINIO_SECRET_KEY: z.string().min(1),
   MINIO_USE_SSL: z.preprocess((v) => v === 'true' || v === true || v === '1' || v === 1, z.boolean()).default(false),
-  MINIO_PUBLIC_BUCKET: z.string().default('polygon-public'),
-  MINIO_PRIVATE_BUCKET: z.string().default('polygon-private'),
+  MINIO_PUBLIC_BUCKET: z.string().default('polygon-avatars'),
   MINIO_PUBLIC_ENDPOINT: z.string().default('http://localhost:9000'),
 
   // JWT

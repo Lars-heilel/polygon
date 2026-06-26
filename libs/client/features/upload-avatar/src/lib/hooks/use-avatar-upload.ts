@@ -28,7 +28,7 @@ export function useAvatarUpload() {
         await updateUserProfile({ avatarUrl: confirmed.url });
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
-        addFile(confirmed);
+        addFile({ ...confirmed, category: 'AVATAR' });
         setStep('done');
       } catch (e) {
         setStep('error');

@@ -9,4 +9,7 @@ export interface IStorageProvider {
   delete(bucket: string, key: string): Promise<void>;
   getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<string>;
   getPresignedPutUrl(bucket: string, key: string, expiresIn?: number): Promise<string>;
+  ensureBucket(name: string): Promise<void>;
+  getAvatarsBucket(): string;
+  getChatBucketName(chatId: string): string;
 }

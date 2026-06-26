@@ -141,6 +141,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       fileName?: string;
       fileSize?: number;
       fileMime?: string;
+      fileCategory?: string;
     },
   ) {
     const userId = socket.data['userId'] as string | undefined;
@@ -158,6 +159,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         fileName: payload.fileName ?? null,
         fileSize: payload.fileSize ?? null,
         fileMime: payload.fileMime ?? null,
+        fileCategory: payload.fileCategory ?? null,
       }),
     ).catch((err: { message?: string }) => {
       this.logger.error(`message:send error: ${err?.message}`);

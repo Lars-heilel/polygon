@@ -8,4 +8,5 @@ export const MEDIA_PATTERNS = {
   GET_FILE_URL: 'media.getFileUrl',
   DELETE: 'media.delete',
   GET_HISTORY: 'media.getHistory',
+  GET_CHAT_HISTORY: 'media.getChatHistory',
 } as const;

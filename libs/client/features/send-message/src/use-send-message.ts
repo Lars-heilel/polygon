@@ -10,6 +10,18 @@ export interface FileAttachment {
   fileName: string;
   fileSize: number;
   fileMime: string;
+  fileCategory: string;
+}
+
+export function getMessageTypeFromCategory(category: string): string {
+  switch (category) {
+    case 'IMAGE': return 'IMAGE';
+    case 'AUDIO': return 'AUDIO';
+    case 'VIDEO': return 'VIDEO';
+    case 'VOICE': return 'VOICE';
+    case 'CIRCLE': return 'VIDEO';
+    default: return 'FILE';
+  }
 }
 
 export function useSendMessage(chatId: string | null) {
@@ -66,13 +78,14 @@ export function useSendMessage(chatId: string | null) {
       setMessageText('');
       socket.emit('message:send', {
         chatId: chatIdRef.current,
-        type: file.fileMime.startsWith('image/') ? 'IMAGE' : 'FILE',
+        type: getMessageTypeFromCategory(file.fileCategory),
         fileId: file.fileId,
         fileBucket: file.fileBucket,
         fileKey: file.fileKey,
         fileName: file.fileName,
         fileSize: file.fileSize,
         fileMime: file.fileMime,
+        fileCategory: file.fileCategory,
       });
       stopTyping();
       return;

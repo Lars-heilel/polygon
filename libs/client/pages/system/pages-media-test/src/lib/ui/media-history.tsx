@@ -45,6 +45,7 @@ export function MediaHistory() {
             <p className="text-zinc-200 font-medium truncate">{file.originalName}</p>
             <p className="text-zinc-500 text-xs">{file.mimeType} &middot; {formatBytes(file.size)}</p>
             <p className="text-zinc-500 text-xs">{formatDate(file.createdAt)}</p>
+            <p className="text-zinc-500 text-xs">Category: {file.category}</p>
             <p className="text-zinc-600 text-xs truncate">ID: {file.id}</p>
           </div>
 

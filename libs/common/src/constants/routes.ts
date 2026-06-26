@@ -29,6 +29,8 @@ export const API_ROUTES = {
     fileUrl: (fileId: string) => `media/files/${fileId}/url`,
     delete: (id: string) => `media/${id}`,
     history: 'media/history',
+    chatHistory: (chatId: string) => `chats/${chatId}/media/history`,
+    userAvatars: (userId: string) => `users/${userId}/avatars`,
   },
 } as const;
 
