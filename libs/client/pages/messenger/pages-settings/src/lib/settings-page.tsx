@@ -1,30 +1,33 @@
 import { useState } from 'react';
-
-import { Modal } from '@org/shared';
+import { useNavigate } from 'react-router';
 
 import { SettingsDevicesTab } from './settings-devices-tab';
 import { SettingsGeneralTab } from './settings-general-tab';
 import { SettingsPrivacyTab } from './settings-privacy-tab';
-
-interface SettingsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import { Heading } from '@org/shared';
 
 type SettingsTab = 'general' | 'privacy' | 'devices';
 
 const TABS: SettingsTab[] = ['general', 'privacy', 'devices'];
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="max-w-lg max-h-[80vh] flex flex-col"
-    >
-      <Modal.Header title="Settings" />
+    <div className="flex flex-col h-full bg-surface">
+      <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
+        <button
+          onClick={() => navigate('/chats')}
+          aria-label="Back"
+          className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <Heading level={5} as="h2">Settings</Heading>
+      </header>
 
       <div className="px-6 py-3 border-b border-border flex gap-4 shrink-0">
         {TABS.map((tab) => (
@@ -47,6 +50,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {activeTab === 'privacy' && <SettingsPrivacyTab />}
         {activeTab === 'devices' && <SettingsDevicesTab />}
       </div>
-    </Modal>
+    </div>
   );
 }

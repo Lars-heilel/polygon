@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
   getChatDisplayName,
@@ -19,6 +20,7 @@ interface ChatHeaderProps {
 }
 
 export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) {
+  const navigate = useNavigate();
   const { data: chats } = useGetChatsSuspenseQuery();
   const { data: me } = useMeSuspenseQuery();
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
@@ -35,6 +37,15 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
 
   return (
     <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky shrink-0">
+      <button
+        onClick={() => navigate('/chats')}
+        aria-label="Back"
+        className="p-2 hover:bg-surface-elevated rounded-lg transition-colors md:hidden"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
       <div className="relative ">
         <Avatar
           src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}

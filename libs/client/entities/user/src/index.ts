@@ -17,9 +17,6 @@ export {
   useResendVerificationMutation,
 } from './api/user.api';
 
-export { UserPanel } from './ui/user-panel';
-export { ProfileModal } from './ui/profile-modal';
-export { EditProfileModal } from './ui/edit-profile-modal';
 export { AuthBootstrap } from './ui/auth-provider';
 
 export { useSearchUsers } from './api/use-search-users';

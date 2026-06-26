@@ -124,9 +124,6 @@
       "path": "./libs/client/layouts/auth"
     },
     {
-      "path": "./libs/client/widgets/current-user"
-    },
-    {
       "path": "./libs/backend/media"
     },
     {
@@ -137,6 +134,18 @@
     },
     {
       "path": "./libs/client/features/upload-avatar"
+    },
+    {
+      "path": "./libs/client/pages/messenger/pages-profile-edit"
+    },
+    {
+      "path": "./libs/client/pages/messenger/pages-settings"
+    },
+    {
+      "path": "./libs/client/pages/messenger/pages-profile"
+    },
+    {
+      "path": "./libs/client/layouts/mobile"
     }
   ]
 }

@@ -74,6 +74,15 @@
       "path": "../../../libs/client/pages/auth/pages-login/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/client/pages/messenger/pages-settings/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/messenger/pages-profile-edit/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/messenger/pages-profile/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/client/pages/messenger/pages-chat-page/tsconfig.lib.json"
     },
     {

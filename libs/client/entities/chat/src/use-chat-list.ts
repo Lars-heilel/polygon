@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 
-import { getChatDisplayName, useGetChatsSuspenseQuery, usePresenceStore } from '@org/entities-chat';
-import { useMeSuspenseQuery } from '@org/entities-user';
+import { useGetChatsSuspenseQuery } from './chat.api';
+import { getChatDisplayName } from './chat.utils';
+import { usePresenceStore } from './presence.store';
 
 function getOtherUserInfo(
   chat: { members: Array<{ userId: string; profile: { avatarUrl: string | null } | null }> },
@@ -12,9 +13,8 @@ function getOtherUserInfo(
   return { userId: member.userId, avatarUrl: member.profile?.avatarUrl ?? null };
 }
 
-export function useChatList() {
+export function useChatList(myId: string) {
   const { data: chats } = useGetChatsSuspenseQuery();
-  const { data: me } = useMeSuspenseQuery();
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -22,10 +22,10 @@ export function useChatList() {
   const filteredChats = useMemo(() => {
     return chats
       .map((chat) => {
-        const other = getOtherUserInfo(chat as never, me.id);
+        const other = getOtherUserInfo(chat as never, myId);
         return {
           id: chat.id,
-          name: getChatDisplayName(chat, me.id),
+          name: getChatDisplayName(chat, myId),
           avatarUrl: other?.avatarUrl ?? chat.avatarUrl ?? undefined,
           lastMessage: chat.messages?.[0]?.text ?? 'Нет новых сообщений',
           time: chat.messages?.[0]?.createdAt ?? null,
@@ -34,7 +34,7 @@ export function useChatList() {
         };
       })
       .filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [chats, me, onlineUsers, searchQuery]);
+  }, [chats, myId, onlineUsers, searchQuery]);
 
   return {
     chats: filteredChats,

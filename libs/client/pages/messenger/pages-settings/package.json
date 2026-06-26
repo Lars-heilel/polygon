@@ -1,5 +1,5 @@
 {
-  "name": "@org/widgets-current-user",
+  "name": "@org/pages-settings",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -11,10 +11,7 @@
     }
   },
   "nx": {
-    "tags": [
-      "layer:widgets",
-      "scope:client"
-    ]
+    "tags": ["layer:pages", "scope:client"]
   },
   "sideEffects": false
 }

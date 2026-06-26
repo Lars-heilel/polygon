@@ -25,10 +25,10 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../shared/tsconfig.lib.json"
+      "path": "../../entities/user/tsconfig.lib.json"
     },
     {
-      "path": "../../../common/tsconfig.lib.json"
+      "path": "../../shared/tsconfig.lib.json"
     }
   ]
 }

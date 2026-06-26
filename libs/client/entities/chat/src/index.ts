@@ -23,3 +23,5 @@ export { getChatDisplayName } from './chat.utils';
 export { usePresenceStore } from './presence.store';
 
 export { ChatItemSkeleton } from './ui/chat-item-skeleton';
+
+export { useChatList } from './use-chat-list';

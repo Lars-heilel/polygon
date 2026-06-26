@@ -14,6 +14,19 @@ export const appRoutes: RouteObject[] = [
         path: ':chatId',
         lazy: () => import('@org/pages-chat-page').then((m) => ({ Component: m.ChatPage })),
       },
+      {
+        path: 'profile',
+        lazy: () => import('@org/pages-profile').then((m) => ({ Component: m.ProfilePage })),
+      },
+      {
+        path: 'profile/edit',
+        lazy: () =>
+          import('@org/pages-profile-edit').then((m) => ({ Component: m.EditProfilePage })),
+      },
+      {
+        path: 'settings',
+        lazy: () => import('@org/pages-settings').then((m) => ({ Component: m.SettingsPage })),
+      },
     ],
   },
 ];

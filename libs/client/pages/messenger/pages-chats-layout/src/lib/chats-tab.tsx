@@ -3,24 +3,16 @@ import { useNavigate } from 'react-router';
 
 import { ChatItem } from '@org/entities-chat';
 import { useMeQuery, useSearchUsers } from '@org/entities-user';
-
-import { Avatar, Input, Spinner, Text } from '@org/shared';
-
 import { useChatList } from '@org/entities-chat';
 import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
-import { SidebarHeader } from '../sidebar-header';
+import { Input, Logo, Spinner, Text } from '@org/shared';
 
-interface SidebarContentProps {
+interface ChatsTabProps {
   selectedChatId?: string | null;
   onSelectChat?: (chatId: string) => void;
-  onMenuClick: () => void;
 }
 
-export function SidebarContent({
-  selectedChatId,
-  onSelectChat,
-  onMenuClick,
-}: SidebarContentProps) {
+export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
   const navigate = useNavigate();
   const { data: me } = useMeQuery();
   const { chats, selectedChatId: internalSelectedChatId, setSelectedChatId } = useChatList(me?.id ?? '');
@@ -44,15 +36,17 @@ export function SidebarContent({
       } else {
         setSelectedChatId(chatId);
       }
+      navigate(`/chats/${chatId}`);
     },
-    [onSelectChat, setSelectedChatId],
+    [onSelectChat, setSelectedChatId, navigate],
   );
-
-  const displayName = me?.displayName ?? me?.name ?? me?.email.slice(0, 8) ?? '';
 
   return (
     <>
-      <SidebarHeader onMenuClick={onMenuClick} />
+      <header className="px-4 py-3 border-b border-border flex items-center shrink-0">
+        <Logo />
+      </header>
+
       <div className="px-3 py-2 border-b border-border shrink-0">
         <Input
           value={search.inputValue}
@@ -76,11 +70,7 @@ export function SidebarContent({
               </div>
             )}
             {!search.isLoading && search.results.length === 0 && (
-              <Text
-                size="sm"
-                color="muted"
-                className="text-center py-4"
-              >
+              <Text size="sm" color="muted" className="text-center py-4">
                 No users found
               </Text>
             )}
@@ -96,18 +86,10 @@ export function SidebarContent({
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <Text
-                    size="sm"
-                    weight="medium"
-                    className="truncate"
-                  >
+                  <Text size="sm" weight="medium" className="truncate">
                     {user.displayName ?? user.name}
                   </Text>
-                  <Text
-                    size="xs"
-                    color="muted"
-                    className="truncate"
-                  >
+                  <Text size="xs" color="muted" className="truncate">
                     @{user.name}
                   </Text>
                 </div>
@@ -117,11 +99,7 @@ export function SidebarContent({
         ) : (
           <>
             {chats.length === 0 && (
-              <Text
-                size="sm"
-                color="muted"
-                className="text-center py-4"
-              >
+              <Text size="sm" color="muted" className="text-center py-4">
                 No chats yet
               </Text>
             )}
@@ -136,28 +114,6 @@ export function SidebarContent({
           </>
         )}
       </nav>
-
-      <div className="border-t border-border p-3 flex items-center gap-2 shrink-0">
-        <button
-          onClick={() => navigate('/chats/profile')}
-          className="flex items-center gap-2 p-2 hover:bg-surface-elevated rounded-lg transition-colors flex-1"
-        >
-          <Avatar src={me?.avatarUrl ?? undefined} name={displayName} size="sm" />
-          <Text size="sm" weight="medium" className="truncate flex-1">
-            {displayName}
-          </Text>
-        </button>
-        <button
-          onClick={() => navigate('/chats/settings')}
-          aria-label="Settings"
-          className="p-2 hover:bg-surface-elevated rounded-lg transition-colors text-text-muted"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </button>
-      </div>
 
       <CreateChatModal
         isOpen={isCreateChatOpen}
