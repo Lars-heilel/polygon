@@ -28,7 +28,10 @@ const ChatMessageRow = memo(({ msg, isMine, senderName, senderAvatarUrl }: ChatM
         {msg.type === 'TEXT' || (!msg.fileId && !msg.fileMime) ? (
           <span className="whitespace-pre-wrap wrap-break-word">{msg.text ?? ''}</span>
         ) : (
-          <FileMessage message={msg} isMine={isMine} />
+          <FileMessage
+            message={msg}
+            isMine={isMine}
+          />
         )}
       </MessageBubble>
     </div>
@@ -82,7 +85,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToIndex({
       index: 'LAST',
-      behavior: 'smooth',
+      behavior: 'auto',
       align: 'end',
     });
   }, []);

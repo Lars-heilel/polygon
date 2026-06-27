@@ -5,7 +5,9 @@ import { authedFetch } from '@org/shared';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type z } from 'zod';
 
-export type User = Omit<UserBase, 'createdAt' | 'updatedAt'>;
+import type { Role } from '@org/common';
+
+export type User = Omit<UserBase, 'createdAt' | 'updatedAt'> & { role: Role };
 
 export const authApi = {
   login: (body: z.infer<typeof loginSchema>) =>

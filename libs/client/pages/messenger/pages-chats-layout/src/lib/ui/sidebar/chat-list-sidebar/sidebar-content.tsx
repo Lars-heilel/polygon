@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router';
 import { ChatItem } from '@org/entities-chat';
 import { useMeQuery, useSearchUsers } from '@org/entities-user';
 
-import { Avatar, Input, Spinner, Text } from '@org/shared';
+import { Avatar, Badge, Input, Spinner, Text } from '@org/shared';
 
 import { useChatList } from '@org/entities-chat';
 import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
@@ -143,9 +143,16 @@ export function SidebarContent({
           className="flex items-center gap-2 p-2 hover:bg-surface-elevated rounded-lg transition-colors flex-1"
         >
           <Avatar src={me?.avatarUrl ?? undefined} name={displayName} size="sm" />
-          <Text size="sm" weight="medium" className="truncate flex-1">
-            {displayName}
-          </Text>
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <Text size="sm" weight="medium" className="truncate">
+              {displayName}
+            </Text>
+            {me?.role === 'CREATOR' && (
+              <Badge variant="primary" size="sm" className="shrink-0 bg-gradient-to-r from-yellow-500 to-orange-500 border-0 text-[10px]">
+                Creator
+              </Badge>
+            )}
+          </div>
         </button>
         <button
           onClick={() => navigate('/chats/settings')}

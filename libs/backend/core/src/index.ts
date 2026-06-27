@@ -26,9 +26,11 @@ export * from './token/token.module';
 
 // Guards
 export * from './guards/jwt.guard';
+export * from './guards/roles.guard';
 
 // Decorators
 export * from './decorators/current-user.decorator';
+export * from './decorators/roles.decorator';
 
 // Interceptors
 export * from './interceptors/logging.interceptor';

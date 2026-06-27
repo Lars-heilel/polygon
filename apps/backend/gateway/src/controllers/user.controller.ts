@@ -37,8 +37,11 @@ export class UserGatewayController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  getMe(@CurrentUser() user: JwtPayload) {
-    return this.send(this.userClient.send(USER_PATTERNS.GET_BY_ID, { id: user.sub }));
+  async getMe(@CurrentUser() jwt: JwtPayload) {
+    const user = await this.send<{ role?: string }>(
+      this.userClient.send(USER_PATTERNS.GET_BY_ID, { id: jwt.sub }),
+    );
+    return { ...user, role: jwt.role };
   }
 
   @Get(':id')

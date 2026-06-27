@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useMeQuery } from '@org/entities-user';
 import { AvatarCarousel } from '@org/features-upload-avatar';
-import { Avatar, Button, Heading, Text } from '@org/shared';
+import { Avatar, Badge, Button, Heading, Text } from '@org/shared';
 import { useNavigate } from 'react-router';
 
 export function ProfilePage() {
@@ -84,8 +84,14 @@ export function ProfilePage() {
               <Heading
                 level={4}
                 as="h2"
+                className="flex items-center justify-center gap-2"
               >
                 {displayName}
+                {me.role === 'CREATOR' && (
+                  <Badge variant="primary" size="md" className="bg-gradient-to-r from-yellow-500 to-orange-500 border-0">
+                    Creator
+                  </Badge>
+                )}
               </Heading>
               <Text
                 color="muted"

@@ -18,7 +18,7 @@ import { MinioStorageProvider } from './minio-storage.provider';
         return {
           endPoint: config.get<string>('MINIO_ENDPOINT'),
           port: config.get<number>('MINIO_PORT'),
-          useSSL: rawSsl === true || rawSsl === 'true' || rawSsl === 1 || rawSsl === '1',
+          useSSL: rawSsl === 'true' || rawSsl === '1',
           accessKey: config.get<string>('MINIO_ACCESS_KEY'),
           secretKey: config.get<string>('MINIO_SECRET_KEY'),
         };
