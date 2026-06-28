@@ -34,7 +34,13 @@ import {
   YandexGuard,
 } from '@org/auth';
 import { type CredentialsPayload, type TokenPair, loginSchema } from '@org/common';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
+import {
+  AUTH_CLIENT_TOKEN,
+  AUTH_PATTERNS,
+  type ClientMetadata,
+  type Env,
+  GetClientMetadata,
+} from '@org/core';
 import type { Request, Response } from 'express';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
@@ -52,7 +58,10 @@ export class AuthGatewayController {
   @ApiResponse({ status: 201, description: 'Registered successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
-  async register(@Body() dto: RegisterDto) {
+  async register(
+    @Body() dto: RegisterDto,
+    @GetClientMetadata() _metadata: ClientMetadata, // <-- Добавили сбор метаданных при регистрации
+  ) {
     await this.send(this.authClient.send(AUTH_PATTERNS.REGISTER, dto));
     return { message: 'Registered successfully' };
   }
@@ -68,12 +77,19 @@ export class AuthGatewayController {
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials or email not verified' })
   @ApiResponse({ status: 429, description: 'Too many failed attempts' })
-  async login(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @GetClientMetadata() _metadata: ClientMetadata,
+  ) {
     const credentials = req.user as CredentialsPayload;
     const tokens = await this.send<TokenPair>(
-      this.authClient.send(AUTH_PATTERNS.LOGIN, { id: credentials.id }),
+      this.authClient.send(AUTH_PATTERNS.LOGIN, {
+        id: credentials.id,
+      }),
     );
     this.setTokenCookies(res, tokens);
+
     return { message: 'Logged in successfully' };
   }
 
@@ -109,9 +125,15 @@ export class AuthGatewayController {
   @ApiQuery({ name: 'token', description: 'Email verification token from the link' })
   @ApiResponse({ status: 302, description: 'Redirects to /auth/email-verified with auth cookies' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
+  async verifyEmail(
+    @Query('token') token: string,
+    @GetClientMetadata() _metadata: ClientMetadata,
+    @Res() res: Response,
+  ) {
     const tokens = await this.send<TokenPair>(
-      this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, { token }),
+      this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, {
+        token,
+      }),
     );
     this.setTokenCookies(res, tokens);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
@@ -174,7 +196,11 @@ export class AuthGatewayController {
   @Get('github/callback')
   @UseGuards(GithubGuard)
   @ApiExcludeEndpoint()
-  githubCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
+  githubCallback(
+    @Req() req: Request & { user: TokenPair },
+    @GetClientMetadata() _metadata: ClientMetadata, // <-- Заменили на _metadata
+    @Res() res: Response,
+  ) {
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
     res.redirect(clientUrl);
@@ -192,7 +218,11 @@ export class AuthGatewayController {
   @Get('yandex/callback')
   @UseGuards(YandexGuard)
   @ApiExcludeEndpoint()
-  yandexCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
+  yandexCallback(
+    @Req() req: Request & { user: TokenPair },
+    @GetClientMetadata() _metadata: ClientMetadata, // <-- Заменили на _metadata
+    @Res() res: Response,
+  ) {
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
     res.redirect(clientUrl);
@@ -210,7 +240,11 @@ export class AuthGatewayController {
   @Get('google/callback')
   @UseGuards(GoogleGuard)
   @ApiExcludeEndpoint()
-  googleCallback(@Req() req: Request & { user: TokenPair }, @Res() res: Response) {
+  googleCallback(
+    @Req() req: Request & { user: TokenPair },
+    @GetClientMetadata() _metadata: ClientMetadata, // <-- Заменили на _metadata
+    @Res() res: Response,
+  ) {
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
     res.redirect(clientUrl);

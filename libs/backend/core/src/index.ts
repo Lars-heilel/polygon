@@ -31,10 +31,7 @@ export * from './guards/roles.guard';
 // Decorators
 export * from './decorators/current-user.decorator';
 export * from './decorators/roles.decorator';
-
-// Interceptors
-export * from './interceptors/logging.interceptor';
-export * from './interceptors/rpc-error.interceptor';
+export * from './decorators/client-metadata.decorator';
 
 // Prisma
 export { handlePrismaError } from './prisma/prisma-error.handler';
@@ -43,18 +40,11 @@ export { handlePrismaError } from './prisma/prisma-error.handler';
 export * from './redis/redis.token';
 export * from './redis/redis.module';
 
-// Schedule
-export * from './schedule/schedule.module';
-
 // Email
 export * from './email/email.interface';
 export * from './email/email.token';
 export * from './email/email-templates';
 export * from './email/email.module';
-
-// Health
-export * from './health/health.module';
-export * from './health/prisma-health.indicator';
 
 // Search
 export * from './search/search-provider.interface';
