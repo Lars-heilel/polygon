@@ -46,18 +46,18 @@ export function ProfilePage() {
         </header>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center min-h-full gap-6 py-8 px-4">
+          <div className="flex flex-col items-center justify-center min-h-full gap-6 py-8 px-4 ">
             <button
               type="button"
               onClick={() => setIsCarouselOpen(true)}
-              className="group relative cursor-pointer"
+              className="group relative cursor-pointer rounded-full  hover:ring-3 hover:ring-primary shadow-lg hover:shadow-xl hover:scale-110 transition-all w-56 h-56"
             >
               <Avatar
                 src={me.avatarUrl ?? undefined}
                 name={displayName}
                 size="xl"
               />
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-purple-600 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
+              <div className="absolute bottom-2  right-4 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
                 <svg
                   className="w-3.5 h-3.5 text-white"
                   fill="none"
@@ -88,7 +88,11 @@ export function ProfilePage() {
               >
                 {displayName}
                 {me.role === 'CREATOR' && (
-                  <Badge variant="primary" size="md" className="bg-gradient-to-r from-yellow-500 to-orange-500 border-0">
+                  <Badge
+                    variant="primary"
+                    size="md"
+                    className="bg-gradient-to-r from-yellow-500 to-orange-500 border-0"
+                  >
                     Creator
                   </Badge>
                 )}
