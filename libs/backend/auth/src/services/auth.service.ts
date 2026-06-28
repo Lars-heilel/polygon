@@ -30,9 +30,7 @@ import {
   USER_PATTERNS,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { createHash } from 'crypto';
-import type { Counter } from 'prom-client';
 import { lastValueFrom } from 'rxjs';
 
 import type { IAuthCacheRepository } from '../cache/auth.cache.interface';
@@ -60,7 +58,6 @@ export class AuthService implements IAuthService {
     private readonly verification: IVerificationService,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
-    @InjectMetric('auth_events_total') private readonly authCounter: Counter<string>,
   ) {}
 
   async register(dto: RegisterDto): Promise<void> {
@@ -72,8 +69,6 @@ export class AuthService implements IAuthService {
       email: dto.email,
       passwordHash,
     });
-    this.authCounter.inc({ event: 'register' });
-
     const userPayload = { id: credentials.id, email: credentials.email, name: dto.username };
     this.userClient.emit(USER_EVENTS.REGISTERED, userPayload);
     this.searchClient.emit(USER_EVENTS.REGISTERED, userPayload);
@@ -107,7 +102,6 @@ export class AuthService implements IAuthService {
     const valid = await this.encryption.compare(password, credentials.passwordHash);
     if (!valid) {
       this.logger.warn({ email }, 'Login failed — wrong password');
-      this.authCounter.inc({ event: 'login_failure' });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -117,7 +111,6 @@ export class AuthService implements IAuthService {
     }
 
     await this.cache.clearLoginAttempts(email);
-    this.authCounter.inc({ event: 'login_success' });
 
     return {
       id: credentials.id,
@@ -147,7 +140,6 @@ export class AuthService implements IAuthService {
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) return;
     await this.verification.generatePasswordReset(credentials.id, credentials.email);
-    this.authCounter.inc({ event: 'password_reset' });
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

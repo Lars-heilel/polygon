@@ -1,6 +1,6 @@
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { setupOtel } from '@org/core';
 import {
   ConfigService,
   Env,
@@ -8,32 +8,19 @@ import {
   NOTIFICATION_QUEUE,
   RpcErrorInterceptor,
 } from '@org/core';
-import { Logger } from 'nestjs-pino';
 
 import { NotificationModule } from './app/notification.module';
 
-setupOtel('notification-service');
+const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
-  const app = await NestFactory.create(NotificationModule, {
-    bufferLogs: true,
-  });
+  const app = await NestFactory.create(NotificationModule);
 
-  // ==========================================
-  // Configuration Service
-  // ==========================================
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
   const RABBITMQ_URL = configService.get('RABBITMQ_URL', { infer: true });
 
-  // ==========================================
-  // Logging & Global Interceptors
-  // ==========================================
-  app.useLogger(app.get(Logger));
   app.useGlobalInterceptors(new RpcErrorInterceptor(), new LoggingInterceptor());
 
-  // ==========================================
-  // RabbitMQ Microservice
-  // ==========================================
   app.connectMicroservice<MicroserviceOptions>(
     {
       transport: Transport.RMQ,
@@ -47,11 +34,7 @@ async function bootstrap() {
   );
 
   await app.startAllMicroservices();
-
-  // ==========================================
-  // Service Start Log
-  // ==========================================
-  app.get(Logger).log(`Notification Service: RMQ queue=${NOTIFICATION_QUEUE}`);
+  logger.log(`Notification Service: RMQ queue=${NOTIFICATION_QUEUE}`);
 }
 
 bootstrap();

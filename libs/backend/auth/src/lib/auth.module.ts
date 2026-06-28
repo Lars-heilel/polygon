@@ -19,7 +19,7 @@ import {
   USER_QUEUE,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
-import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
+
 
 import { AuthRedisCacheRepository } from '../cache/auth.redis.repo';
 import { AuthController } from '../controllers/auth.controller';
@@ -64,11 +64,6 @@ const rmqClient = (name: string, queue: string) => ({
     { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
     { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
     CleanupService,
-    makeCounterProvider({
-      name: 'auth_events_total',
-      help: 'Total auth events by type',
-      labelNames: ['event'] as const,
-    }),
   ],
   exports: [PrismaService],
 })

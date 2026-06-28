@@ -97,100 +97,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # ==================== МОНИТОРИНГ ====================
-
-  prometheus:
-    image: prom/prometheus:v2.53.0
-    container_name: polygon-dev-prometheus
-    restart: unless-stopped
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d' # хранить данные 15 дней
-      - '--web.enable-lifecycle' # позволяет перезагружать конфиг без рестарта
-    ports:
-      - '9090:9090'
-    volumes:
-      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    extra_hosts:
-      - 'host.docker.internal:host-gateway' # доступ к сервисам на хост-машине
-    networks:
-      - polygon-dev-network
-
-  grafana:
-    image: grafana/grafana:11.1.0
-    container_name: polygon-dev-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:?Set GF_ADMIN_PASSWORD in .env}
-      GF_USERS_ALLOW_SIGN_UP: 'false'
-    ports:
-      - '3010:3000' # порт 3010 чтобы не конфликтовать с gateway (3000)
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    depends_on:
-      - prometheus
-    networks:
-      - polygon-dev-network
-
-  loki:
-    image: grafana/loki:3.0.0
-    container_name: polygon-dev-loki
-    restart: unless-stopped
-    command: -config.file=/etc/loki/loki.yml
-    ports:
-      - '3100:3100'
-    volumes:
-      - ./infra/loki/loki.yml:/etc/loki/loki.yml:ro
-      - loki_data:/loki
-    networks:
-      - polygon-dev-network
-
-  tempo:
-    image: grafana/tempo:2.5.0
-    container_name: polygon-dev-tempo
-    restart: unless-stopped
-    user: root
-    command: -config.file=/etc/tempo/tempo.yml
-    ports:
-      - '3200:3200'
-    volumes:
-      - ./infra/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
-      - tempo_data:/tmp/tempo
-    networks:
-      - polygon-dev-network
-
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.102.0
-    container_name: polygon-dev-otel-collector
-    restart: unless-stopped
-    command: ['--config=/etc/otel/otel-collector.yml']
-    ports:
-      - '4317:4317'
-      - '4318:4318'
-    volumes:
-      - ./infra/otel-collector/otel-collector.yml:/etc/otel/otel-collector.yml:ro
-    depends_on:
-      - tempo
-    networks:
-      - polygon-dev-network
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-
 volumes:
   postgres_data:
   redis_data:
   minio_data:
   rabbitmq_data:
   meilisearch_data:
-  prometheus_data:
-  grafana_data:
-  loki_data:
-  tempo_data:
 
 networks:
   polygon-dev-network:

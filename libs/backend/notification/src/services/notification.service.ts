@@ -1,8 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EMAIL_PROVIDER, type Env, type IEmailProvider, emailTemplates } from '@org/core';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import type { Counter } from 'prom-client';
 
 @Injectable()
 export class NotificationService {
@@ -11,7 +9,6 @@ export class NotificationService {
   constructor(
     @Inject(EMAIL_PROVIDER) private readonly email: IEmailProvider,
     private readonly config: ConfigService<Env>,
-    @InjectMetric('email_sent_total') private readonly emailCounter: Counter<string>,
   ) {}
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
@@ -21,9 +18,7 @@ export class NotificationService {
     );
     try {
       await this.email.send({ to, subject, html });
-      this.emailCounter.inc({ type: 'verification', status: 'success' });
     } catch (err) {
-      this.emailCounter.inc({ type: 'verification', status: 'error' });
       this.logger.error(
         `Failed to send verification email to ${to}`,
         err instanceof Error ? err.stack : String(err),
@@ -39,9 +34,7 @@ export class NotificationService {
     );
     try {
       await this.email.send({ to, subject, html });
-      this.emailCounter.inc({ type: 'password_reset', status: 'success' });
     } catch (err) {
-      this.emailCounter.inc({ type: 'password_reset', status: 'error' });
       this.logger.error(
         `Failed to send password reset email to ${to}`,
         err instanceof Error ? err.stack : String(err),

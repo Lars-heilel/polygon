@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { OrgAuthModule } from '@org/auth';
-import { HealthModule, LoggerModule, MetricsModule } from '@org/core';
+import { HealthModule } from '@org/core';
 
 @Module({
-  imports: [OrgAuthModule, LoggerModule.forService('auth-service'), HealthModule, MetricsModule],
+  imports: [OrgAuthModule, HealthModule],
   controllers: [],
 })
 export class AuthModule {}

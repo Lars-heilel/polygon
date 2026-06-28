@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { OrgChatModule } from '@org/chat';
-import { HealthModule, LoggerModule, MetricsModule } from '@org/core';
+import { HealthModule } from '@org/core';
 
 @Module({
-  imports: [OrgChatModule, LoggerModule.forService('chat-service'), HealthModule, MetricsModule],
+  imports: [OrgChatModule, HealthModule],
 })
 export class ChatModule {}

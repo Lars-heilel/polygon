@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { ClientsModule, type RmqOptions, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { GithubStrategy, GoogleStrategy, LocalStrategy, YandexStrategy } from '@org/auth';
@@ -13,12 +13,9 @@ import {
   CoreTokenModule,
   type Env,
   HealthModule,
-  HttpMetricsInterceptor,
   JwtGuard,
-  LoggerModule,
   MEDIA_CLIENT_TOKEN,
   MEDIA_QUEUE,
-  MetricsModule,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
   USER_CLIENT_TOKEN,
@@ -50,9 +47,7 @@ const rmqClient = (name: string, queue: string) => ({
   imports: [
     CoreConfigModule,
     CoreTokenModule,
-    LoggerModule.forService('gateway'),
     HealthModule,
-    MetricsModule,
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -84,7 +79,6 @@ const rmqClient = (name: string, queue: string) => ({
     YandexStrategy,
     GoogleStrategy,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
   ],
 })
 export class GatewayModule {}

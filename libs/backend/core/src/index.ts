@@ -34,7 +34,6 @@ export * from './decorators/roles.decorator';
 
 // Interceptors
 export * from './interceptors/logging.interceptor';
-export * from './interceptors/http-metrics.interceptor';
 export * from './interceptors/rpc-error.interceptor';
 
 // Prisma
@@ -53,28 +52,17 @@ export * from './email/email.token';
 export * from './email/email-templates';
 export * from './email/email.module';
 
-// Logger
-export * from './logger/logger.module';
-
 // Health
 export * from './health/health.module';
 export * from './health/prisma-health.indicator';
-
-// Metrics
-export * from './metrics/metrics.module';
 
 // Search
 export * from './search/search-provider.interface';
 export * from './search/search-provider.token';
 export * from './search/search.module';
 
-
-
 // Storage
 export * from './storage/storage-provider.interface';
 export * from './storage/storage-provider.token';
 export * from './storage/storage.module';
 export * from './storage/minio-storage.provider';
-
-// OTel
-export * from './otel/otel.setup';
