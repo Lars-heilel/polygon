@@ -12,7 +12,6 @@ import {
   CoreConfigModule,
   CoreTokenModule,
   type Env,
-  HealthModule,
   JwtGuard,
   MEDIA_CLIENT_TOKEN,
   MEDIA_QUEUE,
@@ -47,7 +46,6 @@ const rmqClient = (name: string, queue: string) => ({
   imports: [
     CoreConfigModule,
     CoreTokenModule,
-    HealthModule,
     ThrottlerModule.forRoot({
       throttlers: [
         {

@@ -8,7 +8,6 @@ import {
   CoreConfigModule,
   CoreEncryptionModule,
   CoreRedisModule,
-  CoreScheduleModule,
   CoreTokenModule,
   type Env,
   NOTIFICATION_CLIENT_TOKEN,
@@ -19,7 +18,6 @@ import {
   USER_QUEUE,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
-
 
 import { AuthRedisCacheRepository } from '../cache/auth.redis.repo';
 import { AuthController } from '../controllers/auth.controller';
@@ -49,7 +47,6 @@ const rmqClient = (name: string, queue: string) => ({
     CoreEncryptionModule,
     CoreTokenModule,
     CoreRedisModule,
-    CoreScheduleModule,
     ClientsModule.registerAsync([
       rmqClient(USER_CLIENT_TOKEN, USER_QUEUE),
       rmqClient(NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_QUEUE),

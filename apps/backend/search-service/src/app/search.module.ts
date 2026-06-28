@@ -1,12 +1,8 @@
 import { Module } from '@nestjs/common';
-import { HealthModule } from '@org/core';
 import { OrgSearchModule } from '@org/search';
 
 @Module({
-  imports: [
-    OrgSearchModule,
-    HealthModule,
-  ],
+  imports: [OrgSearchModule],
   controllers: [],
 })
 export class SearchAppModule {}

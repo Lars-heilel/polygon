@@ -1,13 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import {
-  ConfigService,
-  Env,
-  LoggingInterceptor,
-  RpcErrorInterceptor,
-  SEARCH_QUEUE,
-} from '@org/core';
+import { ConfigService, Env, SEARCH_QUEUE } from '@org/core';
 
 import { SearchAppModule } from './app/search.module';
 
@@ -18,8 +12,6 @@ async function bootstrap() {
 
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
   const RABBITMQ_URL = configService.get('RABBITMQ_URL', { infer: true });
-
-  app.useGlobalInterceptors(new RpcErrorInterceptor(), new LoggingInterceptor());
 
   app.connectMicroservice<MicroserviceOptions>(
     {

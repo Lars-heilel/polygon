@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ConfigService, Env, LoggingInterceptor } from '@org/core';
+import { ConfigService, Env } from '@org/core';
 import cookieParser from 'cookie-parser';
 import { ZodValidationPipe, cleanupOpenApiDoc } from 'nestjs-zod';
 
@@ -25,7 +25,6 @@ async function bootstrap() {
   });
   app.use(cookieParser());
   app.useGlobalPipes(new ZodValidationPipe());
-  app.useGlobalInterceptors(new LoggingInterceptor());
 
   if (process.env['NODE_ENV'] !== 'production') {
     const config = new DocumentBuilder()
