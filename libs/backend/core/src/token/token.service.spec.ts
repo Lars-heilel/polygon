@@ -27,6 +27,8 @@ describe('TokenService', () => {
     sub: 'user-id-123',
     role: 'USER',
     isVerified: true,
+    sessionId: 'test-session-id',
+    jti: 'test-jti',
   };
 
   beforeEach(async () => {
@@ -68,6 +70,27 @@ describe('TokenService', () => {
       const refresh = service.generateRefreshToken(payload);
 
       expect(access).not.toBe(refresh);
+    });
+  });
+
+  describe('generateTokenPair', () => {
+    it('returns a TokenPair with matching sessionId', () => {
+      const basePayload = { sub: 'user-id-123', role: 'USER' as const, isVerified: true };
+      const sessionId = 'session-abc-456';
+
+      const pair = service.generateTokenPair(basePayload, sessionId);
+
+      expect(pair).toHaveProperty('accessToken');
+      expect(pair).toHaveProperty('refreshToken');
+      expect(typeof pair.accessToken).toBe('string');
+      expect(typeof pair.refreshToken).toBe('string');
+
+      const decodedAccess = service.verifyAccessToken(pair.accessToken);
+      const decodedRefresh = service.verifyRefreshToken(pair.refreshToken);
+
+      expect(decodedAccess.sessionId).toBe(sessionId);
+      expect(decodedRefresh.sessionId).toBe(sessionId);
+      expect(decodedAccess.jti).not.toBe(decodedRefresh.jti);
     });
   });
 

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import type { Role } from '@org/common';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
+import type { Role, TokenPair } from '@org/common';
 
 import type { Env } from '../config/env.schema';
 
@@ -10,6 +10,8 @@ export type JwtPayload = {
   sub: string;
   role: Role;
   isVerified: boolean;
+  sessionId: string;
+  jti: string;
 };
 
 @Injectable()
@@ -27,13 +29,26 @@ export class TokenService {
   }
 
   generateRefreshToken(payload: JwtPayload): string {
-    return this.jwt.sign(
-      { ...payload, jti: randomUUID() },
-      {
-        secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
-        expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true }),
-      },
-    );
+    return this.jwt.sign(payload, {
+      secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
+      expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true }),
+    });
+  }
+
+  generateTokenPair(payload: Omit<JwtPayload, 'jti' | 'sessionId'>, sessionId: string): TokenPair {
+    const jti = randomUUID();
+    const fullPayload: JwtPayload = { ...payload, sessionId, jti };
+    const accessToken = this.jwt.sign(fullPayload, {
+      secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
+      expiresIn: this.config.get('JWT_ACCESS_TOKEN_EXPIRES', { infer: true }),
+    });
+    const refreshJti = randomUUID();
+    const refreshPayload: JwtPayload = { ...payload, sessionId, jti: refreshJti };
+    const refreshToken = this.jwt.sign(refreshPayload, {
+      secret: this.config.get('JWT_REFRESH_SECRET', { infer: true }),
+      expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRES', { infer: true }),
+    });
+    return { accessToken, refreshToken };
   }
 
   verifyAccessToken(token: string): JwtPayload {
