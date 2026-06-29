@@ -3,9 +3,10 @@ import type {
   Credentials,
   CredentialsPayload,
   OAuthLoginDto,
-  RefreshToken,
+  SessionInfo,
   TokenPair,
 } from '@org/common';
+import type { ClientMetadata } from '@org/core';
 
 import type { RegisterDto } from '../dto/register.dto';
 
@@ -23,16 +24,27 @@ export interface IAuthRepository {
     providerId: string;
     credentialsId: string;
   }): Promise<void>;
-  saveRefreshToken(data: {
+  verifyCredentials(id: string): Promise<void>;
+  deleteUnverifiedOlderThan(before: Date): Promise<number>;
+  saveSession(data: {
+    id: string;
     tokenHash: string;
     credentialsId: string;
     expiresAt: Date;
+    ip?: string;
+    country?: string;
+    os?: string;
+    browser?: string;
+    device?: string;
+    userAgent?: string;
   }): Promise<void>;
-  findRefreshToken(tokenHash: string): Promise<RefreshToken | null>;
-  revokeRefreshToken(tokenHash: string): Promise<void>;
-  verifyCredentials(id: string): Promise<void>;
-  revokeAllRefreshTokens(credentialsId: string): Promise<void>;
-  deleteUnverifiedOlderThan(before: Date): Promise<number>;
+  findSessionByTokenHash(tokenHash: string): Promise<any | null>;
+  revokeSession(tokenHash: string): Promise<void>;
+  revokeAllSessions(credentialsId: string): Promise<void>;
+  findActiveSessions(credentialsId: string): Promise<any[]>;
+  findSessionById(sessionId: string): Promise<any | null>;
+  updateSessionLastActive(sessionId: string): Promise<void>;
+  updateSessionTokenHash(sessionId: string, newTokenHash: string): Promise<void>;
 }
 
 export interface IVerificationService {
@@ -46,25 +58,31 @@ export interface IVerificationService {
 export interface IAuthService {
   register(dto: RegisterDto): Promise<void>;
   validateCredentials(email: string, password: string): Promise<CredentialsPayload>;
-  login(id: string): Promise<TokenPair>;
+  login(id: string, clientMetadata?: ClientMetadata): Promise<TokenPair>;
   logout(refreshToken: string): Promise<void>;
   refresh(refreshToken: string): Promise<TokenPair>;
-  verifyEmail(token: string): Promise<TokenPair>;
+  verifyEmail(token: string, clientMetadata?: ClientMetadata): Promise<TokenPair>;
   resendVerification(email: string): Promise<void>;
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
-  oauthLogin(dto: OAuthLoginDto): Promise<TokenPair>;
+  oauthLogin(dto: OAuthLoginDto, clientMetadata?: ClientMetadata): Promise<TokenPair>;
+  listSessions(credentialsId: string, currentSessionId: string): Promise<SessionInfo[]>;
+  revokeSession(sessionId: string, credentialsId: string): Promise<void>;
+  revokeAllSessions(credentialsId: string): Promise<void>;
 }
 
 export interface IAuthController {
   register(dto: RegisterDto): Promise<null>;
   validateCredentials(payload: { email: string; password: string }): Promise<CredentialsPayload>;
-  login(payload: { id: string }): Promise<TokenPair>;
+  login(payload: { id: string; clientMetadata?: ClientMetadata }): Promise<TokenPair>;
   logout(payload: { refreshToken: string }): Promise<null>;
   refresh(payload: { refreshToken: string }): Promise<TokenPair>;
-  verifyEmail(payload: { token: string }): Promise<TokenPair>;
+  verifyEmail(payload: { token: string; clientMetadata?: ClientMetadata }): Promise<TokenPair>;
   resendVerification(payload: { email: string }): Promise<null>;
   forgotPassword(payload: { email: string }): Promise<null>;
   resetPassword(payload: { token: string; newPassword: string }): Promise<null>;
-  oauthLogin(dto: OAuthLoginDto): Promise<TokenPair>;
+  oauthLogin(dto: OAuthLoginDto & { clientMetadata?: ClientMetadata }): Promise<TokenPair>;
+  listSessions(payload: { credentialsId: string; currentSessionId: string }): Promise<SessionInfo[]>;
+  revokeSession(payload: { sessionId: string; credentialsId: string }): Promise<null>;
+  revokeAllSessions(payload: { credentialsId: string }): Promise<null>;
 }

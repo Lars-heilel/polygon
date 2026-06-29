@@ -14,12 +14,14 @@ import {
   NOTIFICATION_QUEUE,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
+  SESSION_CACHE_REPOSITORY_TOKEN,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
   VERIFICATION_SERVICE_TOKEN,
 } from '@org/core';
 
 import { AuthRedisCacheRepository } from '../cache/auth.redis.repo';
+import { SessionRedisRepository } from '../cache/session.redis.repo';
 import { AuthController } from '../controllers/auth.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
@@ -58,6 +60,7 @@ const rmqClient = (name: string, queue: string) => ({
     PrismaService,
     { provide: AUTH_PRISMA_REPOSITORY_TOKEN, useClass: AuthPrismaRepository },
     { provide: AUTH_CACHE_REPOSITORY_TOKEN, useClass: AuthRedisCacheRepository },
+    { provide: SESSION_CACHE_REPOSITORY_TOKEN, useClass: SessionRedisRepository },
     { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
     { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
     CleanupService,
