@@ -1,6 +1,28 @@
 import { useSessions } from '@org/features-auth';
 import { Button, Text } from '@org/shared';
 
+function isExpired(_session: { lastActiveAt: string | null }): boolean {
+  if (!_session.lastActiveAt) return false;
+  const diff = Date.now() - new Date(_session.lastActiveAt).getTime();
+  return diff > 90 * 24 * 60 * 60 * 1000;
+}
+
+function DeviceIcon({ isMobile }: { isMobile: boolean }) {
+  return (
+    <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d={isMobile
+          ? "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+          : "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+        }
+      />
+    </svg>
+  );
+}
+
 export function SettingsDevicesTab() {
   const { sessions, isLoading, revokeSession, revokeAllSessions, isRevokingAll } = useSessions();
 
@@ -10,44 +32,42 @@ export function SettingsDevicesTab() {
 
   return (
     <div className="space-y-4">
-      {sessions.map((session) => (
-        <div key={session.id} className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
-          <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d={session.isCurrent
-                ? "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                : "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-              }
-            />
-          </svg>
-          <div className="flex-1">
-            <Text size="sm" weight="medium">
-              {session.browser || 'Unknown'} on {session.os || 'Unknown'}
-            </Text>
-            <Text size="xs" color="muted">
-              {session.lastActiveAt
-                ? `Last active ${formatRelativeTime(session.lastActiveAt)}`
-                : `Created ${formatRelativeTime(session.createdAt)}`
-              }
-              {session.ip ? ` · ${session.ip}` : ''}
-              {session.country ? ` · ${session.country}` : ''}
-            </Text>
+      {sessions.map((session) => {
+        const expired = isExpired(session);
+        return (
+          <div key={session.id} className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
+            <DeviceIcon isMobile={session.device?.toLowerCase().includes('mobile') ?? false} />
+            <div className="flex-1">
+              <Text size="sm" weight="medium">
+                {session.browser || 'Unknown'} on {session.os || 'Unknown'}
+              </Text>
+              <Text size="xs" color="muted">
+                {session.lastActiveAt
+                  ? `Last active ${formatRelativeTime(session.lastActiveAt)}`
+                  : `Created ${formatRelativeTime(session.createdAt)}`
+                }
+                {session.ip ? ` · ${session.ip}` : ''}
+                {session.country ? ` · ${session.country}` : ''}
+              </Text>
+            </div>
+            {session.isCurrent ? (
+              <span className="text-xs text-green-500 font-medium">This device</span>
+            ) : expired ? (
+              <span className="text-xs text-text-muted">Expired</span>
+            ) : (
+              <button
+                className="text-xs text-danger hover:underline"
+                onClick={() => revokeSession(session.id)}
+              >
+                Logout
+              </button>
+            )}
           </div>
-          {session.isCurrent ? (
-            <span className="text-xs text-green-500">Current device</span>
-          ) : (
-            <button
-              className="text-xs text-danger hover:underline"
-              onClick={() => revokeSession(session.id)}
-            >
-              Logout
-            </button>
-          )}
-        </div>
-      ))}
+        );
+      })}
+      {sessions.length === 0 && (
+        <Text color="muted">No active sessions found.</Text>
+      )}
       <Button
         variant="danger"
         className="w-full"
