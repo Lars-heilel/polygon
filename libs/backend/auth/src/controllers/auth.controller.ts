@@ -1,6 +1,7 @@
 import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import type { CredentialsPayload, OAuthLoginDto, TokenPair } from '@org/common';
+import type { CredentialsPayload, OAuthLoginDto, SessionInfo, TokenPair } from '@org/common';
+import type { ClientMetadata } from '@org/core';
 import { AUTH_PATTERNS, AUTH_SERVICE_TOKEN } from '@org/core';
 
 import { RegisterDto } from '../dto/register.dto';
@@ -23,8 +24,8 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGIN)
-  login(@Payload() payload: { id: string }): Promise<TokenPair> {
-    return this.authService.login(payload.id);
+  login(@Payload() payload: { id: string; clientMetadata?: ClientMetadata }): Promise<TokenPair> {
+    return this.authService.login(payload.id, payload.clientMetadata);
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGOUT)
@@ -38,8 +39,8 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.VERIFY_EMAIL)
-  verifyEmail(@Payload() payload: { token: string }): Promise<TokenPair> {
-    return this.authService.verifyEmail(payload.token);
+  verifyEmail(@Payload() payload: { token: string; clientMetadata?: ClientMetadata }): Promise<TokenPair> {
+    return this.authService.verifyEmail(payload.token, payload.clientMetadata);
   }
 
   @MessagePattern(AUTH_PATTERNS.RESEND_VERIFICATION)
@@ -58,7 +59,22 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.OAUTH_LOGIN)
-  oauthLogin(@Payload() dto: OAuthLoginDto): Promise<TokenPair> {
-    return this.authService.oauthLogin(dto);
+  oauthLogin(@Payload() dto: OAuthLoginDto & { clientMetadata?: ClientMetadata }): Promise<TokenPair> {
+    return this.authService.oauthLogin(dto, dto.clientMetadata);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.LIST_SESSIONS)
+  listSessions(@Payload() payload: { credentialsId: string; currentSessionId: string }): Promise<SessionInfo[]> {
+    return this.authService.listSessions(payload.credentialsId, payload.currentSessionId);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.REVOKE_SESSION)
+  revokeSession(@Payload() payload: { sessionId: string; credentialsId: string }): Promise<null> {
+    return this.authService.revokeSession(payload.sessionId, payload.credentialsId).then(() => null);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_SESSIONS)
+  revokeAllSessions(@Payload() payload: { credentialsId: string }): Promise<null> {
+    return this.authService.revokeAllSessions(payload.credentialsId).then(() => null);
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CreateCredentialsInput, Credentials, RefreshToken } from '@org/common';
+import type { CreateCredentialsInput, Credentials } from '@org/common';
 import { handlePrismaError } from '@org/core';
 
 import type { IAuthRepository } from '../../interfaces/auth.interface';
@@ -64,27 +64,74 @@ export class AuthPrismaRepository implements IAuthRepository {
     }
   }
 
-  async saveRefreshToken(data: {
+  async saveSession(data: {
+    id: string;
     tokenHash: string;
     credentialsId: string;
     expiresAt: Date;
+    ip?: string;
+    country?: string;
+    os?: string;
+    browser?: string;
+    device?: string;
+    userAgent?: string;
   }): Promise<void> {
     try {
-      await this.prisma.refreshToken.create({ data });
+      await this.prisma.session.create({ data });
     } catch (error) {
       handlePrismaError(error);
     }
   }
 
-  async findRefreshToken(tokenHash: string): Promise<RefreshToken | null> {
-    return this.prisma.refreshToken.findUnique({ where: { tokenHash } });
+  async findSessionByTokenHash(tokenHash: string): Promise<any | null> {
+    return this.prisma.session.findUnique({ where: { tokenHash } });
   }
 
-  async revokeRefreshToken(tokenHash: string): Promise<void> {
+  async revokeSession(tokenHash: string): Promise<void> {
     try {
-      await this.prisma.refreshToken.update({
+      await this.prisma.session.update({
         where: { tokenHash },
         data: { revokedAt: new Date() },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async revokeAllSessions(credentialsId: string): Promise<void> {
+    await this.prisma.session.updateMany({
+      where: { credentialsId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  async findActiveSessions(credentialsId: string): Promise<any[]> {
+    return this.prisma.session.findMany({
+      where: { credentialsId, revokedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findSessionById(sessionId: string): Promise<any | null> {
+    return this.prisma.session.findUnique({ where: { id: sessionId } });
+  }
+
+  async updateSessionLastActive(sessionId: string): Promise<void> {
+    try {
+      await this.prisma.session.update({
+        where: { id: sessionId },
+        data: { lastActiveAt: new Date() },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async updateSessionTokenHash(sessionId: string, newTokenHash: string): Promise<void> {
+    try {
+      await this.prisma.session.update({
+        where: { id: sessionId },
+        data: { tokenHash: newTokenHash },
       });
     } catch (error) {
       handlePrismaError(error);
@@ -100,13 +147,6 @@ export class AuthPrismaRepository implements IAuthRepository {
     } catch (error) {
       handlePrismaError(error);
     }
-  }
-
-  async revokeAllRefreshTokens(credentialsId: string): Promise<void> {
-    await this.prisma.refreshToken.updateMany({
-      where: { credentialsId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
   }
 
   async deleteUnverifiedOlderThan(before: Date): Promise<number> {
