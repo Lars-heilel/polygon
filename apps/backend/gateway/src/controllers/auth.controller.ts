@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   Inject,
+  Param,
   Post,
   Query,
   Req,
@@ -33,13 +35,15 @@ import {
   ResetPasswordDto,
   YandexGuard,
 } from '@org/auth';
-import { type CredentialsPayload, type TokenPair, loginSchema } from '@org/common';
+import { type CredentialsPayload, type SessionInfo, type TokenPair, loginSchema } from '@org/common';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_PATTERNS,
   type ClientMetadata,
   type Env,
   GetClientMetadata,
+  JwtGuard,
+  type JwtPayload,
 } from '@org/core';
 import type { Request, Response } from 'express';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -80,12 +84,13 @@ export class AuthGatewayController {
   async login(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-    @GetClientMetadata() _metadata: ClientMetadata,
+    @GetClientMetadata() metadata: ClientMetadata,
   ) {
     const credentials = req.user as CredentialsPayload;
     const tokens = await this.send<TokenPair>(
       this.authClient.send(AUTH_PATTERNS.LOGIN, {
         id: credentials.id,
+        clientMetadata: metadata,
       }),
     );
     this.setTokenCookies(res, tokens);
@@ -127,12 +132,13 @@ export class AuthGatewayController {
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(
     @Query('token') token: string,
-    @GetClientMetadata() _metadata: ClientMetadata,
+    @GetClientMetadata() metadata: ClientMetadata,
     @Res() res: Response,
   ) {
     const tokens = await this.send<TokenPair>(
       this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, {
         token,
+        clientMetadata: metadata,
       }),
     );
     this.setTokenCookies(res, tokens);
@@ -248,6 +254,60 @@ export class AuthGatewayController {
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
     res.redirect(clientUrl);
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtGuard)
+  @ApiOperation({ summary: 'List active sessions for current user' })
+  @ApiCookieAuth('access_token')
+  async listSessions(@Req() req: Request) {
+    const jwtPayload = req.user as JwtPayload;
+    return this.send<SessionInfo[]>(
+      this.authClient.send(AUTH_PATTERNS.LIST_SESSIONS, {
+        credentialsId: jwtPayload.sub,
+        currentSessionId: jwtPayload.sessionId,
+      }),
+    );
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(JwtGuard)
+  @ApiOperation({ summary: 'Revoke a specific session' })
+  @ApiCookieAuth('access_token')
+  async revokeSession(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const jwtPayload = req.user as JwtPayload;
+    await this.send(
+      this.authClient.send(AUTH_PATTERNS.REVOKE_SESSION, {
+        sessionId: id,
+        credentialsId: jwtPayload.sub,
+      }),
+    );
+    if (id === jwtPayload.sessionId) {
+      this.clearTokenCookies(res);
+    }
+    return { message: 'Session revoked' };
+  }
+
+  @Delete('sessions')
+  @UseGuards(JwtGuard)
+  @ApiOperation({ summary: 'Revoke all sessions' })
+  @ApiCookieAuth('access_token')
+  async revokeAllSessions(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const jwtPayload = req.user as JwtPayload;
+    await this.send(
+      this.authClient.send(AUTH_PATTERNS.REVOKE_ALL_SESSIONS, {
+        credentialsId: jwtPayload.sub,
+      }),
+    );
+    this.clearTokenCookies(res);
+    return { message: 'All sessions revoked' };
   }
 
   private setTokenCookies(res: Response, tokens: TokenPair): void {
