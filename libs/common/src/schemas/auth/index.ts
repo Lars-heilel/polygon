@@ -1,5 +1,7 @@
 export * from './role.schema';
 export * from './credentials.schema';
+export * from './session.schema';
+// TODO: Remove once SessionInfo fully replaces RefreshToken usage
 export * from './refresh-token.schema';
 export * from './register.schema';
 export * from './login.schema';
