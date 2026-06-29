@@ -12,4 +12,7 @@ export const AUTH_PATTERNS = {
   FORGOT_PASSWORD: 'auth.forgot-password',
   RESET_PASSWORD: 'auth.reset-password',
   OAUTH_LOGIN: 'auth.oauth-login',
+  LIST_SESSIONS: 'auth.list-sessions',
+  REVOKE_SESSION: 'auth.revoke-session',
+  REVOKE_ALL_SESSIONS: 'auth.revoke-all-sessions',
 } as const;
