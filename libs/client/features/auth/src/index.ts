@@ -14,3 +14,4 @@ export { useForgotPassword } from './model/use-forgot-password';
 export { useResetPassword } from './model/use-reset-password';
 export { useLogout } from './model/use-logout';
 export { useResendVerification } from './model/use-resend-verification';
+export { useSessions } from './model/use-sessions';

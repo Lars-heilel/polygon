@@ -4,6 +4,7 @@ export {
   selectIsSessionLoading,
 } from './model/session.store';
 
+export type { SessionInfo } from './model/session.types';
 export type { User } from './api/user.api';
 export {
   authApi,

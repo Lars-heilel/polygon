@@ -6,6 +6,7 @@ import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type z } from 'zod';
 
 import type { Role } from '@org/common';
+import type { SessionInfo } from '../model/session.types';
 
 export type User = Omit<UserBase, 'createdAt' | 'updatedAt'> & { role: Role };
 
@@ -49,6 +50,18 @@ export const authApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  getSessions(): Promise<SessionInfo[]> {
+    return authedFetch<SessionInfo[]>('auth/sessions');
+  },
+
+  revokeSession(sessionId: string): Promise<void> {
+    return authedFetch<void>(`auth/sessions/${sessionId}`, { method: 'DELETE' });
+  },
+
+  revokeAllSessions(): Promise<void> {
+    return authedFetch<void>('auth/sessions', { method: 'DELETE' });
+  },
 };
 
 export function useMeQuery() {

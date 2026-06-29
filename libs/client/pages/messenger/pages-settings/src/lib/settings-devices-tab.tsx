@@ -1,78 +1,72 @@
-import { useLogout } from '@org/features-auth';
+import { useSessions } from '@org/features-auth';
 import { Button, Text } from '@org/shared';
 
 export function SettingsDevicesTab() {
-  const { logout } = useLogout();
+  const { sessions, isLoading, revokeSession, revokeAllSessions, isRevokingAll } = useSessions();
+
+  if (isLoading) {
+    return <Text>Loading sessions...</Text>;
+  }
 
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
-        <svg
-          className="w-8 h-8 text-primary"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        <div className="flex-1">
-          <Text
-            size="sm"
-            weight="medium"
-          >
-            Chrome on Windows
-          </Text>
-          <Text
-            size="xs"
-            color="muted"
-          >
-            Last active 2 min ago
-          </Text>
+      {sessions.map((session) => (
+        <div key={session.id} className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
+          <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={session.isCurrent
+                ? "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                : "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+              }
+            />
+          </svg>
+          <div className="flex-1">
+            <Text size="sm" weight="medium">
+              {session.browser || 'Unknown'} on {session.os || 'Unknown'}
+            </Text>
+            <Text size="xs" color="muted">
+              {session.lastActiveAt
+                ? `Last active ${formatRelativeTime(session.lastActiveAt)}`
+                : `Created ${formatRelativeTime(session.createdAt)}`
+              }
+              {session.ip ? ` · ${session.ip}` : ''}
+              {session.country ? ` · ${session.country}` : ''}
+            </Text>
+          </div>
+          {session.isCurrent ? (
+            <span className="text-xs text-green-500">Current device</span>
+          ) : (
+            <button
+              className="text-xs text-danger hover:underline"
+              onClick={() => revokeSession(session.id)}
+            >
+              Logout
+            </button>
+          )}
         </div>
-        <span className="text-xs text-green-500">Active</span>
-      </div>
-      <div className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
-        <svg
-          className="w-8 h-8 text-text-muted"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-          />
-        </svg>
-        <div className="flex-1">
-          <Text
-            size="sm"
-            weight="medium"
-          >
-            Mobile App
-          </Text>
-          <Text
-            size="xs"
-            color="muted"
-          >
-            Last active 2 hours ago
-          </Text>
-        </div>
-        <button className="text-xs text-danger hover:underline">Logout</button>
-      </div>
+      ))}
       <Button
         variant="danger"
         className="w-full"
-        onClick={logout}
+        onClick={revokeAllSessions}
+        disabled={isRevokingAll}
       >
-        Logout from all devices
+        {isRevokingAll ? 'Logging out...' : 'Logout from all devices'}
       </Button>
     </div>
   );
+}
+
+function formatRelativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} days ago`;
 }
