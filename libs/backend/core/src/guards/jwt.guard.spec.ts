@@ -26,6 +26,8 @@ describe('JwtGuard', () => {
     sub: 'user-id-123',
     role: 'USER',
     isVerified: true,
+    sessionId: 'test-session-id',
+    jti: 'test-jti',
   };
 
   beforeEach(() => {
