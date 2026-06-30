@@ -10,7 +10,12 @@ import { GatewayModule } from './app/gateway.module';
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
-  const app = await NestFactory.create(GatewayModule);
+  const app = await NestFactory.create(GatewayModule, {
+    logger:
+      process.env['NODE_ENV'] === 'production'
+        ? ['log', 'error', 'warn']
+        : ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
   app.setGlobalPrefix('api');
 
   const configService = app.get(ConfigService<Env, true>);

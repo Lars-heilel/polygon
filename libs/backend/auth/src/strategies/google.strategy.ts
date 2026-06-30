@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { PassportStrategy } from '@nestjs/passport';
 import type { TokenPair } from '@org/common';
-import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env } from '@org/core';
+import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env, extractClientMetadata } from '@org/core';
 import { Profile, Strategy } from 'passport-google-oauth20';
 import { lastValueFrom } from 'rxjs';
 
@@ -20,15 +20,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         infer: true,
       })}/api/auth/google/callback`,
       scope: ['email', 'profile'],
+      passReqToCallback: true,
     });
   }
 
   async validate(
+    req: any,
     _accessToken: string,
     _refreshToken: string,
     profile: Profile,
   ): Promise<TokenPair> {
     const email = profile.emails?.[0]?.value ?? `${profile.id}@google.noemail`;
+    const clientMetadata = extractClientMetadata(req);
 
     return lastValueFrom(
       this.authClient.send<TokenPair>(AUTH_PATTERNS.OAUTH_LOGIN, {
@@ -36,6 +39,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         providerId: profile.id,
         email,
         name: profile.displayName || email,
+        clientMetadata,
       }),
     );
   }

@@ -4,6 +4,7 @@ import {
   Get,
   HttpException,
   Inject,
+  Logger,
   Param,
   Patch,
   UseGuards,
@@ -28,6 +29,8 @@ import { Observable, lastValueFrom } from 'rxjs';
 @Controller('users')
 @UseGuards(JwtGuard)
 export class UserGatewayController {
+  private readonly logger = new Logger(UserGatewayController.name);
+
   constructor(
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
@@ -76,8 +79,21 @@ export class UserGatewayController {
     try {
       return await lastValueFrom(observable);
     } catch (err) {
-      const error = err as { statusCode?: number; message?: string };
-      throw new HttpException(error.message ?? 'Internal server error', error.statusCode ?? 500);
+      const errObj = Object.getOwnPropertyNames(err).reduce(
+        (acc, k) => ({ ...acc, [k]: (err as Record<string, unknown>)[k] }),
+        {} as Record<string, unknown>,
+      );
+      this.logger.error({ err: errObj }, 'RPC call failed');
+      this.logger.debug('Full RPC error dump: %o', errObj);
+
+      const rpcErr = err as Record<string, unknown>;
+      const response = rpcErr.response as Record<string, unknown> | undefined;
+      const message = (rpcErr.message ?? response?.message ?? 'Internal server error') as string;
+      const rawStatus = (rpcErr.statusCode ?? rpcErr.status ?? response?.statusCode ?? 500) as number;
+      const status = typeof rawStatus === 'number' ? rawStatus : 500;
+
+      this.logger.warn(`RPC failed [${status}]: ${message}`);
+      throw new HttpException(message, status);
     }
   }
 }

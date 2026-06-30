@@ -13,7 +13,8 @@
     "demo:backup": "make -C docker/demo backup",
     "demo:clean": "make -C docker/demo clean",
     "dev:all": "nx run-many --target serve --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
-    "dev:all:skip-cache": "nx run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
+    "clean:dist": "rm -rf apps/backend/*/dist libs/backend/*/dist libs/common/dist 2>/dev/null; echo 'Cleaned all dist dirs'",
+"dev:all:skip-cache": "npm run clean:dist && nx run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
     "nx:show-projects": "nx show projects",
     "format:write": "nx format:write",
     "format:check": "nx format:check"

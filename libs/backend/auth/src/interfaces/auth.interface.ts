@@ -3,11 +3,11 @@ import type {
   Credentials,
   CredentialsPayload,
   OAuthLoginDto,
-  SessionInfo,
   TokenPair,
 } from '@org/common';
 import type { ClientMetadata } from '@org/core';
 
+import { DatabaseSession, SessionResponse } from '../dto';
 import type { RegisterDto } from '../dto/register.dto';
 
 export interface IAuthRepository {
@@ -38,11 +38,11 @@ export interface IAuthRepository {
     device?: string;
     userAgent?: string;
   }): Promise<void>;
-  findSessionByTokenHash(tokenHash: string): Promise<any | null>;
+  findSessionByTokenHash(tokenHash: string): Promise<DatabaseSession | null>;
   revokeSession(tokenHash: string): Promise<void>;
   revokeAllSessions(credentialsId: string): Promise<void>;
-  findActiveSessions(credentialsId: string): Promise<any[]>;
-  findSessionById(sessionId: string): Promise<any | null>;
+  findActiveSessions(credentialsId: string): Promise<DatabaseSession[]>;
+  findSessionById(sessionId: string): Promise<DatabaseSession | null>;
   updateSessionLastActive(sessionId: string): Promise<void>;
   updateSessionTokenHash(sessionId: string, newTokenHash: string): Promise<void>;
 }
@@ -66,7 +66,7 @@ export interface IAuthService {
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
   oauthLogin(dto: OAuthLoginDto, clientMetadata?: ClientMetadata): Promise<TokenPair>;
-  listSessions(credentialsId: string, currentSessionId: string): Promise<SessionInfo[]>;
+  listSessions(credentialsId: string, currentSessionId: string): Promise<SessionResponse[]>;
   revokeSession(sessionId: string, credentialsId: string): Promise<void>;
   revokeAllSessions(credentialsId: string): Promise<void>;
 }
@@ -82,7 +82,10 @@ export interface IAuthController {
   forgotPassword(payload: { email: string }): Promise<null>;
   resetPassword(payload: { token: string; newPassword: string }): Promise<null>;
   oauthLogin(dto: OAuthLoginDto & { clientMetadata?: ClientMetadata }): Promise<TokenPair>;
-  listSessions(payload: { credentialsId: string; currentSessionId: string }): Promise<SessionInfo[]>;
+  listSessions(payload: {
+    credentialsId: string;
+    currentSessionId: string;
+  }): Promise<SessionResponse[]>;
   revokeSession(payload: { sessionId: string; credentialsId: string }): Promise<null>;
   revokeAllSessions(payload: { credentialsId: string }): Promise<null>;
 }
