@@ -31,6 +31,7 @@ import {
   GoogleGuard,
   LocalGuard,
   ResetPasswordDto,
+  SessionGuard,
   SessionResponse,
   YandexGuard,
 } from '@org/auth';
@@ -42,7 +43,6 @@ import {
   type ClientMetadata,
   type Env,
   GetClientMetadata,
-  JwtGuard,
   type JwtPayload,
 } from '@org/core';
 import type { Request, Response } from 'express';
@@ -329,7 +329,7 @@ export class AuthGatewayController {
   }
 
   @Get('sessions')
-  @UseGuards(JwtGuard)
+  @UseGuards(SessionGuard)
   @ApiOperation({ summary: 'List active sessions for current user' })
   @ApiCookieAuth('access_token')
   async listSessions(@Req() req: Request): Promise<SessionResponse[]> {
@@ -349,7 +349,7 @@ export class AuthGatewayController {
   }
 
   @Delete('sessions/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(SessionGuard)
   @ApiOperation({ summary: 'Revoke a specific session' })
   @ApiCookieAuth('access_token')
   async revokeSession(
@@ -378,7 +378,7 @@ export class AuthGatewayController {
   }
 
   @Delete('sessions')
-  @UseGuards(JwtGuard)
+  @UseGuards(SessionGuard)
   @ApiOperation({ summary: 'Revoke all sessions' })
   @ApiCookieAuth('access_token')
   async revokeAllSessions(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

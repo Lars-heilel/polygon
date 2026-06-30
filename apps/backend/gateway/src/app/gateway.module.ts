@@ -3,18 +3,20 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ClientsModule, type RmqOptions, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { GithubStrategy, GoogleStrategy, LocalStrategy, YandexStrategy } from '@org/auth';
+import { GithubStrategy, GoogleStrategy, LocalStrategy, SessionGuard, SessionRedisRepository, YandexStrategy } from '@org/auth';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_QUEUE,
   CHAT_CLIENT_TOKEN,
   CHAT_QUEUE,
   CoreConfigModule,
+  CoreRedisModule,
   CoreTokenModule,
   type Env,
   JwtGuard,
   MEDIA_CLIENT_TOKEN,
   MEDIA_QUEUE,
+  SESSION_CACHE_REPOSITORY_TOKEN,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
   USER_CLIENT_TOKEN,
@@ -46,6 +48,7 @@ const rmqClient = (name: string, queue: string) => ({
   imports: [
     CoreConfigModule,
     CoreTokenModule,
+    CoreRedisModule,
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -71,6 +74,8 @@ const rmqClient = (name: string, queue: string) => ({
   ],
   providers: [
     JwtGuard,
+    { provide: SESSION_CACHE_REPOSITORY_TOKEN, useClass: SessionRedisRepository },
+    SessionGuard,
     ChatSocketGateway,
     LocalStrategy,
     GithubStrategy,

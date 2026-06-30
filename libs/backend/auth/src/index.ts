@@ -9,7 +9,9 @@ export * from './guards/local.guard';
 export * from './guards/github.guard';
 export * from './guards/yandex.guard';
 export * from './guards/google.guard';
+export * from './guards/session.guard';
 export { PrismaService } from './database/prisma/prisma.service';
+export { SessionRedisRepository } from './cache/session.redis.repo';
 
 // DTOs
 export * from './dto/index';

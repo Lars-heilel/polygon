@@ -28,6 +28,10 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
+  app.use((_req, res, next) => {
+    res.setHeader('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform-Version');
+    next();
+  });
   app.use(cookieParser());
   app.useGlobalPipes(new ZodValidationPipe());
 

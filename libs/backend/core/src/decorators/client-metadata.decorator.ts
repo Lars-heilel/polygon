@@ -36,13 +36,22 @@ export function extractClientMetadata(req: Request): ClientMetadata {
 
   const parsedUA = parseUA(userAgent);
   const browser = `${parsedUA.browser.name || 'Unknown Browser'}${parsedUA.browser.version ? ` ${parsedUA.browser.version}` : ''}`;
-  const os = `${parsedUA.os.name || 'Unknown OS'}${parsedUA.os.version ? ` ${parsedUA.os.version}` : ''}`;
+
+  const chPlatform = req.headers['sec-ch-ua-platform'] as string | undefined;
+  const chPlatformVersion = req.headers['sec-ch-ua-platform-version'] as string | undefined;
+  const chModel = req.headers['sec-ch-ua-model'] as string | undefined;
+
+  const osVersion = chPlatformVersion ? chPlatformVersion.replace(/"/g, '') : parsedUA.os.version || '';
+  const osName = chPlatform ? chPlatform.replace(/"/g, '') : parsedUA.os.name || 'Unknown OS';
+  const os = `${osName}${osVersion ? ` ${osVersion}` : ''}`;
 
   const deviceType = parsedUA.device.type ? parsedUA.device.type.toUpperCase() : 'DESKTOP';
   const device =
     deviceType === 'DESKTOP'
       ? 'Desktop'
-      : `${parsedUA.device.vendor || ''} ${parsedUA.device.model || ''} (${deviceType})`.trim();
+      : chModel
+        ? `${chModel.replace(/"/g, '')} (${deviceType})`
+        : `${parsedUA.device.vendor || ''} ${parsedUA.device.model || ''} (${deviceType})`.trim();
 
   const metadata: ClientMetadata = {
     ip,

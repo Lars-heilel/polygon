@@ -25,6 +25,7 @@ import { SessionRedisRepository } from '../cache/session.redis.repo';
 import { AuthController } from '../controllers/auth.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { AuthPrismaRepository } from '../database/repository/auth.prisma.repo';
+import { SessionGuard } from '../guards/session.guard';
 import { AuthService } from '../services/auth.service';
 import { CleanupService } from '../services/cleanup.service';
 import { VerificationService } from '../services/verification.service';
@@ -64,7 +65,8 @@ const rmqClient = (name: string, queue: string) => ({
     { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
     { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
     CleanupService,
+    SessionGuard,
   ],
-  exports: [PrismaService],
+  exports: [PrismaService, SessionGuard],
 })
 export class OrgAuthModule {}
