@@ -4,10 +4,10 @@ ENV_FILE := ../../.env.production
 .PHONY: build start stop restart logs backup clean
 
 build:
-	cd $(ROOT_DIR) && NODE_ENV=production npx nx build @org/messenger --skip-nx-cache --mode production
+	cd $(ROOT_DIR) && NODE_ENV=production npx nx build @org/messenger --mode production
 	mkdir -p nginx/html
 	cp -r $(ROOT_DIR)/apps/client/messenger/dist/* nginx/html/
-	docker compose --env-file $(ENV_FILE) build --no-cache
+	docker compose --env-file $(ENV_FILE) build
 
 start:
 	docker compose --env-file $(ENV_FILE) up -d

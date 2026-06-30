@@ -14,7 +14,7 @@
     "demo:clean": "make -C docker/demo clean",
     "dev:all": "nx run-many --target serve --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
     "clean:dist": "rm -rf apps/backend/*/dist libs/backend/*/dist libs/common/dist 2>/dev/null; echo 'Cleaned all dist dirs'",
-"dev:all:skip-cache": "npm run clean:dist && nx run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
+    "dev:all:skip-cache": "npm run clean:dist && nx run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
     "nx:show-projects": "nx show projects",
     "format:write": "nx format:write",
     "format:check": "nx format:check"
@@ -157,6 +157,7 @@
     "meilisearch": "^0.57.0",
     "nestjs-minio": "^2.8.0",
     "nestjs-zod": "^5.2.1",
+    "node-device-detector": "^2.2.5",
     "nodemailer": "^8.0.4",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
@@ -177,7 +178,6 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
-    "ua-parser-modern": "^0.1.1",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
   }

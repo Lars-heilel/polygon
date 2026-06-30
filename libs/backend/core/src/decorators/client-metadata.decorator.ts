@@ -1,7 +1,9 @@
 import { ExecutionContext, Logger, createParamDecorator } from '@nestjs/common';
 import type { Request } from 'express';
 import * as geoip from 'geoip-lite';
-import { parseUA } from 'ua-parser-modern';
+import DeviceDetector from 'node-device-detector';
+import type { DetectResult } from 'node-device-detector';
+import ClientHints from 'node-device-detector/client-hints';
 
 export interface ClientMetadata {
   ip: string;
@@ -14,6 +16,25 @@ export interface ClientMetadata {
 }
 
 const logger = new Logger('GetClientMetadata');
+
+const detector = new DeviceDetector({
+  deviceIndexes: true,
+});
+const clientHints = new ClientHints();
+
+function formatDevice(result: DetectResult): string {
+  const deviceType = result.device.type ? result.device.type.toUpperCase() : 'DESKTOP';
+
+  if (deviceType === 'DESKTOP') {
+    return 'Desktop';
+  }
+
+  const brand = result.device.brand || '';
+  const model = result.device.model || '';
+  const label = `${brand} ${model}`.trim() || 'Unknown';
+
+  return `${label} (${deviceType})`;
+}
 
 export function extractClientMetadata(req: Request): ClientMetadata {
   const userAgent = req.headers['user-agent'] || '';
@@ -34,24 +55,18 @@ export function extractClientMetadata(req: Request): ClientMetadata {
     }
   }
 
-  const parsedUA = parseUA(userAgent);
-  const browser = `${parsedUA.browser.name || 'Unknown Browser'}${parsedUA.browser.version ? ` ${parsedUA.browser.version}` : ''}`;
+  const hints = clientHints.parse(req.headers);
+  const result = detector.detect(userAgent, hints);
 
-  const chPlatform = req.headers['sec-ch-ua-platform'] as string | undefined;
-  const chPlatformVersion = req.headers['sec-ch-ua-platform-version'] as string | undefined;
-  const chModel = req.headers['sec-ch-ua-model'] as string | undefined;
+  const browserName = result.client.name || 'Unknown Browser';
+  const browserVersion = result.client.version || '';
+  const browser = `${browserName}${browserVersion ? ` ${browserVersion}` : ''}`;
 
-  const osVersion = chPlatformVersion ? chPlatformVersion.replace(/"/g, '') : parsedUA.os.version || '';
-  const osName = chPlatform ? chPlatform.replace(/"/g, '') : parsedUA.os.name || 'Unknown OS';
+  const osName = result.os.name || 'Unknown OS';
+  const osVersion = result.os.version || '';
   const os = `${osName}${osVersion ? ` ${osVersion}` : ''}`;
 
-  const deviceType = parsedUA.device.type ? parsedUA.device.type.toUpperCase() : 'DESKTOP';
-  const device =
-    deviceType === 'DESKTOP'
-      ? 'Desktop'
-      : chModel
-        ? `${chModel.replace(/"/g, '')} (${deviceType})`
-        : `${parsedUA.device.vendor || ''} ${parsedUA.device.model || ''} (${deviceType})`.trim();
+  const device = formatDevice(result);
 
   const metadata: ClientMetadata = {
     ip,

@@ -37,8 +37,13 @@ export function SettingsDevicesTab() {
         return (
           <div key={session.id} className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
             <DeviceIcon isMobile={session.device?.toLowerCase().includes('mobile') ?? false} />
-            <div className="flex-1">
-              <Text size="sm" weight="medium">
+            <div className="flex-1 min-w-0">
+              {session.device && session.device !== 'Desktop' && (
+                <Text size="xs" weight="medium" className="truncate">
+                  {session.device}
+                </Text>
+              )}
+              <Text size="sm" weight="medium" className="truncate">
                 {session.browser || 'Unknown'} on {session.os || 'Unknown'}
               </Text>
               <Text size="xs" color="muted">
@@ -50,17 +55,20 @@ export function SettingsDevicesTab() {
                 {session.country ? ` · ${session.country}` : ''}
               </Text>
             </div>
-            {session.isCurrent ? (
-              <span className="text-xs text-green-500 font-medium">This device</span>
-            ) : expired ? (
+            {expired ? (
               <span className="text-xs text-text-muted">Expired</span>
             ) : (
-              <button
-                className="text-xs text-danger hover:underline"
-                onClick={() => revokeSession(session.id)}
-              >
-                Logout
-              </button>
+              <div className="flex items-center gap-2">
+                {session.isCurrent && (
+                  <span className="text-xs text-green-500 font-medium">This device</span>
+                )}
+                <button
+                  className="text-xs text-danger hover:underline"
+                  onClick={() => revokeSession(session.id)}
+                >
+                  Logout
+                </button>
+              </div>
             )}
           </div>
         );

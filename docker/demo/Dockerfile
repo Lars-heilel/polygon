@@ -32,8 +32,17 @@ COPY libs/backend/search/package.json libs/backend/search/
 # Layer 2: Dependencies
 RUN npm ci
 
-# Layer 3: Source code
-COPY . .
+# Layer 3: Prisma configs + schemas (change infrequently — cached separately)
+COPY libs/backend/auth/prisma.config.ts libs/backend/auth/
+COPY libs/backend/auth/src/database/prisma/schema.prisma libs/backend/auth/src/database/prisma/
+COPY libs/backend/user/prisma.config.ts libs/backend/user/
+COPY libs/backend/user/src/database/prisma/schema.prisma libs/backend/user/src/database/prisma/
+COPY libs/backend/chat/prisma.config.ts libs/backend/chat/
+COPY libs/backend/chat/src/database/prisma/schema.prisma libs/backend/chat/src/database/prisma/
+COPY libs/backend/media/prisma.config.ts libs/backend/media/
+COPY libs/backend/media/src/database/prisma/schema.prisma libs/backend/media/src/database/prisma/
+COPY libs/backend/notification/prisma.config.ts libs/backend/notification/
+COPY libs/backend/notification/src/database/prisma/schema.prisma libs/backend/notification/src/database/prisma/
 
 # Layer 4: Generate Prisma clients
 RUN ./node_modules/.bin/prisma generate --config libs/backend/auth/prisma.config.ts && \
@@ -42,20 +51,17 @@ RUN ./node_modules/.bin/prisma generate --config libs/backend/auth/prisma.config
     ./node_modules/.bin/prisma generate --config libs/backend/media/prisma.config.ts && \
     ./node_modules/.bin/prisma generate --config libs/backend/notification/prisma.config.ts
 
-# Layer 5: Build @org/common (externalized by all webpack bundles)
+# Layer 5: Remaining source code
+COPY . .
+
+# Layer 6: Build @org/common (externalized by all webpack bundles)
 RUN ./node_modules/.bin/tsc -p libs/common/tsconfig.build.json
 
-# Layer 6: Sync TS project references, then build all backend apps
+# Layer 7: Build all backend apps (parallel, with Nx cache)
 RUN ./node_modules/.bin/nx sync && \
-    ./node_modules/.bin/nx build @org/gateway --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/auth-service --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/user-service --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/chat-service --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/media-service --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/notification-service --skip-nx-cache && \
-    ./node_modules/.bin/nx build @org/search-service --skip-nx-cache
+    ./node_modules/.bin/nx run-many -t build --projects='@org/gateway,@org/auth-service,@org/user-service,@org/chat-service,@org/media-service,@org/notification-service,@org/search-service' --parallel
 
-# Layer 7: Prepare runtime assets (keep prisma CLI for migrations)
+# Layer 8: Prepare runtime assets (keep prisma CLI for migrations)
 RUN node -e "const p=require('./package.json');p.dependencies.prisma=p.devDependencies.prisma;delete p.devDependencies.prisma;require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))" && \
     npm prune --omit=dev && \
     mkdir /tmp/runtime && \

@@ -1,5 +1,4 @@
 jest.mock('geoip-lite', () => ({ lookup: jest.fn() }));
-jest.mock('ua-parser-modern', () => ({ parseUA: jest.fn() }));
 
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

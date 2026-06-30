@@ -12,9 +12,17 @@ export function useSessions() {
     queryFn: authApi.getSessions,
   });
 
+  const currentSessionId = sessions.find((s) => s.isCurrent)?.id;
+
   const revokeMutation = useMutation({
     mutationFn: authApi.revokeSession,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sessions'] }),
+    onSuccess: (_data, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      if (sessionId === currentSessionId) {
+        setAuthenticated(false);
+        navigate('/auth/login');
+      }
+    },
   });
 
   const revokeAllMutation = useMutation({
