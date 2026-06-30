@@ -1,25 +1,25 @@
-# Monorepo Gotchas
+# Подводные камни монорепозитория (Monorepo Gotchas)
 
-Non-obvious specifics that are not covered in the main docs but matter during development.
+Неочевидные детали, которые не описаны в основной документации, но важны при разработке.
 
 ---
 
-## Tailwind v4 in Nx Monorepo
+## Tailwind v4 в Nx Monorepo
 
-### How Utilities Are Generated
+### Как генерируются утилиты
 
-In Tailwind v4, two types of utilities behave differently:
+В Tailwind v4 два типа утилит ведут себя по-разному:
 
-| Type                         | Examples                                        | How generated                       |
-| ---------------------------- | ----------------------------------------------- | ----------------------------------- |
-| Theme colors (from `@theme`) | `bg-purple-60`, `text-surface`, `border-border` | **Always**, no file scanning needed |
-| Core utilities               | `p-8`, `rounded-xl`, `flex`, `gap-4`            | Only if found in scanned files      |
+| Тип                            | Примеры                                          | Как генерируются                                       |
+| ------------------------------ | ------------------------------------------------ | ------------------------------------------------------ |
+| Цвета темы (из `@theme`)       | `bg-purple-60`, `text-surface`, `border-border`  | **Всегда**, без сканирования файлов                    |
+| Базовые утилиты                | `p-8`, `rounded-xl`, `flex`, `gap-4`             | Только если найдены в сканируемых файлах               |
 
-**Symptom:** `bg-purple-60` works, but `p-8` or `rounded-xl` do not.
+**Симптом:** `bg-purple-60` работает, а `p-8` или `rounded-xl` — нет.
 
-### Fix — `@source` in global.css
+### Исправление — `@source` в global.css
 
-The `@tailwindcss/vite` plugin configured in `apps/client/messenger/vite.config.mts` does not always pick up files from `libs/` through the module graph. Add explicit source paths to `libs/client/shared/src/styles/global.css`:
+Плагин `@tailwindcss/vite`, настроенный в `apps/client/messenger/vite.config.mts`, не всегда подхватывает файлы из `libs/` через граф модулей. Добавьте явные пути к исходникам в `libs/client/shared/src/styles/global.css`:
 
 ```css
 @import 'tailwindcss';
@@ -27,14 +27,14 @@ The `@tailwindcss/vite` plugin configured in `apps/client/messenger/vite.config.
 @source "../../../../../libs/client/**/*.{ts,tsx}";
 ```
 
-> Paths are relative to the CSS file itself.
-> From `libs/client/shared/src/styles/global.css` to the root — **5 levels up** (`../../../../../`).
+> Пути указываются относительно самого CSS-файла.
+> От `libs/client/shared/src/styles/global.css` до корня — **5 уровней вверх** (`../../../../../`).
 >
-> `styles/` → `src/` → `shared/` → `client/` → `libs/` → **root**
+> `styles/` → `src/` → `shared/` → `client/` → `libs/` → **корень**
 
 ### VSCode IntelliSense
 
-Tailwind v4 has no `tailwind.config.js`. Point the `bradlc.vscode-tailwindcss` extension to the CSS file manually in `.vscode/settings.json`:
+В Tailwind v4 нет `tailwind.config.js`. Укажите путь к CSS-файлу вручную в расширении `bradlc.vscode-tailwindcss` через `.vscode/settings.json`:
 
 ```json
 {
@@ -46,14 +46,14 @@ Tailwind v4 has no `tailwind.config.js`. Point the `bradlc.vscode-tailwindcss` e
 
 ## Vite Dev Proxy
 
-In development, the Vite dev server runs on port `4200` while the API Gateway runs on port `3000`. To avoid CORS issues and to expose only a single port for tunneling, Vite proxies `/api` and `/socket.io` to the gateway.
+В режиме разработки Vite dev-сервер работает на порту `4200`, а API Gateway — на порту `3000`. Чтобы избежать CORS-проблем и выставить наружу только один порт для туннелирования, Vite проксирует `/api` и `/socket.io` на gateway.
 
-Configured in `apps/client/messenger/vite.config.mts`:
+Настройка в `apps/client/messenger/vite.config.mts`:
 
 ```ts
 server: {
   port: 4200,
-  host: true,          // bind to all interfaces — required for ngrok / LAN access
+  host: true,          // привязка ко всем интерфейсам — требуется для ngrok / LAN-доступа
   proxy: {
     '/api': {
       target: 'http://localhost:3000',
@@ -62,57 +62,57 @@ server: {
     '/socket.io': {
       target: 'http://localhost:3000',
       changeOrigin: true,
-      ws: true,          // proxy WebSocket upgrades
+      ws: true,          // проксирование WebSocket-апгрейдов
     },
   },
 },
 ```
 
-### Adding a new Vite app to the monorepo
+### Добавление нового Vite-приложения в монорепозиторий
 
-If you scaffold a new frontend app (`npx nx g @nx/react:app`), add the same `proxy` block to its `vite.config.mts`. Without it:
+Если вы создаёте новое frontend-приложение (`npx nx g @nx/react:app`), добавьте такой же блок `proxy` в его `vite.config.mts`. Без него:
 
-- API requests will hit `localhost:<new-app-port>/api` and return 404
-- WebSocket connections will fail
-- ngrok will only tunnel the frontend, breaking all API calls
+- API-запросы будут уходить в `localhost:<порт-нового-приложения>/api` и возвращать 404
+- WebSocket-соединения будут падать
+- ngrok будет туннелировать только фронтенд, ломая все API-вызовы
 
-### Why `host: true`
+### Зачем нужен `host: true`
 
-By default Vite binds to `localhost` only, which blocks access from other machines (including ngrok). `host: true` makes it listen on `0.0.0.0` — required for any remote access.
+По умолчанию Vite привязывается только к `localhost`, что блокирует доступ с других машин (включая ngrok). `host: true` заставляет его слушать на `0.0.0.0` — необходимо для любого удалённого доступа.
 
 ---
 
-## Environment Variables
+## Переменные окружения (Environment Variables)
 
-A single `.env` file lives at the **repository root**. Each tool resolves it differently.
+Один файл `.env` лежит в **корне репозитория**. Каждый инструмент читает его по-своему.
 
-### Vite (frontend)
+### Vite (фронтенд)
 
-`apps/client/messenger/vite.config.mts` explicitly points to the root via `envDir`:
+`apps/client/messenger/vite.config.mts` явно указывает на корень через `envDir`:
 
 ```ts
 export default defineConfig(() => ({
-  envDir: '../../..', // 3 levels up from apps/client/messenger/ → root
+  envDir: '../../..', // 3 уровня вверх от apps/client/messenger/ → корень
 }));
 ```
 
-Frontend variables must be prefixed with `VITE_`:
+Переменные фронтенда должны иметь префикс `VITE_`:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
 ```
 
-### NestJS Services (backend)
+### NestJS-сервисы (бэкенд)
 
-NestJS reads `process.env.*` directly. When running via `nx serve`, Nx loads `.env` from the root automatically — no additional config needed.
+NestJS читает `process.env.*` напрямую. При запуске через `nx serve` Nx автоматически загружает `.env` из корня — дополнительная настройка не требуется.
 
-### Prisma (migrations and generate)
+### Prisma (миграции и генерация)
 
-Prisma CLI runs from the specific lib directory (`cd libs/backend/<service>`), so `dotenv/config` without parameters looks for `.env` in the CWD — which may be the wrong directory.
+Prisma CLI запускается из директории конкретной библиотеки (`cd libs/backend/<service>`), поэтому `dotenv/config` без параметров ищет `.env` в текущей рабочей директории — что может оказаться не тем каталогом.
 
-Each lib has a `prisma.config.ts`. Two approaches are used in the project:
+В каждой библиотеке есть `prisma.config.ts`. В проекте используются два подхода:
 
-**Option A — explicit path (more reliable):**
+**Вариант A — явный путь (надёжнее):**
 
 ```ts
 // libs/backend/auth/prisma.config.ts
@@ -121,97 +121,93 @@ import path, { join } from 'path';
 
 const envFile = path.resolve(join(__dirname, '../../../.env'));
 dotenv.config({ path: envFile });
-// 3 levels up: auth/ → backend/ → libs/ → root
+// 3 уровня вверх: auth/ → backend/ → libs/ → корень
 ```
 
-**Option B — dotenv/config without parameters:**
+**Вариант B — dotenv/config без параметров:**
 
 ```ts
 // libs/backend/user/prisma.config.ts
 import 'dotenv/config';
 ```
 
-Works only when the command is run from the repository root (which is what `npx nx` does).
+Работает только если команда запущена из корня репозитория (что и делает `npx nx`).
 
-> **Rule:** when running Prisma directly from the lib directory — use Option A.
-> When running via `npx nx run @org/<service>:migrate` — both options work.
+> **Правило:** при запуске Prisma напрямую из директории библиотеки — используйте Вариант A.
+> При запуске через `npx nx run @org/<service>:migrate` — работают оба варианта.
 
-### Summary
+### Сводка
 
 ```
-Repository root
-└── .env                          ← single env file
+Корень репозитория
+└── .env                          ← единственный env-файл
 
 apps/client/messenger/
-└── vite.config.mts               ← envDir: '../../..'  (3 levels up)
+└── vite.config.mts               ← envDir: '../../..'  (3 уровня вверх)
 
 libs/backend/auth/
-└── prisma.config.ts              ← __dirname + '../../../.env'  (3 levels up)
+└── prisma.config.ts              ← __dirname + '../../../.env'  (3 уровня вверх)
 
 libs/backend/user|chat|.../
-└── prisma.config.ts              ← import 'dotenv/config'  (works via nx)
+└── prisma.config.ts              ← import 'dotenv/config'  (работает через nx)
 ```
 
 ---
 
-## MSW in Multi-lib Frontend
+## MSW в мульти-библиотечном фронтенде (Multi-lib Frontend)
 
-MSW handlers are defined in `libs/client/entities/src/test/handlers/` and shared across libs. Each lib that needs API mocking has its own `src/test/server.ts` that imports from that location.
+В архитектуре с разбиением на пакеты (`@org/entities-user`, `@org/features-auth` и т.д.), MSW-обработчики живут либо в **выделенной test-utils библиотеке**, либо располагаются рядом с каждым слайсом.
 
-**Why not import from `@org/entities`?**
-Test utilities should not be part of a lib's public API (`src/index.ts`). Exporting `server` from the public API would include test code in production builds.
+**Подход:** Создайте `libs/client/shared/src/test/handlers/` (или выделенную `libs/client/test-utils/`), которая экспортирует обработчики для всех доменов. Каждая библиотека фичи/сущности, которой нужны моки, импортирует из этого общего места.
 
-**Pattern for libs that need MSW:**
+**Шаблон для библиотеки-слайса, которому нужен MSW:**
 
 ```
-libs/client/<lib>/
+libs/client/features/auth/
   src/
     test/
       server.ts          ← setupServer(...handlers)
-      handlers/          ← lib-specific handlers (if any)
-    test-setup.ts        ← beforeAll/afterEach/afterAll wiring
+    test-setup.ts        ← beforeAll/afterEach/afterAll подключение
 ```
 
-`test-setup.ts` in each lib:
+`test-setup.ts` в каждом слайсе:
 
 ```ts
-import { server } from './test/server';
+// Относительный импорт из общих тестовых утилит
+import { server } from '../../../shared/src/test/server';
+// Или импорт из пакета test-utils, если доступен
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 ```
 
-**Adding a new handler:**
+> **Примечание:** При разбиении на пакеты нет единого `@org/entities`, который бы агрегировал все API-моки. Если оправдано создание отдельного пакета test-utils, создайте `libs/client/test-utils/` как отдельную Nx-библиотеку и импортируйте её из тестовых файлов слайсов.
 
-1. Add handler to `libs/client/entities/src/test/handlers/auth.handlers.ts` (or create a new file for another domain)
-2. Export it from `libs/client/entities/src/test/handlers/index.ts`
-3. All `server.ts` files that import `authHandlers` pick it up automatically
-
-**Overriding a handler in a specific test:**
+**Переопределение обработчика в конкретном тесте:**
 
 ```ts
 import { HttpResponse, http } from 'msw';
 
 import { server } from '../test/server';
 
-it('handles login failure', () => {
+it('обрабатывает ошибку входа', () => {
   server.use(
     http.post('/api/auth/login', () =>
       HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 }),
     ),
   );
-  // ... test
+  // ... тест
 });
 ```
 
 ---
 
-## Testing the Gateway (Supertest + Mocked Microservices)
+## Тестирование Gateway (Supertest + Замоканые Микросервисы)
 
-The Gateway communicates with microservices via RabbitMQ `ClientProxy`. Integration tests use `NestJS TestingModule` + Supertest with the real HTTP layer but mocked clients — no RabbitMQ or running services required.
+Gateway взаимодействует с микросервисами через RabbitMQ `ClientProxy`. Интеграционные тесты используют `NestJS TestingModule` + Supertest с реальным HTTP-слоем, но замокаными клиентами — без RabbitMQ и запущенных сервисов.
 
-**Setup helper:** `apps/backend/gateway/src/test/create-test-app.ts`
+**Хелпер настройки:** `apps/backend/gateway/src/test/create-test-app.ts`
 
 ```ts
 const authClient = { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() };
@@ -221,20 +217,20 @@ const moduleRef = await Test.createTestingModule({
   controllers: [AuthGatewayController],
   providers: [
     { provide: AUTH_CLIENT_TOKEN, useValue: authClient },
-    // ...other mocked clients
+    // ...остальные замоканые клиенты
   ],
 }).compile();
 ```
 
-**What this tests:**
+**Что это тестирует:**
 
-- HTTP status codes, request validation (ZodValidationPipe), cookie handling
-- Guards and middleware behavior
-- Error mapping from microservice exceptions to HTTP responses
+- HTTP-статус коды, валидацию запросов (ZodValidationPipe), работу с куками
+- Поведение Guards и middleware
+- Маппинг ошибок из исключений микросервисов в HTTP-ответы
 
-**What this does NOT test:**
+**Что это НЕ тестирует:**
 
-- Business logic inside microservices (test those in their own lib specs)
-- Real database state
+- Бизнес-логику внутри микросервисов (она тестируется в собственных спеках библиотек)
+- Реальное состояние базы данных
 
-**POST handlers return 201 by default in NestJS** (not 200) unless `@HttpCode(200)` is added to the method. Account for this in test assertions.
+**POST-обработчики в NestJS по умолчанию возвращают 201** (не 200), если к методу не добавлен `@HttpCode(200)`. Учитывайте это в тестовых утверждениях.

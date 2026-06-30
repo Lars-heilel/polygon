@@ -1,21 +1,21 @@
-# Development Guide
+# Руководство по разработке
 
 ---
 
 ## Nx Workspace
 
-Nx is the build system and task runner for this monorepo. Key concepts:
+Nx — это система сборки и запуска задач для данного монорепозитория. Ключевые концепции:
 
-- **Project graph** — Nx tracks dependencies between all projects. Run `npx nx graph` to visualize.
-- **Caching** — task results (build, test, lint) are cached. Re-running an unchanged project is instant.
-- **Affected** — `npx nx affected -t test` runs tests only for projects changed since the base branch.
+- **Project graph (граф проектов)** — Nx отслеживает зависимости между всеми проектами. Выполните `npx nx graph` для визуализации.
+- **Кэширование** — результаты задач (сборка, тесты, линтинг) кэшируются. Повторный запуск для неизменённого проекта происходит мгновенно.
+- **Affected (затронутые)** — `npx nx affected -t test` запускает тесты только для проектов, изменённых относительно базовой ветки.
 
-All projects are referenced by their `@org/<name>` package name.
+Все проекты идентифицируются по имени пакета `@org/<name>`.
 
-### Common Commands
+### Часто используемые команды
 
 ```bash
-# Serve
+# Serve (запуск в режиме разработки)
 npx nx serve @org/gateway
 npx nx serve @org/messenger
 
@@ -25,73 +25,93 @@ npx nx test @org/<project>
 npx nx lint @org/<project>
 npx nx typecheck @org/<project>
 
-# Run multiple targets
+# Запуск нескольких целей
 npx nx run-many -t build test lint typecheck
 npx nx affected -t test
 
-# Inspect a project's resolved config and available targets
+# Просмотр конфигурации проекта и доступных целей
 npx nx show project @org/<project> --json
 npx nx show project @org/<project> --json | jq '.targets | keys'
 
-# Fix out-of-sync workspace / clear stale cache
+# Исправление рассинхронизации workspace / очистка устаревшего кэша
 npx nx sync
 npx nx reset
 ```
 
 ---
 
-## Project Structure
+## Структура проекта
 
 ```
 polygon/
 ├── apps/
 │   ├── backend/
-│   │   ├── gateway/              # API Gateway — single entry point (port 3000)
-│   │   ├── auth-service/         # Authentication (port 3002)
-│   │   ├── user-service/         # User profiles (port 3001)
-│   │   ├── chat-service/         # Chats & messages (port 3003)
-│   │   ├── media-service/        # File handling (port 3004)
-│   │   └── notification-service/ # Notifications (port 3005)
+│   │   ├── gateway/              # API Gateway — единая точка входа (порт 3000)
+│   │   ├── auth-service/         # Аутентификация (порт 3002)
+│   │   ├── user-service/         # Профили пользователей (порт 3001)
+│   │   ├── chat-service/         # Чаты и сообщения (порт 3003)
+│   │   ├── media-service/        # Работа с файлами (порт 3004)
+│   │   ├── notification-service/ # Уведомления (порт 3005)
+│   │   └── search-service/       # Поиск (порт 3006)
 │   └── client/
 │       └── messenger/            # React 19 + Vite SPA
 │
 ├── libs/
 │   ├── backend/
-│   │   ├── auth/                 # Auth business logic + Prisma schema
-│   │   ├── user/                 # User business logic + Prisma schema
-│   │   ├── chat/                 # Chat business logic + Prisma schema
+│   │   ├── auth/                 # Бизнес-логика аутентификации + Prisma schema
+│   │   ├── user/                 # Бизнес-логика пользователей + Prisma schema
+│   │   ├── chat/                 # Бизнес-логика чатов + Prisma schema
 │   │   ├── media/
 │   │   ├── notification/
-│   │   └── core/                 # Shared NestJS infrastructure (logging, filters, health)
-│   ├── client/                   # Feature-Sliced Design layers (see below)
-│   │   ├── shared/               # UI kit, utilities, API client
-│   │   ├── entities/             # Business entities and their API hooks
-│   │   ├── features/             # User-facing features (auth, theme, ...)
-│   │   ├── widgets/              # Composite components
-│   │   ├── layouts/              # Page layouts
-│   │   └── pages/                # Standalone pages (e.g. 404)
-│   └── common/                   # Framework-agnostic: Zod schemas + constants
+│   │   ├── search/               # Логика поиска (Meilisearch)
+│   │   └── core/                 # Общая NestJS инфраструктура (логирование, guards, токены, redis...)
+│   ├── client/                   # Feature-Sliced Design — разбит на мини-пакеты
+│   │   ├── shared/               # @org/shared — UI kit, API client, socket, theme
+│   │   ├── entities/
+│   │   │   ├── user/             # @org/entities-user
+│   │   │   ├── chat/             # @org/entities-chat
+│   │   │   └── message/          # @org/entities-message
+│   │   ├── features/
+│   │   │   ├── auth/             # @org/features-auth
+│   │   │   ├── create-chat/      # @org/features-create-chat
+│   │   │   ├── send-message/     # @org/features-send-message
+│   │   │   ├── chat-socket/      # @org/features-chat-socket
+│   │   │   ├── notifications/    # @org/features-notifications
+│   │   │   ├── upload-avatar/    # @org/features-upload-avatar
+│   │   │   ├── emoji/            # @org/features-emoji
+│   │   │   ├── theme/            # @org/features-theme
+│   │   │   ├── infinite-scroll/  # @org/features-infinite-scroll
+│   │   │   └── search/           # @org/features-search (заглушка)
+│   │   ├── layouts/
+│   │   │   ├── auth/             # @org/layouts-auth
+│   │   │   ├── sidebar/          # @org/layouts-sidebar
+│   │   │   └── mobile/           # @org/layouts-mobile
+│   │   └── pages/
+│   │       ├── auth/             # @org/pages-login, @org/pages-register, ...
+│   │       ├── messenger/        # @org/pages-chat-page, @org/pages-settings, ...
+│   │       └── system/           # @org/pages-not-found, @org/pages-design-system
+│   └── common/                   # @org/common — Zod-схемы + константы
 │
 ├── scripts/                      # bootstrap.sh, init-db.sh
-├── infra/                        # Docker, Prometheus, Grafana config
+├── infra/                        # Docker-конфиги
 └── docs/
 ```
 
-### Dependency Installation
+### Установка зависимостей
 
-All external packages are installed at the **repository root** only:
+Все внешние пакеты устанавливаются только в **корне репозитория**:
 
 ```bash
-npm install <package>   # always at repo root
+npm install <package>   # всегда в корне репозитория
 ```
 
-Individual lib `package.json` files do not list external packages — Nx resolves everything from the root via hoisting. This enforces a single version policy across the monorepo.
+Файлы `package.json` отдельных библиотек не перечисляют внешние пакеты — Nx разрешает всё из корня через hoisting. Это обеспечивает единую политику версий во всём монорепозитории.
 
 ---
 
-## Module Boundaries
+## Границы модулей
 
-Nx enforces dependency rules via the `@nx/enforce-module-boundaries` ESLint rule. Projects declare their identity through tags in `package.json`:
+Nx обеспечивает правила зависимостей с помощью ESLint-правила `@nx/enforce-module-boundaries`. Проекты объявляют свою принадлежность через теги в `package.json`:
 
 ```json
 {
@@ -101,38 +121,37 @@ Nx enforces dependency rules via the `@nx/enforce-module-boundaries` ESLint rule
 }
 ```
 
-### Tags in Use
+### Используемые теги
 
-| Tag                       | Projects             |
-| ------------------------- | -------------------- |
-| `scope:client`            | All `libs/client/*`  |
-| `scope:backend`           | All `libs/backend/*` |
-| `scope:shared`            | `libs/common`        |
-| `layer:shared`            | `@org/shared`        |
-| `layer:entities`          | `@org/entities`      |
-| `layer:features`          | `@org/features`      |
-| `layer:widgets`           | `@org/widgets`       |
-| `layer:layouts`           | `@org/layouts`       |
-| `layer:pages`             | `@org/pages`         |
-| `type:business`           | Backend service libs |
-| `type:core`               | `@org/core`          |
-| `type:framework-agnostic` | `@org/common`        |
+| Тег                        | Проекты                              |
+| -------------------------- | ------------------------------------ |
+| `scope:client`             | Все `libs/client/*`                  |
+| `scope:backend`            | Все `libs/backend/*`                 |
+| `scope:shared`             | `libs/common`                        |
+| `layer:shared`             | `@org/shared`                        |
+| `layer:entities`           | `@org/entities-*` (каждый слайс)     |
+| `layer:features`           | `@org/features-*` (каждый слайс)     |
+| `layer:layouts`            | `@org/layouts-*` (каждый слайс)      |
+| `layer:pages`              | `@org/pages-*` (каждый слайс)        |
+| `type:business`            | Библиотеки сервисов бэкенда          |
+| `type:core`                | `@org/core`                          |
+| `type:framework-agnostic`  | `@org/common`                        |
 
-### Boundary Rules
+### Правила границ
 
-Configured in the root `.eslintrc.json` under `@nx/enforce-module-boundaries`:
+Настроены в корневом `.eslintrc.json` в секции `@nx/enforce-module-boundaries`:
 
 ```
-FSD layer order (can only import from layers below):
+Порядок слоёв FSD (можно импортировать только из слоёв ниже):
   pages → layouts → widgets → features → entities → shared
 
-Scope rules:
-  scope:client  — cannot import scope:backend
-  scope:backend — cannot import scope:client
-  scope:shared  — can be imported by anyone
+Правила scope (области видимости):
+  scope:client  — не может импортировать scope:backend
+  scope:backend — не может импортировать scope:client
+  scope:shared  — может импортироваться кем угодно
 ```
 
-Check for violations:
+Проверка нарушений:
 
 ```bash
 npx nx lint @org/<project>
@@ -141,29 +160,29 @@ npx nx run-many -t lint
 
 ---
 
-## Code Conventions
+## Соглашения по коду
 
-### Naming
+### Именование
 
-| Subject               | Convention       | Example                                 |
-| --------------------- | ---------------- | --------------------------------------- |
-| Files                 | kebab-case       | `user.service.ts`, `create-user.dto.ts` |
-| Classes / Interfaces  | PascalCase       | `UserService`, `CreateUserDto`          |
-| Variables / Functions | camelCase        | `getUserById`                           |
-| Constants             | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT`                       |
+| Объект                | Соглашение        | Пример                                 |
+| --------------------- | ----------------- | -------------------------------------- |
+| Файлы                 | kebab-case        | `user.service.ts`, `create-user.dto.ts` |
+| Классы / Интерфейсы   | PascalCase        | `UserService`, `CreateUserDto`         |
+| Переменные / Функции  | camelCase         | `getUserById`                          |
+| Константы             | UPPER_SNAKE_CASE  | `MAX_RETRY_COUNT`                      |
 
 ### TypeScript
 
-- `strict: true` — no exceptions
-- No `any` — use `unknown` and narrow explicitly
-- Explicit return types on public functions and methods
-- No unused locals or parameters
+- `strict: true` — без исключений
+- Запрещён `any` — используйте `unknown` с явным сужением типа
+- Явные возвращаемые типы у публичных функций и методов
+- Запрещены неиспользуемые локальные переменные и параметры
 
 ### NestJS
 
-- Constructor-based DI only — no property injection
-- Repository pattern for all database access — controllers and services never touch Prisma directly
-- Each backend lib follows the same internal structure:
+- Только constructor-based DI — без внедрения через свойства
+- Repository pattern для всех обращений к базе данных — контроллеры и сервисы никогда не работают с Prisma напрямую
+- Каждая библиотека бэкенда следует единой внутренней структуре:
 
 ```
 libs/backend/<service>/
@@ -179,13 +198,13 @@ libs/backend/<service>/
 
 ---
 
-## Shared Logic (`@org/common`)
+## Общая логика (`@org/common`)
 
-`libs/common` is the single source of truth for validation schemas and constants. It is framework-agnostic and can be imported by both client and backend.
+`libs/common` — единый источник истины для схем валидации и констант. Он не зависит от фреймворка и может импортироваться как клиентом, так и бэкендом.
 
-### Zod Schemas
+### Zod-схемы
 
-Define schemas once, use everywhere:
+Определяйте схемы один раз, используйте везде:
 
 ```typescript
 // libs/common/src/schemas/auth.ts
@@ -195,7 +214,7 @@ export const loginSchema = z.object({
 });
 ```
 
-**Frontend** — extend for form-specific needs:
+**Фронтенд** — расширение для специфических нужд форм:
 
 ```typescript
 // libs/client/features/src/lib/auth/ui/register-form.tsx
@@ -211,7 +230,7 @@ const registerFormSchema = registerSchema
   });
 ```
 
-**Backend** — create NestJS DTOs via `createZodDto`:
+**Бэкенд** — создание NestJS DTO через `createZodDto`:
 
 ```typescript
 // libs/backend/auth/src/dto/login.dto.ts
@@ -221,41 +240,53 @@ import { createZodDto } from 'nestjs-zod';
 export class LoginDto extends createZodDto(loginSchema) {}
 ```
 
-`ZodValidationPipe` (applied globally in each service) automatically validates incoming requests against the DTO schema and returns a `400 Bad Request` on failure.
+`ZodValidationPipe` (применён глобально в каждом сервисе) автоматически валидирует входящие запросы по схеме DTO и возвращает `400 Bad Request` при ошибке.
 
 ---
 
-## Client Architecture — FSD in a Monorepo
+## Архитектура клиента — FSD с разбивкой на пакеты
 
-The client follows **Feature-Sliced Design (FSD)**. Each FSD layer is a separate Nx library under `libs/client/`:
+Клиент использует **Feature-Sliced Design (FSD)**. Каждый слайс внутри каждого слоя является отдельным Nx-пакетом в `libs/client/`:
 
 ```
-@org/shared    ←  UI kit, utilities, API client
-@org/entities  ←  business entities + TanStack Query hooks
-@org/features  ←  user-facing features
-@org/widgets   ←  composite components
-@org/layouts   ←  page layouts
-@org/pages     ←  standalone pages (e.g. NotFoundPage)
+libs/client/
+  shared/                        ← @org/shared
+  entities/user/                 ← @org/entities-user
+  entities/chat/                 ← @org/entities-chat
+  entities/message/              ← @org/entities-message
+  features/auth/                 ← @org/features-auth
+  features/create-chat/          ← @org/features-create-chat
+  features/send-message/         ← @org/features-send-message
+  features/chat-socket/          ← @org/features-chat-socket
+  features/notifications/        ← @org/features-notifications
+  features/search/               ← @org/features-search
+  layouts/auth/                  ← @org/layouts-auth
+  layouts/sidebar/               ← @org/layouts-sidebar
+  pages/auth/                    ← @org/pages-login
+  pages/register/                ← @org/pages-register
+  pages/chat-page/               ← @org/pages-chat-page
 ```
 
-The actual application (`apps/client/messenger`) composes these layers: router, providers, app-level layouts, and pages live there.
+**Зачем разбивать?** Хранение целого слоя в одном пакете ломает code splitting. Например, если `@org/pages` (`layer:pages`) — один большой пакет, то при ленивой загрузке страницы подтянутся компоненты всех остальных страниц. Разбивка на `@org/pages-login`, `@org/pages-chat-page` и т.д. позволяет каждому бандлу оставаться минимальным.
 
-### Internal Structure of a Feature
+Само приложение (`apps/client/messenger`) собирает эти слои воедино: router, providers, layouts уровня приложения и страницы живут там.
 
-Each feature inside `libs/client/features/src/lib/` is split into two segments:
+### Внутренняя структура фичи
+
+Каждая фича внутри `libs/client/features/src/lib/` разделена на два сегмента:
 
 ```
 lib/auth/
-  ui/             # React components consumed by pages
-  model/          # Hooks and state logic consumed by ui/ or pages
-  index.ts        # Public API of this feature
+  ui/             # React-компоненты, используемые страницами
+  model/          # Хуки и логика состояния, используемые ui/ или страницами
+  index.ts        # Публичное API этой фичи
 ```
 
-Keep `ui/` and `model/` focused on **one feature only**. If you open `auth/ui/` you should immediately understand what every file does — because everything there is about authentication. A folder with 20 components of mixed purpose is a signal to split into separate features.
+Следите, чтобы `ui/` и `model/` были сосредоточены **только на одной фиче**. Открыв `auth/ui/`, вы должны сразу понимать, что делает каждый файл — потому что всё там относится к аутентификации. Папка с 20 компонентами разного назначения — сигнал к тому, что пора разбить на отдельные фичи.
 
-### Public API
+### Публичное API
 
-Every lib and every feature exposes a public API through `index.ts`. This file is the **contract** — it explicitly declares what the outside world is allowed to use. Anything not listed there is an implementation detail.
+Каждая библиотека и каждая фича предоставляет публичное API через `index.ts`. Этот файл является **контрактом** — он явно объявляет, что разрешено использовать внешнему миру. Всё, что не перечислено там, — детали реализации.
 
 ```typescript
 // libs/client/features/src/lib/auth/index.ts
@@ -263,25 +294,25 @@ export { LoginForm } from './ui/login-form';
 export { RegisterForm } from './ui/register-form';
 export { useLogin } from './model/use-login';
 export { useRegister } from './model/use-register';
-// ForgotPasswordForm is intentionally not exported — only used inside the feature
+// ForgotPasswordForm намеренно не экспортируется — используется только внутри фичи
 ```
 
-The lib-level `src/index.ts` re-exports from each feature's `index.ts`:
+`src/index.ts` на уровне библиотеки реэкспортирует из `index.ts` каждой фичи:
 
 ```typescript
-// libs/client/features/src/index.ts
-export * from './lib/auth';
-export * from './lib/theme';
+// libs/client/features/auth/src/index.ts
+export { LoginForm } from './ui/login-form';
+export { useLogin } from './model/use-login';
 ```
 
-Consumers always import from the package name — never from internal paths:
+Для разбитых на слайсы пакетов нет агрегированного реэкспорта — потребители импортируют напрямую из пакета слайса:
 
 ```typescript
-// ✅ correct
-import { LoginForm, useLogin } from '@org/features';
+// ✅ правильно — импорт из конкретного пакета слайса
+import { LoginForm, useLogin } from '@org/features-auth';
 
-// ❌ wrong — bypasses the contract, breaks on any internal refactor
-import { LoginForm } from '@org/features/src/lib/auth/ui/login-form';
+// ❌ неправильно — обход контракта, сломается при любом внутреннем рефакторинге
+import { LoginForm } from '@org/features-auth/src/ui/login-form';
 ```
 
-This means you can freely restructure internals (rename files, split segments, move code) without touching any consumer — as long as `index.ts` stays the same.
+Это означает, что можно свободно перестраивать внутренности (переименовывать файлы, разделять сегменты, перемещать код) без необходимости трогать потребителей — пока `index.ts` остаётся неизменным.

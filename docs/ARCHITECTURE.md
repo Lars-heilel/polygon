@@ -1,29 +1,31 @@
-# Architecture
+# Архитектура
 
 ---
 
-## Overview
+## Обзор
 
-- **API Gateway** as single entry point for all client requests
-- **Database per service** pattern for data isolation
-- **Async communication** via RabbitMQ message broker
-- **Shared schemas** via `@org/common` — single source of truth for validation across client and backend
-- **Nx monorepo** for dependency management, caching, and build optimization
+- **API Gateway** как единая точка входа для всех клиентских запросов
+- **Database per service** — паттерн изоляции данных
+- **Асинхронная коммуникация** через брокер сообщений RabbitMQ
+- **Shared schemas** через `@org/common` — единый источник истины для валидации на клиенте и бэкенде
+- **Nx monorepo** для управления зависимостями, кэширования и оптимизации сборки
+- **Sliced packages** — клиентские FSD-слои разбиты на мини-пакеты (`@org/entities-user`, `@org/features-auth`, `@org/pages-login`) для правильного code splitting. Один большой пакет на слой ломает бандлинг (ленивая страница тянет все зависимости слоя).
 
 ---
 
-## System Diagram
+## Схема системы
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      Client (SPA)                           │
-│                   React + Vite                              │
+│                   React + Vite + Socket.IO                  │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    API Gateway                              │
 │              (Single Entry Point, port 3000)                │
+│              HTTP + WebSocket + RabbitMQ Client             │
 └─────────────────────────────────────────────────────────────┘
                             │
         ┌───────────────────┼───────────────────┐
@@ -31,120 +33,129 @@
 ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
 │  User Service │   │  Auth Service │   │  Chat Service │
 │   port 3001   │   │   port 3002   │   │   port 3003   │
-└───────┬───────┘   └───────┬───────┘   └───────┬───────┘
-        │                   │                   │
-        └───────────────────┼───────────────────┘
-             ▼
-         ┌───────────────────────────────────────┐
-         │              RabbitMQ                 │
-         │           Message Broker              │
-         └───────────────────────────────────────┘
-                             │
-         ┌───────────────────┼───────────────────┐
-         ▼                   ▼                   ▼
- ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
- │ Media Service │   │ Notification  │   │  PostgreSQL   │
- │   port 3004   │   │   port 3005   │   │  (per service)│
- └───────┬───────┘   └───────────────┘   └───────────────┘
-         │
-         ▼
- ┌───────────────┐
- │    MinIO      │
- │  S3 Storage   │
- └───────────────┘
-                                                │
-                                                ▼
-                                        ┌───────────────┐
-                                        │     Redis     │
-                                        └───────────────┘
+└───────────────┘   └───────────────┘   └───────┬───────┘
+                                                  │
+        ┌──────────────────────────────────────────┘
+        ▼                   ▼                   ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│  Media Service│   │Notification  │   │Search Service │
+│   port 3004   │   │  port 3005   │   │   port 3006   │
+└───────┬───────┘   └───────────────┘   └───────┬───────┘
+        │                                       │
+        ▼                                       ▼
+ ┌──────────────┐                     ┌──────────────┐
+ │    MinIO     │                     │  Meilisearch  │
+ │  S3 Storage  │                     │Search Engine  │
+ └──────────────┘                     └──────────────┘
+
+                ┌──────────────────────┐
+                │      RabbitMQ        │
+                │   Message Broker     │
+                └──────────┬───────────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+       ┌──────────┐  ┌──────────┐  ┌──────────┐
+       │PostgreSQL│  │  Redis   │  │   (все   │
+       │ per svc  │  │Cache/    │  │ сервисы) │
+       └──────────┘  │Sessions  │  └──────────┘
+                     └──────────┘
 ```
 
 ---
 
-## Microservices
+## Микросервисы
 
 ### API Gateway
 
-Single entry point for all client requests. Handles routing, authentication guards, and proxies requests to the appropriate backend service via RabbitMQ.
+Единая точка входа для всех клиентских запросов. Обрабатывает маршрутизацию, guards аутентификации и проксирует запросы к соответствующему бэкенд-сервису через RabbitMQ.
 
 ### Auth Service
 
-Registration, login, JWT access/refresh tokens, OAuth (GitHub, Google, Yandex), password reset.
-Database: `polygon_auth`
+Регистрация, вход, JWT access/refresh токены, OAuth (GitHub, Google, Yandex), сброс пароля.
+База данных: `polygon_auth`
 
 ### User Service
 
-User profiles, search, avatar and bio management.
-Database: `polygon_user`
+Профили пользователей, поиск, управление аватаром и био.
+База данных: `polygon_user`
 
 ### Chat Service
 
-Chat creation, member management, message sending and history. Emits WebSocket events for real-time delivery.
-Database: `polygon_chat`
+Создание чатов, управление участниками, отправка сообщений и история. Испускает WebSocket-события для доставки в реальном времени.
+База данных: `polygon_chat`
 
 ### Media Service
 
-File uploads and metadata storage.
-Database: `polygon_media`
+Загрузка файлов, хранение метаданных, асинхронная обработка (миниатюры, waveform, превью видео).
+База данных: `polygon_media`
 
 ### Notification Service
 
-Email, push, and in-app notifications.
-Database: `polygon_notification`
+Email, push и внутриприложные уведомления.
+База данных: `polygon_notification`
+
+### Search Service
+
+Поиск пользователей и сообщений через Meilisearch. Без собственной базы данных — использует внешний поисковый движок. Слушает RabbitMQ-события от Auth (`user.registered`), User (`user.updated`) и Chat (`message.created`) для поддержки индексов.
 
 ---
 
-## Communication Patterns
+## Паттерны коммуникации
 
-### Client → Backend
+### Клиент → Бэкенд
 
-All HTTP requests go through the API Gateway. No service is directly accessible from the client.
+Все HTTP-запросы проходят через API Gateway. Ни один сервис напрямую из клиента недоступен.
 
-### Inter-service (async)
+### Межсервисная (асинхронная)
 
-All communication between services is asynchronous via RabbitMQ events. There is no direct HTTP between services.
+Вся коммуникация между сервисами асинхронна через RabbitMQ-события. Прямого HTTP между сервисами нет.
 
 ```
-Auth Service    --[user.created]-->  Notification Service
-Chat Service    --[message.sent]-->  Notification Service
-Media Service   --[file.uploaded]--> Chat Service
+Auth Service    --[user.registered]-----------> User Service (create profile)
+Auth Service    --[user.registered]-----------> Search Service (index user)
+Auth Service    --[notification.send-verification] -> Notification Service (email)
+Auth Service    --[notification.send-password-reset] -> Notification Service (email)
+Gateway         --[user.updated]--------------> Search Service (re-index user)
+Chat Service    --[chat.message.created]------> Search Service (index message)
+Media Service   --[media.process]-------------> Media Service (async processing)
 ```
 
 ### WebSocket
 
-The Gateway maintains a persistent Socket.IO connection with the client for real-time message delivery. See [Session & WebSocket](#session--websocket) for the full lifecycle.
+Gateway поддерживает постоянное Socket.IO-соединение с клиентом для доставки сообщений в реальном времени. Полный жизненный цикл описан в разделе [Session & WebSocket](#session--websocket).
 
 ---
 
-## Data Storage
+## Хранение данных
 
 ### PostgreSQL — database per service
 
-| Service      | Database               |
-| ------------ | ---------------------- |
-| Auth         | `polygon_auth`         |
-| User         | `polygon_user`         |
-| Chat         | `polygon_chat`         |
-| Media        | `polygon_media`        |
-| Notification | `polygon_notification` |
+| Сервис       | База данных             |
+| ------------ | ----------------------- |
+| Auth         | `polygon_auth`          |
+| User         | `polygon_user`          |
+| Chat         | `polygon_chat`          |
+| Media        | `polygon_media`         |
+| Notification | `polygon_notification`  |
 
-Each service owns its database exclusively. No cross-service database queries.
+Каждый сервис владеет своей базой данных эксклюзивно. Межсервисных запросов к БД нет.
 
 ### Redis
 
-- Session / token caching
+- Кэширование сессий / токенов
 - Rate limiting
-- Pub/Sub for real-time events
+- Pub/Sub для событий в реальном времени
 
 ---
 
 ## Shared Schemas (`@org/common`)
 
-`libs/common` is a framework-agnostic library imported by both client and backend. It is the single source of truth for validation rules and constants.
+`libs/common` — фреймворк-независимая библиотека, импортируемая как клиентом, так и бэкендом. Это единый источник истины для правил валидации и констант.
 
-### Zod Schemas
+### Zod-схемы
 
-Define once, use on both sides:
+Определяются один раз, используются на обеих сторонах:
 
 ```typescript
 // libs/common/src/schemas/auth.ts
@@ -154,7 +165,7 @@ export const loginSchema = z.object({
 });
 ```
 
-**Frontend** — extend schemas for form-specific needs:
+**Фронтенд** — расширение схем для специфических нужд форм:
 
 ```typescript
 import { registerSchema } from '@org/common';
@@ -169,7 +180,7 @@ const registerFormSchema = registerSchema
   });
 ```
 
-**Backend** — create NestJS DTOs via `createZodDto`. `ZodValidationPipe` validates incoming requests automatically:
+**Бэкенд** — создание NestJS DTO через `createZodDto`. `ZodValidationPipe` автоматически валидирует входящие запросы:
 
 ```typescript
 import { loginSchema } from '@org/common';
@@ -178,7 +189,7 @@ import { createZodDto } from 'nestjs-zod';
 export class LoginDto extends createZodDto(loginSchema) {}
 ```
 
-**Swagger** — DTOs derived from `createZodDto` can be extended with `@ApiProperty` decorators for API documentation without duplicating validation logic:
+**Swagger** — DTO, полученные из `createZodDto`, могут быть расширены декораторами `@ApiProperty` для документации API без дублирования логики валидации:
 
 ```typescript
 export class CreateUserDto extends createZodDto(UserSchema) {
@@ -192,130 +203,134 @@ export class CreateUserDto extends createZodDto(UserSchema) {
 
 ---
 
-## Client Architecture
+## Архитектура клиента
 
-The client is a React 19 SPA following **Feature-Sliced Design (FSD)**. Each layer is a separate Nx library.
+Клиент — это React 19 SPA, построенная по **Feature-Sliced Design (FSD)**. Каждый слой нарезан на **мини-пакеты** (один на slice/feature) для правильного code splitting — один большой пакет на слой собрал бы все зависимости вместе, ломая lazy loading.
 
-### FSD Layers
+### Слои FSD (нарезанные)
 
-| Layer    | Package         | Purpose                                  |
-| -------- | --------------- | ---------------------------------------- |
-| shared   | `@org/shared`   | UI kit, utilities, API client            |
-| entities | `@org/entities` | Business entities, TanStack Query hooks  |
-| features | `@org/features` | User-facing features (auth forms, theme) |
-| widgets  | `@org/widgets`  | Composite components                     |
-| layouts  | `@org/layouts`  | Page layouts                             |
-| pages    | `@org/pages`    | Standalone pages (e.g. NotFoundPage)     |
+| Layer    | Паттерн пакета                 | Примеры                                          |
+| -------- | ------------------------------ | ------------------------------------------------ |
+| shared   | `@org/shared`                  | UI kit, API client (socket, authedFetch), theme  |
+| entities | `@org/entities-{entity}`       | `@org/entities-user`, `@org/entities-chat`, `@org/entities-message` |
+| features | `@org/features-{feature}`      | `@org/features-auth`, `@org/features-create-chat`, `@org/features-send-message`, `@org/features-emoji`, `@org/features-theme`, `@org/features-notifications`, `@org/features-upload-avatar`, `@org/features-infinite-scroll` |
+| widgets  | `@org/widgets-{widget}`        | (пусто — не используется)                       |
+| layouts  | `@org/layouts-{layout}`        | `@org/layouts-auth`, `@org/layouts-sidebar`, `@org/layouts-mobile` |
+| pages    | `@org/pages-{page}`            | `@org/pages-login`, `@org/pages-register`, `@org/pages-chat-page`, `@org/pages-settings`, `@org/pages-profile`, `@org/pages-not-found` |
 
-The application (`apps/client/messenger`) composes these layers into a working product — router, providers, and app-level pages live there.
+Приложение (`apps/client/messenger`) собирает эти срезы — роутер, провайдеры и страницы уровня app находятся там.
 
-### State Management
+### Управление состоянием
 
-| Concern                 | Tool           | Where                                |
-| ----------------------- | -------------- | ------------------------------------ |
-| Server state (API data) | TanStack Query | `@org/entities`                      |
-| Session state           | Zustand        | `@org/entities` → `session.store.ts` |
-| UI state (theme)        | React Context  | `@org/features` → `theme/model/`     |
+| Область                    | Инструмент      | Где                                             |
+| -------------------------- | --------------- | ----------------------------------------------- |
+| Server state (данные API)  | TanStack Query  | `@org/entities-*` (queries + mutations на сущность) |
+| Session state              | Zustand         | `@org/entities-user` → `session.store.ts`       |
+| Chat state                 | Zustand         | `@org/entities-chat` → `chat.store.ts`          |
+| Presence state             | Zustand         | `@org/entities-chat` → `presence.store.ts`      |
+| UI state (тема)            | React Context   | `@org/shared` → `theme.tsx`                     |
+| Состояние уведомлений      | Zustand (persist) | `@org/features-notifications` → `notification.store.ts` |
 
 ---
 
 ## Session & WebSocket
 
-### Authentication Flow
+### Процесс аутентификации
 
-Auth is cookie-based. The backend sets `HttpOnly` cookies on login — the client never handles tokens directly.
+Аутентификация основана на куках. Бэкенд устанавливает `HttpOnly` cookies при входе — клиент никогда не работает с токенами напрямую.
 
 ```
-1. User submits login form
+1. Пользователь отправляет форму входа
       │
       ▼
-2. POST /api/auth/login → backend sets HttpOnly cookies (access + refresh)
+2. POST /api/auth/login → бэкенд устанавливает HttpOnly cookies (access + refresh)
       │
       ▼
 3. setAuthenticated(true)
-   └─ Zustand store updated (isAuthenticated: true, isLoading: false)
+   └─ Zustand store обновлён (isAuthenticated: true, isLoading: false)
       │
       ▼
-4. socket-middleware reacts to store change
-   └─ isAuthenticated became true → socket.connect() (withCredentials)
+4. socket-middleware реагирует на изменение стора
+   └─ isAuthenticated стал true → socket.connect() (withCredentials)
       │
       ▼
-5. ProtectedRoute reads selectIsAuthenticated
-   └─ isLoading: true  → renders <Spinner /> (session check in progress)
-   └─ isAuthenticated  → renders the app
-   └─ !isAuthenticated → redirect to /auth/login
+5. ProtectedRoute читает selectIsAuthenticated
+   └─ isLoading: true  → рендерит <Spinner /> (проверка сессии)
+   └─ isAuthenticated  → рендерит приложение
+   └─ !isAuthenticated → редирект на /auth/login
 ```
 
-### Session Bootstrap
+### Загрузка сессии
 
-On every app load, before rendering protected routes, `AuthBootstrap` resolves the session:
+При каждой загрузке приложения, перед рендерингом защищённых маршрутов, `AuthBootstrap` проверяет сессию:
 
 ```
-App mounts
-  └─ AuthBootstrap calls GET /api/users/me (cookie sent automatically)
+App монтируется
+  └─ AuthBootstrap вызывает GET /api/users/me (cookie отправляется автоматически)
        ├─ 200 OK  → setAuthenticated(true)
        └─ 401     → setAuthenticated(false)
-            └─ ProtectedRoute redirects to /auth/login
+            └─ ProtectedRoute редиректит на /auth/login
 ```
 
-### Token Refresh
+### Обновление токенов
 
-`authedFetch` wraps every authenticated API call:
+`authedFetch` оборачивает каждый аутентифицированный API-вызов:
 
 ```
-Request sent (cookies included automatically via credentials: 'include')
+Запрос отправлен (cookies включены автоматически через credentials: 'include')
       │
-  401 received?
+  401 получен?
       │
-      ├─ No  → return response
+      ├─ Нет → вернуть ответ
       │
-      └─ Yes → acquire mutex (prevents parallel refresh races)
+      └─ Да → захватить mutex (предотвращает параллельные гонки обновления)
                   │
-                  └─ POST /api/auth/refresh (refresh cookie sent automatically)
+                  └─ POST /api/auth/refresh (refresh cookie отправляется автоматически)
                         │
-                        ├─ Success → backend rotates cookies → retry original request
-                        └─ Failure → setAuthenticated(false) → redirect to login
+                        ├─ Успех → бэкенд ротирует cookies → повтор оригинального запроса
+                        └─ Ошибка → setAuthenticated(false) → редирект на логин
 ```
 
-### WebSocket Lifecycle
+### Жизненный цикл WebSocket
 
 ```
-App startup
+Запуск приложения
   └─ initSocketMiddleware()
-       └─ subscribe to useSessionStore
-            ├─ isAuthenticated became true  → socket.connect()
-            └─ isAuthenticated became false → socket.disconnect()
+       └─ подписка на useSessionStore
+            ├─ isAuthenticated стал true  → socket.connect()
+            └─ isAuthenticated стал false → socket.disconnect()
 
-Socket auth
-  └─ socket.io configured with withCredentials: true
-       └─ cookies are sent on every connect / reconnect automatically
+Аутентификация сокета
+  └─ socket.io настроен с withCredentials: true
+       └─ cookies отправляются при каждом connect / reconnect автоматически
 
-User opens a chat (/chats/:chatId)
-  └─ useChatSocket(chatId) mounts
+Пользователь открывает чат (/chats/:chatId)
+  └─ useChatSocket(chatId) монтируется
        ├─ socket.emit('chat:join', { chatId })
        └─ socket.on('message:new', handler)
-            └─ handler adds message to TanStack Query cache
-                 └─ deduplicates by message.id
+            └─ handler добавляет сообщение в кэш TanStack Query
+                 └─ дедупликация по message.id
 
-User leaves the chat (component unmounts)
+Пользователь покидает чат (компонент размонтируется)
   └─ socket.emit('chat:leave', { chatId })
   └─ socket.off('message:new', handler)
 
-User logs out
-  └─ POST /api/auth/logout → backend clears cookies
+Пользователь выходит из системы
+  └─ POST /api/auth/logout → бэкенд очищает cookies
   └─ setAuthenticated(false)
-       └─ socket-middleware reacts → socket.disconnect()
+       └─ socket-middleware реагирует → socket.disconnect()
 ```
 
 ---
 
-## Infrastructure
+## Инфраструктура
 
-| Service    | Image                          | Port(s)      |
-| ---------- | ------------------------------ | ------------ |
-| PostgreSQL | `postgres:17-alpine`           | 5432         |
-| Redis      | `redis:7-alpine`               | 6379         |
-| RabbitMQ   | `rabbitmq:3-management-alpine` | 5672 / 15672 |
-| Prometheus | `prom/prometheus`              | 9090         |
-| Grafana    | `grafana/grafana`              | 3010         |
-| MinIO      | `quay.io/minio/minio`          | 9000 / 9001  |
+| Сервис      | Образ                           | Порт(ы)       |
+| ----------- | ------------------------------- | ------------- |
+| PostgreSQL  | `postgres:17-alpine`            | 5432          |
+| Redis       | `redis:7-alpine`                | 6379          |
+| RabbitMQ    | `rabbitmq:3-management-alpine`  | 5672 / 15672  |
+| MinIO       | `quay.io/minio/minio`           | 9000 / 9001   |
+| Meilisearch | `meilisearch`                   | 7700          |
+
+> **Prometheus + Grafana** — убраны (были нерабочими). Настройка с нуля запланирована.

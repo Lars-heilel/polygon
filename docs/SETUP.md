@@ -1,85 +1,87 @@
-# Setup
+# Настройка
 
-## Prerequisites
+## Необходимые компоненты
 
-- Docker & Docker Compose
+- Docker и Docker Compose
 - Node.js 20.x
 - npm
 
 ---
 
-## 1. Environment Variables
+## 1. Переменные окружения
 
 ```bash
 cp .env.example .env
 ```
 
-All services share a single `.env` at the repository root. Configure it for your local environment — all variables and descriptions are in `.env.example`.
+Все сервисы используют единый файл `.env` в корне репозитория. Настройте его для вашего локального окружения — все переменные и описания находятся в `.env.example`.
 
 ---
 
-## 2. Bootstrap
+## 2. Начальная настройка
 
-Run once after cloning:
+Выполнить один раз после клонирования:
 
 ```bash
 ./scripts/bootstrap.sh
 ```
 
-What it does:
+Что делает скрипт:
 
-1. Checks Docker and Docker Compose availability
-2. Starts containers (PostgreSQL, Redis, RabbitMQ)
-3. Creates a database for each service
-4. Generates Prisma clients for all backend services
-5. Applies Prisma migrations
+1. Проверяет доступность Docker и Docker Compose
+2. Запускает контейнеры (PostgreSQL, Redis, RabbitMQ, MinIO, Meilisearch)
+3. Создаёт базу данных для каждого сервиса
+4. Генерирует Prisma клиенты для всех бэкенд-сервисов
+5. Применяет Prisma миграции
 
-> ⚠️ Run only once after cloning. Re-running `init-db.sh` will delete all database data.
+> ⚠️ Запускайте только один раз после клонирования. Повторный запуск `init-db.sh` удалит все данные в базах.
 
-### Infrastructure
+### Инфраструктура
 
-| Service    | Port(s)      | Purpose                                       |
-| ---------- | ------------ | --------------------------------------------- |
-| PostgreSQL | 5432         | Primary database                              |
-| Redis      | 6379         | Cache                                         |
-| RabbitMQ   | 5672 / 15672 | Message broker — UI at http://localhost:15672 |
+| Сервис      | Порт(ы)       | Назначение                                    |
+| ----------- | ------------- | --------------------------------------------- |
+| PostgreSQL  | 5432          | Основная база данных                          |
+| Redis       | 6379          | Кеш                                           |
+| RabbitMQ    | 5672 / 15672  | Брокер сообщений — UI на http://localhost:15672 |
+| MinIO       | 9000 / 9001   | S3-совместимое хранилище (порты API / Console) |
+| Meilisearch | 7700          | Поисковый движок                              |
 
 ---
 
-## 3. Running Dev Servers
+## 3. Запуск dev-серверов
 
 ```bash
-# Terminal 1 — API Gateway (port 3000)
+# Терминал 1 — API Gateway (порт 3000)
 npx nx serve @org/gateway
 
-# Terminal 2 — React SPA (port 4200)
+# Терминал 2 — React SPA (порт 4200)
 npx nx serve @org/messenger
 ```
 
-App is available at **http://localhost:4200**.
+Приложение доступно по адресу **http://localhost:4200**.
 
-> The Vite dev server proxies `/api` and `/socket.io` to the gateway on `localhost:3000` — only port 4200 needs to be exposed or tunneled.
+> Vite dev-сервер проксирует запросы `/api` и `/socket.io` на gateway по адресу `localhost:3000` — нужно открывать или туннелировать только порт 4200.
 
 ---
 
-## 4. Remote Testing (ngrok)
+## 4. Удалённое тестирование (ngrok)
 
-To test on other devices (phone, tablet, another machine) over the internet:
+Чтобы протестировать на других устройствах (телефон, планшет, другой компьютер) через интернет:
 
-**Prerequisites:** [ngrok](https://ngrok.com) installed and authenticated.
+**Необходимые компоненты:** установленный и аутентифицированный [ngrok](https://ngrok.com).
 
 ```bash
-ngrok config add-authtoken <your-token>
+ngrok config add-authtoken <ваш-токен>
 ```
 
-**Start the tunnel** (while dev servers are already running):
+**Запуск туннеля** (пока dev-серверы уже запущены):
 
 ```bash
 ./scripts/tunnel.sh
 ```
 
-ngrok will print a public HTTPS URL like `https://xxxx-xx-xx.ngrok-free.app` — open it on any device.
+ngrok выведет публичный HTTPS URL вида `https://xxxx-xx-xx.ngrok-free.app` — откройте его на любом устройстве.
 
-Vite's dev proxy handles all API and WebSocket traffic internally, so no extra configuration is needed.
+Vite dev-прокси обрабатывает весь API и WebSocket трафик внутри себя, поэтому дополнительная конфигурация не требуется.
 
-> The public URL changes on every ngrok restart (free tier). A paid plan gives a fixed domain.
+> Публичный URL меняется при каждом перезапуске ngrok (бесплатный тариф). Платный тариф предоставляет фиксированный домен.
