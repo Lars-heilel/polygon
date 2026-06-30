@@ -65,3 +65,5 @@ storybook-static.worktrees/
 .worktrees
 .superpowers
 stats.html
+# DB backups
+docker/**/backups/
