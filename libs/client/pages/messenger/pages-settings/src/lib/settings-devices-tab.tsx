@@ -36,7 +36,7 @@ export function SettingsDevicesTab() {
         const expired = isExpired(session);
         return (
           <div key={session.id} className="p-4 bg-surface-elevated rounded-lg flex items-center gap-3">
-            <DeviceIcon isMobile={session.device?.toLowerCase().includes('mobile') ?? false} />
+            <DeviceIcon isMobile={/(mobile|smartphone)/i.test(session.device ?? '')} />
             <div className="flex-1 min-w-0">
               {session.device && session.device !== 'Desktop' && (
                 <Text size="xs" weight="medium" className="truncate">
