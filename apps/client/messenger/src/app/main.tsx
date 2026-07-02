@@ -12,6 +12,14 @@ import './styles/global.css';
 configureAuthedFetch(() => useSessionStore.getState().setAuthenticated(false));
 initSocketMiddleware();
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
+      console.error('SW registration failed:', err);
+    });
+  });
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(

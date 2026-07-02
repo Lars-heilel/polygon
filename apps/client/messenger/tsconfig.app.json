@@ -92,6 +92,9 @@
       "path": "../../../libs/client/pages/messenger/pages-chats-layout/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/client/features/notifications/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/client/shared/tsconfig.lib.json"
     },
     {

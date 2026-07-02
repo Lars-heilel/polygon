@@ -8,4 +8,5 @@ export const CHAT_PATTERNS = {
   SEND_MESSAGE: 'chat.sendMessage',
   FORWARD_MESSAGES: 'chat.forwardMessages',
   CHECK_MEMBERSHIP: 'chat.checkMembership',
+  GET_MEMBERS: 'chat.getMembers',
 } as const;

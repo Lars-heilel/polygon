@@ -113,4 +113,9 @@ export class ChatService implements IChatService {
     const member = await this.repo.findChatMember(chatId, userId);
     return member !== null;
   }
+
+  async getMembers(chatId: string): Promise<{ userId: string }[]> {
+    const members = await this.repo.findMembersByChat(chatId);
+    return members.map((m) => ({ userId: m.userId }));
+  }
 }

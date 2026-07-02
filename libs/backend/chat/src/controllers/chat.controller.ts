@@ -81,4 +81,9 @@ export class ChatController implements IChatController {
   checkMembership(@Payload() payload: { chatId: string; userId: string }): Promise<boolean> {
     return this.chatService.checkMembership(payload.chatId, payload.userId);
   }
+
+  @MessagePattern(CHAT_PATTERNS.GET_MEMBERS)
+  getMembers(@Payload() payload: { chatId: string }): Promise<{ userId: string }[]> {
+    return this.chatService.getMembers(payload.chatId);
+  }
 }

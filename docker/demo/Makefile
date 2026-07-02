@@ -22,7 +22,12 @@ logs:
 
 backup:
 	@mkdir -p backups
-	docker exec polygon-postgres pg_dump -U polygon -d polygon -Fc > backups/polygon_$$(date +%Y%m%d_%H%M%S).dump
+	@ts=$$(date +%Y%m%d_%H%M%S); \
+	for db in polygon polygon_auth polygon_user polygon_chat polygon_notification polygon_media; do \
+		echo "Dumping $$db..."; \
+		docker exec polygon-demo-postgres pg_dump -U polygon -d $$db -Fc > backups/$${db}_$${ts}.dump; \
+	done; \
+	echo "Backup complete: backups/*_$${ts}.dump"
 
 clean:
 	rm -rf nginx/html/

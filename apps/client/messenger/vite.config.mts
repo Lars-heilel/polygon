@@ -75,7 +75,14 @@ export default defineConfig(({ mode }) => {
         transformMixedEsModules: true,
       },
       rollupOptions: {
+        input: {
+          main: resolve(import.meta.dirname, 'index.html'),
+          sw: resolve(import.meta.dirname, 'sw.ts'),
+        },
         output: {
+          entryFileNames: (chunkInfo) => {
+            return chunkInfo.name === 'sw' ? 'sw.js' : 'assets/[name]-[hash].js';
+          },
           manualChunks(id) {
             if (id.includes('react-virtuoso')) return 'chunk-virtuoso';
             if (id.includes('react-hook-form') || id.includes('@hookform/resolvers'))

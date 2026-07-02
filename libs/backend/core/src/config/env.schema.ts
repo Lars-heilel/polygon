@@ -33,6 +33,11 @@ export const envSchema = z.object({
   REDIS_PORT: z.coerce.number(),
   REDIS_PASSWORD: z.string(),
 
+  // VAPID (Web Push)
+  VAPID_PUBLIC_KEY: z.string().min(1),
+  VAPID_PRIVATE_KEY: z.string().min(1),
+  VAPID_SUBJECT: z.string().min(1),
+
   // SMTP
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number(),

@@ -54,6 +54,7 @@ export function useMessageNotification() {
 
   useEffect(() => {
     if (!chats?.length) return;
+    console.log('[MessageNotify] Joining rooms for', chats.length, 'chats');
     chats.forEach((chat) => socket.emit('chat:join', { chatId: chat.id }));
   }, [chats, activeChatId]);
 
@@ -61,19 +62,40 @@ export function useMessageNotification() {
     if (!lastMsg || lastMsg.id === processedIdRef.current) return;
     processedIdRef.current = lastMsg.id;
 
-    const activeChatId = useChatStore.getState().activeChatId;
+    const currentActiveChatId = useChatStore.getState().activeChatId;
     const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
 
-    if (lastMsg.chatId === activeChatId && tabVisible) return;
+    console.log('[MessageNotify] Received message id=' + lastMsg.id + ', chatId=' + lastMsg.chatId, {
+      activeChatId: currentActiveChatId,
+      tabVisible,
+      isMuted,
+      isMobile: isMobile(),
+      senderId: lastMsg.senderId,
+    });
+
+    if (lastMsg.chatId === currentActiveChatId && tabVisible) {
+      console.log('[MessageNotify] Suppressed: user is in active chat with tab focused');
+      return;
+    }
 
     const me = queryClient.getQueryData<{ id: string }>(['me']);
-    if (lastMsg.senderId === me?.id) return;
+    if (lastMsg.senderId === me?.id) {
+      console.log('[MessageNotify] Suppressed: message from self');
+      return;
+    }
 
-    if (isMuted) return;
+    if (isMuted) {
+      console.log('[MessageNotify] Suppressed: notifications are muted');
+      return;
+    }
 
+    console.log('[MessageNotify] Playing notification sound');
     playNotificationSound();
 
-    if (isMobile()) return;
+    if (isMobile()) {
+      console.log('[MessageNotify] Suppressed toast: is mobile (no in-app toast on phone)');
+      return;
+    }
 
     const allChats = queryClient.getQueryData<Chat[]>(['chats']) ?? [];
     const chat = allChats.find((c) => c.id === lastMsg.chatId);
@@ -85,6 +107,7 @@ export function useMessageNotification() {
         : lastMsg.text
       : '📎';
 
+    console.log('[MessageNotify] Showing toast from', senderName);
     toast(senderName, { description: preview, duration: 4000 });
   }, [lastMsg, isMuted]);
 }

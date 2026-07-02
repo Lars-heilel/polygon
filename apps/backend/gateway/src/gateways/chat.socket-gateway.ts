@@ -9,7 +9,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { CHAT_CLIENT_TOKEN, CHAT_PATTERNS, TokenService } from '@org/core';
+import { CHAT_CLIENT_TOKEN, CHAT_PATTERNS, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, TokenService, USER_CLIENT_TOKEN, USER_PATTERNS } from '@org/core';
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 
@@ -31,6 +31,8 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   constructor(
     private readonly tokenService: TokenService,
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
+    @Inject(NOTIFICATION_CLIENT_TOKEN) private readonly notificationClient: ClientProxy,
+    @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
   ) {}
 
   handleConnection(socket: Socket) {
@@ -80,6 +82,10 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         }
       }
     }
+  }
+
+  isUserOnline(userId: string): boolean {
+    return this.userSockets.has(userId) && (this.userSockets.get(userId)?.size ?? 0) > 0;
   }
 
   @SubscribeMessage('chat:join')
@@ -168,6 +174,63 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
     if (message) {
       this.broadcastMessage(payload.chatId, message);
+      await this.triggerPushForOfflineRecipients(payload.chatId, userId, message);
+    }
+  }
+
+  async triggerPushForOfflineRecipients(
+    chatId: string,
+    senderId: string,
+    message: { text?: string | null; [key: string]: unknown },
+  ) {
+    try {
+      const [members, sender] = await Promise.all([
+        lastValueFrom<{ userId: string }[]>(
+          this.chatClient.send(CHAT_PATTERNS.GET_MEMBERS, { chatId }),
+        ),
+        lastValueFrom<{ name: string; displayName: string | null }>(
+          this.userClient.send(USER_PATTERNS.GET_BY_ID, { id: senderId }),
+        ).catch(() => ({ name: 'Unknown', displayName: null })),
+      ]);
+
+      this.logger.log(`triggerPushForOfflineRecipients: chatId=${chatId}, totalMembers=${members.length}, sender=${sender.displayName ?? sender.name}`);
+
+      const senderName = sender.displayName ?? sender.name;
+
+      let skippedOnline = 0;
+      let sent = 0;
+
+      for (const member of members) {
+        if (member.userId === senderId) continue;
+
+        const online = this.isUserOnline(member.userId);
+        this.logger.debug({ userId: member.userId, online }, `triggerPushForOfflineRecipients: member check`);
+
+        if (online) {
+          skippedOnline++;
+          continue;
+        }
+
+        const preview = message.text
+          ? String(message.text).length > 100
+            ? String(message.text).slice(0, 100) + '…'
+            : String(message.text)
+          : '📎';
+
+        this.notificationClient.emit(NOTIFICATION_EVENTS.SEND_PUSH, {
+          userId: member.userId,
+          title: senderName,
+          body: preview,
+          tag: chatId,
+          eventType: 'MESSAGE',
+          data: { chatId, messageId: message['id'] as string },
+        });
+        sent++;
+      }
+
+      this.logger.log(`triggerPushForOfflineRecipients: chatId=${chatId}, skippedOnline=${skippedOnline}, pushSent=${sent}`);
+    } catch (err) {
+      this.logger.error(`Failed to trigger push for chat ${chatId}: ${err}`);
     }
   }
 

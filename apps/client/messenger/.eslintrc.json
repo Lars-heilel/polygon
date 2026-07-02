@@ -3,6 +3,22 @@
   "ignorePatterns": ["**/vite.config.*.timestamp*"],
   "overrides": [
     {
+      "files": ["sw.ts"],
+      "rules": {
+        "no-restricted-globals": "off"
+      },
+      "globals": {
+        "self": "readonly",
+        "Clients": "readonly",
+        "ServiceWorkerGlobalScope": "readonly",
+        "ExtendableEvent": "readonly",
+        "PushEvent": "readonly",
+        "NotificationEvent": "readonly",
+        "NotificationOptions": "readonly",
+        "console": "readonly"
+      }
+    },
+    {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
       "rules": {}
     },

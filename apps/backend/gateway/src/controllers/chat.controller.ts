@@ -141,6 +141,7 @@ export class ChatGatewayController {
     );
 
     this.socketGateway.broadcastMessage(chatId, message);
+    await this.socketGateway.triggerPushForOfflineRecipients(chatId, user.sub, message);
 
     return message;
   }

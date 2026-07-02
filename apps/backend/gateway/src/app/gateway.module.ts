@@ -16,6 +16,8 @@ import {
   JwtGuard,
   MEDIA_CLIENT_TOKEN,
   MEDIA_QUEUE,
+  NOTIFICATION_CLIENT_TOKEN,
+  NOTIFICATION_QUEUE,
   SESSION_CACHE_REPOSITORY_TOKEN,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
@@ -28,6 +30,7 @@ import { ChatGatewayController } from '../controllers/chat.controller';
 import { MediaGatewayController } from '../controllers/media.controller';
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
+import { NotificationGatewayController } from '../controllers/notification.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 const rmqClient = (name: string, queue: string) => ({
@@ -63,6 +66,7 @@ const rmqClient = (name: string, queue: string) => ({
       rmqClient(CHAT_CLIENT_TOKEN, CHAT_QUEUE),
       rmqClient(SEARCH_CLIENT_TOKEN, SEARCH_QUEUE),
       rmqClient(MEDIA_CLIENT_TOKEN, MEDIA_QUEUE),
+      rmqClient(NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_QUEUE),
     ]),
   ],
   controllers: [
@@ -71,6 +75,7 @@ const rmqClient = (name: string, queue: string) => ({
     UserGatewayController,
     ChatGatewayController,
     SearchGatewayController,
+    NotificationGatewayController,
   ],
   providers: [
     JwtGuard,
