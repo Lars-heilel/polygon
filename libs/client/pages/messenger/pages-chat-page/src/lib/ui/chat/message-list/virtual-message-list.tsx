@@ -85,7 +85,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToIndex({
       index: 'LAST',
-      behavior: 'auto',
+      behavior: 'smooth',
       align: 'end',
     });
   }, []);
@@ -117,7 +117,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
       setTimeout(() => {
         virtuosoRef.current?.scrollToIndex({
           index: 'LAST',
-          behavior: 'auto',
+          behavior: 'smooth',
           align: 'end',
         });
       }, 0);
@@ -139,11 +139,12 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
         ref={virtuosoRef}
         className="h-full"
         data={allMessages}
-        computeItemKey={(_, msg) => msg.id}
+        computeItemKey={(index, msg) => msg.id}
         firstItemIndex={firstItemIndex}
-        defaultItemHeight={72}
-        increaseViewportBy={{ top: 400, bottom: 400 }}
-        minOverscanItemCount={{ top: 10, bottom: 10 }}
+        defaultItemHeight={80}
+        increaseViewportBy={{ top: 600, bottom: 400 }}
+        overscan={200}
+        skipAnimationFrameInResizeObserver
         initialTopMostItemIndex={allMessages.length - 1}
         atBottomThreshold={24}
         followOutput={(bottom) => (bottom ? 'smooth' : false)}

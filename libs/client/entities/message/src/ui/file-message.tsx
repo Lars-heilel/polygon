@@ -20,36 +20,62 @@ function formatFileSize(bytes: number): string {
 function getFileIcon(fileName: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase();
   switch (ext) {
-    case 'pdf': return '📄';
+    case 'pdf':
+      return '📄';
     case 'doc':
-    case 'docx': return '📝';
+    case 'docx':
+      return '📝';
     case 'xls':
-    case 'xlsx': return '📊';
+    case 'xlsx':
+      return '📊';
     case 'zip':
     case 'rar':
-    case '7z': return '📦';
-    case 'txt': return '📃';
-    default: return '📎';
+    case '7z':
+      return '📦';
+    case 'txt':
+      return '📃';
+    default:
+      return '📎';
   }
 }
 
 export const FileMessage = memo(function FileMessage({ message, isMine }: FileMessageProps) {
   if (message.fileCategory === 'VOICE') {
-    return <VoiceMessage message={message} isMine={isMine} />;
+    return (
+      <VoiceMessage
+        message={message}
+        isMine={isMine}
+      />
+    );
   }
 
   if (message.fileCategory === 'CIRCLE') {
-    return <CircleMessage message={message} isMine={isMine} />;
+    return (
+      <CircleMessage
+        message={message}
+        isMine={isMine}
+      />
+    );
   }
 
   if (message.type === 'IMAGE' && message.fileMime?.startsWith('image/')) {
-    return <ImageMessage message={message} isMine={isMine} />;
+    return (
+      <ImageMessage
+        message={message}
+        isMine={isMine}
+      />
+    );
   }
 
-  return <FileAttachmentMessage message={message} isMine={isMine} />;
+  return (
+    <FileAttachmentMessage
+      message={message}
+      isMine={isMine}
+    />
+  );
 });
 
-const ImageMessage = memo(function ImageMessage({ message, isMine }: FileMessageProps) {
+const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,31 +92,33 @@ const ImageMessage = memo(function ImageMessage({ message, isMine }: FileMessage
       .catch(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [message.fileId]);
 
+  // Задаем строгий фиксированный размер миниатюры (примерно пропорция 16:9).
+  const thumbnailBoxClass =
+    'w-[280px] h-[160px] rounded-lg overflow-hidden block relative shrink-0';
+
   if (loading) {
-    return (
-      <div className="w-48 h-32 bg-surface-elevated rounded-lg animate-pulse" />
-    );
+    return <div className={`${thumbnailBoxClass} bg-surface-elevated/40 animate-pulse`} />;
   }
 
   if (!imageUrl) {
-    return (
-      <span className="text-xs text-text-muted">Failed to load image</span>
-    );
+    return <span className="text-xs text-text-muted">Failed to load image</span>;
   }
 
   return (
     <>
       <button
         onClick={() => setLightboxOpen(true)}
-        className="block max-w-[300px] rounded-lg overflow-hidden hover:opacity-95 transition-opacity"
+        className={`${thumbnailBoxClass} hover:opacity-90 transition-opacity focus:outline-none`}
       >
         <img
           src={imageUrl}
           alt={message.fileName ?? 'Image'}
-          className="w-full h-auto max-h-64 object-cover rounded-lg"
+          className="w-full h-full object-cover rounded-lg"
           loading="lazy"
         />
       </button>
@@ -114,8 +142,10 @@ const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessage
 
   useEffect(() => {
     authedFetch<{ url: string }>(`media/files/${message.fileId}/url`)
-      .then((res) => { setAudioUrl(res.url); })
-      .catch(() => {});
+      .then((res) => {
+        setAudioUrl(res.url);
+      })
+      .catch(() => undefined); // Избегаем пустой стрелочной функции
   }, [message.fileId]);
 
   const togglePlay = () => {
@@ -153,7 +183,12 @@ const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessage
   };
 
   return (
-    <div className={cn('flex items-center gap-2 px-2 py-1 rounded-lg min-w-[200px]', isMine ? 'bg-white/10' : 'bg-surface-elevated')}>
+    <div
+      className={cn(
+        'flex items-center gap-2 px-2 py-1 rounded-lg min-w-50',
+        isMine ? 'bg-white/10' : 'bg-surface-elevated',
+      )}
+    >
       <audio
         ref={audioRef}
         src={audioUrl ?? undefined}
@@ -167,37 +202,55 @@ const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessage
         className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors shrink-0"
       >
         {playing ? (
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-4 h-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
           </svg>
         ) : (
-          <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-4 h-4 ml-0.5"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
       </button>
       <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all', isMine ? 'bg-white/60' : 'bg-primary')}
+          className={cn(
+            'h-full rounded-full transition-all',
+            isMine ? 'bg-white/60' : 'bg-primary',
+          )}
           style={{ width: `${progress}%` }}
         />
       </div>
-      <span className={cn('text-xs tabular-nums shrink-0', isMine ? 'text-white/60' : 'text-text-muted')}>
+      <span
+        className={cn(
+          'text-xs tabular-nums shrink-0',
+          isMine ? 'text-white/60' : 'text-text-muted',
+        )}
+      >
         {duration > 0 ? formatTime(playing ? currentTime : duration) : '...'}
       </span>
     </div>
   );
 });
 
-const CircleMessage = memo(function CircleMessage({ message, isMine }: FileMessageProps) {
+const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     authedFetch<{ url: string }>(`media/files/${message.fileId}/url`)
-      .then((res) => { setVideoUrl(res.url); })
-      .catch(() => {});
+      .then((res) => {
+        setVideoUrl(res.url);
+      })
+      .catch(() => undefined); // Избегаем пустой стрелочной функции
   }, [message.fileId]);
 
   const toggleMute = () => {
@@ -225,13 +278,38 @@ const CircleMessage = memo(function CircleMessage({ message, isMine }: FileMessa
             className="absolute bottom-0 right-0 w-6 h-6 flex items-center justify-center rounded-full bg-black/50 text-white text-xs"
           >
             {muted ? (
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+                />
               </svg>
             ) : (
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                />
               </svg>
             )}
           </button>
@@ -255,8 +333,10 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
       .then((res) => {
         if (!cancelled) setFileUrl(res.url);
       })
-      .catch(() => {});
-    return () => { cancelled = true; };
+      .catch(() => undefined); // Избегаем пустой стрелочной функции
+    return () => {
+      cancelled = true;
+    };
   }, [message.fileId]);
 
   return (
@@ -280,8 +360,18 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
           {message.fileSize ? formatFileSize(message.fileSize) : ''}
         </p>
       </div>
-      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <svg
+        className="w-4 h-4 shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
       </svg>
     </a>
   );
