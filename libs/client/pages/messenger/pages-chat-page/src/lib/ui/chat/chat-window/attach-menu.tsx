@@ -26,7 +26,6 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
   const handleCategorySelect = useCallback((accept: string) => {
     currentAcceptRef.current = accept;
     setOpen(false);
-    // small delay to let the menu close before opening file picker
     requestAnimationFrame(() => {
       if (inputRef.current) {
         inputRef.current.accept = accept;
@@ -62,11 +61,14 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
         className={cn(
           'p-2 hover:bg-surface-elevated rounded-lg text-text-muted transition-colors relative',
           disabled && 'opacity-50 pointer-events-none',
-          open && 'bg-surface-elevated',
+          open && 'bg-surface-elevated text-text',
         )}
       >
         <svg
-          className="w-5 h-5"
+          className={cn(
+            'w-5 h-5 transition-transform duration-200',
+            open && 'rotate-45 text-primary',
+          )}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -86,15 +88,20 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute bottom-full left-0 mb-2 z-50 bg-surface-elevated border border-border rounded-xl shadow-2xl overflow-hidden min-w-40">
+
+          <div className="absolute bottom-full left-0 mb-2 z-50 p-1 bg-surface-elevated border border-border rounded-xl shadow-2xl overflow-hidden min-w-44 backdrop-blur-md animate-fade-up">
             {categories.map((cat) => (
               <button
                 key={cat.label}
                 onClick={() => handleCategorySelect(cat.accept)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface-elevated text-sm transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-sm transition-all group duration-150 text-left"
               >
-                <span className="text-base">{cat.icon}</span>
-                <span className="text-text">{cat.label}</span>
+                <span className="text-base transition-transform group-hover:scale-110 duration-150">
+                  {cat.icon}
+                </span>
+                <span className="text-text group-hover:text-primary font-medium transition-colors">
+                  {cat.label}
+                </span>
               </button>
             ))}
           </div>
