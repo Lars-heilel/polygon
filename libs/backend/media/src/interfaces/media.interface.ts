@@ -3,7 +3,11 @@ import type { File, FileCategory } from '@org/common';
 export interface IMediaRepository {
   findById(id: string): Promise<File | null>;
   findByUploaderId(uploaderId: string, category?: FileCategory): Promise<File[]>;
-  findByChatId(chatId: string, uploaderId?: string): Promise<File[]>;
+  findByChatId(
+    chatId: string,
+    options?: { uploaderId?: string; category?: FileCategory; take?: number; skip?: number },
+  ): Promise<File[]>;
+  countByChatId(chatId: string, options?: { category?: FileCategory }): Promise<number>;
   create(data: {
     bucket: string;
     key: string;
@@ -20,6 +24,15 @@ export interface IMediaRepository {
   delete(id: string): Promise<void>;
 }
 
+export interface FileContentResult {
+  stream: NodeJS.ReadableStream;
+  mimeType: string;
+  originalName: string;
+  bucket: string;
+  key: string;
+  size: number;
+}
+
 export interface FileResponse {
   id: string;
   url: string;
@@ -29,6 +42,8 @@ export interface FileResponse {
   mimeType: string;
   size: number;
   category: FileCategory;
+  uploaderId: string | null;
+  chatId: string | null;
   createdAt: Date;
 }
 
@@ -50,6 +65,17 @@ export interface UploadInput {
   chatId?: string;
 }
 
+export interface CreateFileInput {
+  bucket: string;
+  key: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  uploaderId: string;
+  category: FileCategory;
+}
+
 export interface IMediaService {
   initUpload(
     input: UploadInput,
@@ -58,7 +84,13 @@ export interface IMediaService {
   confirmUpload(fileId: string): Promise<FileResponse>;
   getById(id: string): Promise<FileResponse | null>;
   getFileUrl(id: string): Promise<FileUrlResult>;
+  getFileContent(id: string): Promise<FileContentResult>;
   delete(id: string): Promise<{ success: boolean }>;
   getHistory(uploaderId: string, category?: FileCategory): Promise<FileResponse[]>;
-  getChatHistory(chatId: string, uploaderId: string): Promise<FileResponse[]>;
+  getChatHistory(
+    chatId: string,
+    uploaderId: string,
+    options?: { category?: FileCategory; take?: number; skip?: number },
+  ): Promise<{ files: FileResponse[]; total: number }>;
+  create(input: CreateFileInput): Promise<FileResponse>;
 }

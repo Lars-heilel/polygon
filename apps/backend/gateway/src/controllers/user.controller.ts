@@ -57,6 +57,26 @@ export class UserGatewayController {
     return this.send(this.searchClient.send(SEARCH_PATTERNS.GET_USER_BY_ID, { id }));
   }
 
+  @Get(':id/profile')
+  @ApiOperation({ summary: 'Get user full public profile by ID' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'User full profile' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getProfile(@Param('id') id: string) {
+    const user = await this.send<{ id: string; email: string; name: string; displayName: string | null; avatarUrl: string | null; bio: string | null }>(
+      this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }),
+    );
+    return {
+      id: user.id,
+      name: user.name,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      email: user.email,
+    };
+  }
+
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Updated user profile' })

@@ -25,14 +25,33 @@ export class MediaPrismaRepository implements IMediaRepository {
     });
   }
 
-  async findByChatId(chatId: string, uploaderId?: string): Promise<File[]> {
+  async findByChatId(
+    chatId: string,
+    options?: { uploaderId?: string; category?: FileCategory; take?: number; skip?: number },
+  ): Promise<File[]> {
     return this.prisma.file.findMany({
       where: {
         chatId,
         status: 'READY',
-        ...(uploaderId ? { uploaderId } : {}),
+        ...(options?.uploaderId ? { uploaderId: options.uploaderId } : {}),
+        ...(options?.category ? { category: options.category } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      take: options?.take ?? 50,
+      skip: options?.skip ?? 0,
+    });
+  }
+
+  async countByChatId(
+    chatId: string,
+    options?: { category?: FileCategory },
+  ): Promise<number> {
+    return this.prisma.file.count({
+      where: {
+        chatId,
+        status: 'READY',
+        ...(options?.category ? { category: options.category } : {}),
+      },
     });
   }
 

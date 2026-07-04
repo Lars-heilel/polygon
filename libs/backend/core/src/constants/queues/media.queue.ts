@@ -6,7 +6,9 @@ export const MEDIA_PATTERNS = {
   CONFIRM_UPLOAD: 'media.confirmUpload',
   GET_BY_ID: 'media.getById',
   GET_FILE_URL: 'media.getFileUrl',
+  GET_FILE_CONTENT: 'media.getFileContent',
   DELETE: 'media.delete',
   GET_HISTORY: 'media.getHistory',
   GET_CHAT_HISTORY: 'media.getChatHistory',
+  CREATE_FILE: 'media.createFile',
 } as const;

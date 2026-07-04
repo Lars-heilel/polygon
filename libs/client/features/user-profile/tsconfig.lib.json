@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "references": [
+    {
+      "path": "../chat-media/tsconfig.lib.json"
+    },
+    {
+      "path": "../../entities/chat/tsconfig.lib.json"
+    },
+    {
+      "path": "../../entities/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/tsconfig.lib.json"
+    }
+  ]
+}

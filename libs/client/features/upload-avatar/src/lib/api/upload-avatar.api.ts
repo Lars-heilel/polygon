@@ -75,3 +75,21 @@ export async function fetchHistory(): Promise<AvatarItem[]> {
 export async function deleteFile(fileId: string): Promise<void> {
   await authedFetch<void>(`media/${fileId}`, { method: 'DELETE' });
 }
+
+export async function uploadAvatar(file: File): Promise<AvatarItem> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch('/api/media/upload-avatar', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.message ?? `Upload failed: ${res.status}`);
+  }
+
+  return res.json();
+}

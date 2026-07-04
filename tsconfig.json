@@ -146,6 +146,12 @@
     },
     {
       "path": "./libs/client/layouts/mobile"
+    },
+    {
+      "path": "./libs/client/features/user-profile"
+    },
+    {
+      "path": "./libs/client/features/chat-media"
     }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "name": "@org/features-user-profile",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@org/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": ["layer:features", "scope:client"]
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@org/shared": "*",
+    "@org/entities-user": "*",
+    "@org/entities-chat": "*",
+    "@org/features-chat-media": "*",
+    "react": "*",
+    "react-router": "*",
+    "@tanstack/react-query": "*"
+  }
+}

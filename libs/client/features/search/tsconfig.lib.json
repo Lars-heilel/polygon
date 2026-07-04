@@ -23,5 +23,18 @@
     "src/**/*.test.ts"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
-  "references": []
+  "references": [
+    {
+      "path": "../../entities/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../user-profile/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/tsconfig.lib.json"
+    },
+    {
+      "path": "../../entities/chat/tsconfig.lib.json"
+    }
+  ]
 }

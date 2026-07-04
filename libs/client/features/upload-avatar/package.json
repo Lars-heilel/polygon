@@ -19,6 +19,7 @@
   "sideEffects": false,
   "dependencies": {
     "@org/shared": "*",
+    "@org/entities-user": "*",
     "react": "*",
     "zustand": "*",
     "embla-carousel-react": "*"

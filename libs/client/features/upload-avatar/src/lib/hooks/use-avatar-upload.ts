@@ -1,34 +1,42 @@
 import { useCallback, useState } from 'react';
 import { queryClient } from '@org/shared';
-import { initUpload, uploadToMinio, confirmUpload, updateUserProfile } from '../api/upload-avatar.api';
+import { uploadAvatar } from '../api/upload-avatar.api';
 import { useAvatarStore } from '../model/avatar.store';
 
 export function useAvatarUpload() {
   const [progress, setProgress] = useState(0);
-  const [step, setStep] = useState<'idle' | 'init' | 'uploading' | 'confirming' | 'saving' | 'done' | 'error'>('idle');
+  const [step, setStep] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const addFile = useAvatarStore((s) => s.addFile);
 
   const upload = useCallback(
     async (file: File) => {
       setError(null);
-      setStep('init');
+      setStep('uploading');
       setProgress(0);
 
       try {
-        const { fileId, presignedUrl } = await initUpload(file.name, file.type, file.size);
+        setProgress(50);
+        const result = await uploadAvatar(file);
+        setProgress(100);
 
-        setStep('uploading');
-        await uploadToMinio(presignedUrl, file, (pct) => setProgress(pct));
-
-        setStep('confirming');
-        const confirmed = await confirmUpload(fileId);
-
-        setStep('saving');
-        await updateUserProfile({ avatarUrl: confirmed.url });
+        queryClient.setQueryData(['me'], (old: Record<string, unknown> | undefined) => {
+          if (!old) return old;
+          return { ...old, avatarUrl: result.url };
+        });
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
-        addFile({ ...confirmed, category: 'AVATAR' });
+        addFile({
+          id: result.id,
+          url: result.url,
+          bucket: result.bucket,
+          key: result.key,
+          originalName: result.originalName,
+          mimeType: result.mimeType,
+          size: result.size,
+          category: 'AVATAR',
+          createdAt: result.createdAt,
+        });
         setStep('done');
       } catch (e) {
         setStep('error');
@@ -44,5 +52,5 @@ export function useAvatarUpload() {
     setError(null);
   }, []);
 
-  return { upload, reset, progress, step, error, isUploading: step !== 'idle' && step !== 'done' && step !== 'error' };
+  return { upload, reset, progress, step, error, isUploading: step === 'uploading' };
 }

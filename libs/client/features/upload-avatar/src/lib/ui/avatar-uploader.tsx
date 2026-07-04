@@ -46,13 +46,6 @@ export function AvatarUploader({ onDone }: AvatarUploaderProps) {
         </div>
       )}
 
-      {(step === 'init' || step === 'confirming' || step === 'saving') && (
-        <p className="text-xs text-blue-400 animate-pulse">
-          {step === 'init' && 'Initializing…'}
-          {step === 'confirming' && 'Finalizing…'}
-          {step === 'saving' && 'Updating profile…'}
-        </p>
-      )}
 
       {step === 'done' && <p className="text-xs text-green-400">Avatar updated!</p>}
 

@@ -26,6 +26,9 @@ export class MinioStorageProvider implements IStorageProvider {
       await this.minioClient.makeBucket(name);
       this.logger.log(`Created bucket: ${name}`);
     }
+    if (name === this.avatarsBucket) {
+      await this.setBucketPublic(name);
+    }
   }
 
   async upload(bucket: string, key: string, file: Buffer, mimeType: string): Promise<UploadResult> {
@@ -61,11 +64,41 @@ export class MinioStorageProvider implements IStorageProvider {
     return this.replaceEndpoint(url);
   }
 
+  async getFileStream(bucket: string, key: string): Promise<NodeJS.ReadableStream> {
+    await this.ensureBucket(bucket);
+    return this.minioClient.getObject(bucket, key);
+  }
+
   getAvatarsBucket(): string {
     return this.avatarsBucket;
   }
 
   getChatBucketName(chatId: string): string {
     return `polygon-chat-${chatId}`;
+  }
+
+  getPublicUrl(bucket: string, key: string): string {
+    return `${this.publicEndpoint}/${bucket}/${key}`;
+  }
+
+  async putObject(bucket: string, key: string, buffer: Buffer, mimeType: string): Promise<void> {
+    await this.ensureBucket(bucket);
+    await this.minioClient.putObject(bucket, key, buffer, undefined, { 'Content-Type': mimeType });
+  }
+
+  async setBucketPublic(bucket: string): Promise<void> {
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: { AWS: ['*'] },
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${bucket}/*`],
+        },
+      ],
+    };
+    await this.minioClient.setBucketPolicy(bucket, JSON.stringify(policy));
+    this.logger.log(`Bucket ${bucket} set to public`);
   }
 }

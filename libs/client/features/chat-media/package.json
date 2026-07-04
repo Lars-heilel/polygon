@@ -1,0 +1,25 @@
+{
+  "name": "@org/features-chat-media",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@org/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": ["layer:features", "scope:client"]
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@org/shared": "*",
+    "@org/common": "*",
+    "@org/entities-chat": "*",
+    "react": "*",
+    "react-virtuoso": "*",
+    "@tanstack/react-query": "*"
+  }
+}

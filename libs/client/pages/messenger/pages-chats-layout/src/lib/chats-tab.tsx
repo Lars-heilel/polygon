@@ -1,11 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ChatItem } from '@org/entities-chat';
 import { useMeQuery, useSearchUsers } from '@org/entities-user';
 import { useChatList } from '@org/entities-chat';
 import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
-import { Input, Logo, Spinner, Text } from '@org/shared';
+import { UserProfileModal } from '@org/features-user-profile';
+import { Avatar, Input, Logo, Spinner, Text } from '@org/shared';
 
 interface ChatsTabProps {
   selectedChatId?: string | null;
@@ -24,10 +25,18 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
     searchQuery: userSearchQuery,
     setSearchQuery: setUserSearchQuery,
     isCreating,
-    onSelectUser,
   } = useCreateChat();
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   const isSearchActive = search.inputValue.trim().length >= 2;
+
+  const handleSelectUser = useCallback((userId: string) => {
+    setProfileUserId(userId);
+  }, []);
+
+  const handleCloseProfile = useCallback(() => {
+    setProfileUserId(null);
+  }, []);
 
   const handleSelectChat = useCallback(
     (chatId: string) => {
@@ -78,13 +87,13 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
               <button
                 key={user.id}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated text-left transition-colors"
-                onClick={() => onSelectUser(user.id)}
+                onClick={() => handleSelectUser(user.id)}
               >
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-medium text-primary">
-                    {(user.displayName ?? user.name).charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                <Avatar
+                  src={user.avatarUrl ?? undefined}
+                  name={user.displayName ?? user.name}
+                  size="sm"
+                />
                 <div className="min-w-0">
                   <Text size="sm" weight="medium" className="truncate">
                     {user.displayName ?? user.name}
@@ -121,9 +130,17 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
         users={users}
         searchQuery={userSearchQuery}
         onSearchChange={setUserSearchQuery}
-        onSelectUser={onSelectUser}
+        onSelectUser={handleSelectUser}
         isCreating={isCreating}
       />
+
+      {profileUserId && (
+        <UserProfileModal
+          userId={profileUserId}
+          onClose={handleCloseProfile}
+          showSendButton
+        />
+      )}
     </>
   );
 }

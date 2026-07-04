@@ -16,5 +16,8 @@
       "scope:client"
     ]
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@org/features-user-profile": "*"
+  }
 }

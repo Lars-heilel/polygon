@@ -47,6 +47,10 @@ export function AvatarCarousel({ isOpen, onClose }: AvatarCarouselProps) {
     setActionLoading(true);
     try {
       await updateUserProfile({ avatarUrl: currentFile.url });
+      queryClient.setQueryData(['me'], (old: Record<string, unknown> | undefined) => {
+        if (!old) return old;
+        return { ...old, avatarUrl: currentFile.url };
+      });
       queryClient.invalidateQueries({ queryKey: ['me'] });
     } catch {
       /* ignore */
@@ -60,6 +64,12 @@ export function AvatarCarousel({ isOpen, onClose }: AvatarCarouselProps) {
     setActionLoading(true);
     try {
       await deleteFile(currentFile.id);
+      queryClient.setQueryData(['me'], (old: Record<string, unknown> | undefined) => {
+        if (!old || old.avatarUrl !== currentFile.url) return old;
+        const previous = files.find((f) => f.url !== currentFile.url);
+        return { ...old, avatarUrl: previous?.url ?? null };
+      });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
       removeFile(currentFile.id);
     } catch {
       /* ignore */

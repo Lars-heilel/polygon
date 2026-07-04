@@ -11,6 +11,7 @@ import {
   CHAT_QUEUE,
   CoreConfigModule,
   CoreRedisModule,
+  CoreStorageModule,
   CoreTokenModule,
   type Env,
   JwtGuard,
@@ -50,6 +51,7 @@ const rmqClient = (name: string, queue: string) => ({
 @Module({
   imports: [
     CoreConfigModule,
+    CoreStorageModule,
     CoreTokenModule,
     CoreRedisModule,
     ThrottlerModule.forRoot({

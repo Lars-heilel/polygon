@@ -21,3 +21,13 @@
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+# Workspace Reference Documents
+
+Before implementing features, fixing bugs, or refactoring in this repository, you **MUST** read and understand the following documents to align with the project's architecture, design patterns, and monorepo quirks:
+
+- **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)**: Outlines the system architecture, including the API Gateway, microservices (Auth, User, Chat, Media, Notification, Search), database-per-service pattern, communication (RabbitMQ events, Socket.IO WebSockets), cookie-based session flow, and client-side FSD layers with sliced packages.
+- **[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)**: Details the coding conventions, directory layout, TypeScript & NestJS standards (e.g., repository pattern), module boundary rules, package hoisting in the monorepo, and common CLI commands.
+- **[`docs/MONOREPO_GOTCHAS.md`](docs/MONOREPO_GOTCHAS.md)**: Highlights critical, non-obvious gotchas such as Tailwind v4 `@source` setup, Vite Dev Proxy for APIs/WebSockets, environment variable parsing across services/Prisma, MSW mocks in multi-lib layouts, and Gateway supertest strategies.
+
+Always check these documents first to preserve established conventions!

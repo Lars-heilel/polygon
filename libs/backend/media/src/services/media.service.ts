@@ -6,6 +6,8 @@ import { MEDIA_PRISMA_REPOSITORY_TOKEN, STORAGE_PROVIDER_TOKEN } from '@org/core
 import type { IStorageProvider } from '@org/core';
 import type { FileCategory } from '@org/common';
 import type {
+  CreateFileInput,
+  FileContentResult,
   FileResponse,
   FileUrlResult,
   IMediaRepository,
@@ -80,6 +82,8 @@ export class MediaService implements IMediaService {
       mimeType: updated.mimeType,
       size: updated.size,
       category: updated.category as FileCategory,
+      uploaderId: updated.uploaderId,
+      chatId: updated.chatId,
       createdAt: updated.createdAt,
     };
   }
@@ -104,7 +108,25 @@ export class MediaService implements IMediaService {
       mimeType: file.mimeType,
       size: file.size,
       category: file.category as FileCategory,
+      uploaderId: file.uploaderId,
+      chatId: file.chatId,
       createdAt: file.createdAt,
+    };
+  }
+
+  async getFileContent(id: string): Promise<FileContentResult> {
+    const file = await this.repo.findById(id);
+    if (!file) {
+      throw new Error('File not found');
+    }
+    const stream = await this.storage.getFileStream(file.bucket, file.key);
+    return {
+      stream,
+      mimeType: file.mimeType,
+      originalName: file.originalName,
+      bucket: file.bucket,
+      key: file.key,
+      size: file.size,
     };
   }
 
@@ -127,22 +149,64 @@ export class MediaService implements IMediaService {
       mimeType: f.mimeType,
       size: f.size,
       category: f.category as FileCategory,
+      uploaderId: f.uploaderId,
+      chatId: f.chatId,
       createdAt: f.createdAt,
     }));
   }
 
-  async getChatHistory(chatId: string, uploaderId: string): Promise<FileResponse[]> {
-    const files = await this.repo.findByChatId(chatId, uploaderId);
-    return files.map((f) => ({
-      id: f.id,
-      url: f.url!,
-      bucket: f.bucket,
-      key: f.key,
-      originalName: f.originalName,
-      mimeType: f.mimeType,
-      size: f.size,
-      category: f.category as FileCategory,
-      createdAt: f.createdAt,
-    }));
+  async getChatHistory(
+    chatId: string,
+    uploaderId: string,
+    options?: { category?: FileCategory; take?: number; skip?: number },
+  ): Promise<{ files: FileResponse[]; total: number }> {
+    const [files, total] = await Promise.all([
+      this.repo.findByChatId(chatId, { uploaderId, category: options?.category, take: options?.take, skip: options?.skip }),
+      this.repo.countByChatId(chatId, { category: options?.category }),
+    ]);
+    return {
+      files: files.map((f) => ({
+        id: f.id,
+        url: f.url!,
+        bucket: f.bucket,
+        key: f.key,
+        originalName: f.originalName,
+        mimeType: f.mimeType,
+        size: f.size,
+        category: f.category as FileCategory,
+        uploaderId: f.uploaderId,
+        chatId: f.chatId,
+        createdAt: f.createdAt,
+      })),
+      total,
+    };
+  }
+
+  async create(input: CreateFileInput): Promise<FileResponse> {
+    const file = await this.repo.create({
+      bucket: input.bucket,
+      key: input.key,
+      originalName: input.originalName,
+      mimeType: input.mimeType,
+      size: input.size,
+      url: input.url,
+      uploaderId: input.uploaderId,
+      status: 'READY',
+      category: input.category,
+    });
+
+    return {
+      id: file.id,
+      url: file.url!,
+      bucket: file.bucket,
+      key: file.key,
+      originalName: file.originalName,
+      mimeType: file.mimeType,
+      size: file.size,
+      category: file.category as FileCategory,
+      uploaderId: file.uploaderId,
+      chatId: file.chatId,
+      createdAt: file.createdAt,
+    };
   }
 }

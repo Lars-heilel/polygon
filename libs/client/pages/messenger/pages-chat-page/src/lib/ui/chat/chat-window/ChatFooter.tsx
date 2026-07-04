@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 
 import { EmojiPicker } from '@org/features-emoji';
 import {
@@ -14,16 +14,18 @@ import {
 import { Textarea } from '@org/shared';
 import { cn } from '@org/shared';
 
+import { AttachMenu } from './attach-menu';
+
 interface ChatFooterProps {
   chatId: string;
 }
 
 export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) {
   const { messageText, setMessageText, handleSend, setFileAttachment } = useSendMessage(chatId);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{ name: string; size: number } | null>(null);
+  const [filePickerTrigger, setFilePickerTrigger] = useState<{ accept: string } | null>(null);
 
   const sendWithAttachment = useCallback(
     (attachment: FileAttachment) => {
@@ -55,10 +57,6 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
     },
     [setMessageText],
   );
-
-  const handleAttachClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,12 +98,17 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
         setUploadProgress(0);
       } finally {
         setUploading(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       }
     },
     [chatId, sendWithAttachment],
+  );
+
+  const handleAttachFile = useCallback(
+    (file: File) => {
+      // Create a synthetic change event
+      handleFileChange({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>);
+    },
+    [handleFileChange],
   );
 
   const handleRecordVoice = useCallback(() => {
@@ -129,14 +132,6 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
 
   return (
     <div className="px-4 py-3 border-t border-border sticky shrink-0 bg-background">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-
       {hasAttachment && (
         <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-surface-elevated rounded-lg text-sm">
           {uploading ? (
@@ -193,28 +188,10 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
       )}
 
       <div className="flex gap-3 items-end">
-        <button
-          onClick={handleAttachClick}
+        <AttachMenu
           disabled={uploading || isRecording}
-          className={cn(
-            'p-2 hover:bg-surface-elevated rounded-lg text-text-muted transition-colors',
-            (uploading || isRecording) && 'opacity-50 pointer-events-none',
-          )}
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-            />
-          </svg>
-        </button>
+          onFileSelected={handleAttachFile}
+        />
 
         <div className="flex-1">
           <Textarea

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -8,6 +8,7 @@ import {
   usePresenceStore,
 } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
+import { UserProfileModal } from '@org/features-user-profile';
 import { Avatar, Badge, Heading, Text, showComingSoonToast } from '@org/shared';
 
 import { ChatHeaderSkeleton } from './chat-header-skeleton';
@@ -16,7 +17,6 @@ export { ChatHeaderSkeleton };
 
 interface ChatHeaderProps {
   chatId: string;
-  onMenuClick?: () => void;
 }
 
 export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) {
@@ -25,6 +25,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
   const { data: me } = useMeSuspenseQuery();
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
   const typingUsers = useChatStore((s) => s.typingUsers);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   const chat = chats.find((c) => c.id === chatId);
   const displayName = chat ? getChatDisplayName(chat, me.id) : 'Chat';
@@ -46,44 +47,75 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <div className="relative ">
-        <Avatar
-          src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}
-          name={displayName}
-          size="md"
-        />
-        {isOnline && (
-          <Badge
-            variant="primary"
-            size="sm"
-            dot
-            className="absolute bottom-0 right-0 border-2 border-surface"
-          />
-        )}
-      </div>
-      <div className="flex-1">
-        <Heading
-          level={6}
-          as="h2"
+      {otherUserId && (
+        <button
+          onClick={() => setProfileUserId(otherUserId)}
+          className="flex items-center gap-3 flex-1 text-left"
         >
-          {displayName}
-        </Heading>
-        {isTyping ? (
-          <Text
-            size="xs"
-            className="text-text-muted"
-          >
-            печатает...
-          </Text>
-        ) : isOnline ? (
-          <Text
-            size="xs"
-            className="text-green-500"
-          >
-            Online
-          </Text>
-        ) : null}
-      </div>
+          <div className="relative ">
+            <Avatar
+              src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}
+              name={displayName}
+              size="md"
+            />
+            {isOnline && (
+              <Badge
+                variant="primary"
+                size="sm"
+                dot
+                className="absolute bottom-0 right-0 border-2 border-surface"
+              />
+            )}
+          </div>
+          <div className="flex-1">
+            <Heading level={6} as="h2">
+              {displayName}
+            </Heading>
+            {isTyping ? (
+              <Text size="xs" className="text-text-muted">
+                печатает...
+              </Text>
+            ) : isOnline ? (
+              <Text size="xs" className="text-green-500">
+                Online
+              </Text>
+            ) : null}
+          </div>
+        </button>
+      )}
+      {!otherUserId && (
+        <>
+          <div className="relative ">
+            <Avatar
+              src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}
+              name={displayName}
+              size="md"
+            />
+            {isOnline && (
+              <Badge
+                variant="primary"
+                size="sm"
+                dot
+                className="absolute bottom-0 right-0 border-2 border-surface"
+              />
+            )}
+          </div>
+          <div className="flex-1">
+            <Heading level={6} as="h2">
+              {displayName}
+            </Heading>
+            {isTyping ? (
+              <Text size="xs" className="text-text-muted">
+                печатает...
+              </Text>
+            ) : isOnline ? (
+              <Text size="xs" className="text-green-500">
+                Online
+              </Text>
+            ) : null}
+          </div>
+        </>
+      )}
       <button
         onClick={showComingSoonToast}
         aria-label="More options"
@@ -103,6 +135,14 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
           />
         </svg>
       </button>
+
+      {profileUserId && (
+        <UserProfileModal
+          userId={profileUserId}
+          chatId={chatId}
+          onClose={() => setProfileUserId(null)}
+        />
+      )}
     </header>
   );
 });
