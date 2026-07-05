@@ -4,7 +4,7 @@ import { InjectMinio } from 'nestjs-minio';
 import * as Minio from 'minio';
 
 import type { Env } from '../config/env.schema';
-import type { IStorageProvider, UploadResult } from './storage-provider.interface';
+import type { IStorageProvider, UploadResult, Range, FileStreamResult } from './storage-provider.interface';
 
 @Injectable()
 export class MinioStorageProvider implements IStorageProvider {
@@ -64,9 +64,25 @@ export class MinioStorageProvider implements IStorageProvider {
     return this.replaceEndpoint(url);
   }
 
-  async getFileStream(bucket: string, key: string): Promise<NodeJS.ReadableStream> {
+  async getFileStream(bucket: string, key: string, range?: Range): Promise<FileStreamResult> {
     await this.ensureBucket(bucket);
-    return this.minioClient.getObject(bucket, key);
+
+    const stat = await this.minioClient.statObject(bucket, key);
+
+    let stream: NodeJS.ReadableStream;
+
+    if (range) {
+      const length = range.end - range.start + 1;
+      stream = await this.minioClient.getPartialObject(bucket, key, range.start, length);
+    } else {
+      stream = await this.minioClient.getObject(bucket, key);
+    }
+
+    return {
+      stream,
+      size: stat.size,
+      contentType: stat.metaData?.['content-type'] ?? 'application/octet-stream',
+    };
   }
 
   getAvatarsBucket(): string {
