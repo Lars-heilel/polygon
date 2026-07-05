@@ -25,3 +25,5 @@ export const DatabaseSessionSchema = BaseSessionSchema.extend({
   userAgent: z.string().nullable(),
 });
 
+export type DatabaseSession = z.infer<typeof DatabaseSessionSchema>;
+

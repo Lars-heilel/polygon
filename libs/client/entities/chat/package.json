@@ -16,5 +16,12 @@
       "scope:client"
     ]
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@org/shared": "*",
+    "@org/common": "*",
+    "react": "*",
+    "react-virtuoso": "*",
+    "@tanstack/react-query": "*"
+  }
 }

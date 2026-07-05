@@ -1,7 +1,6 @@
-import { memo, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { useCreateDirectChatMutation } from '@org/entities-chat';
-import { MediaPanel } from '@org/features-chat-media';
+import { useCreateDirectChatMutation, MediaPanel } from '@org/entities-chat';
 import { Avatar, Heading, Text } from '@org/shared';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';

@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import * as geoip from 'geoip-lite';
 import DeviceDetector from 'node-device-detector';
 import type { DetectResult } from 'node-device-detector';
+import type { JSONObject } from 'node-device-detector/client-hints';
 import ClientHints from 'node-device-detector/client-hints';
 
 export interface ClientMetadata {
@@ -55,7 +56,7 @@ export function extractClientMetadata(req: Request): ClientMetadata {
     }
   }
 
-  const hints = clientHints.parse(req.headers);
+  const hints = clientHints.parse(req.headers as unknown as JSONObject, {});
   const result = detector.detect(userAgent, hints);
 
   const browserName = result.client.name || 'Unknown Browser';

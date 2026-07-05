@@ -25,3 +25,7 @@ export { usePresenceStore } from './presence.store';
 export { ChatItemSkeleton } from './ui/chat-item-skeleton';
 
 export { useChatList } from './use-chat-list';
+
+export { MediaPanel } from './ui/media-panel';
+export { useChatMediaInfiniteQuery, groupMediaByDate } from './api/use-chat-media';
+export type { MediaFile } from './api/chat-media.api';

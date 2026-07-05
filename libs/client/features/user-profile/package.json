@@ -18,7 +18,6 @@
     "@org/shared": "*",
     "@org/entities-user": "*",
     "@org/entities-chat": "*",
-    "@org/features-chat-media": "*",
     "react": "*",
     "react-router": "*",
     "@tanstack/react-query": "*"

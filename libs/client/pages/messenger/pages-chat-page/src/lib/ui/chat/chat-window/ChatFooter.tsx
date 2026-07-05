@@ -25,7 +25,6 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{ name: string; size: number } | null>(null);
-  const [filePickerTrigger, setFilePickerTrigger] = useState<{ accept: string } | null>(null);
 
   const sendWithAttachment = useCallback(
     (attachment: FileAttachment) => {

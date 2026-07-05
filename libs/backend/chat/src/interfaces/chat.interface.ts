@@ -77,6 +77,7 @@ export interface IChatService {
   ): Promise<Message>;
   forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
+  getMembers(chatId: string): Promise<{ userId: string }[]>;
 }
 
 export interface IChatController {
@@ -103,4 +104,5 @@ export interface IChatController {
   }): Promise<Message>;
   forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
+  getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
 }

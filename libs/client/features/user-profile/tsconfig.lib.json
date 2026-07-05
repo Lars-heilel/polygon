@@ -6,9 +6,6 @@
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../chat-media/tsconfig.lib.json"
-    },
-    {
       "path": "../../entities/chat/tsconfig.lib.json"
     },
     {
