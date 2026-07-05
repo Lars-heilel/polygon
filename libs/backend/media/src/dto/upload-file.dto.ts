@@ -17,7 +17,7 @@ export const FILE_SIZE_LIMITS: Record<string, number> = {
   AVATAR: 5 * 1024 * 1024,
   IMAGE: 20 * 1024 * 1024,
   AUDIO: 50 * 1024 * 1024,
-  VIDEO: 500 * 1024 * 1024,
+  VIDEO: 200 * 1024 * 1024,
   FILE: 100 * 1024 * 1024,
   VOICE: 10 * 1024 * 1024,
   CIRCLE: 30 * 1024 * 1024,

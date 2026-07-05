@@ -69,12 +69,11 @@ export class MediaService implements IMediaService {
       throw new Error('File not found');
     }
 
-    const url = await this.storage.getPresignedUrl(file.bucket, file.key);
     const updated = await this.repo.updateStatus(fileId, 'READY');
 
     return {
       id: updated.id,
-      url,
+      url: null,
       bucket: updated.bucket,
       key: updated.key,
       originalName: updated.originalName,
@@ -89,7 +88,7 @@ export class MediaService implements IMediaService {
 
   async getById(id: string): Promise<FileResponse | null> {
     const file = await this.repo.findById(id);
-    if (!file || !file.url) return null;
+    if (!file) return null;
     return {
       id: file.id,
       url: file.url,
