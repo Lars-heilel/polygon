@@ -87,11 +87,11 @@ export class MediaPrismaRepository implements IMediaRepository {
     }
   }
 
-  async updateStatus(id: string, status: 'PENDING' | 'READY', url: string): Promise<File> {
+  async updateStatus(id: string, status: 'PENDING' | 'READY'): Promise<File> {
     try {
       return await this.prisma.file.update({
         where: { id },
-        data: { status, url },
+        data: { status },
       });
     } catch (error) {
       handlePrismaError(error);
