@@ -34,11 +34,6 @@ export class MediaController {
     return this.mediaService.confirmUpload(fileId);
   }
 
-  @MessagePattern(MEDIA_PATTERNS.GET_FILE_URL)
-  async getFileUrl(@Payload() { id }: { id: string }) {
-    return this.mediaService.getFileUrl(id);
-  }
-
   @MessagePattern(MEDIA_PATTERNS.GET_FILE_CONTENT)
   async getFileContent(@Payload() { id }: { id: string }) {
     return this.mediaService.getFileContent(id);

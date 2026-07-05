@@ -9,7 +9,6 @@ import type {
   CreateFileInput,
   FileContentResult,
   FileResponse,
-  FileUrlResult,
   IMediaRepository,
   IMediaService,
   InitUploadResult,
@@ -71,11 +70,11 @@ export class MediaService implements IMediaService {
     }
 
     const url = await this.storage.getPresignedUrl(file.bucket, file.key);
-    const updated = await this.repo.updateStatus(fileId, 'READY', url);
+    const updated = await this.repo.updateStatus(fileId, 'READY');
 
     return {
       id: updated.id,
-      url: updated.url!,
+      url,
       bucket: updated.bucket,
       key: updated.key,
       originalName: updated.originalName,
@@ -86,14 +85,6 @@ export class MediaService implements IMediaService {
       chatId: updated.chatId,
       createdAt: updated.createdAt,
     };
-  }
-
-  async getFileUrl(id: string): Promise<FileUrlResult> {
-    const file = await this.repo.findById(id);
-    if (!file) throw new Error('File not found');
-    const expiresIn = 900;
-    const url = await this.storage.getPresignedUrl(file.bucket, file.key, expiresIn);
-    return { url, expiresIn };
   }
 
   async getById(id: string): Promise<FileResponse | null> {
@@ -119,9 +110,9 @@ export class MediaService implements IMediaService {
     if (!file) {
       throw new Error('File not found');
     }
-    const stream = await this.storage.getFileStream(file.bucket, file.key);
+    const result = await this.storage.getFileStream(file.bucket, file.key);
     return {
-      stream,
+      stream: result.stream,
       mimeType: file.mimeType,
       originalName: file.originalName,
       bucket: file.bucket,
@@ -142,7 +133,7 @@ export class MediaService implements IMediaService {
     const files = await this.repo.findByUploaderId(uploaderId, category);
     return files.map((f) => ({
       id: f.id,
-      url: f.url!,
+      url: f.url,
       bucket: f.bucket,
       key: f.key,
       originalName: f.originalName,
@@ -167,7 +158,7 @@ export class MediaService implements IMediaService {
     return {
       files: files.map((f) => ({
         id: f.id,
-        url: f.url!,
+        url: f.url,
         bucket: f.bucket,
         key: f.key,
         originalName: f.originalName,
@@ -197,7 +188,7 @@ export class MediaService implements IMediaService {
 
     return {
       id: file.id,
-      url: file.url!,
+      url: file.url,
       bucket: file.bucket,
       key: file.key,
       originalName: file.originalName,

@@ -5,7 +5,7 @@ import { fileCategorySchema } from '@org/common';
 
 export const fileResponseSchema = z.object({
   id: z.string().uuid(),
-  url: z.string(),
+  url: z.string().nullable(),
   bucket: z.string(),
   key: z.string(),
   originalName: z.string(),

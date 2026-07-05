@@ -20,7 +20,7 @@ export interface IMediaRepository {
     chatId?: string | null;
     category: FileCategory;
   }): Promise<File>;
-  updateStatus(id: string, status: 'PENDING' | 'READY', url: string): Promise<File>;
+  updateStatus(id: string, status: 'PENDING' | 'READY'): Promise<File>;
   delete(id: string): Promise<void>;
 }
 
@@ -35,7 +35,7 @@ export interface FileContentResult {
 
 export interface FileResponse {
   id: string;
-  url: string;
+  url: string | null;
   bucket: string;
   key: string;
   originalName: string;
@@ -83,7 +83,6 @@ export interface IMediaService {
   ): Promise<InitUploadResult>;
   confirmUpload(fileId: string): Promise<FileResponse>;
   getById(id: string): Promise<FileResponse | null>;
-  getFileUrl(id: string): Promise<FileUrlResult>;
   getFileContent(id: string): Promise<FileContentResult>;
   delete(id: string): Promise<{ success: boolean }>;
   getHistory(uploaderId: string, category?: FileCategory): Promise<FileResponse[]>;
