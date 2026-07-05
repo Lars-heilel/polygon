@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UploadedFile,
   UseGuards,
@@ -16,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import { lastValueFrom, Observable } from 'rxjs';
@@ -154,8 +155,8 @@ export class MediaGatewayController {
   }
 
   @Get('media/files/:fileId/content')
-  async getFileContent(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload, @Res() res: Response) {
-    const fileInfo = await this.send<{ id: string; chatId: string | null; uploaderId: string | null } | null>(
+  async getFileContent(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload, @Req() req: Request, @Res() res: Response) {
+    const fileInfo = await this.send<{ id: string; bucket: string; key: string; mimeType: string; size: number; chatId: string | null } | null>(
       this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id: fileId }),
     );
 
@@ -176,11 +177,47 @@ export class MediaGatewayController {
       }
     }
 
-    const { url } = await this.send<{ url: string }>(
-      this.mediaClient.send(MEDIA_PATTERNS.GET_FILE_URL, { id: fileId }),
-    );
+    const etag = `"${fileId}-${fileInfo.size}"`;
 
-    res.redirect(url);
+    if (req.headers['if-none-match'] === etag) {
+      res.status(HttpStatus.NOT_MODIFIED).end();
+      return;
+    }
+
+    const rangeHeader = req.headers['range'] as string | undefined;
+    let range: { start: number; end: number } | undefined;
+
+    if (rangeHeader) {
+      const parsed = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+      if (parsed) {
+        const start = parseInt(parsed[1], 10);
+        const end = parsed[2] ? parseInt(parsed[2], 10) : fileInfo.size - 1;
+        if (start < fileInfo.size && end < fileInfo.size && start <= end) {
+          range = { start, end };
+        }
+      }
+    }
+
+    const fileStream = await this.storage.getFileStream(fileInfo.bucket, fileInfo.key, range);
+
+    if (range) {
+      res.status(HttpStatus.PARTIAL_CONTENT);
+      res.setHeader('Content-Range', `bytes ${range.start}-${Math.min(range.end, fileStream.size - 1)}/${fileStream.size}`);
+      res.setHeader('Content-Length', Math.min(range.end, fileStream.size - 1) - range.start + 1);
+    } else {
+      res.setHeader('Content-Length', fileStream.size);
+    }
+
+    res.setHeader('Content-Type', fileStream.contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
+    res.setHeader('ETag', etag);
+
+    fileStream.stream.pipe(res).on('error', () => {
+      if (!res.headersSent) {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).end();
+      }
+    });
   }
 
   @Delete('media/:id')
