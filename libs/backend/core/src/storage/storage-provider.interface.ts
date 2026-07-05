@@ -4,12 +4,24 @@ export interface UploadResult {
   url: string;
 }
 
+export interface Range {
+  start: number;
+  end: number;
+}
+
+export interface FileStreamResult {
+  stream: NodeJS.ReadableStream;
+  size: number;
+  contentType: string;
+  etag?: string;
+}
+
 export interface IStorageProvider {
   upload(bucket: string, key: string, file: Buffer, mimeType: string): Promise<UploadResult>;
   delete(bucket: string, key: string): Promise<void>;
   getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<string>;
   getPresignedPutUrl(bucket: string, key: string, expiresIn?: number): Promise<string>;
-  getFileStream(bucket: string, key: string): Promise<NodeJS.ReadableStream>;
+  getFileStream(bucket: string, key: string, range?: Range): Promise<FileStreamResult>;
   ensureBucket(name: string): Promise<void>;
   getAvatarsBucket(): string;
   getChatBucketName(chatId: string): string;
