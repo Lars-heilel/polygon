@@ -151,7 +151,7 @@ export class MediaGatewayController {
       }
     }
 
-    return this.send(this.mediaClient.send(MEDIA_PATTERNS.GET_FILE_URL, { id: fileId }));
+    return { url: `/api/media/files/${fileId}/content`, expiresIn: null };
   }
 
   @Get('media/files/:fileId/content')
