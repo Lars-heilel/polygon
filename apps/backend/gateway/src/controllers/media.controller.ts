@@ -35,7 +35,7 @@ import {
   USER_PATTERNS,
 } from '@org/core';
 import type { IStorageProvider } from '@org/core';
-import type { FileCategory } from '@org/common';
+import type { FileCategory, LinkPreview } from '@org/common';
 
 @Controller()
 @UseGuards(JwtGuard)
@@ -152,6 +152,41 @@ export class MediaGatewayController {
     }
 
     return { url: `/api/media/files/${fileId}/content`, expiresIn: null };
+  }
+
+  @Get('media/link-preview')
+  async getLinkPreview(@Query('url') rawUrl?: string): Promise<LinkPreview> {
+    if (!rawUrl) {
+      throw new HttpException('url query param is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const targetUrl = normalizeExternalUrl(rawUrl);
+    const fallback = buildFallbackPreview(targetUrl);
+
+    try {
+      const response = await fetch(targetUrl.toString(), {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(5000),
+        headers: {
+          'user-agent': 'PolygonBot/1.0 (+https://polygon.local/link-preview)',
+          accept: 'text/html,application/xhtml+xml',
+        },
+      });
+
+      if (!response.ok) {
+        return fallback;
+      }
+
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.includes('text/html')) {
+        return fallback;
+      }
+
+      const html = await response.text();
+      return buildPreviewFromHtml(response.url, html);
+    } catch {
+      return fallback;
+    }
   }
 
   @Get('media/files/:fileId/content')
@@ -343,4 +378,161 @@ export class MediaGatewayController {
       throw new HttpException(error.message ?? 'Internal server error', error.statusCode ?? 500);
     }
   }
+}
+
+function normalizeExternalUrl(rawUrl: string): URL {
+  const normalizedInput = rawUrl.startsWith('www.') ? `https://${rawUrl}` : rawUrl;
+
+  let url: URL;
+  try {
+    url = new URL(normalizedInput);
+  } catch {
+    throw new HttpException('Invalid URL', HttpStatus.BAD_REQUEST);
+  }
+
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new HttpException('Only http/https URLs are allowed', HttpStatus.BAD_REQUEST);
+  }
+
+  const hostname = url.hostname.toLowerCase();
+  if (
+    hostname === 'localhost'
+    || hostname === '127.0.0.1'
+    || hostname === '::1'
+    || hostname.endsWith('.local')
+  ) {
+    throw new HttpException('Preview is not allowed for local addresses', HttpStatus.BAD_REQUEST);
+  }
+
+  return url;
+}
+
+function buildFallbackPreview(url: URL): LinkPreview {
+  const youtubePreview = getYouTubePreview(url);
+
+  return {
+    url: url.toString(),
+    canonicalUrl: null,
+    title: null,
+    description: null,
+    imageUrl: youtubePreview?.imageUrl ?? null,
+    siteName: youtubePreview?.siteName ?? null,
+    hostname: url.hostname,
+  };
+}
+
+function buildPreviewFromHtml(finalUrl: string, html: string): LinkPreview {
+  const url = new URL(finalUrl);
+  const youtubePreview = getYouTubePreview(url);
+  const title = readMetaContent(html, ['og:title', 'twitter:title']) ?? readTitle(html);
+  const description = readMetaContent(html, ['og:description', 'description', 'twitter:description']);
+  const image = youtubePreview?.imageUrl ?? readMetaContent(html, ['og:image', 'twitter:image', 'image']);
+  const canonicalUrl = readCanonicalUrl(html, url);
+  const siteName = youtubePreview?.siteName ?? readMetaContent(html, ['og:site_name']) ?? url.hostname;
+
+  return {
+    url: url.toString(),
+    canonicalUrl,
+    title: youtubePreview?.title ?? title,
+    description,
+    imageUrl: resolveUrl(image, url),
+    siteName,
+    hostname: url.hostname,
+  };
+}
+
+function readTitle(html: string): string | null {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return decodeHtml(match?.[1] ?? '').trim() || null;
+}
+
+function readMetaContent(html: string, names: string[]): string | null {
+  for (const name of names) {
+    const patterns = [
+      new RegExp(
+        `<meta[^>]+(?:property|name|itemprop)=["']${escapeRegExp(name)}["'][^>]+content=["']([\\s\\S]*?)["'][^>]*>`,
+        'i',
+      ),
+      new RegExp(
+        `<meta[^>]+content=["']([\\s\\S]*?)["'][^>]+(?:property|name|itemprop)=["']${escapeRegExp(name)}["'][^>]*>`,
+        'i',
+      ),
+    ];
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      const value = decodeHtml(match?.[1] ?? '').trim();
+      if (value) {
+        return value;
+      }
+    }
+  }
+
+  return null;
+}
+
+function readCanonicalUrl(html: string, baseUrl: URL): string | null {
+  const match = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i);
+  return resolveUrl(match?.[1] ?? null, baseUrl);
+}
+
+function resolveUrl(value: string | null, baseUrl: URL): string | null {
+  if (!value) return null;
+
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function decodeHtml(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getYouTubePreview(url: URL): { imageUrl: string; title: string | null; siteName: string } | null {
+  const hostname = url.hostname.toLowerCase();
+  const isYouTube = hostname.includes('youtube.com') || hostname === 'youtu.be' || hostname.endsWith('.youtu.be');
+
+  if (!isYouTube) {
+    return null;
+  }
+
+  const videoId = extractYouTubeVideoId(url);
+  if (!videoId) {
+    return null;
+  }
+
+  return {
+    imageUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    title: null,
+    siteName: 'YouTube',
+  };
+}
+
+function extractYouTubeVideoId(url: URL): string | null {
+  if (url.hostname === 'youtu.be' || url.hostname.endsWith('.youtu.be')) {
+    return url.pathname.split('/').filter(Boolean)[0] ?? null;
+  }
+
+  if (url.pathname === '/watch') {
+    return url.searchParams.get('v');
+  }
+
+  const parts = url.pathname.split('/').filter(Boolean);
+  const markerIndex = parts.findIndex((part) => ['embed', 'shorts', 'live'].includes(part));
+  if (markerIndex >= 0) {
+    return parts[markerIndex + 1] ?? null;
+  }
+
+  return null;
 }

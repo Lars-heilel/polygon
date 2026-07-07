@@ -1,9 +1,15 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
-import { FileMessage, MessageBubble, useInfiniteMessagesQuery } from '@org/entities-message';
+import {
+  FileMessage,
+  MessageBubble,
+  MessageContent,
+  useInfiniteMessagesQuery,
+} from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
+import type { AudioTrack } from '@org/shared';
 import { Text, socket } from '@org/shared';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 
@@ -14,9 +20,18 @@ interface ChatMessageRowProps {
   isMine: boolean;
   senderName?: string;
   senderAvatarUrl?: string;
+  audioQueue: AudioTrack[];
+  audioQueueIndexByMessageId: Map<string, number>;
 }
 
-const ChatMessageRow = memo(({ msg, isMine, senderName, senderAvatarUrl }: ChatMessageRowProps) => {
+const ChatMessageRow = memo(({
+  msg,
+  isMine,
+  senderName,
+  senderAvatarUrl,
+  audioQueue,
+  audioQueueIndexByMessageId,
+}: ChatMessageRowProps) => {
   return (
     <div className="px-4 pb-3">
       <MessageBubble
@@ -25,13 +40,18 @@ const ChatMessageRow = memo(({ msg, isMine, senderName, senderAvatarUrl }: ChatM
         senderName={senderName}
         senderAvatarUrl={senderAvatarUrl}
       >
-        {msg.type === 'TEXT' || (!msg.fileId && !msg.fileMime) ? (
-          <span className="whitespace-pre-wrap wrap-break-word">{msg.text ?? ''}</span>
+        {msg.fileId ? (
+          <div className="space-y-2">
+            <FileMessage
+              message={msg}
+              isMine={isMine}
+              audioQueue={audioQueue}
+              audioQueueIndex={audioQueueIndexByMessageId.get(msg.id)}
+            />
+            {msg.text ? <MessageContent text={msg.text} isMine={isMine} /> : null}
+          </div>
         ) : (
-          <FileMessage
-            message={msg}
-            isMine={isMine}
-          />
+          <MessageContent text={msg.text ?? ''} isMine={isMine} />
         )}
       </MessageBubble>
     </div>
@@ -73,6 +93,28 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
     const chat = chats.find((c) => c.id === chatId);
     return new Map((chat?.members ?? []).map((m) => [m.userId, m.profile]));
   }, [chats, chatId]);
+  const audioQueue = useMemo(
+    () => allMessages
+      .filter((msg) => msg.fileCategory === 'AUDIO' && msg.fileId)
+      .map((msg) => ({
+        id: `audio-${msg.id}`,
+        url: `/api/media/files/${msg.fileId}/content`,
+        title: msg.fileName ?? 'Audio',
+        subtitle: 'Audio file',
+      })),
+    [allMessages],
+  );
+  const audioQueueIndexByMessageId = useMemo(() => {
+    const map = new Map<string, number>();
+    let queueIndex = 0;
+    for (const msg of allMessages) {
+      if (msg.fileCategory === 'AUDIO' && msg.fileId) {
+        map.set(msg.id, queueIndex);
+        queueIndex += 1;
+      }
+    }
+    return map;
+  }, [allMessages]);
 
   const firstItemIndex = Math.max(0, INITIAL_OFFSET - allMessages.length);
 
@@ -161,6 +203,8 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
               isMine={msg.senderId === me.id}
               senderName={profile?.displayName ?? profile?.name ?? undefined}
               senderAvatarUrl={profile?.avatarUrl ?? undefined}
+              audioQueue={audioQueue}
+              audioQueueIndexByMessageId={audioQueueIndexByMessageId}
             />
           );
         }}

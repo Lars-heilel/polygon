@@ -2,7 +2,7 @@ import { type ReactNode, memo } from 'react';
 
 import { Avatar, formatTime } from '@org/shared';
 
-import type { Message } from '../message.api';
+import type { Message } from '../message.api.js';
 
 interface MessageBubbleProps {
   message: Message;

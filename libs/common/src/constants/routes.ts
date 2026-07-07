@@ -19,6 +19,7 @@ export const API_ROUTES = {
     direct: 'chats/direct',
     byId: (id: string) => `chats/${id}`,
     messages: (id: string) => `chats/${id}/messages`,
+    mediaMessages: (id: string) => `chats/${id}/media/messages`,
   },
   search: {
     users: 'search/users',
@@ -26,6 +27,7 @@ export const API_ROUTES = {
   media: {
     initUpload: 'media/init-upload',
     confirm: 'media/confirm',
+    linkPreview: 'media/link-preview',
     fileUrl: (fileId: string) => `media/files/${fileId}/url`,
     delete: (id: string) => `media/${id}`,
     history: 'media/history',

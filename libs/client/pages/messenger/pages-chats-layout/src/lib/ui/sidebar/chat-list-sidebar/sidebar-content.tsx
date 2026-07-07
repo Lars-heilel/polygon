@@ -5,7 +5,7 @@ import { ChatItem } from '@org/entities-chat';
 import { useMeQuery, useSearchUsers } from '@org/entities-user';
 
 import { UserProfileModal } from '@org/features-user-profile';
-import { Avatar, Badge, Input, Spinner, Text } from '@org/shared';
+import { Avatar, Badge, GlobalAudioPlayer, Input, Spinner, Text } from '@org/shared';
 
 import { useChatList } from '@org/entities-chat';
 import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
@@ -141,6 +141,8 @@ export function SidebarContent({
           </>
         )}
       </nav>
+
+      <GlobalAudioPlayer mode="embedded" />
 
       <div className="border-t border-border p-3 flex items-center gap-2 shrink-0">
         <button

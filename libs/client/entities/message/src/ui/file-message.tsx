@@ -1,13 +1,16 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 
-import { cn } from '@org/shared';
+import { cn, formatAudioTime, MediaViewer, type MediaViewerItem, useAudioTrack } from '@org/shared';
+import type { AudioTrack } from '@org/shared';
 
-import type { Message } from '../message.api';
-import { ImageLightbox } from './image-lightbox';
+import type { Message } from '../message.api.js';
+import { ImageLightbox } from './image-lightbox.js';
 
 interface FileMessageProps {
   message: Message;
   isMine: boolean;
+  audioQueue?: AudioTrack[];
+  audioQueueIndex?: number;
 }
 
 function formatFileSize(bytes: number): string {
@@ -38,7 +41,12 @@ function getFileIcon(fileName: string): string {
   }
 }
 
-export const FileMessage = memo(function FileMessage({ message, isMine }: FileMessageProps) {
+export const FileMessage = memo(function FileMessage({
+  message,
+  isMine,
+  audioQueue,
+  audioQueueIndex,
+}: FileMessageProps) {
   if (message.fileCategory === 'VOICE') {
     return (
       <VoiceMessage
@@ -80,6 +88,8 @@ export const FileMessage = memo(function FileMessage({ message, isMine }: FileMe
       <AudioFileMessage
         message={message}
         isMine={isMine}
+        audioQueue={audioQueue}
+        audioQueueIndex={audioQueueIndex}
       />
     );
   }
@@ -95,6 +105,13 @@ export const FileMessage = memo(function FileMessage({ message, isMine }: FileMe
 const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const imageUrl = `/api/media/files/${message.fileId}/content`;
+  const viewerItems: MediaViewerItem[] = [{
+    id: message.id,
+    type: 'image',
+    src: imageUrl,
+    alt: message.fileName ?? 'Image',
+    label: message.fileName ?? 'Image',
+  }];
 
   // w-full max-w-[280px] позволяет картинке сжиматься под размеры родителя, не выходя за его рамки
   const thumbnailBoxClass =
@@ -115,8 +132,8 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
       </button>
       {lightboxOpen && (
         <ImageLightbox
-          src={imageUrl}
-          alt={message.fileName ?? 'Image'}
+          items={viewerItems}
+          initialIndex={0}
           onClose={() => setLightboxOpen(false)}
         />
       )}
@@ -125,119 +142,13 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
 });
 
 const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessageProps) {
-  const [playing, setPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [waveReady, setWaveReady] = useState(false);
-  const waveformRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!waveformRef.current) return;
-    let mounted = true;
-
-    import('wavesurfer.js').then((WaveSurferMod) => {
-      if (!mounted || !waveformRef.current) return;
-      const ws = WaveSurferMod.default.create({
-        container: waveformRef.current,
-        waveColor: isMine ? 'rgba(255,255,255,0.3)' : 'rgba(99,102,241,0.3)',
-        progressColor: isMine ? 'rgba(255,255,255,0.7)' : 'rgb(99,102,241)',
-        barWidth: 2,
-        barGap: 1,
-        barRadius: 2,
-        height: 32,
-        cursorWidth: 0,
-        url: `/api/media/files/${message.fileId}/content`,
-        normalize: true,
-      });
-
-      ws.on('ready', () => {
-        if (!mounted) return;
-        setDuration(ws.getDuration());
-        setWaveReady(true);
-      });
-
-      ws.on('audioprocess', () => {
-        if (!mounted) return;
-        setCurrentTime(ws.getCurrentTime());
-      });
-
-      ws.on('play', () => {
-        if (mounted) setPlaying(true);
-      });
-      ws.on('pause', () => {
-        if (mounted) setPlaying(false);
-      });
-      ws.on('finish', () => {
-        if (mounted) {
-          setPlaying(false);
-          setCurrentTime(0);
-        }
-      });
-
-      wavesurferRef.current = ws;
-    });
-
-    return () => {
-      mounted = false;
-      wavesurferRef.current?.destroy();
-    };
-  }, [isMine, message.fileId]);
-
-  const togglePlay = () => {
-    wavesurferRef.current?.playPause();
-  };
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div
-      className={cn(
-        'flex items-center gap-2 px-2 py-1 rounded-lg min-w-50',
-        isMine ? 'bg-white/10' : 'bg-surface-elevated',
-      )}
-    >
-      <button
-        onClick={togglePlay}
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors shrink-0"
-      >
-        {playing ? (
-          <svg
-            className="w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-          </svg>
-        ) : (
-          <svg
-            className="w-4 h-4 ml-0.5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        )}
-      </button>
-      <div className="flex-1 min-w-0">
-        <div
-          ref={waveformRef}
-          className={cn('w-full', !waveReady && 'h-8 bg-surface-elevated/40 rounded animate-pulse')}
-        />
-      </div>
-      <span
-        className={cn(
-          'text-xs tabular-nums shrink-0',
-          isMine ? 'text-white/60' : 'text-text-muted',
-        )}
-      >
-        {waveReady ? formatTime(playing ? currentTime : duration) : '...'}
-      </span>
-    </div>
+    <WaveformAudioMessage
+      variant="voice"
+      title={message.fileName ?? 'Voice message'}
+      url={`/api/media/files/${message.fileId}/content`}
+      isMine={isMine}
+    />
   );
 });
 
@@ -246,6 +157,13 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(true);
   const videoUrl = `/api/media/files/${message.fileId}/content`;
+  const viewerItems: MediaViewerItem[] = [{
+    id: message.id,
+    type: 'video',
+    src: videoUrl,
+    alt: message.fileName ?? 'Circle video',
+    label: message.fileName ?? 'Circle video',
+  }];
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -315,37 +233,12 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
       </button>
 
       {lightboxOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setLightboxOpen(false)}
-        >
-          <button
-            onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-          <video
-            src={videoUrl}
-            className="max-w-[90vw] max-h-[90vh] rounded-lg"
-            controls
-            autoPlay
-            playsInline
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+        <MediaViewer
+          isOpen={lightboxOpen}
+          items={viewerItems}
+          initialIndex={0}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </>
   );
@@ -354,6 +247,13 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
 const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const videoUrl = `/api/media/files/${message.fileId}/content`;
+  const viewerItems: MediaViewerItem[] = [{
+    id: message.id,
+    type: 'video',
+    src: videoUrl,
+    alt: message.fileName ?? 'Video',
+    label: message.fileName ?? 'Video',
+  }];
 
   // Применяем ту же отзывчивую логику и для видео
   const thumbnailBoxClass =
@@ -384,145 +284,32 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
       </button>
 
       {lightboxOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setLightboxOpen(false)}
-        >
-          <button
-            onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-          <video
-            src={videoUrl}
-            className="max-w-[90vw] max-h-[90vh] rounded-lg"
-            controls
-            autoPlay
-            playsInline
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+        <MediaViewer
+          isOpen={lightboxOpen}
+          items={viewerItems}
+          initialIndex={0}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </>
   );
 });
 
-const AudioFileMessage = memo(function AudioFileMessage({ message, isMine }: FileMessageProps) {
-  const [playing, setPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrl = `/api/media/files/${message.fileId}/content`;
-
-  const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (playing) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setPlaying(!playing);
-  };
-
-  const onTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-
-  const onLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const onEnded = () => {
-    setPlaying(false);
-    setCurrentTime(0);
-  };
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
-
+const AudioFileMessage = memo(function AudioFileMessage({
+  message,
+  isMine,
+  audioQueue,
+  audioQueueIndex,
+}: FileMessageProps) {
   return (
-    <div
-      className={cn(
-        'flex items-center gap-2 px-2 py-1 rounded-lg min-w-50',
-        isMine ? 'bg-white/10' : 'bg-surface-elevated',
-      )}
-    >
-      <audio
-        ref={audioRef}
-        src={audioUrl}
-        onTimeUpdate={onTimeUpdate}
-        onLoadedMetadata={onLoadedMetadata}
-        onEnded={onEnded}
-        preload="metadata"
-      />
-      <button
-        onClick={togglePlay}
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors shrink-0"
-      >
-        {playing ? (
-          <svg
-            className="w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-          </svg>
-        ) : (
-          <svg
-            className="w-4 h-4 ml-0.5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        )}
-      </button>
-      <div className="flex-1 min-w-0">
-        <p className={cn('text-xs font-medium truncate', isMine ? 'text-white' : 'text-text')}>
-          {message.fileName ?? 'Audio'}
-        </p>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
-            <div
-              className={cn(
-                'h-full rounded-full transition-all',
-                isMine ? 'bg-white/60' : 'bg-primary',
-              )}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span
-            className={cn(
-              'text-xs tabular-nums shrink-0',
-              isMine ? 'text-white/60' : 'text-text-muted',
-            )}
-          >
-            {duration > 0 ? formatTime(playing ? currentTime : duration) : '...'}
-          </span>
-        </div>
-      </div>
-    </div>
+    <StreamingAudioMessage
+      trackId={`audio-${message.id}`}
+      title={message.fileName ?? 'Audio'}
+      url={`/api/media/files/${message.fileId}/content`}
+      isMine={isMine}
+      audioQueue={audioQueue}
+      audioQueueIndex={audioQueueIndex}
+    />
   );
 });
 
@@ -569,3 +356,251 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
     </a>
   );
 });
+
+interface WaveformAudioMessageProps {
+  variant: 'audio' | 'voice';
+  title: string;
+  url: string;
+  isMine: boolean;
+}
+
+const WaveformAudioMessage = memo(function WaveformAudioMessage({
+  variant,
+  title,
+  url,
+  isMine,
+}: WaveformAudioMessageProps) {
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [waveReady, setWaveReady] = useState(false);
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const wavesurferRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!waveformRef.current) return;
+
+    let mounted = true;
+
+    import('wavesurfer.js').then((WaveSurferMod) => {
+      if (!mounted || !waveformRef.current) return;
+
+      const ws = WaveSurferMod.default.create({
+        container: waveformRef.current,
+        waveColor: isMine ? 'rgba(255,255,255,0.28)' : 'rgba(59,130,246,0.22)',
+        progressColor: isMine ? 'rgba(255,255,255,0.82)' : 'rgb(59,130,246)',
+        barWidth: variant === 'voice' ? 2 : 3,
+        barGap: 1.5,
+        barRadius: 999,
+        height: variant === 'voice' ? 36 : 44,
+        cursorWidth: 0,
+        url,
+        normalize: true,
+      });
+
+      ws.on('ready', () => {
+        if (!mounted) return;
+        setDuration(ws.getDuration());
+        setCurrentTime(0);
+        setWaveReady(true);
+      });
+      ws.on('play', () => mounted && setPlaying(true));
+      ws.on('pause', () => mounted && setPlaying(false));
+      ws.on('finish', () => {
+        if (!mounted) return;
+        setPlaying(false);
+        setCurrentTime(0);
+      });
+      ws.on('audioprocess', () => {
+        if (!mounted) return;
+        setCurrentTime(ws.getCurrentTime());
+      });
+      ws.on('interaction', () => {
+        if (!mounted) return;
+        setCurrentTime(ws.getCurrentTime());
+      });
+
+      wavesurferRef.current = ws;
+    });
+
+    return () => {
+      mounted = false;
+      wavesurferRef.current?.destroy();
+      wavesurferRef.current = null;
+    };
+  }, [isMine, url, variant]);
+
+  const toggle = () => {
+    wavesurferRef.current?.playPause();
+  };
+
+  const seek = (nextTime: number) => {
+    if (!wavesurferRef.current || duration <= 0) return;
+    wavesurferRef.current.seekTo(nextTime / duration);
+    setCurrentTime(nextTime);
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex min-w-56 items-center gap-3 rounded-xl px-3 py-2',
+        isMine ? 'bg-white/10' : 'bg-surface-elevated',
+      )}
+    >
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30"
+      >
+        {playing ? (
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+          </svg>
+        ) : (
+          <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className={cn('truncate text-sm font-medium', isMine ? 'text-white' : 'text-text')}>
+          {title}
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <span className={cn('w-8 text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
+            {formatAudioTime(currentTime)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div
+              ref={waveformRef}
+              className={cn(
+                'w-full overflow-hidden rounded-lg',
+                !waveReady && 'h-10 animate-pulse bg-border/60',
+              )}
+            />
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
+              value={Math.min(currentTime, duration || 0)}
+              onChange={(event) => seek(Number(event.target.value))}
+              className="sr-only"
+            />
+          </div>
+          <span className={cn('w-8 text-right text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
+            {formatAudioTime(duration)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+interface StreamingAudioMessageProps {
+  trackId: string;
+  title: string;
+  url: string;
+  isMine: boolean;
+  audioQueue?: AudioTrack[];
+  audioQueueIndex?: number;
+}
+
+const StreamingAudioMessage = memo(function StreamingAudioMessage({
+  trackId,
+  title,
+  url,
+  isMine,
+  audioQueue,
+  audioQueueIndex,
+}: StreamingAudioMessageProps) {
+  const { isPlaying, currentTime, duration, toggle, seek } = useAudioTrack({
+    id: trackId,
+    title,
+    subtitle: 'Audio file',
+    url,
+  }, {
+    queue: audioQueue,
+    index: audioQueueIndex,
+  });
+  const bars = useMemo(() => createWaveformBars(trackId), [trackId]);
+  const progress = duration > 0 ? currentTime / duration : 0;
+
+  return (
+    <div
+      className={cn(
+        'flex min-w-56 items-center gap-3 rounded-xl px-3 py-2',
+        isMine ? 'bg-white/10' : 'bg-surface-elevated',
+      )}
+    >
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30"
+      >
+        {isPlaying ? (
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+          </svg>
+        ) : (
+          <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className={cn('truncate text-sm font-medium', isMine ? 'text-white' : 'text-text')}>
+          {title}
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <span className={cn('w-8 text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
+            {formatAudioTime(currentTime)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex h-10 items-end gap-1 overflow-hidden rounded-lg">
+              {bars.map((bar, index) => {
+                const barProgress = bars.length <= 1 ? 1 : index / (bars.length - 1);
+                const isActive = barProgress <= progress;
+
+                return (
+                  <button
+                    key={`${trackId}-${index}`}
+                    type="button"
+                    onClick={() => seek(duration * barProgress)}
+                    className={cn(
+                      'w-[4px] shrink-0 rounded-full transition-colors',
+                      isActive
+                        ? (isMine ? 'bg-white' : 'bg-primary')
+                        : (isMine ? 'bg-white/25' : 'bg-border'),
+                    )}
+                    style={{ height: `${bar}px` }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <span className={cn('w-8 text-right text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
+            {formatAudioTime(duration)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+function createWaveformBars(seed: string): number[] {
+  const bars: number[] = [];
+  let hash = 0;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(index)) | 0;
+  }
+
+  for (let index = 0; index < 36; index += 1) {
+    hash = (hash * 1664525 + 1013904223) | 0;
+    const normalized = Math.abs(hash % 100) / 100;
+    bars.push(12 + Math.round(normalized * 28));
+  }
+
+  return bars;
+}

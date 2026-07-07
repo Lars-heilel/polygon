@@ -1,4 +1,4 @@
-import { MessageBubbleSkeleton } from './message-bubble-skeleton';
+import { MessageBubbleSkeleton } from './message-bubble-skeleton.js';
 
 export function MessageListSkeleton() {
   return (

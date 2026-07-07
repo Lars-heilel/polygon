@@ -32,5 +32,20 @@ export { ThemeProvider, useTheme } from './lib/theme/theme';
 export { queryClient } from './lib/query/query-client';
 export { useDisclosure } from './lib/hooks/use-disclosure';
 export { useLogger } from './lib/hooks/use-logger';
+export {
+  formatAudioTime,
+  useAudioPlayerStore,
+  useAudioTrack,
+} from './lib/audio/audio-player.store';
+export type { AudioTrack } from './lib/audio/audio-player.store';
+export {
+  extractLinks,
+  normalizeLink,
+  splitTextByLinks,
+  useLinkPreviewQuery,
+} from './lib/link/link-preview';
 export { Logo } from './ui/logo/logo';
 export { showComingSoonToast } from './ui/coming-soon';
+export { GlobalAudioPlayer } from './ui/audio-player/global-audio-player';
+export { MediaViewer } from './ui/media-viewer/media-viewer';
+export type { MediaViewerItem } from './ui/media-viewer/media-viewer';
