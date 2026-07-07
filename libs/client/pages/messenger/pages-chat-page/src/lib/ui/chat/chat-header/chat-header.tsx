@@ -1,5 +1,4 @@
 import { memo, useState } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   getChatDisplayName,
@@ -9,7 +8,8 @@ import {
 } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import { UserProfileModal } from '@org/features-user-profile';
-import { Avatar, Badge, Heading, Text, showComingSoonToast } from '@org/shared';
+import { Avatar, Badge, Heading, Text } from '@org/shared';
+import { useNavigate } from 'react-router';
 
 import { ChatHeaderSkeleton } from './chat-header-skeleton';
 
@@ -30,9 +30,9 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
   const chat = chats.find((c) => c.id === chatId);
   const displayName = chat ? getChatDisplayName(chat, me.id) : 'Chat';
 
-  const otherMember = chat?.members.find((m) => m.userId !== me.id);
-  const otherUserId = otherMember?.userId;
-  const otherAvatarUrl = otherMember?.profile?.avatarUrl;
+  const otherMember = chat?.members.find((m) => m.userId !== me.id) ?? chat?.members[0];
+  const otherUserId = otherMember?.userId ?? me.id;
+  const otherAvatarUrl = otherMember?.profile?.avatarUrl ?? me.avatarUrl;
   const isOnline = otherUserId ? (onlineUsers[otherUserId] ?? false) : false;
   const isTyping = otherUserId ? (typingUsers[otherUserId] ?? false) : false;
 
@@ -43,8 +43,18 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
         aria-label="Back"
         className="p-2 hover:bg-surface-elevated rounded-lg transition-colors md:hidden"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
       </button>
       {otherUserId && (
@@ -68,15 +78,24 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             )}
           </div>
           <div className="flex-1">
-            <Heading level={6} as="h2">
+            <Heading
+              level={6}
+              as="h2"
+            >
               {displayName}
             </Heading>
             {isTyping ? (
-              <Text size="xs" className="text-text-muted">
+              <Text
+                size="xs"
+                className="text-text-muted"
+              >
                 печатает...
               </Text>
             ) : isOnline ? (
-              <Text size="xs" className="text-green-500">
+              <Text
+                size="xs"
+                className="text-green-500"
+              >
                 Online
               </Text>
             ) : null}
@@ -101,22 +120,31 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             )}
           </div>
           <div className="flex-1">
-            <Heading level={6} as="h2">
+            <Heading
+              level={6}
+              as="h2"
+            >
               {displayName}
             </Heading>
             {isTyping ? (
-              <Text size="xs" className="text-text-muted">
+              <Text
+                size="xs"
+                className="text-text-muted"
+              >
                 печатает...
               </Text>
             ) : isOnline ? (
-              <Text size="xs" className="text-green-500">
+              <Text
+                size="xs"
+                className="text-green-500"
+              >
                 Online
               </Text>
             ) : null}
           </div>
         </>
       )}
-      <button
+      {/* <button
         onClick={showComingSoonToast}
         aria-label="More options"
         className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted"
@@ -134,7 +162,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
           />
         </svg>
-      </button>
+      </button> */}
 
       {profileUserId && (
         <UserProfileModal

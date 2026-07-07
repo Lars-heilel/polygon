@@ -1,4 +1,13 @@
-import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage, MessageType } from '@org/common';
+import type {
+  Chat,
+  ChatMediaFilter,
+  ChatMember,
+  ChatRole,
+  ChatType,
+  Message,
+  MessagePage,
+  MessageType,
+} from '@org/common';
 
 export type ChatWithPreview = Chat & {
   members: ChatMember[];
@@ -46,6 +55,12 @@ export interface IChatRepository {
     cursor: string | undefined,
     take: number,
   ): Promise<MessagePage>;
+  findMediaMessagesByChat(
+    chatId: string,
+    cursor: string | undefined,
+    take: number,
+    filter: ChatMediaFilter,
+  ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
   createMessagesMany(data: CreateMessageData[]): Promise<number>;
@@ -59,6 +74,13 @@ export interface IChatService {
     userId: string,
     cursor: string | undefined,
     take: number,
+  ): Promise<MessagePage>;
+  getMediaMessages(
+    chatId: string,
+    userId: string,
+    cursor: string | undefined,
+    take: number,
+    filter: ChatMediaFilter,
   ): Promise<MessagePage>;
   sendMessage(
     chatId: string,
@@ -88,6 +110,13 @@ export interface IChatController {
     userId: string;
     cursor?: string;
     take?: number;
+  }): Promise<MessagePage>;
+  getMediaMessages(payload: {
+    chatId: string;
+    userId: string;
+    cursor?: string;
+    take?: number;
+    filter: ChatMediaFilter;
   }): Promise<MessagePage>;
   sendMessage(payload: {
     chatId: string;

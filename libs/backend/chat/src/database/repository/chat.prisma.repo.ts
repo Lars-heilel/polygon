@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CHAT_MEMBER_SELECT_FIELDS, CHAT_SELECT_FIELDS, MESSAGE_SELECT_FIELDS } from '@org/common';
-import type { Chat, ChatMember, ChatRole, ChatType, Message, MessagePage } from '@org/common';
+import type {
+  Chat,
+  ChatMediaFilter,
+  ChatMember,
+  ChatRole,
+  ChatType,
+  Message,
+  MessagePage,
+} from '@org/common';
 import { handlePrismaError } from '@org/core';
 
 import type { ChatWithPreview, CreateMessageData, IChatRepository } from '../../interfaces/chat.interface';
@@ -122,6 +130,26 @@ export class ChatPrismaRepository implements IChatRepository {
     };
   }
 
+  async findMediaMessagesByChat(
+    chatId: string,
+    cursor: string | undefined,
+    take: number,
+    filter: ChatMediaFilter,
+  ): Promise<MessagePage> {
+    const messages = await this.prisma.message.findMany({
+      where: buildMediaMessagesWhere(chatId, filter),
+      orderBy: { createdAt: 'desc' },
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take,
+      select: MESSAGE_SELECT_FIELDS,
+    });
+
+    return {
+      messages: messages.reverse(),
+      nextCursor: messages.length === take ? messages[0].id : null,
+    };
+  }
+
   async findMessageById(id: string): Promise<Message | null> {
     return this.prisma.message.findUnique({
       where: { id },
@@ -173,7 +201,46 @@ export class ChatPrismaRepository implements IChatRepository {
       });
       return result.count;
     } catch (error) {
-      handlePrismaError(error);
+      return handlePrismaError(error);
     }
   }
+}
+
+function buildMediaMessagesWhere(chatId: string, filter: ChatMediaFilter) {
+  const linkWhere = [
+    { text: { contains: 'http://', mode: 'insensitive' as const } },
+    { text: { contains: 'https://', mode: 'insensitive' as const } },
+    { text: { contains: 'www.', mode: 'insensitive' as const } },
+  ];
+
+  if (filter === 'LINK') {
+    return {
+      chatId,
+      OR: linkWhere,
+    };
+  }
+
+  if (filter === 'IMAGE') {
+    return { chatId, fileId: { not: null }, fileCategory: 'IMAGE' };
+  }
+
+  if (filter === 'VIDEO') {
+    return { chatId, fileId: { not: null }, fileCategory: { in: ['VIDEO', 'CIRCLE'] } };
+  }
+
+  if (filter === 'AUDIO') {
+    return { chatId, fileId: { not: null }, fileCategory: 'AUDIO' };
+  }
+
+  if (filter === 'FILE') {
+    return { chatId, fileId: { not: null }, fileCategory: 'FILE' };
+  }
+
+  return {
+    chatId,
+    OR: [
+      { fileId: { not: null }, fileCategory: { not: 'VOICE' } },
+      ...linkWhere,
+    ],
+  };
 }

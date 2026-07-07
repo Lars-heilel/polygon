@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 
-import { selectLastReceivedMessage, useChatStore, useGetChatsQuery } from '@org/entities-chat';
+import {
+  getMessagePreview,
+  selectLastReceivedMessage,
+  type ChatMessage,
+  useChatStore,
+  useGetChatsQuery,
+} from '@org/entities-chat';
 import type { Chat } from '@org/entities-chat';
 import { queryClient, socket, toast } from '@org/shared';
 
@@ -31,9 +37,49 @@ function isMobile() {
 export function useMessageNotification() {
   const isMuted = useNotificationStore((s) => s.isMuted);
   const lastMsg = useChatStore(selectLastReceivedMessage);
+  const incrementUnread = useChatStore((s) => s.incrementUnread);
   const processedIdRef = useRef<string | null>(null);
   const { data: chats } = useGetChatsQuery();
   const activeChatId = useChatStore((s) => s.activeChatId);
+
+  useEffect(() => {
+    const handleIncomingMessage = (msg: ChatMessage) => {
+      const me = queryClient.getQueryData<{ id: string }>(['me']);
+      if (msg.senderId === me?.id) return;
+
+      useChatStore.getState().setLastReceivedMessage(msg);
+
+      queryClient.setQueryData<Chat[]>(['chats'], (old) => {
+        if (!old) return old;
+
+        const next = old.map((chat) => (
+          chat.id === msg.chatId
+            ? { ...chat, lastMessage: msg }
+            : chat
+        ));
+
+        next.sort((left, right) => {
+          const leftTime = left.lastMessage?.createdAt ?? left.updatedAt;
+          const rightTime = right.lastMessage?.createdAt ?? right.updatedAt;
+          return new Date(rightTime).getTime() - new Date(leftTime).getTime();
+        });
+
+        return next;
+      });
+
+      const currentActiveChatId = useChatStore.getState().activeChatId;
+      const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
+
+      if (msg.chatId !== currentActiveChatId || !tabVisible) {
+        incrementUnread(msg.chatId);
+      }
+    };
+
+    socket.on('message:new', handleIncomingMessage);
+    return () => {
+      socket.off('message:new', handleIncomingMessage);
+    };
+  }, [incrementUnread]);
 
   useEffect(() => {
     const unlock = () => {
@@ -101,11 +147,7 @@ export function useMessageNotification() {
     const chat = allChats.find((c) => c.id === lastMsg.chatId);
     const sender = chat?.members.find((m) => m.userId === lastMsg.senderId)?.profile;
     const senderName = sender?.displayName ?? sender?.name ?? 'New message';
-    const preview = lastMsg.text
-      ? lastMsg.text.length > 60
-        ? lastMsg.text.slice(0, 60) + '…'
-        : lastMsg.text
-      : '📎';
+    const preview = getMessagePreview(lastMsg);
 
     console.log('[MessageNotify] Showing toast from', senderName);
     toast(senderName, { description: preview, duration: 4000 });

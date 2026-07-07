@@ -1,5 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { Chat, Message, MessagePage } from '@org/common';
+import type { Chat, ChatMediaFilter, Message, MessagePage } from '@org/common';
 import { CHAT_PRISMA_REPOSITORY_TOKEN } from '@org/core';
 
 import type {
@@ -17,9 +17,14 @@ export class ChatService implements IChatService {
     const existing = await this.repo.findDirectChatBetween(userId, targetUserId);
     if (existing) return existing;
 
-    const chat = await this.repo.createChat({ type: 'DIRECT' });
+    const chat = await this.repo.createChat({
+      type: 'DIRECT',
+      name: targetUserId === userId ? 'Личное' : null,
+    });
     await this.repo.addChatMember({ chatId: chat.id, userId });
-    await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
+    if (targetUserId !== userId) {
+      await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
+    }
 
     return this.repo.findChatById(chat.id).then((c) => {
       if (!c) throw new NotFoundException('Chat not found after creation');
@@ -28,6 +33,7 @@ export class ChatService implements IChatService {
   }
 
   async getChats(userId: string): Promise<ChatWithPreview[]> {
+    await this.createDirectChat(userId, userId);
     return this.repo.findChatsForUser(userId);
   }
 
@@ -40,6 +46,18 @@ export class ChatService implements IChatService {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
     return this.repo.findMessagesByChat(chatId, cursor, take);
+  }
+
+  async getMediaMessages(
+    chatId: string,
+    userId: string,
+    cursor: string | undefined,
+    take = 50,
+    filter: ChatMediaFilter,
+  ): Promise<MessagePage> {
+    const member = await this.repo.findChatMember(chatId, userId);
+    if (!member) throw new ForbiddenException('Not a member of this chat');
+    return this.repo.findMediaMessagesByChat(chatId, cursor, take, filter);
   }
 
   async sendMessage(

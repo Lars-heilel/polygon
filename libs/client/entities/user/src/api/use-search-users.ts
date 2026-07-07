@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { debounce } from 'es-toolkit';
 
+import { useMeQuery } from './user.api';
 import { useSearchUsersQuery } from './search.api';
 
 export function useSearchUsers() {
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const { data: me } = useMeQuery();
 
   const setDebounced = useMemo(() => debounce((v: string) => setDebouncedQuery(v), 300), []);
 
@@ -21,11 +23,15 @@ export function useSearchUsers() {
   }
 
   const query = useSearchUsersQuery(debouncedQuery);
+  const results = useMemo(
+    () => (query.data ?? []).filter((user) => user.id !== me?.id),
+    [me?.id, query.data],
+  );
 
   return {
     inputValue,
     onChange,
-    results: query.data ?? [],
+    results,
     isLoading: query.isLoading,
     isError: query.isError,
   };

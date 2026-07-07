@@ -12,6 +12,7 @@ interface ChatState {
   activeMessageId: string | null;
   typingUsers: Record<string, boolean>;
   lastReceivedMessage: Message | null;
+  unreadByChatId: Record<string, number>;
 }
 
 interface ChatActions {
@@ -19,6 +20,8 @@ interface ChatActions {
   setActiveMessage: (messageId: string | null) => void;
   setIsTyping: (userId: string, isTyping: boolean) => void;
   setLastReceivedMessage: (msg: Message) => void;
+  incrementUnread: (chatId: string) => void;
+  markChatRead: (chatId: string) => void;
   reset: () => void;
 }
 
@@ -30,6 +33,7 @@ export const useChatStore = create<ChatStore>()(
     activeMessageId: null,
     typingUsers: {},
     lastReceivedMessage: null,
+    unreadByChatId: {},
     setActiveChat: (chatId) => set({ activeChatId: chatId }),
     setActiveMessage: (messageId) => set({ activeMessageId: messageId }),
     setIsTyping: (userId, isTyping) =>
@@ -39,12 +43,32 @@ export const useChatStore = create<ChatStore>()(
           : Object.fromEntries(Object.entries(state.typingUsers).filter(([k]) => k !== userId)),
       })),
     setLastReceivedMessage: (msg) => set({ lastReceivedMessage: msg }),
+    incrementUnread: (chatId) =>
+      set((state) => ({
+        unreadByChatId: {
+          ...state.unreadByChatId,
+          [chatId]: (state.unreadByChatId[chatId] ?? 0) + 1,
+        },
+      })),
+    markChatRead: (chatId) =>
+      set((state) => {
+        if (!(chatId in state.unreadByChatId)) {
+          return state;
+        }
+
+        return {
+          unreadByChatId: Object.fromEntries(
+            Object.entries(state.unreadByChatId).filter(([key]) => key !== chatId),
+          ),
+        };
+      }),
     reset: () =>
       set({
         activeChatId: null,
         activeMessageId: null,
         typingUsers: {},
         lastReceivedMessage: null,
+        unreadByChatId: {},
       }),
   })),
 );
@@ -57,3 +81,4 @@ export const selectIsUserTyping = (userId: string) => (s: ChatStore) =>
 export const selectAnyTypingInChat = (members: string[]) => (s: ChatStore) =>
   members.some((id) => s.typingUsers[id]);
 export const selectLastReceivedMessage = (s: ChatStore) => s.lastReceivedMessage;
+export const selectUnreadByChatId = (s: ChatStore) => s.unreadByChatId;

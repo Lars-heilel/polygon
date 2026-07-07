@@ -211,11 +211,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
           continue;
         }
 
-        const preview = message.text
-          ? String(message.text).length > 100
-            ? String(message.text).slice(0, 100) + '…'
-            : String(message.text)
-          : '📎';
+        const preview = getMessagePreview(message);
 
         this.notificationClient.emit(NOTIFICATION_EVENTS.SEND_PUSH, {
           userId: member.userId,
@@ -254,5 +250,29 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
   broadcastMessage(chatId: string, message: unknown) {
     this.server.to(`chat:${chatId}`).emit('message:new', message);
+  }
+}
+
+function getMessagePreview(message: { text?: string | null; fileCategory?: unknown; fileName?: unknown }): string {
+  const text = typeof message.text === 'string' ? message.text.trim() : '';
+  if (text) {
+    return text.length > 100 ? `${text.slice(0, 100)}…` : text;
+  }
+
+  switch (message.fileCategory) {
+    case 'IMAGE':
+      return '🖼 Фото';
+    case 'VIDEO':
+      return '🎬 Видео';
+    case 'CIRCLE':
+      return '⭕ Видеосообщение';
+    case 'VOICE':
+      return '🎤 Голосовое сообщение';
+    case 'AUDIO':
+      return '🎵 Аудиофайл';
+    case 'FILE':
+      return `📄 ${typeof message.fileName === 'string' && message.fileName ? message.fileName : 'Файл'}`;
+    default:
+      return '📎 Вложение';
   }
 }

@@ -42,6 +42,26 @@ export class ChatController implements IChatController {
     );
   }
 
+  @MessagePattern(CHAT_PATTERNS.GET_MEDIA_MESSAGES)
+  getMediaMessages(
+    @Payload()
+    payload: {
+      chatId: string;
+      userId: string;
+      cursor?: string;
+      take?: number;
+      filter: 'ALL' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'FILE' | 'LINK';
+    },
+  ): Promise<MessagePage> {
+    return this.chatService.getMediaMessages(
+      payload.chatId,
+      payload.userId,
+      payload.cursor,
+      payload.take ?? 50,
+      payload.filter,
+    );
+  }
+
   @MessagePattern(CHAT_PATTERNS.SEND_MESSAGE)
   sendMessage(
     @Payload()

@@ -4,7 +4,7 @@ import type { Message as MessageBase } from '@org/common';
 import { authedFetch } from '@org/shared';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
-type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
+export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
   updatedAt: string;
 };
@@ -26,7 +26,7 @@ export type Chat = Omit<ChatBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
   updatedAt: string;
   members: ChatMember[];
-  messages: Message[];
+  lastMessage: Message | null;
 };
 
 export const chatApi = {

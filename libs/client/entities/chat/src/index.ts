@@ -1,4 +1,4 @@
-export type { Chat, ChatMember, MemberProfile } from './chat.api';
+export type { Chat, ChatMember, MemberProfile, Message as ChatMessage } from './chat.api';
 export {
   chatApi,
   useGetChatsQuery,
@@ -13,12 +13,14 @@ export {
   selectIsUserTyping,
   selectAnyTypingInChat,
   selectLastReceivedMessage,
+  selectUnreadByChatId,
 } from './chat.store';
 
 export type { ChatItemProps } from './ui/chat-item';
 export { ChatItem } from './ui/chat-item';
 
 export { getChatDisplayName } from './chat.utils';
+export { getMessagePreview } from './chat-preview';
 
 export { usePresenceStore } from './presence.store';
 
