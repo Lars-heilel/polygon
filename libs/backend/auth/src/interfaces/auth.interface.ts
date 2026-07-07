@@ -3,6 +3,7 @@ import type {
   Credentials,
   CredentialsPayload,
   OAuthLoginDto,
+  Role,
   TokenPair,
 } from '@org/common';
 import type { ClientMetadata } from '@org/core';
@@ -57,6 +58,7 @@ export interface IVerificationService {
 
 export interface IAuthService {
   register(dto: RegisterDto): Promise<void>;
+  getRoleById(id: string): Promise<Role>;
   validateCredentials(email: string, password: string): Promise<CredentialsPayload>;
   login(id: string, clientMetadata?: ClientMetadata): Promise<TokenPair>;
   logout(refreshToken: string): Promise<void>;
@@ -73,6 +75,7 @@ export interface IAuthService {
 
 export interface IAuthController {
   register(dto: RegisterDto): Promise<null>;
+  getRoleById(payload: { id: string }): Promise<Role>;
   validateCredentials(payload: { email: string; password: string }): Promise<CredentialsPayload>;
   login(payload: { id: string; clientMetadata?: ClientMetadata }): Promise<TokenPair>;
   logout(payload: { refreshToken: string }): Promise<null>;

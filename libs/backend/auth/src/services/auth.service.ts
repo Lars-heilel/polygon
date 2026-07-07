@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
-import type { CredentialsPayload, OAuthLoginDto, TokenPair, UserPublic } from '@org/common';
+import type { CredentialsPayload, OAuthLoginDto, Role, TokenPair, UserPublic } from '@org/common';
 import {
   AUTH_CACHE_REPOSITORY_TOKEN,
   AUTH_PRISMA_REPOSITORY_TOKEN,
@@ -100,6 +100,16 @@ export class AuthService implements IAuthService {
       );
     }
     this.logger.log(`Service: Registration completed successfully for: ${dto.email}`);
+  }
+
+  async getRoleById(id: string): Promise<Role> {
+    const credentials = await this.repo.findById(id);
+    if (!credentials) {
+      this.logger.warn(`Service: Role lookup failed. User ID not found: ${id}`);
+      throw new NotFoundException('User not found');
+    }
+
+    return credentials.role as Role;
   }
 
   async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {

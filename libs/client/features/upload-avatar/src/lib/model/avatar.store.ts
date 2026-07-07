@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AvatarItem } from './types';
+import type { AvatarItem } from './types.js';
 
 interface AvatarStore {
   files: AvatarItem[];

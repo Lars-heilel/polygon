@@ -19,7 +19,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateDirectChatDto, SendMessageDto } from '@org/chat';
-import type { ForwardMessageInput, UserPublic } from '@org/common';
+import type { ForwardMessageInput, MessagePage, UserPublic } from '@org/common';
+import { chatMediaQuerySchema } from '@org/common';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
@@ -29,6 +30,7 @@ import {
   USER_CLIENT_TOKEN,
   USER_PATTERNS,
 } from '@org/core';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
 
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
@@ -109,6 +111,29 @@ export class ChatGatewayController {
         userId: user.sub,
         cursor,
         take: take ? parseInt(take, 10) : undefined,
+      }),
+    );
+  }
+
+  @Get(':id/media/messages')
+  @ApiOperation({ summary: 'Get media and link messages for a chat' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiQuery({ name: 'filter', required: false, description: 'ALL | IMAGE | VIDEO | AUDIO | FILE | LINK' })
+  @ApiQuery({ name: 'cursor', required: false, description: 'ID of the last fetched message' })
+  @ApiQuery({ name: 'take', required: false, description: 'Number of messages to return (default 50)' })
+  getMediaMessages(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') chatId: string,
+    @Query(new ZodValidationPipe()) query: unknown,
+  ): Promise<MessagePage> {
+    const parsed = chatMediaQuerySchema.parse(query);
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.GET_MEDIA_MESSAGES, {
+        chatId,
+        userId: user.sub,
+        cursor: parsed.cursor,
+        take: parsed.take,
+        filter: parsed.filter,
       }),
     );
   }

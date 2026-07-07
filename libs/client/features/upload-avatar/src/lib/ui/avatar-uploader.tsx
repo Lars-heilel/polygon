@@ -1,5 +1,5 @@
 import { useRef, type ChangeEvent } from 'react';
-import { useAvatarUpload } from '../hooks/use-avatar-upload';
+import { useAvatarUpload } from '../hooks/use-avatar-upload.js';
 
 interface AvatarUploaderProps {
   onDone?: () => void;

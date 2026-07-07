@@ -15,11 +15,15 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@org/common": "*",
     "@org/shared": "*",
     "@org/entities-user": "*",
     "@org/entities-chat": "*",
+    "@org/entities-message": "*",
+    "@org/features-upload-avatar": "*",
     "react": "*",
     "react-router": "*",
-    "@tanstack/react-query": "*"
+    "@tanstack/react-query": "*",
+    "react-virtuoso": "*"
   }
 }

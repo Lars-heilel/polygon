@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { queryClient } from '@org/shared';
-import { uploadAvatar } from '../api/upload-avatar.api';
-import { useAvatarStore } from '../model/avatar.store';
+import { uploadAvatar } from '../api/upload-avatar.api.js';
+import { useAvatarStore } from '../model/avatar.store.js';
 
 export function useAvatarUpload() {
   const [progress, setProgress] = useState(0);
@@ -38,7 +38,7 @@ export function useAvatarUpload() {
           createdAt: result.createdAt,
         });
         setStep('done');
-      } catch (e) {
+      } catch (e: unknown) {
         setStep('error');
         setError(e instanceof Error ? e.message : 'Upload failed');
       }

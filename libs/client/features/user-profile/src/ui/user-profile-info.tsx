@@ -1,5 +1,5 @@
 import { useUserProfileQuery } from '../api/use-user-profile.js';
-import { Avatar, Heading, Text } from '@org/shared';
+import { Avatar, Badge, Heading, Text } from '@org/shared';
 
 interface UserProfileInfoProps {
   userId: string;
@@ -30,8 +30,17 @@ export function UserProfileInfo({ userId }: UserProfileInfoProps) {
     <div className="flex flex-col items-center gap-3 py-6 px-4">
       <Avatar src={profile.avatarUrl ?? undefined} name={profile.displayName ?? profile.name} size="xl" />
       <div className="text-center">
-        <Heading level={5} as="h3">
+        <Heading level={5} as="h3" className="flex items-center justify-center gap-2">
           {profile.displayName ?? profile.name}
+          {profile.role === 'CREATOR' && (
+            <Badge
+              variant="primary"
+              size="md"
+              className="bg-gradient-to-r from-yellow-500 to-orange-500 border-0"
+            >
+              Creator
+            </Badge>
+          )}
         </Heading>
         <Text size="xs" className="text-text-muted">
           @{profile.name}

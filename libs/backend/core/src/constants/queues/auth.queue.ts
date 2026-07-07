@@ -3,6 +3,7 @@ export const AUTH_CLIENT_TOKEN = 'AUTH_CLIENT';
 
 export const AUTH_PATTERNS = {
   REGISTER: 'auth.register',
+  GET_ROLE_BY_ID: 'auth.get-role-by-id',
   VALIDATE_CREDENTIALS: 'auth.validate-credentials',
   LOGIN: 'auth.login',
   LOGOUT: 'auth.logout',

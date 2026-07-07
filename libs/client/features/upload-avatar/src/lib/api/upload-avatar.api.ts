@@ -1,5 +1,5 @@
 import { authedFetch } from '@org/shared';
-import type { AvatarItem } from '../model/types';
+import type { AvatarItem } from '../model/types.js';
 
 interface InitUploadResponse {
   fileId: string;
@@ -70,6 +70,10 @@ export async function updateUserProfile(data: { displayName?: string; bio?: stri
 
 export async function fetchHistory(): Promise<AvatarItem[]> {
   return authedFetch<AvatarItem[]>('media/history?category=AVATAR');
+}
+
+export async function fetchUserAvatarHistory(userId: string): Promise<AvatarItem[]> {
+  return authedFetch<AvatarItem[]>(`users/${userId}/avatars`);
 }
 
 export async function deleteFile(fileId: string): Promise<void> {

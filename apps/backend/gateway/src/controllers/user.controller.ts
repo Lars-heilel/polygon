@@ -12,6 +12,8 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  AUTH_CLIENT_TOKEN,
+  AUTH_PATTERNS,
   CurrentUser,
   JwtGuard,
   type JwtPayload,
@@ -32,6 +34,7 @@ export class UserGatewayController {
   private readonly logger = new Logger(UserGatewayController.name);
 
   constructor(
+    @Inject(AUTH_CLIENT_TOKEN) private readonly authClient: ClientProxy,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
   ) {}
@@ -67,6 +70,9 @@ export class UserGatewayController {
     const user = await this.send<{ id: string; email: string; name: string; displayName: string | null; avatarUrl: string | null; bio: string | null }>(
       this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }),
     );
+    const role = await this.send<'CREATOR' | 'ADMIN' | 'MODERATOR' | 'USER'>(
+      this.authClient.send(AUTH_PATTERNS.GET_ROLE_BY_ID, { id }),
+    );
     return {
       id: user.id,
       name: user.name,
@@ -74,6 +80,7 @@ export class UserGatewayController {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       email: user.email,
+      role,
     };
   }
 

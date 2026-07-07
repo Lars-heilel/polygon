@@ -1,6 +1,6 @@
 import { Controller, Inject, Logger, UsePipes } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { type CredentialsPayload, type OAuthLoginDto, type TokenPair } from '@org/common';
+import { type CredentialsPayload, type OAuthLoginDto, type Role, type TokenPair } from '@org/common';
 import type { ClientMetadata } from '@org/core';
 import { AUTH_PATTERNS, AUTH_SERVICE_TOKEN } from '@org/core';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -24,6 +24,12 @@ export class AuthController implements IAuthController {
     await this.authService.register(dto);
     this.logger.verbose(`RPC [REGISTER]: Success response generated for email: ${dto.email}`);
     return null;
+  }
+
+  @MessagePattern(AUTH_PATTERNS.GET_ROLE_BY_ID)
+  async getRoleById(@Payload() payload: { id: string }): Promise<Role> {
+    this.logger.log(`RPC [GET_ROLE_BY_ID]: Fetching role for ID: ${payload.id}`);
+    return await this.authService.getRoleById(payload.id);
   }
 
   @MessagePattern(AUTH_PATTERNS.VALIDATE_CREDENTIALS)

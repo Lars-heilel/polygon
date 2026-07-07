@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 
-import { useCreateDirectChatMutation, MediaPanel } from '@org/entities-chat';
-import { Avatar, Heading, Text } from '@org/shared';
+import { useCreateDirectChatMutation } from '@org/entities-chat';
+import { AvatarCarousel } from '@org/features-upload-avatar';
+import { Avatar, Badge, Heading, Text } from '@org/shared';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 
 import { useUserProfileQuery } from '../api/use-user-profile.js';
+import { ProfileMediaPanel } from './profile-media-panel.js';
 
 interface UserProfileModalProps {
   userId: string;
@@ -25,6 +27,7 @@ export function UserProfileModal({
   const createChat = useCreateDirectChatMutation();
   const [activeTab, setActiveTab] = useState<'profile' | 'media'>('profile');
   const [creatingChat, setCreatingChat] = useState(false);
+  const [avatarHistoryOpen, setAvatarHistoryOpen] = useState(false);
 
   const handleSendMessage = useCallback(async () => {
     if (creatingChat) return;
@@ -99,19 +102,34 @@ export function UserProfileModal({
               {/* Вкладка Профиля */}
               {activeTab === 'profile' && (
                 <div className="overflow-y-auto flex-1 flex flex-col items-center gap-3 py-6 px-5 animate-fade-in custom-scrollbar">
-                  <Avatar
-                    src={profile.avatarUrl ?? undefined}
-                    name={profile.displayName ?? profile.name}
-                    size="xl"
-                    className="ring-4 ring-primary/10 shrink-0"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setAvatarHistoryOpen(true)}
+                    className="shrink-0"
+                  >
+                    <Avatar
+                      src={profile.avatarUrl ?? undefined}
+                      name={profile.displayName ?? profile.name}
+                      size="xl"
+                      className="ring-4 ring-primary/10 shrink-0 transition-transform hover:scale-[1.02]"
+                    />
+                  </button>
                   <div className="text-center">
                     <Heading
                       level={5}
                       as="h3"
-                      className="text-text font-bold"
+                      className="text-text font-bold flex items-center justify-center gap-2"
                     >
                       {profile.displayName ?? profile.name}
+                      {profile.role === 'CREATOR' && (
+                        <Badge
+                          variant="primary"
+                          size="md"
+                          className="bg-gradient-to-r from-yellow-500 to-orange-500 border-0"
+                        >
+                          Creator
+                        </Badge>
+                      )}
                     </Heading>
                     <Text
                       size="xs"
@@ -164,7 +182,7 @@ export function UserProfileModal({
               {/* Вкладка Медиа файлов */}
               {activeTab === 'media' && chatId && (
                 <div className="flex-1 w-full p-4 overflow-y-auto min-h-0 animate-fade-in custom-scrollbar">
-                  <MediaPanel chatId={chatId} />
+                  <ProfileMediaPanel chatId={chatId} />
                 </div>
               )}
             </div>
@@ -199,6 +217,14 @@ export function UserProfileModal({
           </div>
         )}
       </div>
+      {avatarHistoryOpen && (
+        <AvatarCarousel
+          isOpen={avatarHistoryOpen}
+          onClose={() => setAvatarHistoryOpen(false)}
+          userId={userId}
+          readOnly
+        />
+      )}
     </div>,
     document.body,
   );

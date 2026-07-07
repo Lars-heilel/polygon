@@ -101,7 +101,7 @@ export function ProfilePage() {
                 color="muted"
                 size="sm"
               >
-                {me.email}
+                @{me.name}
               </Text>
             </div>
 

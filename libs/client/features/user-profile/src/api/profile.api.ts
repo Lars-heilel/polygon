@@ -1,3 +1,4 @@
+import type { Role } from '@org/common';
 import { authedFetch } from '@org/shared';
 
 export interface UserProfile {
@@ -7,6 +8,7 @@ export interface UserProfile {
   avatarUrl: string | null;
   bio: string | null;
   email: string;
+  role: Role;
 }
 
 export function fetchUserProfile(userId: string): Promise<UserProfile> {
