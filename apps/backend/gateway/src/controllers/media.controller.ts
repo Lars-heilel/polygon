@@ -163,6 +163,10 @@ export class MediaGatewayController {
     const targetUrl = normalizeExternalUrl(rawUrl);
     const fallback = buildFallbackPreview(targetUrl);
 
+    if (getYouTubePreview(targetUrl)) {
+      return fallback;
+    }
+
     try {
       const response = await fetch(targetUrl.toString(), {
         redirect: 'follow',
@@ -182,7 +186,7 @@ export class MediaGatewayController {
         return fallback;
       }
 
-      const html = await response.text();
+      const html = (await response.text()).slice(0, 512 * 1024);
       return buildPreviewFromHtml(response.url, html);
     } catch {
       return fallback;

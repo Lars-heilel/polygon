@@ -20,7 +20,6 @@ async function bootstrap() {
         urls: [RABBITMQ_URL],
         queue: USER_QUEUE,
         queueOptions: { durable: true },
-        noAck: false,
       },
     },
     { inheritAppConfig: true },

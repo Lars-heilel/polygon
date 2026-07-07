@@ -44,15 +44,16 @@ COPY libs/backend/media/src/database/prisma/schema.prisma libs/backend/media/src
 COPY libs/backend/notification/prisma.config.ts libs/backend/notification/
 COPY libs/backend/notification/src/database/prisma/schema.prisma libs/backend/notification/src/database/prisma/
 
-# Layer 4: Generate Prisma clients
+# Layer 4: Remaining source code
+COPY . .
+
+# Layer 5: Generate Prisma clients after full source copy so checked-in artifacts
+# cannot overwrite the builder outputs.
 RUN ./node_modules/.bin/prisma generate --config libs/backend/auth/prisma.config.ts && \
     ./node_modules/.bin/prisma generate --config libs/backend/user/prisma.config.ts && \
     ./node_modules/.bin/prisma generate --config libs/backend/chat/prisma.config.ts && \
     ./node_modules/.bin/prisma generate --config libs/backend/media/prisma.config.ts && \
     ./node_modules/.bin/prisma generate --config libs/backend/notification/prisma.config.ts
-
-# Layer 5: Remaining source code
-COPY . .
 
 # Layer 6: Build @org/common (externalized by all webpack bundles)
 RUN ./node_modules/.bin/tsc -p libs/common/tsconfig.build.json
@@ -120,7 +121,7 @@ EXPOSE 3000 3001 3002 3003 3004 3005 3006
 ENV NODE_ENV=production
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -s -o /dev/null http://localhost:${GATEWAY_PORT:-3000}/api || exit 1
+  CMD ["curl", "--silent", "--output", "/dev/null", "http://localhost:3000/api"]
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["./start.sh"]

@@ -23,6 +23,9 @@ run_migrations() {
   local config_path="$1"
   local db_url_var="$2"
   local name
+  local migration_dir
+  local has_migration_dirs
+  local has_migration_files
   name=$(basename "$(dirname "$config_path")")
   log "Running migrations for $name..."
 
@@ -33,7 +36,24 @@ run_migrations() {
   fi
 
   migration_dir="$(dirname "$config_path")/src/database/prisma/migrations"
-  if [ -d "$migration_dir" ] && ls "$migration_dir"/*/migration.sql 2>/dev/null | head -1 >/dev/null 2>&1; then
+  has_migration_dirs=false
+  has_migration_files=false
+
+  if [ -d "$migration_dir" ] && find "$migration_dir" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    has_migration_dirs=true
+  fi
+
+  if [ -d "$migration_dir" ] && find "$migration_dir" -mindepth 2 -maxdepth 2 -type f -name migration.sql | grep -q .; then
+    has_migration_files=true
+  fi
+
+  if [ "$has_migration_dirs" = true ] && find "$migration_dir" -mindepth 1 -maxdepth 1 -type d ! -exec test -f "{}/migration.sql" \; -print | grep -q .; then
+    log "ERROR: Incomplete Prisma migrations detected for $name in $migration_dir"
+    find "$migration_dir" -mindepth 1 -maxdepth 1 -type d ! -exec test -f "{}/migration.sql" \; -print | sed 's/^/  [prisma] missing migration.sql in /'
+    exit 1
+  fi
+
+  if [ "$has_migration_files" = true ]; then
     export "$db_url_var=$DB_URL"
     node ./node_modules/prisma/build/index.js migrate deploy \
       --config="./$config_path" 2>&1 | sed 's/^/  [prisma] /'
