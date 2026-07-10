@@ -40,6 +40,7 @@ import { type CredentialsPayload, type TokenPair } from '@org/common';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_PATTERNS,
+  ActiveAccountGuard,
   type ClientMetadata,
   type Env,
   GetClientMetadata,
@@ -329,7 +330,7 @@ export class AuthGatewayController {
   }
 
   @Get('sessions')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, ActiveAccountGuard)
   @ApiOperation({ summary: 'List active sessions for current user' })
   @ApiCookieAuth('access_token')
   async listSessions(@Req() req: Request): Promise<SessionResponse[]> {
@@ -349,7 +350,7 @@ export class AuthGatewayController {
   }
 
   @Delete('sessions/:id')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, ActiveAccountGuard)
   @ApiOperation({ summary: 'Revoke a specific session' })
   @ApiCookieAuth('access_token')
   async revokeSession(
@@ -378,7 +379,7 @@ export class AuthGatewayController {
   }
 
   @Delete('sessions')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, ActiveAccountGuard)
   @ApiOperation({ summary: 'Revoke all sessions' })
   @ApiCookieAuth('access_token')
   async revokeAllSessions(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

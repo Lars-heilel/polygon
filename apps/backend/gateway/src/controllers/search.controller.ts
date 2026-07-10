@@ -4,6 +4,7 @@ import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import type { UserPublic, UserSearchResult } from '@org/common';
 import { searchUsersQuerySchema } from '@org/common';
 import {
+  ActiveAccountGuard,
   JwtGuard,
   SEARCH_CLIENT_TOKEN,
   SEARCH_PATTERNS,
@@ -16,7 +17,7 @@ import { Observable, lastValueFrom } from 'rxjs';
 @ApiTags('search')
 @ApiCookieAuth('access_token')
 @Controller('search')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, ActiveAccountGuard)
 export class SearchGatewayController {
   constructor(
     @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,

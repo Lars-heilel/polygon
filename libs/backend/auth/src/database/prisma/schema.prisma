@@ -23,6 +23,11 @@ model Credentials {
   isVerified     Boolean        @default(false) @map("is_verified")
   lockedAt       DateTime?      @map("locked_at")
   lockedUntil    DateTime?      @map("locked_until")
+  isBanned       Boolean        @default(false) @map("is_banned")
+  bannedUntil    DateTime?      @map("banned_until")
+  banReason      String?        @map("ban_reason")
+  bannedAt       DateTime?      @map("banned_at")
+  bannedBy       String?        @map("banned_by")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   refreshTokens  Session[]

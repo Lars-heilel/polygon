@@ -24,6 +24,7 @@ import { chatMediaQuerySchema } from '@org/common';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
+  ActiveAccountGuard,
   CurrentUser,
   JwtGuard,
   type JwtPayload,
@@ -38,7 +39,7 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 @ApiTags('chats')
 @ApiCookieAuth('access_token')
 @Controller('chats')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, ActiveAccountGuard)
 export class ChatGatewayController {
   constructor(
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,

@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 
 import { EncryptionService, TokenService } from '@org/core';
 
+import { AdminBanService } from '../admin/admin-ban.service';
 import type { IAuthRepository, IVerificationService } from '../interfaces/auth.interface';
 import { AuthService } from './auth.service';
 
@@ -66,6 +67,9 @@ describe('AuthService', () => {
     removeFromUserSessions: jest.Mock;
   }>;
   let tokenService: { generateTokenPair: jest.Mock; verifyRefreshToken: jest.Mock };
+  let adminBans: { assertAccountActive: jest.Mock };
+  let authCache: { incrementLoginAttempts: jest.Mock; clearLoginAttempts: jest.Mock };
+  let encryption: { hash: jest.Mock; compare: jest.Mock };
 
   beforeEach(async () => {
     sessionCache = {
@@ -90,6 +94,12 @@ describe('AuthService', () => {
         jti: 'jti-1',
       }),
     };
+    adminBans = { assertAccountActive: jest.fn() };
+    authCache = {
+      incrementLoginAttempts: jest.fn().mockResolvedValue(0),
+      clearLoginAttempts: jest.fn(),
+    };
+    encryption = { hash: jest.fn(), compare: jest.fn().mockResolvedValue(true) };
 
     repo = {
       findById: jest.fn().mockResolvedValue(mockCredentials),
@@ -116,16 +126,14 @@ describe('AuthService', () => {
     const module = await Test.createTestingModule({
       providers: [
         AuthService,
+        { provide: AdminBanService, useValue: adminBans },
         {
           provide: 'AUTH_PRISMA_REPOSITORY_TOKEN',
           useValue: repo,
         },
         {
           provide: 'AUTH_CACHE_REPOSITORY_TOKEN',
-          useValue: {
-            incrementLoginAttempts: jest.fn().mockResolvedValue(0),
-            clearLoginAttempts: jest.fn(),
-          },
+          useValue: authCache,
         },
         {
           provide: 'SESSION_CACHE_REPOSITORY_TOKEN',
@@ -137,7 +145,7 @@ describe('AuthService', () => {
         },
         {
           provide: EncryptionService,
-          useValue: { hash: jest.fn(), compare: jest.fn().mockResolvedValue(true) },
+          useValue: encryption,
         },
         {
           provide: ConfigService,
@@ -165,6 +173,80 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get(AuthService);
+  });
+
+  it.each([
+    ['credential validation', async () => {
+      repo.findByEmail.mockResolvedValue(mockCredentials);
+      await service.validateCredentials(mockCredentials.email, 'password');
+    }],
+    ['login', async () => service.login('creds-1')],
+    ['OAuth login', async () => {
+      repo.findOAuthAccount.mockResolvedValue({ credentials: mockCredentials });
+      await service.oauthLogin({
+        provider: 'google',
+        providerId: 'provider-1',
+        email: mockCredentials.email,
+        name: 'Test',
+      });
+    }],
+    ['refresh', async () => service.refresh(mockRefreshToken)],
+  ] as const)('normalizes/rejects bans on %s', async (_name, invoke) => {
+    await invoke();
+    expect(adminBans.assertAccountActive).toHaveBeenCalledWith('creds-1');
+  });
+
+  it('stops login before session creation when the account is actively banned', async () => {
+    adminBans.assertAccountActive.mockRejectedValue(
+      new Error('ACCOUNT_BANNED'),
+    );
+    await expect(service.login('creds-1')).rejects.toThrow('ACCOUNT_BANNED');
+    expect(repo.saveSession).not.toHaveBeenCalled();
+  });
+
+  it('returns ACCOUNT_BANNED before 429 and password side effects for an over-limit banned account', async () => {
+    repo.findByEmail.mockResolvedValue(mockCredentials);
+    authCache.incrementLoginAttempts.mockResolvedValue(6);
+    adminBans.assertAccountActive.mockRejectedValue(
+      Object.assign(new Error('ACCOUNT_BANNED'), {
+        response: { code: 'ACCOUNT_BANNED', reason: 'Spam', bannedUntil: null },
+      }),
+    );
+
+    await expect(service.validateCredentials(mockCredentials.email, 'password')).rejects.toMatchObject({
+      response: { code: 'ACCOUNT_BANNED', reason: 'Spam', bannedUntil: null },
+    });
+    expect(encryption.compare).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['non-banned', mockCredentials],
+    ['unknown', null],
+  ] as const)('preserves the 429 response for an over-limit %s account', async (_name, credentials) => {
+    repo.findByEmail.mockResolvedValue(credentials);
+    authCache.incrementLoginAttempts.mockResolvedValue(6);
+
+    await expect(service.validateCredentials(mockCredentials.email, 'password')).rejects.toMatchObject({
+      status: 429,
+    });
+    expect(authCache.incrementLoginAttempts).toHaveBeenCalledWith(mockCredentials.email);
+    expect(encryption.compare).not.toHaveBeenCalled();
+  });
+
+  it('checks a linked-by-email OAuth account before creating the provider binding', async () => {
+    repo.findOAuthAccount.mockResolvedValue(null);
+    repo.findByEmail.mockResolvedValue(mockCredentials);
+    adminBans.assertAccountActive.mockRejectedValue(new Error('ACCOUNT_BANNED'));
+
+    await expect(
+      service.oauthLogin({
+        provider: 'google',
+        providerId: 'new-provider-id',
+        email: mockCredentials.email,
+        name: 'Test',
+      }),
+    ).rejects.toThrow('ACCOUNT_BANNED');
+    expect(repo.createOAuthAccount).not.toHaveBeenCalled();
   });
 
   describe('login', () => {

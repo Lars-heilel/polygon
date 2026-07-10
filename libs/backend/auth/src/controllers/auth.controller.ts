@@ -1,19 +1,30 @@
 import { Controller, Inject, Logger, UsePipes } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { type CredentialsPayload, type OAuthLoginDto, type Role, type TokenPair } from '@org/common';
+import {
+  type AdminBanRequest,
+  type AdminSessionsResponse,
+  type CredentialsPayload,
+  type OAuthLoginDto,
+  type Role,
+  type TokenPair,
+} from '@org/common';
 import type { ClientMetadata } from '@org/core';
 import { AUTH_PATTERNS, AUTH_SERVICE_TOKEN } from '@org/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 
+import { AdminBanService } from '../admin/admin-ban.service';
 import { SessionResponse } from '../dto';
 import { RegisterDto } from '../dto/register.dto';
-import type { IAuthController, IAuthService } from '../interfaces/auth.interface';
+import type { AuthAdminAccount, IAuthController, IAuthService } from '../interfaces/auth.interface';
 
 @Controller()
 export class AuthController implements IAuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(@Inject(AUTH_SERVICE_TOKEN) private readonly authService: IAuthService) {}
+  constructor(
+    @Inject(AUTH_SERVICE_TOKEN) private readonly authService: IAuthService,
+    private readonly adminService: AdminBanService,
+  ) {}
 
   @MessagePattern(AUTH_PATTERNS.REGISTER)
   @UsePipes(new ZodValidationPipe(RegisterDto))
@@ -142,6 +153,50 @@ export class AuthController implements IAuthController {
       `RPC [REVOKE_ALL_SESSIONS]: Revoking all sessions for user: ${payload.credentialsId}`,
     );
     await this.authService.revokeAllSessions(payload.credentialsId);
+    return null;
+  }
+
+  @MessagePattern(AUTH_PATTERNS.GET_ADMIN_ACCOUNT)
+  async getAdminAccount(
+    @Payload() payload: { actorId: string; targetId: string },
+  ): Promise<AuthAdminAccount> {
+    return this.adminService.getAccount(payload.actorId, payload.targetId);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.LIST_ADMIN_SESSIONS)
+  async listAdminSessions(
+    @Payload() payload: { actorId: string; targetId: string },
+  ): Promise<AdminSessionsResponse> {
+    return this.adminService.listSessions(payload.actorId, payload.targetId);
+  }
+
+  @MessagePattern(AUTH_PATTERNS.REVOKE_ADMIN_SESSION)
+  async revokeAdminSession(
+    @Payload() payload: { actorId: string; targetId: string; sessionId: string },
+  ): Promise<null> {
+    await this.adminService.revokeSession(payload.actorId, payload.targetId, payload.sessionId);
+    return null;
+  }
+
+  @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_ADMIN_SESSIONS)
+  async revokeAllAdminSessions(
+    @Payload() payload: { actorId: string; targetId: string },
+  ): Promise<null> {
+    await this.adminService.revokeAllSessions(payload.actorId, payload.targetId);
+    return null;
+  }
+
+  @MessagePattern(AUTH_PATTERNS.BAN_ACCOUNT)
+  async banAccount(
+    @Payload() payload: { actorId: string; targetId: string; input: AdminBanRequest },
+  ): Promise<null> {
+    await this.adminService.ban(payload.actorId, payload.targetId, payload.input);
+    return null;
+  }
+
+  @MessagePattern(AUTH_PATTERNS.UNBAN_ACCOUNT)
+  async unbanAccount(@Payload() payload: { actorId: string; targetId: string }): Promise<null> {
+    await this.adminService.unban(payload.actorId, payload.targetId);
     return null;
   }
 }

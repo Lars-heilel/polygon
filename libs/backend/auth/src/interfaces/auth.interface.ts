@@ -1,4 +1,7 @@
 import type {
+  AdminBanRequest,
+  AdminBanState,
+  AdminSessionsResponse,
   CreateCredentialsInput,
   Credentials,
   CredentialsPayload,
@@ -10,6 +13,13 @@ import type { ClientMetadata } from '@org/core';
 
 import { DatabaseSession, SessionResponse } from '../dto';
 import type { RegisterDto } from '../dto/register.dto';
+
+export interface AuthAdminAccount extends AdminBanState {
+  id: string;
+  email: string;
+  role: Role;
+  oauthAccounts: { provider: string }[];
+}
 
 export interface IAuthRepository {
   findByEmail(email: string): Promise<Credentials | null>;
@@ -42,10 +52,16 @@ export interface IAuthRepository {
   findSessionByTokenHash(tokenHash: string): Promise<DatabaseSession | null>;
   revokeSession(tokenHash: string): Promise<void>;
   revokeAllSessions(credentialsId: string): Promise<void>;
+  revokeSessionById(sessionId: string, credentialsId: string): Promise<boolean>;
   findActiveSessions(credentialsId: string): Promise<DatabaseSession[]>;
   findSessionById(sessionId: string): Promise<DatabaseSession | null>;
   updateSessionLastActive(sessionId: string): Promise<void>;
   updateSessionTokenHash(sessionId: string, newTokenHash: string): Promise<void>;
+  findAdminAccount(credentialsId: string): Promise<AuthAdminAccount | null>;
+  banAndRevokeAllSessions(credentialsId: string, ban: AdminBanState): Promise<void>;
+  clearBan(credentialsId: string): Promise<void>;
+  normalizeExpiredBan(credentialsId: string, now: Date): Promise<boolean>;
+  listAdminSessions(credentialsId: string): Promise<AdminSessionsResponse>;
 }
 
 export interface IVerificationService {
@@ -54,6 +70,16 @@ export interface IVerificationService {
   resend(email: string): Promise<void>;
   generatePasswordReset(credentialsId: string, email: string): Promise<void>;
   consumePasswordResetToken(token: string): Promise<string>;
+}
+
+export interface IAdminBanService {
+  getAccount(actorId: string, targetId: string): Promise<AuthAdminAccount>;
+  listSessions(actorId: string, targetId: string): Promise<AdminSessionsResponse>;
+  revokeSession(actorId: string, targetId: string, sessionId: string): Promise<void>;
+  revokeAllSessions(actorId: string, targetId: string): Promise<void>;
+  ban(actorId: string, targetId: string, input: unknown): Promise<void>;
+  unban(actorId: string, targetId: string): Promise<void>;
+  assertAccountActive(credentialsId: string): Promise<void>;
 }
 
 export interface IAuthService {
@@ -91,4 +117,14 @@ export interface IAuthController {
   }): Promise<SessionResponse[]>;
   revokeSession(payload: { sessionId: string; credentialsId: string }): Promise<null>;
   revokeAllSessions(payload: { credentialsId: string }): Promise<null>;
+  getAdminAccount(payload: { actorId: string; targetId: string }): Promise<AuthAdminAccount>;
+  listAdminSessions(payload: { actorId: string; targetId: string }): Promise<AdminSessionsResponse>;
+  revokeAdminSession(payload: {
+    actorId: string;
+    targetId: string;
+    sessionId: string;
+  }): Promise<null>;
+  revokeAllAdminSessions(payload: { actorId: string; targetId: string }): Promise<null>;
+  banAccount(payload: { actorId: string; targetId: string; input: AdminBanRequest }): Promise<null>;
+  unbanAccount(payload: { actorId: string; targetId: string }): Promise<null>;
 }

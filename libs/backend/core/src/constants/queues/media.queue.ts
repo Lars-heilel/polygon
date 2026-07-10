@@ -9,6 +9,7 @@ export const MEDIA_PATTERNS = {
   GET_FILE_CONTENT: 'media.getFileContent',
   DELETE: 'media.delete',
   GET_HISTORY: 'media.getHistory',
+  GET_ADMIN_AVATAR_HISTORY: 'media.admin.getAvatarHistory',
   GET_CHAT_HISTORY: 'media.getChatHistory',
   CREATE_FILE: 'media.createFile',
 } as const;

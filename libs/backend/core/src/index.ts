@@ -27,6 +27,10 @@ export * from './token/token.module';
 // Guards
 export * from './guards/jwt.guard';
 export * from './guards/roles.guard';
+export * from './guards/active-account.guard';
+
+// Ban markers
+export * from './ban/ban-marker.repository';
 
 // Decorators
 export * from './decorators/current-user.decorator';

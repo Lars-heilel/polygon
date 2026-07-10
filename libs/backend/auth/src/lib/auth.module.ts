@@ -5,6 +5,7 @@ import {
   AUTH_CACHE_REPOSITORY_TOKEN,
   AUTH_PRISMA_REPOSITORY_TOKEN,
   AUTH_SERVICE_TOKEN,
+  BAN_CACHE_REPOSITORY_TOKEN,
   CoreConfigModule,
   CoreEncryptionModule,
   CoreRedisModule,
@@ -21,6 +22,12 @@ import {
 } from '@org/core';
 
 import { AuthRedisCacheRepository } from '../cache/auth.redis.repo';
+import {
+  ADMIN_BAN_CLOCK_TOKEN,
+  ADMIN_LOCK_TIMING_TOKEN,
+  AdminBanService,
+} from '../admin/admin-ban.service';
+import { BanRedisRepository } from '../cache/ban.redis.repo';
 import { SessionRedisRepository } from '../cache/session.redis.repo';
 import { AuthController } from '../controllers/auth.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
@@ -62,6 +69,11 @@ const rmqClient = (name: string, queue: string) => ({
     { provide: AUTH_PRISMA_REPOSITORY_TOKEN, useClass: AuthPrismaRepository },
     { provide: AUTH_CACHE_REPOSITORY_TOKEN, useClass: AuthRedisCacheRepository },
     { provide: SESSION_CACHE_REPOSITORY_TOKEN, useClass: SessionRedisRepository },
+    { provide: BAN_CACHE_REPOSITORY_TOKEN, useClass: BanRedisRepository },
+    { provide: ADMIN_BAN_CLOCK_TOKEN, useValue: () => new Date() },
+    // Short operations renew every 10s; the 30s lease bounds crash recovery.
+    { provide: ADMIN_LOCK_TIMING_TOKEN, useValue: { leaseMs: 30_000, renewIntervalMs: 10_000 } },
+    AdminBanService,
     { provide: VERIFICATION_SERVICE_TOKEN, useClass: VerificationService },
     { provide: AUTH_SERVICE_TOKEN, useClass: AuthService },
     CleanupService,

@@ -31,6 +31,7 @@ import { lastValueFrom } from 'rxjs';
 
 import type { IAuthCacheRepository } from '../cache/auth.cache.interface';
 import type { ISessionCacheRepository } from '../cache/session.cache.interface';
+import { AdminBanService } from '../admin/admin-ban.service';
 import { SessionResponse } from '../dto';
 import type { RegisterDto } from '../dto/register.dto';
 import type {
@@ -58,6 +59,7 @@ export class AuthService implements IAuthService {
     private readonly sessionCache: ISessionCacheRepository,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     @Inject(SEARCH_CLIENT_TOKEN) private readonly searchClient: ClientProxy,
+    private readonly adminBans: AdminBanService,
   ) {}
 
   async register(dto: RegisterDto): Promise<void> {
@@ -115,6 +117,9 @@ export class AuthService implements IAuthService {
   async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
     this.logger.log(`Service: Validating credentials for: ${email}`);
 
+    const credentials = await this.repo.findByEmail(email);
+    if (credentials) await this.adminBans.assertAccountActive(credentials.id);
+
     const attempts = await this.cache.incrementLoginAttempts(email);
     this.logger.debug({ email, attempts }, 'Service: Login attempts counter incremented');
 
@@ -126,8 +131,7 @@ export class AuthService implements IAuthService {
       );
     }
 
-    const credentials = await this.repo.findByEmail(email);
-    if (!credentials || !credentials.passwordHash) {
+    if (!credentials?.passwordHash) {
       this.logger.warn(`Service: Validation failed. Email not found: ${email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -166,6 +170,8 @@ export class AuthService implements IAuthService {
       this.logger.error(`Service: Failed to establish session. User ID not found: ${id}`);
       throw new UnauthorizedException();
     }
+
+    await this.adminBans.assertAccountActive(credentials.id);
 
     const refreshExpiresSec = this.config.getOrThrow('JWT_REFRESH_TOKEN_EXPIRES', { infer: true });
     const expiresAt = new Date(Date.now() + refreshExpiresSec * 1000);
@@ -303,6 +309,8 @@ export class AuthService implements IAuthService {
       isNewCredentials = true;
     }
 
+    await this.adminBans.assertAccountActive(credentials.id);
+
     const payload = { id: credentials.id, email: credentials.email, name: dto.name };
     this.logger.verbose(
       'Service: Emitting profile creation request for OAuth user to User microservice',
@@ -380,6 +388,8 @@ export class AuthService implements IAuthService {
       this.logger.warn('Service: Refresh failed. Session record not found in database');
       throw new UnauthorizedException();
     }
+
+    await this.adminBans.assertAccountActive(stored.credentialsId);
 
     if (stored.revokedAt) {
       this.logger.warn(

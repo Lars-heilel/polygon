@@ -56,6 +56,13 @@ export class MediaController {
     return this.mediaService.getHistory(uploaderId, category);
   }
 
+  @MessagePattern(MEDIA_PATTERNS.GET_ADMIN_AVATAR_HISTORY)
+  async getAdminAvatarHistory(
+    @Payload() { targetId }: { targetId: string },
+  ): Promise<FileResponseDto[]> {
+    return this.mediaService.getHistory(targetId, 'AVATAR');
+  }
+
   @MessagePattern('media.getChatHistory')
   async getChatHistory(
     @Payload() payload: { chatId: string; uploaderId: string; category?: FileCategory; take?: number; skip?: number },

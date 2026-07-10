@@ -25,6 +25,7 @@ import { lastValueFrom, Observable } from 'rxjs';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
+  ActiveAccountGuard,
   CurrentUser,
   JwtGuard,
   type JwtPayload,
@@ -38,7 +39,7 @@ import type { IStorageProvider } from '@org/core';
 import type { FileCategory, LinkPreview } from '@org/common';
 
 @Controller()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, ActiveAccountGuard)
 export class MediaGatewayController {
   constructor(
     @Inject(MEDIA_CLIENT_TOKEN) private readonly mediaClient: ClientProxy,

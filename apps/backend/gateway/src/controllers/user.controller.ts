@@ -14,6 +14,7 @@ import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_PATTERNS,
+  ActiveAccountGuard,
   CurrentUser,
   JwtGuard,
   type JwtPayload,
@@ -29,7 +30,7 @@ import { Observable, lastValueFrom } from 'rxjs';
 @ApiTags('users')
 @ApiCookieAuth('access_token')
 @Controller('users')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, ActiveAccountGuard)
 export class UserGatewayController {
   private readonly logger = new Logger(UserGatewayController.name);
 

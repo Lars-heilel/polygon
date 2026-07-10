@@ -37,6 +37,17 @@ export class SessionRedisRepository implements ISessionCacheRepository {
     await this.redis.srem(KEY.userSessions(userId), sessionId);
   }
 
+  async removeAllForUser(userId: string): Promise<void> {
+    const userSessionsKey = KEY.userSessions(userId);
+    const sessionIds = await this.redis.smembers(userSessionsKey);
+    const transaction = this.redis.multi();
+    for (const sessionId of sessionIds) transaction.del(KEY.session(sessionId));
+    transaction.del(userSessionsKey);
+    const results = await transaction.exec();
+    const commandError = results?.find(([error]) => error !== null)?.[0];
+    if (commandError) throw commandError;
+  }
+
   async exists(sessionId: string): Promise<boolean> {
     const result = await this.redis.exists(KEY.session(sessionId));
     return result === 1;

@@ -9,7 +9,16 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { CHAT_CLIENT_TOKEN, CHAT_PATTERNS, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, TokenService, USER_CLIENT_TOKEN, USER_PATTERNS } from '@org/core';
+import {
+  BanMarkerRepository,
+  CHAT_CLIENT_TOKEN,
+  CHAT_PATTERNS,
+  NOTIFICATION_CLIENT_TOKEN,
+  NOTIFICATION_EVENTS,
+  TokenService,
+  USER_CLIENT_TOKEN,
+  USER_PATTERNS,
+} from '@org/core';
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 
@@ -33,9 +42,10 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
     @Inject(NOTIFICATION_CLIENT_TOKEN) private readonly notificationClient: ClientProxy,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
+    private readonly banMarkers: BanMarkerRepository,
   ) {}
 
-  handleConnection(socket: Socket) {
+  async handleConnection(socket: Socket): Promise<void> {
     const cookieHeader = socket.handshake.headers.cookie ?? '';
     const token = cookieHeader
       .split(';')
@@ -48,18 +58,40 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       return;
     }
 
+    let userId: string;
     try {
       const payload = this.tokenService.verifyAccessToken(token);
-      const userId = payload.sub;
-      socket.data['userId'] = userId;
-      this.logger.log(`WS connected: userId=${userId}`);
-
-      const sockets = this.userSockets.get(userId) ?? new Set();
-      sockets.add(socket.id);
-      this.userSockets.set(userId, sockets);
+      userId = payload.sub;
     } catch {
-      socket.disconnect();
+      socket.disconnect(true);
+      return;
     }
+
+    try {
+      const marker = await this.banMarkers.findActiveMarker(userId);
+
+      if (marker) {
+        socket.emit('auth:error', {
+          code: 'ACCOUNT_BANNED',
+          reason: marker.reason,
+          bannedUntil: marker.bannedUntil,
+        });
+        socket.disconnect(true);
+        return;
+      }
+    } catch (error) {
+      this.logger.warn(`WS ban check failed for userId=${userId}: ${(error as Error).message}`);
+      socket.emit('auth:error', { code: 'ACCOUNT_BAN_CHECK_UNAVAILABLE' });
+      socket.disconnect(true);
+      return;
+    }
+
+    socket.data['userId'] = userId;
+    this.logger.log(`WS connected: userId=${userId}`);
+
+    const sockets = this.userSockets.get(userId) ?? new Set();
+    sockets.add(socket.id);
+    this.userSockets.set(userId, sockets);
   }
 
   handleDisconnect(socket: Socket) {
@@ -86,6 +118,18 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
   isUserOnline(userId: string): boolean {
     return this.userSockets.has(userId) && (this.userSockets.get(userId)?.size ?? 0) > 0;
+  }
+
+  disconnectUser(userId: string): void {
+    const sockets = this.userSockets.get(userId);
+    if (!sockets) return;
+
+    for (const socketId of sockets) {
+      this.server.sockets.sockets.get(socketId)?.disconnect(true);
+    }
+
+    this.userSockets.delete(userId);
+    this.userChats.delete(userId);
   }
 
   @SubscribeMessage('chat:join')

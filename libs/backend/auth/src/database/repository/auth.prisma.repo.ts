@@ -1,9 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 // Все бэкенд и системные типы/DTO импортируются из @org/common
-import { type CreateCredentialsInput, type Credentials, DatabaseSession } from '@org/common';
+import {
+  type AdminBanState,
+  type AdminSessionsResponse,
+  type CreateCredentialsInput,
+  type Credentials,
+  DatabaseSession,
+} from '@org/common';
 import { handlePrismaError } from '@org/core';
 
-import type { IAuthRepository } from '../../interfaces/auth.interface';
+import type { AuthAdminAccount, IAuthRepository } from '../../interfaces/auth.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -186,6 +192,21 @@ export class AuthPrismaRepository implements IAuthRepository {
     }
   }
 
+  async revokeSessionById(sessionId: string, credentialsId: string): Promise<boolean> {
+    this.logger.log(`Database [Prisma]: Revoking active session ID: ${sessionId}`);
+
+    try {
+      const result = await this.prisma.session.updateMany({
+        where: { id: sessionId, credentialsId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      return result.count > 0;
+    } catch (error) {
+      this.logger.error(`Database [Prisma]: Failure revoking session ID: ${sessionId}`, error);
+      handlePrismaError(error);
+    }
+  }
+
   async findActiveSessions(credentialsId: string): Promise<DatabaseSession[]> {
     this.logger.log(
       `Database [Prisma]: Listing non-revoked active sessions for ID: ${credentialsId}`,
@@ -245,6 +266,113 @@ export class AuthPrismaRepository implements IAuthRepository {
       );
       handlePrismaError(error);
     }
+  }
+
+  async findAdminAccount(credentialsId: string): Promise<AuthAdminAccount | null> {
+    this.logger.log(`Database [Prisma]: Querying safe admin account view for ID: ${credentialsId}`);
+    return this.prisma.credentials.findUnique({
+      where: { id: credentialsId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isBanned: true,
+        bannedUntil: true,
+        banReason: true,
+        bannedAt: true,
+        bannedBy: true,
+        oauthAccounts: { select: { provider: true } },
+      },
+    });
+  }
+
+  async banAndRevokeAllSessions(credentialsId: string, ban: AdminBanState): Promise<void> {
+    this.logger.log(
+      `Database [Prisma]: Atomically banning and revoking sessions for credentials ID: ${credentialsId}`,
+    );
+    try {
+      const revokedAt = new Date();
+      await this.prisma.$transaction([
+        this.prisma.credentials.update({
+          where: { id: credentialsId },
+          data: {
+            isBanned: ban.isBanned,
+            bannedUntil: ban.bannedUntil,
+            banReason: ban.banReason,
+            bannedAt: ban.bannedAt,
+            bannedBy: ban.bannedBy,
+          },
+        }),
+        this.prisma.session.updateMany({
+          where: { credentialsId, revokedAt: null },
+          data: { revokedAt },
+        }),
+      ]);
+    } catch (error) {
+      this.logger.error(
+        `Database [Prisma]: Atomic ban transaction failed for ID: ${credentialsId}`,
+        error,
+      );
+      handlePrismaError(error);
+    }
+  }
+
+  async clearBan(credentialsId: string): Promise<void> {
+    this.logger.log(`Database [Prisma]: Clearing ban state for credentials ID: ${credentialsId}`);
+    try {
+      await this.prisma.credentials.update({
+        where: { id: credentialsId },
+        data: {
+          isBanned: false,
+          bannedUntil: null,
+          banReason: null,
+          bannedAt: null,
+          bannedBy: null,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Database [Prisma]: Failure clearing ban for ID: ${credentialsId}`, error);
+      handlePrismaError(error);
+    }
+  }
+
+  async normalizeExpiredBan(credentialsId: string, now: Date): Promise<boolean> {
+    this.logger.log(`Database [Prisma]: Normalizing expired ban for ID: ${credentialsId}`);
+    try {
+      const result = await this.prisma.credentials.updateMany({
+        where: { id: credentialsId, isBanned: true, bannedUntil: { not: null, lte: now } },
+        data: {
+          isBanned: false,
+          bannedUntil: null,
+          banReason: null,
+          bannedAt: null,
+          bannedBy: null,
+        },
+      });
+      return result.count > 0;
+    } catch (error) {
+      this.logger.error(`Database [Prisma]: Failure normalizing ban for ID: ${credentialsId}`, error);
+      handlePrismaError(error);
+    }
+  }
+
+  async listAdminSessions(credentialsId: string): Promise<AdminSessionsResponse> {
+    this.logger.log(`Database [Prisma]: Listing safe active sessions for ID: ${credentialsId}`);
+    const sessions = await this.prisma.session.findMany({
+      where: { credentialsId, revokedAt: null },
+      select: {
+        id: true,
+        device: true,
+        os: true,
+        browser: true,
+        ip: true,
+        country: true,
+        lastActiveAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return sessions.map((session) => ({ ...session, isCurrent: false }));
   }
 
   async verifyCredentials(id: string): Promise<void> {

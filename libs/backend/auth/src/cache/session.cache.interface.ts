@@ -11,5 +11,6 @@ export interface ISessionCacheRepository {
   addToUserSessions(userId: string, sessionId: string): Promise<void>;
   getUserSessionIds(userId: string): Promise<string[]>;
   removeFromUserSessions(userId: string, sessionId: string): Promise<void>;
+  removeAllForUser(userId: string): Promise<void>;
   exists(sessionId: string): Promise<boolean>;
 }

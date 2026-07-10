@@ -7,6 +7,8 @@ import { GithubStrategy, GoogleStrategy, LocalStrategy, SessionGuard, SessionRed
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_QUEUE,
+  ActiveAccountGuard,
+  BanMarkerRepository,
   CHAT_CLIENT_TOKEN,
   CHAT_QUEUE,
   CoreConfigModule,
@@ -19,6 +21,7 @@ import {
   MEDIA_QUEUE,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_QUEUE,
+  RolesGuard,
   SESSION_CACHE_REPOSITORY_TOKEN,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
@@ -27,6 +30,7 @@ import {
 } from '@org/core';
 
 import { AuthGatewayController } from '../controllers/auth.controller';
+import { AdminController } from '../controllers/admin.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
 import { MediaGatewayController } from '../controllers/media.controller';
 import { SearchGatewayController } from '../controllers/search.controller';
@@ -72,6 +76,7 @@ const rmqClient = (name: string, queue: string) => ({
     ]),
   ],
   controllers: [
+    AdminController,
     AuthGatewayController,
     MediaGatewayController,
     UserGatewayController,
@@ -81,6 +86,9 @@ const rmqClient = (name: string, queue: string) => ({
   ],
   providers: [
     JwtGuard,
+    ActiveAccountGuard,
+    RolesGuard,
+    BanMarkerRepository,
     { provide: SESSION_CACHE_REPOSITORY_TOKEN, useClass: SessionRedisRepository },
     SessionGuard,
     ChatSocketGateway,
