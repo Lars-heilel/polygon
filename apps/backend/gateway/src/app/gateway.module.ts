@@ -34,6 +34,7 @@ import {
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { AdminController } from '../controllers/admin.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
+import { FrontendErrorController } from '../controllers/frontend-error.controller';
 import { MediaGatewayController } from '../controllers/media.controller';
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
@@ -86,6 +87,7 @@ const rmqClient = (name: string, queue: string) => ({
     ChatGatewayController,
     SearchGatewayController,
     NotificationGatewayController,
+    FrontendErrorController,
   ],
   providers: [
     JwtGuard,

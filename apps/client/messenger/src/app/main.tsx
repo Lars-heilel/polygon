@@ -1,7 +1,11 @@
 import { StrictMode } from 'react';
 
 import { useSessionStore } from '@org/entities-user';
-import { configureAuthedFetch } from '@org/shared';
+import {
+  configureAuthedFetch,
+  configureFrontendErrorReporting,
+  registerGlobalFrontendErrorHandlers,
+} from '@org/shared';
 import * as ReactDOM from 'react-dom/client';
 
 import App from './app';
@@ -9,6 +13,8 @@ import './config/env';
 import { initSocketMiddleware } from './socket/socket-middleware';
 import './styles/global.css';
 
+configureFrontendErrorReporting('messenger');
+registerGlobalFrontendErrorHandlers();
 configureAuthedFetch(() => useSessionStore.getState().setAuthenticated(false));
 initSocketMiddleware();
 

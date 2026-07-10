@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
+import { reportFrontendError } from '../../lib/observability/frontend-error-reporter';
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -17,7 +19,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
-    // TODO: send to error tracking (Sentry etc.)
+    reportFrontendError(error, info.componentStack ?? undefined);
     console.error('[ErrorBoundary]', error, info.componentStack);
   }
 
