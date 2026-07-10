@@ -1,0 +1,17 @@
+{
+  "name": "@org/admin",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@org/pages-admin-not-found": "*",
+    "@org/pages-admin-overview": "*",
+    "@org/pages-admin-user-detail": "*",
+    "@org/pages-admin-users": "*"
+  },
+  "nx": {
+    "tags": [
+      "scope:client",
+      "type:app"
+    ]
+  }
+}

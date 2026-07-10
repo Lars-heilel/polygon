@@ -1,5 +1,5 @@
 {
-  "extends": "../../../../../tsconfig.base.json",
+  "extends": "../../../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
     "types": [
@@ -19,31 +19,19 @@
     "dist",
     "**/*.spec.ts",
     "src/**/*.spec.ts",
-    "**/*.spec.tsx",
-    "src/**/*.spec.tsx",
     "**/*.test.ts",
-    "src/**/*.test.ts",
-    "**/*.test.tsx",
-    "src/**/*.test.tsx",
-    "src/test-stubs/**/*",
-    "src/test-setup.ts"
+    "src/**/*.test.ts"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../../../common/tsconfig.lib.json"
+      "path": "../user/tsconfig.lib.json"
     },
     {
-      "path": "../../../features/notifications/tsconfig.lib.json"
+      "path": "../../shared/tsconfig.lib.json"
     },
     {
-      "path": "../../../shared/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../features/auth/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../entities/user/tsconfig.lib.json"
+      "path": "../../../common/tsconfig.lib.json"
     }
   ]
 }

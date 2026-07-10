@@ -1,5 +1,5 @@
 {
-  "name": "@org/pages-settings",
+  "name": "@org/pages-admin-not-found",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -13,8 +13,5 @@
   "nx": {
     "tags": ["layer:pages", "scope:client"]
   },
-  "sideEffects": false,
-  "dependencies": {
-    "@org/entities-user": "*"
-  }
+  "sideEffects": false
 }

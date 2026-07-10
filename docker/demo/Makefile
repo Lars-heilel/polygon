@@ -4,9 +4,11 @@ ENV_FILE := ../../.env.production
 .PHONY: build start stop restart logs backup clean
 
 build:
-	cd $(ROOT_DIR) && NODE_ENV=production npx nx build @org/messenger --mode production
-	mkdir -p nginx/html
+	cd $(ROOT_DIR) && NODE_ENV=production npm exec nx -- build @org/messenger --mode production
+	cd $(ROOT_DIR) && NODE_ENV=production npm exec nx -- build @org/admin --mode production
+	mkdir -p nginx/html nginx/html/admin
 	cp -r $(ROOT_DIR)/apps/client/messenger/dist/* nginx/html/
+	cp -r $(ROOT_DIR)/apps/client/admin/dist/* nginx/html/admin/
 	docker compose --env-file $(ENV_FILE) build
 
 start:

@@ -1,5 +1,5 @@
 {
-  "name": "@org/pages-settings",
+  "name": "@org/features-admin-ban",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -11,10 +11,13 @@
     }
   },
   "nx": {
-    "tags": ["layer:pages", "scope:client"]
+    "tags": ["layer:features", "scope:client"]
   },
   "sideEffects": false,
   "dependencies": {
-    "@org/entities-user": "*"
+    "@org/common": "*",
+    "@org/entities-admin": "*",
+    "@org/shared": "*",
+    "@tanstack/react-query": "*"
   }
 }

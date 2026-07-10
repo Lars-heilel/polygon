@@ -24,26 +24,12 @@
     "**/*.test.ts",
     "src/**/*.test.ts",
     "**/*.test.tsx",
-    "src/**/*.test.tsx",
-    "src/test-stubs/**/*",
-    "src/test-setup.ts"
+    "src/**/*.test.tsx"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../../../common/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../features/notifications/tsconfig.lib.json"
-    },
-    {
       "path": "../../../shared/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../features/auth/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../entities/user/tsconfig.lib.json"
     }
   ]
 }

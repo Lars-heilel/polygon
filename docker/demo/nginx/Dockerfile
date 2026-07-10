@@ -2,6 +2,8 @@ FROM nginx:alpine
 
 RUN apk add --no-cache curl
 
+RUN mkdir -p /usr/share/nginx/html/admin
+
 COPY html /usr/share/nginx/html
 COPY conf/default.conf /etc/nginx/conf.d/default.conf
 

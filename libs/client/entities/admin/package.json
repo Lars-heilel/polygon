@@ -1,5 +1,5 @@
 {
-  "name": "@org/pages-settings",
+  "name": "@org/entities-admin",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -11,10 +11,16 @@
     }
   },
   "nx": {
-    "tags": ["layer:pages", "scope:client"]
+    "tags": [
+      "layer:entities",
+      "scope:client"
+    ]
   },
   "sideEffects": false,
   "dependencies": {
-    "@org/entities-user": "*"
+    "@org/common": "*",
+    "@org/shared": "*",
+    "@org/entities-user": "*",
+    "@tanstack/react-query": "*"
   }
 }

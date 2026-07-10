@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { SettingsDevicesTab } from './settings-devices-tab';
 import { SettingsGeneralTab } from './settings-general-tab';
 import { SettingsPrivacyTab } from './settings-privacy-tab';
+import { useMeQuery } from '@org/entities-user';
 import { Heading } from '@org/shared';
 
 type SettingsTab = 'general' | 'privacy' | 'devices';
@@ -12,7 +13,9 @@ const TABS: SettingsTab[] = ['general', 'privacy', 'devices'];
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const { data: me } = useMeQuery();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const canAccessAdmin = me?.role === 'CREATOR' || me?.role === 'ADMIN';
 
   return (
     <div className="flex flex-col h-full bg-surface">
@@ -27,6 +30,15 @@ export function SettingsPage() {
           </svg>
         </button>
         <Heading level={5} as="h2">Settings</Heading>
+        {canAccessAdmin && (
+          <a
+            aria-label="Admin console"
+            className="ml-auto rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated"
+            href="/admin"
+          >
+            Admin console
+          </a>
+        )}
       </header>
 
       <div className="px-6 py-3 border-b border-border flex gap-4 shrink-0">

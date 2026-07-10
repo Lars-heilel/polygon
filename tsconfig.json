@@ -152,6 +152,27 @@
     },
     {
       "path": "./libs/client/features/chat-media"
+    },
+    {
+      "path": "./libs/client/pages/admin/pages-user-detail"
+    },
+    {
+      "path": "./libs/client/pages/admin/pages-not-found"
+    },
+    {
+      "path": "./libs/client/pages/admin/pages-overview"
+    },
+    {
+      "path": "./libs/client/pages/admin/pages-users"
+    },
+    {
+      "path": "./libs/client/features/admin-ban"
+    },
+    {
+      "path": "./libs/client/entities/admin"
+    },
+    {
+      "path": "./apps/client/admin"
     }
   ]
 }
