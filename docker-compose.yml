@@ -97,12 +97,174 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==================== OBSERVABILITY ====================
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: polygon-dev-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-15d}'
+      - '--web.enable-lifecycle'
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./infra/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - polygon-dev-network
+    depends_on:
+      - node-exporter
+      - cadvisor
+      - postgres-exporter
+      - redis-exporter
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: polygon-dev-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+      GF_LOG_LEVEL: warn
+    ports:
+      - '3009:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - polygon-dev-network
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: polygon-dev-loki
+    restart: unless-stopped
+    command:
+      - '-config.file=/etc/loki/loki.yml'
+      - '-config.expand-env=true'
+    environment:
+      LOKI_RETENTION_PERIOD: ${LOKI_RETENTION_PERIOD:-168h}
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./infra/observability/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks:
+      - polygon-dev-network
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: polygon-dev-tempo
+    restart: unless-stopped
+    command:
+      - '-config.file=/etc/tempo/tempo.yml'
+      - '-config.expand-env=true'
+    environment:
+      TEMPO_RETENTION_PERIOD: ${TEMPO_RETENTION_PERIOD:-72h}
+    ports:
+      - '3200:3200'
+    volumes:
+      - ./infra/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    networks:
+      - polygon-dev-network
+
+  alloy:
+    image: grafana/alloy:v1.6.1
+    container_name: polygon-dev-alloy
+    restart: unless-stopped
+    command:
+      - 'run'
+      - '--server.http.listen-addr=0.0.0.0:12345'
+      - '/etc/alloy/config.alloy'
+    ports:
+      - '12345:12345'
+      - '4317:4317'
+      - '4318:4318'
+    volumes:
+      - ./infra/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - polygon-dev-network
+    depends_on:
+      - loki
+      - tempo
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: polygon-dev-node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - polygon-dev-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: polygon-dev-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    networks:
+      - polygon-dev-network
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    container_name: polygon-dev-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-polygon}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-polygon}?sslmode=disable
+    networks:
+      - polygon-dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: polygon-dev-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    networks:
+      - polygon-dev-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
   rabbitmq_data:
   meilisearch_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  tempo_data:
 
 networks:
   polygon-dev-network:

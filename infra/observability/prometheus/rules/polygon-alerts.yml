@@ -1,0 +1,49 @@
+groups:
+  - name: polygon-service-health
+    rules:
+      - alert: PolygonServiceDown
+        expr: up{job="polygon-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Polygon backend target is down'
+          description: 'Prometheus cannot scrape {{ $labels.instance }} for more than 2 minutes.'
+
+      - alert: PolygonHighErrorRate
+        expr: sum(rate(polygon_http_requests_total{status_code=~"5.."}[5m])) by (service) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High 5xx rate on {{ $labels.service }}'
+          description: '{{ $labels.service }} returns more than 0.05 5xx responses per second.'
+
+      - alert: PolygonHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(polygon_http_request_duration_seconds_bucket[5m])) by (le, service)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High p95 latency on {{ $labels.service }}'
+          description: '{{ $labels.service }} p95 latency is above 1 second.'
+
+  - name: polygon-host-health
+    rules:
+      - alert: PolygonHostDiskAlmostFull
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Host disk almost full'
+          description: '{{ $labels.mountpoint }} has less than 10% free disk space.'
+
+      - alert: PolygonHostHighCpu
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Host CPU is high'
+          description: 'CPU usage is above 85% for more than 10 minutes.'
