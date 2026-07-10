@@ -60,3 +60,11 @@ export * from './storage/storage-provider.interface';
 export * from './storage/storage-provider.token';
 export * from './storage/storage.module';
 export * from './storage/minio-storage.provider';
+
+// Observability
+export * from './observability/observability.constants';
+export * from './observability/observability.types';
+export * from './observability/telemetry';
+export * from './observability/logger';
+export * from './observability/metrics.service';
+export * from './observability/observability.module';
