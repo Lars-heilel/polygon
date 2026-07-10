@@ -58,6 +58,18 @@ export const envSchema = z.object({
   MEDIA_PORT: z.coerce.number(),
   NOTIFICATION_PORT: z.coerce.number(),
 
+  // Observability
+  DEPLOYMENT_ENVIRONMENT: z.string().default('development'),
+  OTEL_ENABLED: z.preprocess((v) => v === 'true' || v === true || v === '1' || v === 1, z.boolean()).default(false),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.url().default('http://localhost:4318'),
+  OTEL_SERVICE_VERSION: z.string().default('0.0.1'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  LOG_FORMAT: z.enum(['json', 'pretty']).default('json'),
+  AUTH_METRICS_PORT: z.coerce.number().default(3012),
+  CHAT_METRICS_PORT: z.coerce.number().default(3013),
+  MEDIA_METRICS_PORT: z.coerce.number().default(3014),
+  NOTIFICATION_METRICS_PORT: z.coerce.number().default(3015),
+
   // App
   APP_URL: z.url(),
   CLIENT_URL: z.url(),
