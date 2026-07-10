@@ -6,6 +6,9 @@ interface LoggerOptionsWithRedaction {
   redact?: {
     paths?: string[];
   };
+  serializers?: {
+    req?: (request: { method?: string; url?: string; headers?: Record<string, string> }) => unknown;
+  };
 }
 
 describe('createLoggerOptions', () => {
@@ -118,5 +121,18 @@ describe('createLoggerOptions', () => {
         'JWT_REFRESH_SECRET',
       ]),
     );
+  });
+
+  it('removes query strings from request URLs before access logging', () => {
+    const options = createLoggerOptions('gateway');
+    const pinoHttp = options.pinoHttp as LoggerOptionsWithRedaction;
+
+    const serialized = pinoHttp.serializers?.req?.({
+      method: 'GET',
+      url: '/api/auth/verify-email?token=secret-token&code=oauth-code',
+      headers: { host: 'localhost' },
+    }) as { url?: string };
+
+    expect(serialized.url).toBe('/api/auth/verify-email');
   });
 });

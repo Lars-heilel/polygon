@@ -21,10 +21,12 @@ import {
   MEDIA_QUEUE,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_QUEUE,
+  ObservabilityModule,
   RolesGuard,
   SESSION_CACHE_REPOSITORY_TOKEN,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
+  SERVICE_NAMES,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
 } from '@org/core';
@@ -54,6 +56,7 @@ const rmqClient = (name: string, queue: string) => ({
 
 @Module({
   imports: [
+    ObservabilityModule.forService(SERVICE_NAMES.gateway),
     CoreConfigModule,
     CoreStorageModule,
     CoreTokenModule,

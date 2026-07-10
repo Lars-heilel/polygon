@@ -1,5 +1,20 @@
 import type { Params } from 'nestjs-pino';
 
+interface LoggableRequest {
+  id?: string;
+  method?: string;
+  url?: string;
+  remoteAddress?: string;
+  remotePort?: number;
+}
+
+function stripQueryString(url: string | undefined): string | undefined {
+  if (!url) return url;
+  const queryStart = url.indexOf('?');
+  if (queryStart === -1) return url;
+  return url.slice(0, queryStart);
+}
+
 const redactPaths = [
   'token',
   'tokens',
@@ -91,6 +106,15 @@ export function createLoggerOptions(serviceName: string): Params {
     pinoHttp: {
       level,
       redact: { paths: redactPaths, remove: true },
+      serializers: {
+        req: (request: LoggableRequest): LoggableRequest => ({
+          id: request.id,
+          method: request.method,
+          url: stripQueryString(request.url),
+          remoteAddress: request.remoteAddress,
+          remotePort: request.remotePort,
+        }),
+      },
       customProps: () => ({
         service: serviceName,
         env: process.env['DEPLOYMENT_ENVIRONMENT'] ?? process.env['NODE_ENV'] ?? 'development',

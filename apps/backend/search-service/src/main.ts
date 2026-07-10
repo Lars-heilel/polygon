@@ -1,14 +1,20 @@
-import { Logger } from '@nestjs/common';
+import './instrument';
+
+import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ConfigService, Env, SEARCH_QUEUE } from '@org/core';
+import { Logger } from 'nestjs-pino';
 
 import { SearchAppModule } from './app/search.module';
 
-const logger = new Logger('Bootstrap');
+const logger = new NestLogger('Bootstrap');
 
 async function bootstrap() {
-  const app = await NestFactory.create(SearchAppModule);
+  const app = await NestFactory.create(SearchAppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
 
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
   const RABBITMQ_URL = configService.get('RABBITMQ_URL', { infer: true });
@@ -27,7 +33,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  const port = process.env['SEARCH_PORT'] ?? 3006;
+  const port = configService.get('SEARCH_PORT', { infer: true });
   await app.listen(port);
 
   logger.log(`Search Service: RMQ queue=${SEARCH_QUEUE}, HTTP port=${port}`);

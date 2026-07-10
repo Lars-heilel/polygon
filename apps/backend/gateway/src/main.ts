@@ -1,22 +1,23 @@
-import { Logger } from '@nestjs/common';
+import './instrument';
+
+import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService, Env } from '@org/core';
 import cookieParser from 'cookie-parser';
 import type { Request, Response, NextFunction } from 'express';
+import { Logger } from 'nestjs-pino';
 import { ZodValidationPipe, cleanupOpenApiDoc } from 'nestjs-zod';
 
 import { GatewayModule } from './app/gateway.module';
 
-const logger = new Logger('Bootstrap');
+const logger = new NestLogger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(GatewayModule, {
-    logger:
-      process.env['NODE_ENV'] === 'production'
-        ? ['log', 'error', 'warn']
-        : ['log', 'error', 'warn', 'debug', 'verbose'],
+    bufferLogs: true,
   });
+  app.useLogger(app.get(Logger));
   app.setGlobalPrefix('api');
 
   const configService = app.get(ConfigService<Env, true>);

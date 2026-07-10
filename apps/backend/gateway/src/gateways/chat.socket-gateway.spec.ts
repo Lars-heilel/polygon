@@ -14,12 +14,18 @@ function makeSocket(cookie = 'access_token=token') {
 }
 
 describe('ChatSocketGateway ban enforcement', () => {
+  type TokenServiceMock = {
+    verifyAccessToken: jest.Mock;
+  };
+  type BanMarkersMock = {
+    findActiveMarker: jest.Mock;
+  };
   type ChatSocketGatewayUnderTest = {
     handleConnection(socket: never): Promise<void>;
     isUserOnline(userId: string): boolean;
     disconnectUser(userId: string): void;
   };
-  const tokenService = {
+  const tokenService: TokenServiceMock = {
     verifyAccessToken: jest.fn(),
   };
   const chatClient = {
@@ -31,16 +37,16 @@ describe('ChatSocketGateway ban enforcement', () => {
   const userClient = {
     send: jest.fn(),
   };
-  const banMarkers = {
+  const banMarkers: BanMarkersMock = {
     findActiveMarker: jest.fn(),
   };
 
   type ChatSocketGatewayConstructor = new (
-    tokenService: typeof tokenService,
+    tokenService: TokenServiceMock,
     chatClient: ClientProxy,
     notificationClient: ClientProxy,
     userClient: ClientProxy,
-    banMarkers: typeof banMarkers,
+    banMarkers: BanMarkersMock,
   ) => ChatSocketGatewayUnderTest;
 
   let ChatSocketGateway: ChatSocketGatewayConstructor;
