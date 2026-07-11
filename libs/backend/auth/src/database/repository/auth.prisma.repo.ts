@@ -19,13 +19,16 @@ export class AuthPrismaRepository implements IAuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<Credentials | null> {
-    this.logger.log(`Database [Prisma]: Querying credentials by email: ${email}`);
+    this.logger.log('Database [Prisma]: Querying credentials by email');
 
     const result = await this.prisma.credentials.findUnique({
       where: { email },
     });
 
-    this.logger.verbose({ result }, 'Database [Prisma]: findByEmail query result');
+    this.logger.verbose(
+      { found: !!result, credentialsId: result?.id },
+      'Database [Prisma]: findByEmail query result',
+    );
     return result;
   }
 
@@ -42,7 +45,10 @@ export class AuthPrismaRepository implements IAuthRepository {
 
   async createCredentials(data: CreateCredentialsInput): Promise<Credentials> {
     this.logger.log('Database [Prisma]: Inserting new credentials record');
-    this.logger.debug({ data }, 'Database [Prisma]: createCredentials payload parameters');
+    this.logger.debug(
+      { hasEmail: !!data.email, hasPasswordHash: !!data.passwordHash },
+      'Database [Prisma]: createCredentials payload parameters',
+    );
 
     try {
       const result = await this.prisma.credentials.create({
@@ -158,7 +164,10 @@ export class AuthPrismaRepository implements IAuthRepository {
 
   async revokeSession(tokenHash: string): Promise<void> {
     this.logger.log('Database [Prisma]: Revoking specific session (setting revokedAt timestamp)');
-    this.logger.verbose({ tokenHash }, 'Database [Prisma]: revokeSession parameters context');
+    this.logger.verbose(
+      { hasTokenHash: !!tokenHash },
+      'Database [Prisma]: revokeSession parameters context',
+    );
 
     try {
       await this.prisma.session.update({

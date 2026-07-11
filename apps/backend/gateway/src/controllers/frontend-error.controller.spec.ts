@@ -15,14 +15,14 @@ describe('FrontendErrorController', () => {
     jest.restoreAllMocks();
   });
 
-  it('logs a structured frontend_error event without extra sensitive fields', () => {
+  it('logs only safe frontend_error metadata without free-text fields', () => {
     const result = controller.capture({
       app: 'messenger',
       route: '/chat',
-      message: 'Render failed',
-      stack: 'Error: Render failed',
-      componentStack: 'at ChatPage',
-      userAgent: 'Mozilla/5.0',
+      message: 'Render failed for email user@example.com with token=secret-token',
+      stack: 'Error: Render failed\n    at token=secret-token',
+      componentStack: 'at UserEmail(user@example.com)',
+      userAgent: 'Mozilla/5.0 user@example.com',
       timestamp: '2026-07-10T08:00:00.000Z',
     });
 
@@ -31,11 +31,14 @@ describe('FrontendErrorController', () => {
       eventType: 'frontend_error',
       app: 'messenger',
       route: '/chat',
-      message: 'Render failed',
-      stack: 'Error: Render failed',
-      componentStack: 'at ChatPage',
-      userAgent: 'Mozilla/5.0',
       timestamp: '2026-07-10T08:00:00.000Z',
+      messageLength: 64,
+      stackLength: 46,
+      componentStackLength: 30,
+      userAgentLength: 28,
+      hasStack: true,
+      hasComponentStack: true,
+      hasUserAgent: true,
     });
   });
 

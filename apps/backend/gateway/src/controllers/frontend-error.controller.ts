@@ -14,9 +14,20 @@ export class FrontendErrorController {
       throw new BadRequestException('Invalid frontend error payload');
     }
 
+    const { app, route, timestamp, message, stack, componentStack, userAgent } = result.data;
+
     this.logger.error({
       eventType: 'frontend_error',
-      ...result.data,
+      app,
+      route: route.split(/[?#]/, 1)[0],
+      timestamp,
+      messageLength: message.length,
+      stackLength: stack?.length ?? 0,
+      componentStackLength: componentStack?.length ?? 0,
+      userAgentLength: userAgent?.length ?? 0,
+      hasStack: !!stack,
+      hasComponentStack: !!componentStack,
+      hasUserAgent: !!userAgent,
     });
 
     return { accepted: true };

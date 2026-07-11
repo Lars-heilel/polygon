@@ -29,11 +29,11 @@ export class AuthController implements IAuthController {
   @MessagePattern(AUTH_PATTERNS.REGISTER)
   @UsePipes(new ZodValidationPipe(RegisterDto))
   async register(@Payload() dto: RegisterDto): Promise<null> {
-    this.logger.log(`RPC [REGISTER]: Received request for email: ${dto.email}`);
-    this.logger.debug({ dto }, 'RPC [REGISTER]: Full payload diagnostic');
+    this.logger.log('RPC [REGISTER]: Received registration request');
+    this.logger.debug({ hasEmail: !!dto.email, hasUsername: !!dto.username }, 'RPC [REGISTER]: Payload diagnostic');
 
     await this.authService.register(dto);
-    this.logger.verbose(`RPC [REGISTER]: Success response generated for email: ${dto.email}`);
+    this.logger.verbose('RPC [REGISTER]: Success response generated');
     return null;
   }
 
@@ -47,7 +47,7 @@ export class AuthController implements IAuthController {
   async validateCredentials(
     @Payload() payload: { email: string; password: string },
   ): Promise<CredentialsPayload> {
-    this.logger.log(`RPC [VALIDATE_CREDENTIALS]: Validation request for email: ${payload.email}`);
+    this.logger.log('RPC [VALIDATE_CREDENTIALS]: Validation request received');
 
     return await this.authService.validateCredentials(payload.email, payload.password);
   }
@@ -67,7 +67,7 @@ export class AuthController implements IAuthController {
   @MessagePattern(AUTH_PATTERNS.LOGOUT)
   async logout(@Payload() payload: { refreshToken: string }): Promise<null> {
     this.logger.log('RPC [LOGOUT]: Received request to terminate session');
-    this.logger.verbose({ payload }, 'RPC [LOGOUT]: Refresh token context');
+    this.logger.verbose({ hasRefreshToken: !!payload.refreshToken }, 'RPC [LOGOUT]: Refresh token context');
 
     await this.authService.logout(payload.refreshToken);
     return null;
@@ -76,7 +76,7 @@ export class AuthController implements IAuthController {
   @MessagePattern(AUTH_PATTERNS.REFRESH)
   async refresh(@Payload() payload: { refreshToken: string }): Promise<TokenPair> {
     this.logger.log('RPC [REFRESH]: Session token rotation request received');
-    this.logger.verbose({ payload }, 'RPC [REFRESH]: Received token parameters');
+    this.logger.verbose({ hasRefreshToken: !!payload.refreshToken }, 'RPC [REFRESH]: Received token parameters');
 
     return await this.authService.refresh(payload.refreshToken);
   }
@@ -87,7 +87,7 @@ export class AuthController implements IAuthController {
   ): Promise<TokenPair> {
     this.logger.log('RPC [VERIFY_EMAIL]: Email verification confirmation triggered');
     this.logger.debug(
-      { payload },
+      { hasToken: !!payload.token, hasClientMetadata: !!payload.clientMetadata },
       'RPC [VERIFY_EMAIL]: Verification token and client metadata context',
     );
 
@@ -96,14 +96,14 @@ export class AuthController implements IAuthController {
 
   @MessagePattern(AUTH_PATTERNS.RESEND_VERIFICATION)
   async resendVerification(@Payload() payload: { email: string }): Promise<null> {
-    this.logger.log(`RPC [RESEND_VERIFICATION]: Re-send requested for email: ${payload.email}`);
+    this.logger.log('RPC [RESEND_VERIFICATION]: Re-send requested');
     await this.authService.resendVerification(payload.email);
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.FORGOT_PASSWORD)
   async forgotPassword(@Payload() payload: { email: string }): Promise<null> {
-    this.logger.log(`RPC [FORGOT_PASSWORD]: Password reset triggered for: ${payload.email}`);
+    this.logger.log('RPC [FORGOT_PASSWORD]: Password reset triggered');
     await this.authService.forgotPassword(payload.email);
     return null;
   }
@@ -112,7 +112,7 @@ export class AuthController implements IAuthController {
   async resetPassword(@Payload() payload: { token: string; newPassword: string }): Promise<null> {
     this.logger.log('RPC [RESET_PASSWORD]: Consuming reset token to change password');
     this.logger.debug(
-      { token: payload.token },
+      { hasToken: !!payload.token },
       'RPC [RESET_PASSWORD]: Provided confirmation token',
     );
 
@@ -125,7 +125,10 @@ export class AuthController implements IAuthController {
     @Payload() dto: OAuthLoginDto & { clientMetadata?: ClientMetadata },
   ): Promise<TokenPair> {
     this.logger.log(`RPC [OAUTH_LOGIN]: Authenticating via provider: ${dto.provider}`);
-    this.logger.debug({ dto }, 'RPC [OAUTH_LOGIN]: OAuth payload and metadata details');
+    this.logger.debug(
+      { provider: dto.provider, hasEmail: !!dto.email, hasClientMetadata: !!dto.clientMetadata },
+      'RPC [OAUTH_LOGIN]: OAuth payload and metadata details',
+    );
 
     return await this.authService.oauthLogin(dto, dto.clientMetadata);
   }

@@ -63,14 +63,17 @@ export class AuthService implements IAuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<void> {
-    this.logger.log(`Service: Initiating registration for email: ${dto.email}`);
+    this.logger.log('Service: Initiating registration');
 
     const { password: _password, ...safeDto } = dto;
-    this.logger.debug({ safeDto }, 'Service: Register DTO state');
+    this.logger.debug(
+      { hasEmail: !!safeDto.email, hasUsername: !!safeDto.username },
+      'Service: Register DTO state',
+    );
 
     const existing = await this.repo.findByEmail(dto.email);
     if (existing) {
-      this.logger.warn(`Service: Registration failed. Email already in use: ${dto.email}`);
+      this.logger.warn('Service: Registration failed. Email already in use');
       throw new ConflictException('Email already in use');
     }
 
@@ -97,11 +100,11 @@ export class AuthService implements IAuthService {
       await this.verification.generateAndSend(credentials.id, credentials.email);
     } catch (err) {
       this.logger.error(
-        `Service: Failed to send verification email to: ${credentials.email}`,
+        'Service: Failed to send verification email',
         err instanceof Error ? err.stack : String(err),
       );
     }
-    this.logger.log(`Service: Registration completed successfully for: ${dto.email}`);
+    this.logger.log('Service: Registration completed successfully');
   }
 
   async getRoleById(id: string): Promise<Role> {
@@ -115,16 +118,16 @@ export class AuthService implements IAuthService {
   }
 
   async validateCredentials(email: string, password: string): Promise<CredentialsPayload> {
-    this.logger.log(`Service: Validating credentials for: ${email}`);
+    this.logger.log('Service: Validating credentials');
 
     const credentials = await this.repo.findByEmail(email);
     if (credentials) await this.adminBans.assertAccountActive(credentials.id);
 
     const attempts = await this.cache.incrementLoginAttempts(email);
-    this.logger.debug({ email, attempts }, 'Service: Login attempts counter incremented');
+    this.logger.debug({ attempts }, 'Service: Login attempts counter incremented');
 
     if (attempts > AuthService.LOGIN_ATTEMPTS_LIMIT) {
-      this.logger.warn(`Service: Login blocked due to rate-limiting for: ${email}`);
+      this.logger.warn('Service: Login blocked due to rate-limiting');
       throw new HttpException(
         'Too many failed login attempts. Please try again in 15 minutes.',
         HttpStatus.TOO_MANY_REQUESTS,
@@ -132,23 +135,23 @@ export class AuthService implements IAuthService {
     }
 
     if (!credentials?.passwordHash) {
-      this.logger.warn(`Service: Validation failed. Email not found: ${email}`);
+      this.logger.warn('Service: Validation failed. Email not found');
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const valid = await this.encryption.compare(password, credentials.passwordHash);
     if (!valid) {
-      this.logger.warn(`Service: Validation failed. Password mismatch for: ${email}`);
+      this.logger.warn('Service: Validation failed. Password mismatch');
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!credentials.isVerified) {
-      this.logger.warn(`Service: Validation blocked. Email unverified: ${email}`);
+      this.logger.warn('Service: Validation blocked. Email unverified');
       throw new UnauthorizedException('Please verify your email before signing in');
     }
 
     await this.cache.clearLoginAttempts(email);
-    this.logger.verbose({ email }, 'Service: Rate-limiting attempts cleared');
+    this.logger.verbose('Service: Rate-limiting attempts cleared');
 
     return {
       id: credentials.id,
@@ -224,7 +227,7 @@ export class AuthService implements IAuthService {
   async verifyEmail(token: string, clientMetadata?: ClientMetadata): Promise<TokenPair> {
     this.logger.log('Service: Processing email verification transition state');
     this.logger.debug(
-      { token, clientMetadata },
+      { hasToken: !!token, clientMetadata },
       'Service: Verification token validation and metadata propagation',
     );
 
@@ -235,26 +238,22 @@ export class AuthService implements IAuthService {
   }
 
   async resendVerification(email: string): Promise<void> {
-    this.logger.log(`Service: Requesting verification email regeneration for: ${email}`);
+    this.logger.log('Service: Requesting verification email regeneration');
     await this.verification.resend(email);
-    this.logger.log(
-      `Service: Resend operation successfully dispatched to verification manager: ${email}`,
-    );
+    this.logger.log('Service: Resend operation successfully dispatched to verification manager');
   }
 
   async forgotPassword(email: string): Promise<void> {
-    this.logger.log(`Service: Processing forgot password request for: ${email}`);
+    this.logger.log('Service: Processing forgot password request');
 
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) {
-      this.logger.warn(
-        `Service: Forgot password aborted. Email is not registered or lacks password: ${email}`,
-      );
+      this.logger.warn('Service: Forgot password aborted. Email is not registered or lacks password');
       return;
     }
 
     await this.verification.generatePasswordReset(credentials.id, credentials.email);
-    this.logger.log(`Service: Password reset request successfully dispatched for: ${email}`);
+    this.logger.log('Service: Password reset request successfully dispatched');
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
