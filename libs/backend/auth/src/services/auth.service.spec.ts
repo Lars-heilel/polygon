@@ -65,6 +65,8 @@ describe('AuthService', () => {
     addToUserSessions: jest.Mock;
     getUserSessionIds: jest.Mock;
     removeFromUserSessions: jest.Mock;
+    removeAllForUser: jest.Mock;
+    exists: jest.Mock;
   }>;
   let tokenService: { generateTokenPair: jest.Mock; verifyRefreshToken: jest.Mock };
   let adminBans: { assertAccountActive: jest.Mock };
@@ -79,6 +81,8 @@ describe('AuthService', () => {
       addToUserSessions: jest.fn(),
       getUserSessionIds: jest.fn().mockResolvedValue(['session-1', 'session-2']),
       removeFromUserSessions: jest.fn(),
+      removeAllForUser: jest.fn(),
+      exists: jest.fn(),
     };
 
     tokenService = {
@@ -328,6 +332,18 @@ describe('AuthService', () => {
       expect(repo.revokeAllSessions).toHaveBeenCalledWith('creds-1');
     });
 
+    it('removes every cached session when a revoked refresh token is replayed', async () => {
+      repo.findSessionByTokenHash.mockResolvedValue({ ...mockSession, revokedAt: new Date() });
+
+      await expect(service.refresh(mockRefreshToken)).rejects.toThrow(UnauthorizedException);
+
+      expect(sessionCache.getUserSessionIds).toHaveBeenCalledWith('creds-1');
+      expect(sessionCache.remove).toHaveBeenCalledWith('session-1');
+      expect(sessionCache.remove).toHaveBeenCalledWith('session-2');
+      expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-1');
+      expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-2');
+    });
+
     it('throws on expired session', async () => {
       repo.findSessionByTokenHash.mockResolvedValue({
         ...mockSession,
@@ -405,6 +421,8 @@ describe('AuthService', () => {
       expect(sessionCache.remove).toHaveBeenCalledTimes(2);
       expect(sessionCache.remove).toHaveBeenCalledWith('session-1');
       expect(sessionCache.remove).toHaveBeenCalledWith('session-2');
+      expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-1');
+      expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-2');
       expect(repo.revokeAllSessions).toHaveBeenCalledWith('creds-1');
     });
   });

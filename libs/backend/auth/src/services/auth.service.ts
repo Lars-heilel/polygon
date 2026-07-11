@@ -394,6 +394,7 @@ export class AuthService implements IAuthService {
       this.logger.warn(
         `Service: Security warning. Revoked session reuse attempt for user: ${stored.credentialsId}. Revoking all sessions.`,
       );
+      await this.clearCachedSessions(stored.credentialsId);
       await this.repo.revokeAllSessions(stored.credentialsId);
       throw new UnauthorizedException();
     }
@@ -480,15 +481,19 @@ export class AuthService implements IAuthService {
   async revokeAllSessions(credentialsId: string): Promise<void> {
     this.logger.log(`Service: Executing global session revocation for user: ${credentialsId}`);
 
+    await this.clearCachedSessions(credentialsId);
+    await this.repo.revokeAllSessions(credentialsId);
+    this.logger.log(`Service: All sessions terminated for user: ${credentialsId}`);
+  }
+
+  private async clearCachedSessions(credentialsId: string): Promise<void> {
     const sessionIds = await this.sessionCache.getUserSessionIds(credentialsId);
     this.logger.debug({ credentialsId, sessionIds }, 'Service: Cached sessions to clear');
 
     for (const sid of sessionIds) {
       await this.sessionCache.remove(sid);
+      await this.sessionCache.removeFromUserSessions(credentialsId, sid);
     }
-
-    await this.repo.revokeAllSessions(credentialsId);
-    this.logger.log(`Service: All sessions terminated for user: ${credentialsId}`);
   }
 
   private hashToken(token: string): string {
