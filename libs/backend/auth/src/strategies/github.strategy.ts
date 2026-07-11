@@ -4,7 +4,8 @@ import { ClientProxy } from '@nestjs/microservices';
 import { PassportStrategy } from '@nestjs/passport';
 import type { TokenPair } from '@org/common';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env, extractClientMetadata } from '@org/core';
-import { Profile, Strategy } from 'passport-github2';
+import type { Request } from 'express';
+import { Strategy, type Profile } from 'passport-github2';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -25,7 +26,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   }
 
   async validate(
-    req: any,
+    req: Request,
     _accessToken: string,
     _refreshToken: string,
     profile: Profile,
