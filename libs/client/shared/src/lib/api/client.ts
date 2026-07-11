@@ -1,5 +1,9 @@
 const BASE_URL = (import.meta.env['VITE_API_URL'] as string | undefined) ?? '/api';
 
+function joinApiUrl(baseUrl: string, path: string): string {
+  return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -10,7 +14,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${BASE_URL}/${path}`;
+  const url = joinApiUrl(BASE_URL, path);
 
   const res = await fetch(url, {
     ...init,

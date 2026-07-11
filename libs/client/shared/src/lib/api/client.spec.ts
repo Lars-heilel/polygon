@@ -19,4 +19,49 @@ describe('apiFetch', () => {
 
     expect(consoleLog).not.toHaveBeenCalled();
   });
+
+  it('sends JSON requests with credentials included', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'user@example.com', password: 'password' }),
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/auth\/login$/),
+      expect.objectContaining({
+        credentials: 'include',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
+      }),
+    );
+    expect(fetchMock.mock.calls[0]?.[0]).not.toContain('/api//auth/login');
+  });
+
+  it('preserves sanitized error response data for auth error handling', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ message: 'Email already in use' }), { status: 409 }),
+        ),
+      ),
+    );
+
+    await expect(apiFetch('/auth/register')).rejects.toMatchObject({
+      status: 409,
+      data: { message: 'Email already in use' },
+    });
+  });
+
+  it('handles empty successful responses', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(null, { status: 204 }))));
+
+    await expect(apiFetch('/auth/logout')).resolves.toBeUndefined();
+  });
 });
