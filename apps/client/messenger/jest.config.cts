@@ -6,5 +6,7 @@ module.exports = {
     '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['@nx/react/babel'] }],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  passWithNoTests: true,
+  testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
   coverageDirectory: 'test-output/jest/coverage',
 };
