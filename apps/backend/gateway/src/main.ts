@@ -10,6 +10,7 @@ import { Logger } from 'nestjs-pino';
 import { ZodValidationPipe, cleanupOpenApiDoc } from 'nestjs-zod';
 
 import { GatewayModule } from './app/gateway.module';
+import { ZodValidationExceptionFilter } from './filters/zod-validation-exception.filter';
 
 const logger = new NestLogger('Bootstrap');
 
@@ -36,6 +37,7 @@ async function bootstrap() {
   });
   app.use(cookieParser());
   app.useGlobalPipes(new ZodValidationPipe());
+  app.useGlobalFilters(new ZodValidationExceptionFilter());
 
   if (process.env['NODE_ENV'] !== 'production') {
     const config = new DocumentBuilder()

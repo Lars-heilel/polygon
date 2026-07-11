@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
@@ -17,6 +17,7 @@ import {
 } from '@org/core';
 
 import { AuthGatewayController } from './auth.controller';
+import { ZodValidationExceptionFilter } from '../filters/zod-validation-exception.filter';
 
 type MockClient = {
   send: jest.Mock;
@@ -88,19 +89,35 @@ describe('AuthGatewayController HTTP', () => {
 
     app = moduleRef.createNestApplication();
     app.use(cookieParser());
+    app.useGlobalFilters(new ZodValidationExceptionFilter());
     await app.init();
   });
 
   afterEach(async () => {
     await app?.close();
+    jest.restoreAllMocks();
   });
 
   it('rejects invalid register payloads before auth RPC', async () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
     await request(app.getHttpServer())
       .post('/auth/register')
       .send({ email: 'not-an-email', username: 'u', password: 'weak' })
       .expect(400);
 
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        path: '/auth/register',
+        issues: expect.arrayContaining([
+          expect.objectContaining({ path: 'email', code: expect.any(String) }),
+          expect.objectContaining({ path: 'username', code: expect.any(String) }),
+          expect.objectContaining({ path: 'password', code: expect.any(String) }),
+        ]),
+      }),
+      'Zod validation failed',
+    );
     expect(authClient.send).not.toHaveBeenCalled();
   });
 
