@@ -61,7 +61,7 @@ export class AuthGatewayController {
   ) {}
 
   @Post('register')
-  @UsePipes(new ZodValidationPipe(RegisterDto))
+  @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Register a new user with email and password' })
   @ApiResponse({ status: 201, description: 'Registered successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
@@ -80,7 +80,7 @@ export class AuthGatewayController {
   }
 
   @Post('login')
-  @UsePipes(new ZodValidationPipe(LoginDto))
+  @UsePipes(ZodValidationPipe)
   @UseGuards(LocalGuard)
   @ApiBody({ type: LoginDto, description: 'User login credentials' })
   @ApiOperation({ summary: 'Login with email and password' })
@@ -197,7 +197,7 @@ export class AuthGatewayController {
   }
 
   @Post('resend-verification')
-  @UsePipes(new ZodValidationPipe(ResendVerificationDto))
+  @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Resend email verification link' })
   @ApiResponse({ status: 201, description: 'Verification email sent' })
   @ApiResponse({ status: 400, description: 'Account already verified' })
@@ -218,7 +218,7 @@ export class AuthGatewayController {
   }
 
   @Post('forgot-password')
-  @UsePipes(new ZodValidationPipe(ForgotPasswordDto))
+  @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Request password reset email' })
   @ApiResponse({
     status: 201,
@@ -239,7 +239,7 @@ export class AuthGatewayController {
   }
 
   @Post('reset-password')
-  @UsePipes(new ZodValidationPipe(ResetPasswordDto))
+  @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Reset password using token from email' })
   @ApiResponse({ status: 201, description: 'Password reset — all sessions revoked' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
