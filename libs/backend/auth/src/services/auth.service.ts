@@ -83,7 +83,7 @@ export class AuthService implements IAuthService {
       passwordHash,
     });
     this.logger.verbose(
-      { credentialsId: credentials.id },
+      { hasCredentialsId: !!credentials.id },
       'Service: Credentials record created in DB',
     );
 
@@ -190,7 +190,7 @@ export class AuthService implements IAuthService {
     const tokenHash = this.hashToken(tokens.refreshToken);
 
     this.logger.verbose(
-      { sessionId, tokenHashLength: tokenHash.length, refreshExpiresSec },
+      { hasSessionId: !!sessionId, tokenHashLength: tokenHash.length, refreshExpiresSec },
       'Service: Internal session parameters prepared',
     );
 
@@ -232,7 +232,10 @@ export class AuthService implements IAuthService {
     );
 
     const credentialsId = await this.verification.verify(token);
-    this.logger.verbose({ credentialsId }, 'Service: Verification token consumed successfully');
+    this.logger.verbose(
+      { hasCredentialsId: !!credentialsId },
+      'Service: Verification token consumed successfully',
+    );
 
     return this.login(credentialsId, clientMetadata);
   }
@@ -260,19 +263,25 @@ export class AuthService implements IAuthService {
     this.logger.log('Service: Processing password reset consumption');
 
     const credentialsId = await this.verification.consumePasswordResetToken(token);
-    this.logger.verbose({ credentialsId }, 'Service: Verification token validated and consumed');
+    this.logger.verbose(
+      { hasCredentialsId: !!credentialsId },
+      'Service: Verification token validated and consumed',
+    );
 
     const credentials = await this.repo.findById(credentialsId);
     if (!credentials) {
-      this.logger.error(`Service: User target not found during reset: ${credentialsId}`);
+      this.logger.error('Service: User target not found during reset');
       throw new NotFoundException('User not found');
     }
 
     const passwordHash = await this.encryption.hash(newPassword);
     await this.repo.updatePasswordHash(credentialsId, passwordHash);
-    this.logger.verbose({ credentialsId }, 'Service: Database password hash updated');
+    this.logger.verbose(
+      { hasCredentialsId: !!credentialsId },
+      'Service: Database password hash updated',
+    );
 
-    this.logger.log(`Service: Revoking all active sessions for credentialsId: ${credentialsId}`);
+    this.logger.log('Service: Revoking all active sessions for credentials');
     await this.revokeAllSessions(credentialsId);
   }
 
@@ -292,7 +301,7 @@ export class AuthService implements IAuthService {
     const existing = await this.repo.findOAuthAccount(dto.provider, dto.providerId);
     if (existing) {
       this.logger.verbose(
-        { credentialsId: existing.credentials.id },
+        { hasCredentialsId: !!existing.credentials.id },
         'Service: Existing OAuth link found in database',
       );
       return this.login(existing.credentials.id, clientMetadata);
@@ -336,7 +345,7 @@ export class AuthService implements IAuthService {
 
     if (!credentials.isVerified) {
       this.logger.verbose(
-        { credentialsId: credentials.id },
+        { hasCredentialsId: !!credentials.id },
         'Service: Unverified credentials found, forcing auto-verification',
       );
       await this.repo.verifyCredentials(credentials.id);
@@ -360,7 +369,11 @@ export class AuthService implements IAuthService {
 
     const tokenHash = this.hashToken(refreshToken);
     this.logger.debug(
-      { sub: payload.sub, sessionId: payload.sessionId, tokenHashLength: tokenHash.length },
+      {
+        hasSubject: !!payload.sub,
+        hasSessionId: !!payload.sessionId,
+        tokenHashLength: tokenHash.length,
+      },
       'Service: Session parameters decrypted',
     );
 
@@ -371,7 +384,7 @@ export class AuthService implements IAuthService {
     await this.sessionCache.removeFromUserSessions(payload.sub, payload.sessionId);
     this.logger.verbose('Service: Session revoked and cleaned up in cache (Redis)');
 
-    this.logger.log(`Service: Logout flow successfully executed for session: ${payload.sessionId}`);
+    this.logger.log('Service: Logout flow successfully executed');
   }
 
   async refresh(refreshToken: string): Promise<TokenPair> {
@@ -436,17 +449,17 @@ export class AuthService implements IAuthService {
     );
 
     await this.repo.updateSessionLastActive(stored.id);
-    this.logger.log(`Service: Token rotation successfully completed for session: ${stored.id}`);
+    this.logger.log('Service: Token rotation successfully completed');
 
     return newTokens;
   }
 
   async listSessions(credentialsId: string, currentSessionId: string): Promise<SessionResponse[]> {
-    this.logger.log(`Service: Querying active sessions for credentialsId: ${credentialsId}`);
+    this.logger.log('Service: Querying active sessions for credentials');
 
     const sessions = await this.repo.findActiveSessions(credentialsId);
     this.logger.debug(
-      { credentialsId, count: sessions.length },
+      { hasCredentialsId: !!credentialsId, count: sessions.length },
       'Service: DB session search result',
     );
 
@@ -464,12 +477,12 @@ export class AuthService implements IAuthService {
   }
 
   async revokeSession(sessionId: string, credentialsId: string): Promise<void> {
-    this.logger.log(`Service: Revocation command received for session: ${sessionId}`);
+    this.logger.log('Service: Revocation command received for session');
 
     const session = await this.repo.findSessionById(sessionId);
     if (!session || session.credentialsId !== credentialsId) {
       this.logger.warn(
-        `Service: Unauthorized revocation attempt of session ${sessionId} by user: ${credentialsId}`,
+        'Service: Unauthorized revocation attempt of session by user',
       );
       throw new UnauthorizedException();
     }
@@ -481,15 +494,15 @@ export class AuthService implements IAuthService {
     await this.sessionCache.removeFromUserSessions(credentialsId, sessionId);
     this.logger.verbose('Service: Session removed from cache layer');
 
-    this.logger.log(`Service: Session: ${sessionId} successfully revoked`);
+    this.logger.log('Service: Session successfully revoked');
   }
 
   async revokeAllSessions(credentialsId: string): Promise<void> {
-    this.logger.log(`Service: Executing global session revocation for user: ${credentialsId}`);
+    this.logger.log('Service: Executing global session revocation for user');
 
     await this.clearCachedSessions(credentialsId);
     await this.repo.revokeAllSessions(credentialsId);
-    this.logger.log(`Service: All sessions terminated for user: ${credentialsId}`);
+    this.logger.log('Service: All sessions terminated for user');
   }
 
   private async clearCachedSessions(credentialsId: string): Promise<void> {

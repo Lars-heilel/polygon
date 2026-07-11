@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+
 import type { PrismaService } from '../prisma/prisma.service';
 
 import { AuthPrismaRepository } from './auth.prisma.repo';
@@ -9,14 +11,78 @@ describe('AuthPrismaRepository admin persistence', () => {
     updateMany: jest.fn(),
   };
   const session = {
+    create: jest.fn(),
+    findUnique: jest.fn(),
     findMany: jest.fn(),
+    update: jest.fn(),
     updateMany: jest.fn(),
   };
-  const prisma = { credentials, session, $transaction: jest.fn() };
+  const oAuthAccount = {
+    create: jest.fn(),
+  };
+  const prisma = { credentials, oAuthAccount, session, $transaction: jest.fn() };
   const repository = new AuthPrismaRepository(prisma as unknown as PrismaService);
 
   beforeEach(() => {
     jest.resetAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  it('does not write token hashes, provider ids, or client metadata to diagnostic logs', async () => {
+    const debugSpy = jest.spyOn(Logger.prototype, 'debug').mockImplementation();
+    const verboseSpy = jest.spyOn(Logger.prototype, 'verbose').mockImplementation();
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+
+    credentials.findUnique.mockResolvedValue({
+      id: 'credentials-secret',
+      email: 'secret@example.com',
+      passwordHash: 'password-hash-secret',
+    });
+    session.create.mockResolvedValue(undefined);
+    session.findUnique.mockResolvedValue({
+      id: 'session-secret',
+      tokenHash: 'refresh-token-hash-secret',
+      credentialsId: 'credentials-secret',
+    });
+    session.update.mockResolvedValue(undefined);
+    oAuthAccount.create.mockResolvedValue(undefined);
+
+    await repository.findById('credentials-secret');
+    await repository.createOAuthAccount({
+      provider: 'google',
+      providerId: 'provider-id-secret',
+      credentialsId: 'credentials-secret',
+    });
+    await repository.saveSession({
+      id: 'session-secret',
+      tokenHash: 'refresh-token-hash-secret',
+      credentialsId: 'credentials-secret',
+      expiresAt: new Date('2026-07-11T12:00:00.000Z'),
+      ip: '203.0.113.10',
+      country: 'Secret Country',
+      os: 'Linux',
+      browser: 'Chrome',
+      device: 'Desktop',
+      userAgent: 'Secret User Agent',
+    });
+    await repository.findSessionByTokenHash('refresh-token-hash-secret');
+    await repository.updateSessionTokenHash('session-secret', 'new-refresh-token-hash-secret');
+
+    const logPayload = JSON.stringify([
+      debugSpy.mock.calls,
+      verboseSpy.mock.calls,
+      logSpy.mock.calls,
+    ]);
+    expect(logPayload).not.toContain('secret@example.com');
+    expect(logPayload).not.toContain('credentials-secret');
+    expect(logPayload).not.toContain('session-secret');
+    expect(logPayload).not.toContain('password-hash-secret');
+    expect(logPayload).not.toContain('provider-id-secret');
+    expect(logPayload).not.toContain('refresh-token-hash-secret');
+    expect(logPayload).not.toContain('new-refresh-token-hash-secret');
+    expect(logPayload).not.toContain('203.0.113.10');
+    expect(logPayload).not.toContain('Secret Country');
+    expect(logPayload).not.toContain('Secret User Agent');
   });
 
   it('atomically persists the ban and revokes every active SQL session', async () => {

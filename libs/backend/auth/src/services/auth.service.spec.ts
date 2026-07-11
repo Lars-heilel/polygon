@@ -440,6 +440,24 @@ describe('AuthService', () => {
     });
   });
 
+  it('does not write credentials or session ids in session-management logs', async () => {
+    await service.logout(mockRefreshToken);
+    await service.refresh(mockRefreshToken);
+    await service.listSessions('creds-1', 'session-1');
+    await service.revokeSession('session-1', 'creds-1');
+    await service.revokeAllSessions('creds-1');
+
+    const logPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.verbose.mock.calls,
+      logger.warn.mock.calls,
+      logger.log.mock.calls,
+    ]);
+    expect(logPayload).not.toContain('creds-1');
+    expect(logPayload).not.toContain('session-1');
+    expect(logPayload).not.toContain('session-2');
+  });
+
   describe('listSessions', () => {
     it('returns active sessions with isCurrent flag', async () => {
       const result = await service.listSessions('creds-1', 'session-1');
