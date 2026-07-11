@@ -8,7 +8,7 @@ import {
   useGetChatsQuery,
 } from '@org/entities-chat';
 import type { Chat } from '@org/entities-chat';
-import { queryClient, socket, toast } from '@org/shared';
+import { queryClient, socket, toast, useLogger } from '@org/shared';
 
 import { useNotificationStore } from './notification.store';
 
@@ -35,6 +35,7 @@ function isMobile() {
 }
 
 export function useMessageNotification() {
+  const logger = useLogger('MessageNotify');
   const isMuted = useNotificationStore((s) => s.isMuted);
   const lastMsg = useChatStore(selectLastReceivedMessage);
   const incrementUnread = useChatStore((s) => s.incrementUnread);
@@ -100,9 +101,9 @@ export function useMessageNotification() {
 
   useEffect(() => {
     if (!chats?.length) return;
-    console.log('[MessageNotify] Joining rooms for', chats.length, 'chats');
+    logger.debug('Joining chat notification rooms', { chatCount: chats.length });
     chats.forEach((chat) => socket.emit('chat:join', { chatId: chat.id }));
-  }, [chats, activeChatId]);
+  }, [chats, activeChatId, logger]);
 
   useEffect(() => {
     if (!lastMsg || lastMsg.id === processedIdRef.current) return;
@@ -111,35 +112,37 @@ export function useMessageNotification() {
     const currentActiveChatId = useChatStore.getState().activeChatId;
     const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
 
-    console.log('[MessageNotify] Received message id=' + lastMsg.id + ', chatId=' + lastMsg.chatId, {
-      activeChatId: currentActiveChatId,
+    logger.debug('Received message notification candidate', {
+      hasMessageId: !!lastMsg.id,
+      hasChatId: !!lastMsg.chatId,
+      hasActiveChatId: !!currentActiveChatId,
       tabVisible,
       isMuted,
       isMobile: isMobile(),
-      senderId: lastMsg.senderId,
+      hasSenderId: !!lastMsg.senderId,
     });
 
     if (lastMsg.chatId === currentActiveChatId && tabVisible) {
-      console.log('[MessageNotify] Suppressed: user is in active chat with tab focused');
+      logger.debug('Suppressed notification because active chat has focus');
       return;
     }
 
     const me = queryClient.getQueryData<{ id: string }>(['me']);
     if (lastMsg.senderId === me?.id) {
-      console.log('[MessageNotify] Suppressed: message from self');
+      logger.debug('Suppressed notification because message belongs to current user');
       return;
     }
 
     if (isMuted) {
-      console.log('[MessageNotify] Suppressed: notifications are muted');
+      logger.debug('Suppressed notification because notifications are muted');
       return;
     }
 
-    console.log('[MessageNotify] Playing notification sound');
+    logger.debug('Playing notification sound');
     playNotificationSound();
 
     if (isMobile()) {
-      console.log('[MessageNotify] Suppressed toast: is mobile (no in-app toast on phone)');
+      logger.debug('Suppressed toast on mobile viewport');
       return;
     }
 
@@ -149,7 +152,7 @@ export function useMessageNotification() {
     const senderName = sender?.displayName ?? sender?.name ?? 'New message';
     const preview = getMessagePreview(lastMsg);
 
-    console.log('[MessageNotify] Showing toast from', senderName);
+    logger.debug('Showing message notification toast', { hasSenderName: !!senderName });
     toast(senderName, { description: preview, duration: 4000 });
-  }, [lastMsg, isMuted]);
+  }, [lastMsg, isMuted, logger]);
 }

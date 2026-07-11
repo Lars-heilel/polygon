@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-import { authedFetch } from '@org/shared';
+import { authedFetch, useLogger } from '@org/shared';
 
 const VAPID_KEY_ENDPOINT = 'notifications/push/vapid-key';
 const SUBSCRIBE_ENDPOINT = 'notifications/push/subscribe';
@@ -13,30 +13,35 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from(rawData.split('').map((c) => c.charCodeAt(0)));
 }
 
-async function getVapidPublicKey(): Promise<string> {
-  console.log('[PushSubscribe] Fetching VAPID public key from', VAPID_KEY_ENDPOINT);
+type PushLogger = ReturnType<typeof useLogger>;
+
+async function getVapidPublicKey(logger: PushLogger): Promise<string> {
+  logger.debug('Fetching VAPID public key');
   try {
     const { publicKey } = await authedFetch<{ publicKey: string }>(VAPID_KEY_ENDPOINT);
-    console.log('[PushSubscribe] VAPID public key received, length=' + publicKey.length);
+    logger.debug('VAPID public key received', { keyLength: publicKey.length });
     return publicKey;
   } catch (err) {
-    console.error('[PushSubscribe] Failed to fetch VAPID public key:', err);
+    logger.error('Failed to fetch VAPID public key', { hasError: !!err });
     throw err;
   }
 }
 
-async function subscribePush(registration: ServiceWorkerRegistration): Promise<PushSubscription | null> {
+async function subscribePush(
+  registration: ServiceWorkerRegistration,
+  logger: PushLogger,
+): Promise<PushSubscription | null> {
   try {
-    const publicKey = await getVapidPublicKey();
-    console.log('[PushSubscribe] Calling pushManager.subscribe() with VAPID key...');
+    const publicKey = await getVapidPublicKey(logger);
+    logger.debug('Calling pushManager.subscribe with VAPID key');
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
     });
-    console.log('[PushSubscribe] Browser subscription created, endpoint=' + (subscription.endpoint ?? '').slice(0, 50) + '...');
+    logger.debug('Browser subscription created', { hasEndpoint: !!subscription.endpoint });
 
     const sub = subscription.toJSON();
-    console.log('[PushSubscribe] Sending subscription to server POST', SUBSCRIBE_ENDPOINT);
+    logger.debug('Sending subscription to server');
     await authedFetch(SUBSCRIBE_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -46,42 +51,43 @@ async function subscribePush(registration: ServiceWorkerRegistration): Promise<P
         auth: sub.keys?.auth ?? '',
       }),
     });
-    console.log('[PushSubscribe] Server subscription saved successfully');
+    logger.debug('Server subscription saved successfully');
 
     return subscription;
   } catch (err) {
-    console.error('[PushSubscribe] Failed to subscribe to push:', err);
+    logger.error('Failed to subscribe to push', { hasError: !!err });
     return null;
   }
 }
 
-async function unsubscribePush(): Promise<void> {
-  console.log('[PushSubscribe] Unsubscribing from push...');
+async function unsubscribePush(logger: PushLogger): Promise<void> {
+  logger.debug('Unsubscribing from push');
   try {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
-      console.log('[PushSubscribe] No existing subscription found');
+      logger.debug('No existing subscription found');
       return;
     }
 
     const endpoint = subscription.endpoint;
-    console.log('[PushSubscribe] Browser subscription found, endpoint=' + (endpoint ?? '').slice(0, 50) + '...');
+    logger.debug('Browser subscription found', { hasEndpoint: !!endpoint });
     await subscription.unsubscribe();
-    console.log('[PushSubscribe] Browser unsubscribed');
+    logger.debug('Browser unsubscribed');
 
     await authedFetch(UNSUBSCRIBE_ENDPOINT, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint }),
     }).catch(() => undefined);
-    console.log('[PushSubscribe] Server unsubscribed');
+    logger.debug('Server unsubscribed');
   } catch (err) {
-    console.error('[PushSubscribe] Failed to unsubscribe from push:', err);
+    logger.error('Failed to unsubscribe from push', { hasError: !!err });
   }
 }
 
 export function usePushSubscription(enabled: boolean) {
+  const logger = useLogger('PushSubscribe');
   const enabledRef = useRef(enabled);
 
   useEffect(() => {
@@ -90,43 +96,43 @@ export function usePushSubscription(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) {
-      console.log('[PushSubscribe] Hook: disabled, skipping');
+      logger.debug('Hook disabled, skipping push subscription setup');
       return;
     }
 
-    console.log('[PushSubscribe] Hook: enabled, checking browser support');
+    logger.debug('Hook enabled, checking browser support');
 
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('[PushSubscribe] Hook: ServiceWorker or PushManager not available');
+      logger.warn('ServiceWorker or PushManager not available');
       return;
     }
 
     if (Notification.permission === 'denied') {
-      console.warn('[PushSubscribe] Hook: Notification permission denied');
+      logger.warn('Notification permission denied');
       return;
     }
 
     const requestPermissionAndSubscribe = async () => {
       if (Notification.permission === 'default') {
-        console.log('[PushSubscribe] Hook: Permission default, requesting...');
+        logger.debug('Notification permission default, requesting permission');
         const permission = await Notification.requestPermission();
-        console.log('[PushSubscribe] Hook: Permission result =', permission);
+        logger.debug('Notification permission request completed', { permission });
         if (permission !== 'granted') {
-          console.warn('[PushSubscribe] Hook: Permission not granted');
+          logger.warn('Notification permission not granted');
           return;
         }
       }
 
       try {
-        console.log('[PushSubscribe] Hook: Waiting for service worker to be ready...');
+        logger.debug('Waiting for service worker readiness');
         const registration = await navigator.serviceWorker.ready;
-        console.log('[PushSubscribe] Hook: Service worker ready, scope=' + registration.scope);
+        logger.debug('Service worker ready', { hasScope: !!registration.scope });
 
         const existing = await registration.pushManager.getSubscription();
-        console.log('[PushSubscribe] Hook: Existing subscription =', existing ? 'found' : 'none');
+        logger.debug('Existing subscription lookup completed', { found: !!existing });
 
         if (existing) {
-          console.log('[PushSubscribe] Hook: Re-registering existing subscription with server');
+          logger.debug('Re-registering existing subscription with server');
           const existingSub = existing.toJSON();
           try {
             await authedFetch(SUBSCRIBE_ENDPOINT, {
@@ -138,32 +144,32 @@ export function usePushSubscription(enabled: boolean) {
                 auth: existingSub.keys?.auth ?? '',
               }),
             });
-            console.log('[PushSubscribe] Hook: Existing subscription re-registered successfully');
+            logger.debug('Existing subscription re-registered successfully');
           } catch (err) {
-            console.error('[PushSubscribe] Hook: Failed to re-register existing subscription:', err);
+            logger.error('Failed to re-register existing subscription', { hasError: !!err });
           }
           return;
         }
 
-        console.log('[PushSubscribe] Hook: No existing subscription, creating new one...');
-        const result = await subscribePush(registration);
+        logger.debug('No existing subscription, creating new one');
+        const result = await subscribePush(registration, logger);
         if (result) {
-          console.log('[PushSubscribe] Hook: New push subscription created successfully');
+          logger.debug('New push subscription created successfully');
         } else {
-          console.error('[PushSubscribe] Hook: Failed to create push subscription');
+          logger.error('Failed to create push subscription');
         }
       } catch (err) {
-        console.error('[PushSubscribe] Hook: Push subscription error:', err);
+        logger.error('Push subscription error', { hasError: !!err });
       }
     };
 
     requestPermissionAndSubscribe();
-  }, [enabled]);
+  }, [enabled, logger]);
 
   const unsubscribe = useCallback(async () => {
-    console.log('[PushSubscribe] Hook: Unsubscribe called');
-    await unsubscribePush();
-  }, []);
+    logger.debug('Unsubscribe requested');
+    await unsubscribePush(logger);
+  }, [logger]);
 
   return { unsubscribe };
 }

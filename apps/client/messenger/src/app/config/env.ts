@@ -7,9 +7,11 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(import.meta.env);
 
 if (!parsed.success) {
-  console.error('[env] Invalid environment variables:');
-  for (const issue of parsed.error.issues) {
-    console.error(` ${issue.path.join('.')}: ${issue.message}`);
+  if (import.meta.env.DEV) {
+    console.error('[env] Invalid environment variables:');
+    for (const issue of parsed.error.issues) {
+      console.error(` ${issue.path.join('.')}: ${issue.message}`);
+    }
   }
   throw new Error('Invalid environment variables — check console for details');
 }

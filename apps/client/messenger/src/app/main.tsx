@@ -5,6 +5,7 @@ import {
   configureAuthedFetch,
   configureFrontendErrorReporting,
   registerGlobalFrontendErrorHandlers,
+  reportFrontendError,
 } from '@org/shared';
 import * as ReactDOM from 'react-dom/client';
 
@@ -21,7 +22,11 @@ initSocketMiddleware();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
-      console.error('SW registration failed:', err);
+      const error = err instanceof Error ? err : new Error('Service worker registration failed');
+      reportFrontendError(error);
+      if (import.meta.env.DEV) {
+        console.error('SW registration failed:', err);
+      }
     });
   });
 }
