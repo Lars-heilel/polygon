@@ -68,7 +68,10 @@ export class AuthGatewayController {
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async register(@Body() dto: RegisterDto, @GetClientMetadata() metadata: ClientMetadata) {
     this.logger.log('Processing registration request');
-    this.logger.debug({ hasEmail: !!dto.email, metadata }, 'Registration request context');
+    this.logger.debug(
+      { hasEmail: !!dto.email, metadata: this.clientMetadataSummary(metadata) },
+      'Registration request context',
+    );
 
     await this.send(this.authClient.send(AUTH_PATTERNS.REGISTER, dto));
 
@@ -94,8 +97,16 @@ export class AuthGatewayController {
     @GetClientMetadata() metadata: ClientMetadata,
   ) {
     const credentials = req.user as CredentialsPayload;
-    this.logger.log(`Processing login for credentials ID: ${credentials.id}`);
-    this.logger.debug({ credentials, metadata }, 'Login credentials and client metadata state');
+    this.logger.log('Processing login request');
+    this.logger.debug(
+      {
+        hasCredentials: !!credentials.id,
+        role: credentials.role,
+        isVerified: credentials.isVerified,
+        metadata: this.clientMetadataSummary(metadata),
+      },
+      'Login credentials and client metadata state',
+    );
 
     const tokens = await this.send<TokenPair>(
       this.authClient.send(AUTH_PATTERNS.LOGIN, {
@@ -105,7 +116,7 @@ export class AuthGatewayController {
     );
 
     this.setTokenCookies(res, tokens);
-    this.logger.log(`Login sequence completed for credentials ID: ${credentials.id}`);
+    this.logger.log('Login sequence completed');
 
     return { message: 'Logged in successfully' };
   }
@@ -166,7 +177,10 @@ export class AuthGatewayController {
     @Res() res: Response,
   ) {
     this.logger.log('Processing email verification request');
-    this.logger.debug({ hasToken: !!token, metadata }, 'Verify email state and client metadata');
+    this.logger.debug(
+      { hasToken: !!token, metadata: this.clientMetadataSummary(metadata) },
+      'Verify email state and client metadata',
+    );
 
     const tokens = await this.send<TokenPair>(
       this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, {
@@ -262,7 +276,10 @@ export class AuthGatewayController {
     @Res() res: Response,
   ) {
     this.logger.log('GitHub OAuth callback route triggered');
-    this.logger.debug({ user: req.user, metadata }, 'GitHub callback context and client metadata');
+    this.logger.debug(
+      { tokens: this.tokenPairSummary(req.user), metadata: this.clientMetadataSummary(metadata) },
+      'GitHub callback context and client metadata',
+    );
 
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
@@ -289,7 +306,10 @@ export class AuthGatewayController {
     @Res() res: Response,
   ) {
     this.logger.log('Yandex OAuth callback route triggered');
-    this.logger.debug({ user: req.user, metadata }, 'Yandex callback context and client metadata');
+    this.logger.debug(
+      { tokens: this.tokenPairSummary(req.user), metadata: this.clientMetadataSummary(metadata) },
+      'Yandex callback context and client metadata',
+    );
 
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
@@ -316,7 +336,10 @@ export class AuthGatewayController {
     @Res() res: Response,
   ) {
     this.logger.log('Google OAuth callback route triggered');
-    this.logger.debug({ user: req.user, metadata }, 'Google callback context and client metadata');
+    this.logger.debug(
+      { tokens: this.tokenPairSummary(req.user), metadata: this.clientMetadataSummary(metadata) },
+      'Google callback context and client metadata',
+    );
 
     this.setTokenCookies(res, req.user);
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
@@ -331,8 +354,11 @@ export class AuthGatewayController {
   @ApiCookieAuth('access_token')
   async listSessions(@Req() req: Request): Promise<SessionResponse[]> {
     const jwtPayload = req.user as JwtPayload;
-    this.logger.log(`Retrieving session directory for user sub: ${jwtPayload.sub}`);
-    this.logger.debug({ jwtPayload }, 'Active sessions fetch JWT token state');
+    this.logger.log('Retrieving session directory');
+    this.logger.debug(
+      { jwt: this.jwtPayloadSummary(jwtPayload) },
+      'Active sessions fetch JWT token state',
+    );
 
     const sessions = await this.send<SessionResponse[]>(
       this.authClient.send(AUTH_PATTERNS.LIST_SESSIONS, {
@@ -341,7 +367,10 @@ export class AuthGatewayController {
       }),
     );
 
-    this.logger.verbose({ sessions }, 'Sessions returned from authorization microservice');
+    this.logger.verbose(
+      { count: sessions.length, hasCurrentSession: sessions.some((session) => session.isCurrent) },
+      'Sessions returned from authorization microservice',
+    );
     return sessions;
   }
 
@@ -355,8 +384,11 @@ export class AuthGatewayController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const jwtPayload = req.user as JwtPayload;
-    this.logger.log(`Revocation request for session ${id} initiated by user: ${jwtPayload.sub}`);
-    this.logger.debug({ targetSessionId: id, jwtPayload }, 'Session revocation details context');
+    this.logger.log('Session revocation request received');
+    this.logger.debug(
+      { hasTargetSession: !!id, isCurrentSession: id === jwtPayload.sessionId },
+      'Session revocation details context',
+    );
 
     await this.send(
       this.authClient.send(AUTH_PATTERNS.REVOKE_SESSION, {
@@ -366,11 +398,11 @@ export class AuthGatewayController {
     );
 
     if (id === jwtPayload.sessionId) {
-      this.logger.warn(`Current active session (${id}) revoked. Token cookies are being cleared.`);
+      this.logger.warn('Current active session revoked. Token cookies are being cleared.');
       this.clearTokenCookies(res);
     }
 
-    this.logger.log(`Session ${id} successfully revoked`);
+    this.logger.log('Session successfully revoked');
     return { message: 'Session revoked' };
   }
 
@@ -380,8 +412,11 @@ export class AuthGatewayController {
   @ApiCookieAuth('access_token')
   async revokeAllSessions(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const jwtPayload = req.user as JwtPayload;
-    this.logger.log(`Full account session flush requested by user: ${jwtPayload.sub}`);
-    this.logger.debug({ jwtPayload }, 'All sessions revocation JWT payload context');
+    this.logger.log('Full account session flush requested');
+    this.logger.debug(
+      { jwt: this.jwtPayloadSummary(jwtPayload) },
+      'All sessions revocation JWT payload context',
+    );
 
     await this.send(
       this.authClient.send(AUTH_PATTERNS.REVOKE_ALL_SESSIONS, {
@@ -426,6 +461,34 @@ export class AuthGatewayController {
     res.clearCookie('refresh_token', opts);
   }
 
+  private clientMetadataSummary(metadata?: Partial<ClientMetadata>) {
+    return {
+      hasIp: !!metadata?.ip,
+      hasCountry: !!metadata?.country,
+      hasOs: !!metadata?.os,
+      hasBrowser: !!metadata?.browser,
+      hasDevice: !!metadata?.device,
+      hasUserAgent: !!metadata?.userAgent,
+      hasLoginTime: !!metadata?.loginTime,
+    };
+  }
+
+  private tokenPairSummary(tokens?: Partial<TokenPair>) {
+    return {
+      hasAccessToken: !!tokens?.accessToken,
+      hasRefreshToken: !!tokens?.refreshToken,
+    };
+  }
+
+  private jwtPayloadSummary(payload?: Partial<JwtPayload>) {
+    return {
+      hasSubject: !!payload?.sub,
+      hasSessionId: !!payload?.sessionId,
+      role: payload?.role,
+      isVerified: payload?.isVerified,
+    };
+  }
+
   private async send<T>(observable: Observable<T>): Promise<T> {
     try {
       return await lastValueFrom(observable);
@@ -434,8 +497,8 @@ export class AuthGatewayController {
         (acc, k) => ({ ...acc, [k]: (err as Record<string, unknown>)[k] }),
         {} as Record<string, unknown>,
       );
-      this.logger.error({ err: errObj }, 'RPC call failed');
-      this.logger.debug('Full RPC error dump: %o', errObj);
+      this.logger.error({ err: this.rpcErrorSummary(errObj) }, 'RPC call failed');
+      this.logger.debug({ err: this.rpcErrorSummary(errObj) }, 'RPC error context');
 
       const rpcErr = err as Record<string, unknown>;
       const response = rpcErr.response as Record<string, unknown> | undefined;
@@ -449,5 +512,15 @@ export class AuthGatewayController {
       this.logger.warn(`RPC failed [${status}]: ${message}`);
       throw new HttpException(message, status);
     }
+  }
+
+  private rpcErrorSummary(err: Record<string, unknown>) {
+    const response = err.response as Record<string, unknown> | undefined;
+    return {
+      name: typeof err.name === 'string' ? err.name : undefined,
+      statusCode: err.statusCode ?? err.status ?? response?.statusCode,
+      hasMessage: !!(err.message ?? response?.message),
+      hasResponse: !!response,
+    };
   }
 }

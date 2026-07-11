@@ -58,6 +58,13 @@ const mockSession = {
 describe('AuthService', () => {
   let service: AuthService;
   let repo: jest.Mocked<IAuthRepository>;
+  let logger: {
+    debug: jest.Mock;
+    error: jest.Mock;
+    log: jest.Mock;
+    verbose: jest.Mock;
+    warn: jest.Mock;
+  };
   let sessionCache: jest.Mocked<{
     save: jest.Mock;
     find: jest.Mock;
@@ -104,6 +111,13 @@ describe('AuthService', () => {
       clearLoginAttempts: jest.fn(),
     };
     encryption = { hash: jest.fn(), compare: jest.fn().mockResolvedValue(true) };
+    logger = {
+      debug: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+      verbose: jest.fn(),
+      warn: jest.fn(),
+    };
 
     repo = {
       findById: jest.fn().mockResolvedValue(mockCredentials),
@@ -177,6 +191,7 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get(AuthService);
+    Object.defineProperty(service, 'logger', { value: logger });
   });
 
   it.each([
@@ -251,6 +266,40 @@ describe('AuthService', () => {
       }),
     ).rejects.toThrow('ACCOUNT_BANNED');
     expect(repo.createOAuthAccount).not.toHaveBeenCalled();
+  });
+
+  it('does not write OAuth email, provider id, or client metadata to diagnostic logs', async () => {
+    repo.findOAuthAccount.mockResolvedValue(null);
+    repo.findByEmail.mockResolvedValue(mockCredentials);
+
+    await service.oauthLogin(
+      {
+        provider: 'google',
+        providerId: 'sensitive-provider-id',
+        email: 'oauth-user@example.com',
+        name: 'OAuth User',
+      },
+      {
+        ip: '203.0.113.30',
+        userAgent: 'OAuth Service User Agent',
+        country: 'Secret Country',
+        os: 'Linux',
+        browser: 'Chrome',
+        device: 'Desktop',
+        loginTime: new Date().toISOString(),
+      },
+    );
+
+    const logPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.verbose.mock.calls,
+      logger.log.mock.calls,
+    ]);
+    expect(logPayload).not.toContain('oauth-user@example.com');
+    expect(logPayload).not.toContain('sensitive-provider-id');
+    expect(logPayload).not.toContain('203.0.113.30');
+    expect(logPayload).not.toContain('OAuth Service User Agent');
+    expect(logPayload).not.toContain('Secret Country');
   });
 
   describe('login', () => {
@@ -342,6 +391,21 @@ describe('AuthService', () => {
       expect(sessionCache.remove).toHaveBeenCalledWith('session-2');
       expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-1');
       expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-2');
+    });
+
+    it('does not write raw credentials or session ids when a revoked refresh token is replayed', async () => {
+      repo.findSessionByTokenHash.mockResolvedValue({ ...mockSession, revokedAt: new Date() });
+
+      await expect(service.refresh(mockRefreshToken)).rejects.toThrow(UnauthorizedException);
+
+      const logPayload = JSON.stringify([
+        logger.debug.mock.calls,
+        logger.warn.mock.calls,
+        logger.log.mock.calls,
+      ]);
+      expect(logPayload).not.toContain('creds-1');
+      expect(logPayload).not.toContain('session-1');
+      expect(logPayload).not.toContain('session-2');
     });
 
     it('throws on expired session', async () => {

@@ -161,10 +161,10 @@ export class AuthService implements IAuthService {
   }
 
   async login(id: string, clientMetadata?: ClientMetadata): Promise<TokenPair> {
-    this.logger.log(`Service: Establishing new session for user credentials ID: ${id}`);
+    this.logger.log('Service: Establishing new session');
 
     this.logger.debug(
-      { credentialsId: id, clientMetadata },
+      { hasCredentialsId: !!id, clientMetadata: this.clientMetadataSummary(clientMetadata) },
       'Service: Initial session payload and metadata',
     );
 
@@ -219,7 +219,7 @@ export class AuthService implements IAuthService {
     );
 
     await this.sessionCache.addToUserSessions(credentials.id, sessionId);
-    this.logger.log(`Service: Session ${sessionId} successfully registered for ID: ${id}`);
+    this.logger.log('Service: Session successfully registered');
 
     return tokens;
   }
@@ -227,7 +227,7 @@ export class AuthService implements IAuthService {
   async verifyEmail(token: string, clientMetadata?: ClientMetadata): Promise<TokenPair> {
     this.logger.log('Service: Processing email verification transition state');
     this.logger.debug(
-      { hasToken: !!token, clientMetadata },
+      { hasToken: !!token, clientMetadata: this.clientMetadataSummary(clientMetadata) },
       'Service: Verification token validation and metadata propagation',
     );
 
@@ -279,7 +279,13 @@ export class AuthService implements IAuthService {
   async oauthLogin(dto: OAuthLoginDto, clientMetadata?: ClientMetadata): Promise<TokenPair> {
     this.logger.log(`Service: Processing OAuth pipeline for provider: ${dto.provider}`);
     this.logger.debug(
-      { dto, clientMetadata },
+      {
+        provider: dto.provider,
+        hasProviderId: !!dto.providerId,
+        hasEmail: !!dto.email,
+        hasName: !!dto.name,
+        clientMetadata: this.clientMetadataSummary(clientMetadata),
+      },
       'Service: OAuth dto parameters and metadata context',
     );
 
@@ -293,7 +299,7 @@ export class AuthService implements IAuthService {
     }
 
     this.logger.verbose(
-      { email: dto.email },
+      { hasEmail: !!dto.email },
       'Service: No existing OAuth link. Checking credentials mapping by email',
     );
     let credentials = await this.repo.findByEmail(dto.email);
@@ -301,7 +307,7 @@ export class AuthService implements IAuthService {
 
     if (!credentials) {
       this.logger.verbose(
-        { email: dto.email },
+        { hasEmail: !!dto.email },
         'Service: User does not exist. Creating new federated credentials record',
       );
       credentials = await this.repo.createCredentials({ email: dto.email });
@@ -392,7 +398,7 @@ export class AuthService implements IAuthService {
 
     if (stored.revokedAt) {
       this.logger.warn(
-        `Service: Security warning. Revoked session reuse attempt for user: ${stored.credentialsId}. Revoking all sessions.`,
+        'Service: Security warning. Revoked session reuse attempt. Revoking all sessions.',
       );
       await this.clearCachedSessions(stored.credentialsId);
       await this.repo.revokeAllSessions(stored.credentialsId);
@@ -488,7 +494,10 @@ export class AuthService implements IAuthService {
 
   private async clearCachedSessions(credentialsId: string): Promise<void> {
     const sessionIds = await this.sessionCache.getUserSessionIds(credentialsId);
-    this.logger.debug({ credentialsId, sessionIds }, 'Service: Cached sessions to clear');
+    this.logger.debug(
+      { hasCredentialsId: !!credentialsId, sessionCount: sessionIds.length },
+      'Service: Cached sessions to clear',
+    );
 
     for (const sid of sessionIds) {
       await this.sessionCache.remove(sid);
@@ -498,5 +507,17 @@ export class AuthService implements IAuthService {
 
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private clientMetadataSummary(metadata?: Partial<ClientMetadata>) {
+    return {
+      hasIp: !!metadata?.ip,
+      hasCountry: !!metadata?.country,
+      hasOs: !!metadata?.os,
+      hasBrowser: !!metadata?.browser,
+      hasDevice: !!metadata?.device,
+      hasUserAgent: !!metadata?.userAgent,
+      hasLoginTime: !!metadata?.loginTime,
+    };
   }
 }

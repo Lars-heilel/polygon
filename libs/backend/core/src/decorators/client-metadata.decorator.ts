@@ -79,7 +79,18 @@ export function extractClientMetadata(req: Request): ClientMetadata {
     loginTime: new Date().toISOString(),
   };
 
-  logger.verbose(`Extracted client metadata:\n${JSON.stringify(metadata, null, 2)}`);
+  logger.verbose(
+    {
+      hasIp: !!metadata.ip,
+      hasCountry: !!metadata.country,
+      hasOs: !!metadata.os,
+      hasBrowser: !!metadata.browser,
+      hasDevice: !!metadata.device,
+      hasUserAgent: !!metadata.userAgent,
+      hasLoginTime: !!metadata.loginTime,
+    },
+    'Extracted client metadata',
+  );
 
   return metadata;
 }

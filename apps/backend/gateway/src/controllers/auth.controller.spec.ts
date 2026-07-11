@@ -16,6 +16,13 @@ describe('AuthGatewayController', () => {
   let config: { getOrThrow: jest.Mock };
   let controller: AuthGatewayController;
   let res: { cookie: jest.Mock; clearCookie: jest.Mock };
+  let logger: {
+    debug: jest.Mock;
+    error: jest.Mock;
+    log: jest.Mock;
+    verbose: jest.Mock;
+    warn: jest.Mock;
+  };
 
   beforeEach(() => {
     authClient = {
@@ -34,11 +41,19 @@ describe('AuthGatewayController', () => {
       cookie: jest.fn(),
       clearCookie: jest.fn(),
     };
+    logger = {
+      debug: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+      verbose: jest.fn(),
+      warn: jest.fn(),
+    };
 
     controller = new AuthGatewayController(
       authClient as unknown as ClientProxy,
       config as unknown as ConfigService<Env, true>,
     );
+    Object.defineProperty(controller, 'logger', { value: logger });
   });
 
   it('refresh rotates both HttpOnly token cookies from the refresh cookie', async () => {
@@ -80,5 +95,56 @@ describe('AuthGatewayController', () => {
       sameSite: 'strict',
       secure: true,
     });
+  });
+
+  it('does not write raw login credentials or client metadata to diagnostic logs', async () => {
+    await controller.login(
+      {} as never,
+      {
+        user: {
+          id: 'creds-1',
+          role: 'USER',
+          isVerified: true,
+        },
+      } as never,
+      res as never,
+      {
+        ip: '203.0.113.10',
+        country: 'Secret Country',
+        os: 'Linux',
+        browser: 'Chrome',
+        device: 'Desktop',
+        userAgent: 'Sensitive User Agent',
+        loginTime: new Date().toISOString(),
+      },
+    );
+
+    const debugPayload = JSON.stringify(logger.debug.mock.calls);
+    expect(debugPayload).not.toContain('203.0.113.10');
+    expect(debugPayload).not.toContain('Sensitive User Agent');
+    expect(debugPayload).not.toContain('Secret Country');
+    expect(debugPayload).not.toContain('"id":"creds-1"');
+  });
+
+  it('does not write OAuth token pairs or client metadata to diagnostic logs', () => {
+    controller.googleCallback(
+      { user: { accessToken: 'oauth-access-token', refreshToken: 'oauth-refresh-token' } } as never,
+      {
+        ip: '203.0.113.20',
+        country: 'Secret Country',
+        os: 'Linux',
+        browser: 'Chrome',
+        device: 'Desktop',
+        userAgent: 'OAuth User Agent',
+        loginTime: new Date().toISOString(),
+      },
+      { ...res, redirect: jest.fn() } as never,
+    );
+
+    const debugPayload = JSON.stringify(logger.debug.mock.calls);
+    expect(debugPayload).not.toContain('oauth-access-token');
+    expect(debugPayload).not.toContain('oauth-refresh-token');
+    expect(debugPayload).not.toContain('203.0.113.20');
+    expect(debugPayload).not.toContain('OAuth User Agent');
   });
 });
