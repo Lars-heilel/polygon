@@ -1,6 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { AUTH_PATTERNS, type Env } from '@org/core';
 
@@ -146,5 +146,34 @@ describe('AuthGatewayController', () => {
     expect(debugPayload).not.toContain('oauth-refresh-token');
     expect(debugPayload).not.toContain('203.0.113.20');
     expect(debugPayload).not.toContain('OAuth User Agent');
+  });
+
+  it('does not write raw downstream RPC messages to diagnostic logs', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({
+        statusCode: 503,
+        message: 'Auth failed for user@example.com with token=secret-token',
+        response: {
+          statusCode: 503,
+          message: 'Auth failed for user@example.com with token=secret-token',
+        },
+      })),
+    );
+
+    await expect(
+      controller.refresh({ cookies: { refresh_token: 'refresh-token' } } as never, res as never),
+    ).rejects.toMatchObject({
+      status: 503,
+      response: 'Auth failed for user@example.com with token=secret-token',
+    });
+
+    const diagnosticPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.error.mock.calls,
+      logger.warn.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('user@example.com');
+    expect(diagnosticPayload).not.toContain('secret-token');
+    expect(diagnosticPayload).toContain('hasMessage');
   });
 });

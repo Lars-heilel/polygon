@@ -509,7 +509,14 @@ export class AuthGatewayController {
         500) as number;
       const status = typeof rawStatus === 'number' ? rawStatus : 500;
 
-      this.logger.warn(`RPC failed [${status}]: ${message}`);
+      this.logger.warn(
+        {
+          status,
+          hasMessage: !!message,
+          hasResponse: !!response,
+        },
+        'RPC failed',
+      );
       throw new HttpException(message, status);
     }
   }
