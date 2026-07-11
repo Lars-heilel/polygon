@@ -126,8 +126,10 @@ Check these areas:
 Logging recommendations must distinguish between:
 
 - `development`: enough diagnostic data to debug locally, with secrets still redacted.
-- `demo`: useful user-flow diagnostics without raw secrets or tokens.
+- `demo`: production-like logging rules. Demo must not expose raw user data, secrets, tokens, reset links, OAuth query data, or verbose diagnostic payloads.
 - `production`: structured operational signals only, no raw user secrets, no token values, no reset or OAuth query data.
+
+Demo and production are treated as equivalent for user-data safety. Development may include richer diagnostic context only when secrets and unsafe user payloads are still redacted.
 
 ### 6. Testing Levels
 
@@ -179,6 +181,7 @@ The audit should produce a written report with:
 - manual validation checklist,
 - frontend visual and UX findings,
 - observability/logging findings,
+- Swagger documentation mismatches to fix after the behavioral audit,
 - prioritized follow-up work,
 - recommended test additions by level.
 
@@ -191,4 +194,5 @@ The audit is complete when:
 - observability and logging risks are explicitly classified,
 - commands run and their results are recorded,
 - manual checks are separated from automated checks,
+- Swagger documentation has been checked against the observed gateway API and any mismatch is listed for final correction,
 - no code fixes are made before the follow-up implementation plan is approved.
