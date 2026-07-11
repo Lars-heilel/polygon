@@ -111,8 +111,8 @@ export class UserGatewayController {
         (acc, k) => ({ ...acc, [k]: (err as Record<string, unknown>)[k] }),
         {} as Record<string, unknown>,
       );
-      this.logger.error({ err: errObj }, 'RPC call failed');
-      this.logger.debug('Full RPC error dump: %o', errObj);
+      this.logger.error({ err: this.rpcErrorSummary(errObj) }, 'RPC call failed');
+      this.logger.debug({ err: this.rpcErrorSummary(errObj) }, 'RPC error context');
 
       const rpcErr = err as Record<string, unknown>;
       const response = rpcErr.response as Record<string, unknown> | undefined;
@@ -120,8 +120,18 @@ export class UserGatewayController {
       const rawStatus = (rpcErr.statusCode ?? rpcErr.status ?? response?.statusCode ?? 500) as number;
       const status = typeof rawStatus === 'number' ? rawStatus : 500;
 
-      this.logger.warn(`RPC failed [${status}]: ${message}`);
+      this.logger.warn(`RPC failed [${status}]`);
       throw new HttpException(message, status);
     }
+  }
+
+  private rpcErrorSummary(err: Record<string, unknown>) {
+    const response = err.response as Record<string, unknown> | undefined;
+    return {
+      name: typeof err.name === 'string' ? err.name : undefined,
+      statusCode: err.statusCode ?? err.status ?? response?.statusCode,
+      hasMessage: !!(err.message ?? response?.message),
+      hasResponse: !!response,
+    };
   }
 }
