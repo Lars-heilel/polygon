@@ -39,7 +39,8 @@ export class AuthController implements IAuthController {
 
   @MessagePattern(AUTH_PATTERNS.GET_ROLE_BY_ID)
   async getRoleById(@Payload() payload: { id: string }): Promise<Role> {
-    this.logger.log(`RPC [GET_ROLE_BY_ID]: Fetching role for ID: ${payload.id}`);
+    this.logger.log('RPC [GET_ROLE_BY_ID]: Fetching role');
+    this.logger.debug({ hasCredentialsId: !!payload.id }, 'RPC [GET_ROLE_BY_ID]: Payload diagnostic');
     return await this.authService.getRoleById(payload.id);
   }
 
@@ -56,11 +57,19 @@ export class AuthController implements IAuthController {
   async login(
     @Payload() payload: { id: string; clientMetadata?: ClientMetadata },
   ): Promise<TokenPair> {
-    this.logger.log(`RPC [LOGIN]: Session creation requested for ID: ${payload.id}`);
-    this.logger.debug({ payload }, 'RPC [LOGIN]: Client metadata and payload context');
+    this.logger.log('RPC [LOGIN]: Session creation requested');
+    this.logger.debug(
+      {
+        hasCredentialsId: !!payload.id,
+        hasClientMetadata: !!payload.clientMetadata,
+        hasUserAgent: !!payload.clientMetadata?.userAgent,
+        hasIp: !!payload.clientMetadata?.ip,
+      },
+      'RPC [LOGIN]: Payload diagnostic',
+    );
 
     const tokens = await this.authService.login(payload.id, payload.clientMetadata);
-    this.logger.verbose(`RPC [LOGIN]: Completed session creation for ID: ${payload.id}`);
+    this.logger.verbose('RPC [LOGIN]: Completed session creation');
     return tokens;
   }
 
@@ -137,7 +146,14 @@ export class AuthController implements IAuthController {
   async listSessions(
     @Payload() payload: { credentialsId: string; currentSessionId: string },
   ): Promise<SessionResponse[]> {
-    this.logger.log(`RPC [LIST_SESSIONS]: Listing sessions for user: ${payload.credentialsId}`);
+    this.logger.log('RPC [LIST_SESSIONS]: Listing sessions');
+    this.logger.debug(
+      {
+        hasCredentialsId: !!payload.credentialsId,
+        hasCurrentSessionId: !!payload.currentSessionId,
+      },
+      'RPC [LIST_SESSIONS]: Payload diagnostic',
+    );
     return await this.authService.listSessions(payload.credentialsId, payload.currentSessionId);
   }
 
@@ -145,15 +161,21 @@ export class AuthController implements IAuthController {
   async revokeSession(
     @Payload() payload: { sessionId: string; credentialsId: string },
   ): Promise<null> {
-    this.logger.log(`RPC [REVOKE_SESSION]: Revoking session: ${payload.sessionId}`);
+    this.logger.log('RPC [REVOKE_SESSION]: Revoking session');
+    this.logger.debug(
+      { hasSessionId: !!payload.sessionId, hasCredentialsId: !!payload.credentialsId },
+      'RPC [REVOKE_SESSION]: Payload diagnostic',
+    );
     await this.authService.revokeSession(payload.sessionId, payload.credentialsId);
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_SESSIONS)
   async revokeAllSessions(@Payload() payload: { credentialsId: string }): Promise<null> {
-    this.logger.log(
-      `RPC [REVOKE_ALL_SESSIONS]: Revoking all sessions for user: ${payload.credentialsId}`,
+    this.logger.log('RPC [REVOKE_ALL_SESSIONS]: Revoking all sessions');
+    this.logger.debug(
+      { hasCredentialsId: !!payload.credentialsId },
+      'RPC [REVOKE_ALL_SESSIONS]: Payload diagnostic',
     );
     await this.authService.revokeAllSessions(payload.credentialsId);
     return null;
