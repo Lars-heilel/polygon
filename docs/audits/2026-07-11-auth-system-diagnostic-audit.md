@@ -79,6 +79,21 @@ Status: in progress
 
 | Command | Result | Evidence |
 | --- | --- | --- |
+| `sed -n '1,260p' docs/ARCHITECTURE.md` | pass | Exited `0`; required architecture source range read. |
+| `sed -n '1,280p' docs/DEVELOPMENT.md` | pass | Exited `0`; required development source range read. |
+| `sed -n '1,260p' docs/MONOREPO_GOTCHAS.md` | pass | Exited `0`; required monorepo-gotchas source range read. |
+| `sed -n '1,260p' docs/specs/auth-service.md` | pass | Exited `0`; required auth-service specification range read. |
+| `sed -n '1,260p' docs/specs/gateway-service.md` | pass | Exited `0`; required gateway-service specification range read. |
+| `sed -n '1,260p' docs/specs/client-messenger.md` | pass | Exited `0`; required client-messenger specification range read. |
+| `sed -n '1,260p' docs/OBSERVABILITY.md` | pass | Exited `0`; required observability source range read. |
+| `npm exec nx show project @org/auth --json` | pass | Exited `0`; targets: `typecheck`, `lint`, `test`, `prisma-generate`. |
+| `npm exec nx show project @org/auth-service --json` | pass | Exited `0`; targets include `typecheck`, `lint`, `test`, `build`, `serve`, and packaging targets. |
+| `npm exec nx show project @org/gateway --json` | pass | Exited `0`; targets include `typecheck`, `lint`, `test`, `build`, `serve`, and packaging targets. |
+| `npm exec nx show project @org/messenger --json` | pass | Exited `0`; targets include `typecheck`, `build`, `serve`, `dev`, `lint`, and `test`. |
+| `npm exec nx show project @org/features-auth --json` | pass | Exited `0`; targets: `typecheck`, `build`, `build-deps`, `watch-deps`, `lint`, `nx-release-publish`; no direct `test`. |
+| `npm exec nx show project @org/entities-user --json` | pass | Exited `0`; targets: `typecheck`, `build`, `build-deps`, `watch-deps`, `lint`, `nx-release-publish`; no direct `test`. |
+| `npm exec nx show project @org/shared --json` | pass | Exited `0`; targets include `typecheck`, `build`, `test`, `lint`, Storybook, and serve targets. |
+| `npm exec nx show project @org/core --json` | pass | Exited `0`; targets: `typecheck`, `lint`, `test`; no direct `build`. |
 
 ## Manual Validation Points
 
