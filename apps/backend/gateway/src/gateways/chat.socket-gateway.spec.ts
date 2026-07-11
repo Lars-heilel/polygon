@@ -1,5 +1,5 @@
 import type { ClientProxy } from '@nestjs/microservices';
-import { of } from 'rxjs';
+import { of, type Observable } from 'rxjs';
 
 function makeSocket(cookie = 'access_token=token') {
   return {
@@ -22,14 +22,22 @@ describe('ChatSocketGateway ban enforcement', () => {
   };
   type ChatSocketGatewayUnderTest = {
     handleConnection(socket: never): Promise<void>;
+    handleDisconnect(socket: never): void;
+    handleJoin(socket: never, payload: { chatId: string }): Promise<void>;
     isUserOnline(userId: string): boolean;
     disconnectUser(userId: string): void;
+    triggerPushForOfflineRecipients(
+      chatId: string,
+      senderId: string,
+      message: { text?: string | null; [key: string]: unknown },
+    ): Promise<void>;
   };
   const tokenService: TokenServiceMock = {
     verifyAccessToken: jest.fn(),
   };
-  const chatClient = {
-    send: jest.fn(() => of(true)),
+  type ChatClientResult = boolean | { userId: string }[];
+  const chatClient: { send: jest.Mock<Observable<ChatClientResult>, [string]> } = {
+    send: jest.fn((_pattern: string) => of(true)),
   };
   const notificationClient = {
     emit: jest.fn(),
@@ -52,6 +60,12 @@ describe('ChatSocketGateway ban enforcement', () => {
   let ChatSocketGateway: ChatSocketGatewayConstructor;
 
   let gateway: ChatSocketGatewayUnderTest;
+  let logger: {
+    debug: jest.Mock;
+    error: jest.Mock;
+    log: jest.Mock;
+    warn: jest.Mock;
+  };
 
   beforeAll(async () => {
     Object.assign(process.env, {
@@ -112,9 +126,17 @@ describe('ChatSocketGateway ban enforcement', () => {
       userClient as unknown as ClientProxy,
       banMarkers,
     );
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> } } }).server = {
+    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
       sockets: { sockets: new Map() },
+      to: jest.fn(() => ({ emit: jest.fn() })),
     };
+    logger = {
+      debug: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+      warn: jest.fn(),
+    };
+    Object.defineProperty(gateway, 'logger', { value: logger });
     tokenService.verifyAccessToken.mockReturnValue({ sub: 'user-1' });
     banMarkers.findActiveMarker.mockResolvedValue(null);
   });
@@ -182,5 +204,65 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(firstSocket.disconnect).toHaveBeenCalledWith(true);
     expect(secondSocket.disconnect).toHaveBeenCalledWith(true);
     expect(gateway.isUserOnline('user-1')).toBe(false);
+  });
+
+  it('does not write raw websocket auth identifiers to diagnostic logs', async () => {
+    tokenService.verifyAccessToken.mockReturnValue({ sub: 'user-secret-id' });
+    const socket = makeSocket('access_token=access-secret-token');
+    socket.id = 'socket-secret-id';
+
+    await gateway.handleConnection(socket as never);
+    gateway.handleDisconnect(socket as never);
+
+    banMarkers.findActiveMarker.mockRejectedValueOnce(
+      new Error('Invalid ban marker for user@example.com token=secret'),
+    );
+    const rejectedSocket = makeSocket('access_token=another-access-secret-token');
+    await gateway.handleConnection(rejectedSocket as never);
+
+    const diagnosticPayload = JSON.stringify([
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+      logger.error.mock.calls,
+      logger.debug.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('user-secret-id');
+    expect(diagnosticPayload).not.toContain('socket-secret-id');
+    expect(diagnosticPayload).not.toContain('access-secret-token');
+    expect(diagnosticPayload).not.toContain('another-access-secret-token');
+    expect(diagnosticPayload).not.toContain('user@example.com');
+    expect(diagnosticPayload).not.toContain('token=secret');
+  });
+
+  it('does not write raw chat or push identifiers to diagnostic logs', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'sender-secret-id';
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(true);
+      if (pattern === 'chat.getMembers') {
+        return of([{ userId: 'sender-secret-id' }, { userId: 'recipient-secret-id' }]);
+      }
+      return of(true);
+    });
+    userClient.send.mockReturnValue(of({ name: 'Secret Sender', displayName: 'Secret Display' }));
+
+    await gateway.handleJoin(socket as never, { chatId: 'chat-secret-id' });
+    await gateway.triggerPushForOfflineRecipients('chat-secret-id', 'sender-secret-id', {
+      id: 'message-secret-id',
+      text: 'hello',
+    });
+
+    const diagnosticPayload = JSON.stringify([
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+      logger.error.mock.calls,
+      logger.debug.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('sender-secret-id');
+    expect(diagnosticPayload).not.toContain('recipient-secret-id');
+    expect(diagnosticPayload).not.toContain('chat-secret-id');
+    expect(diagnosticPayload).not.toContain('message-secret-id');
+    expect(diagnosticPayload).not.toContain('Secret Sender');
+    expect(diagnosticPayload).not.toContain('Secret Display');
   });
 });

@@ -80,14 +80,21 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         return;
       }
     } catch (error) {
-      this.logger.warn(`WS ban check failed for userId=${userId}: ${(error as Error).message}`);
+      this.logger.warn({
+        eventType: 'ws_ban_check_failed',
+        hasUserId: !!userId,
+        hasError: !!error,
+      });
       socket.emit('auth:error', { code: 'ACCOUNT_BAN_CHECK_UNAVAILABLE' });
       socket.disconnect(true);
       return;
     }
 
     socket.data['userId'] = userId;
-    this.logger.log(`WS connected: userId=${userId}`);
+    this.logger.log({
+      eventType: 'ws_connected',
+      hasUserId: !!userId,
+    });
 
     const sockets = this.userSockets.get(userId) ?? new Set();
     sockets.add(socket.id);
@@ -96,7 +103,11 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
   handleDisconnect(socket: Socket) {
     const userId = socket.data['userId'] as string | undefined;
-    this.logger.log(`WS disconnected: socketId=${socket.id}, userId=${userId}`);
+    this.logger.log({
+      eventType: 'ws_disconnected',
+      hasSocketId: !!socket.id,
+      hasUserId: !!userId,
+    });
 
     if (!userId) return;
 
@@ -146,7 +157,11 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
     if (isMember) {
       await socket.join(`chat:${payload.chatId}`);
-      this.logger.log(`userId=${userId} joined chat:${payload.chatId}`);
+      this.logger.log({
+        eventType: 'chat_joined',
+        hasUserId: !!userId,
+        hasChatId: !!payload.chatId,
+      });
 
       const chats = this.userChats.get(userId) ?? new Set();
       const isFirstJoin = chats.size === 0;
@@ -211,8 +226,11 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         fileMime: payload.fileMime ?? null,
         fileCategory: payload.fileCategory ?? null,
       }),
-    ).catch((err: { message?: string }) => {
-      this.logger.error(`message:send error: ${err?.message}`);
+    ).catch((err: unknown) => {
+      this.logger.error({
+        eventType: 'message_send_failed',
+        hasError: !!err,
+      });
       return null;
     });
 
@@ -237,7 +255,12 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         ).catch(() => ({ name: 'Unknown', displayName: null })),
       ]);
 
-      this.logger.log(`triggerPushForOfflineRecipients: chatId=${chatId}, totalMembers=${members.length}, sender=${sender.displayName ?? sender.name}`);
+      this.logger.log({
+        eventType: 'push_offline_recipients_start',
+        hasChatId: !!chatId,
+        totalMembers: members.length,
+        hasSenderName: !!(sender.displayName ?? sender.name),
+      });
 
       const senderName = sender.displayName ?? sender.name;
 
@@ -248,7 +271,10 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         if (member.userId === senderId) continue;
 
         const online = this.isUserOnline(member.userId);
-        this.logger.debug({ userId: member.userId, online }, `triggerPushForOfflineRecipients: member check`);
+        this.logger.debug({
+          eventType: 'push_recipient_online_check',
+          online,
+        });
 
         if (online) {
           skippedOnline++;
@@ -268,9 +294,18 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         sent++;
       }
 
-      this.logger.log(`triggerPushForOfflineRecipients: chatId=${chatId}, skippedOnline=${skippedOnline}, pushSent=${sent}`);
+      this.logger.log({
+        eventType: 'push_offline_recipients_complete',
+        hasChatId: !!chatId,
+        skippedOnline,
+        pushSent: sent,
+      });
     } catch (err) {
-      this.logger.error(`Failed to trigger push for chat ${chatId}: ${err}`);
+      this.logger.error({
+        eventType: 'push_offline_recipients_failed',
+        hasChatId: !!chatId,
+        hasError: !!err,
+      });
     }
   }
 
