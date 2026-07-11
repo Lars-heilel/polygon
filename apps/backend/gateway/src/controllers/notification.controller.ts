@@ -24,12 +24,21 @@ export class NotificationGatewayController {
     @CurrentUser() user: JwtPayload,
     @Body() body: { endpoint: string; p256dh: string; auth: string },
   ): Promise<void> {
-    this.logger.log(`HTTP POST /notifications/push/subscribe — userId=${user.sub}, endpoint=${body.endpoint.slice(0, 50)}...`);
+    this.logger.log({
+      eventType: 'push_subscribe_request',
+      route: '/notifications/push/subscribe',
+      hasEndpoint: !!body.endpoint,
+      hasP256dh: !!body.p256dh,
+      hasAuth: !!body.auth,
+    });
     await this.notificationClient.emit(NOTIFICATION_EVENTS.PUSH_SUBSCRIBE, {
       userId: user.sub,
       subscription: { endpoint: body.endpoint, p256dh: body.p256dh, auth: body.auth },
     });
-    this.logger.log(`HTTP POST /notifications/push/subscribe — emitted PUSH_SUBSCRIBE for userId=${user.sub}`);
+    this.logger.log({
+      eventType: 'push_subscribe_emitted',
+      route: '/notifications/push/subscribe',
+    });
   }
 
   @Delete('unsubscribe')
@@ -40,7 +49,11 @@ export class NotificationGatewayController {
     @CurrentUser() user: JwtPayload,
     @Body() body: { endpoint: string },
   ): Promise<void> {
-    this.logger.log(`HTTP DELETE /notifications/push/unsubscribe — userId=${user.sub}, endpoint=${body.endpoint.slice(0, 50)}...`);
+    this.logger.log({
+      eventType: 'push_unsubscribe_request',
+      route: '/notifications/push/unsubscribe',
+      hasEndpoint: !!body.endpoint,
+    });
     await this.notificationClient.emit(NOTIFICATION_EVENTS.PUSH_UNSUBSCRIBE, {
       userId: user.sub,
       endpoint: body.endpoint,
