@@ -2,7 +2,7 @@
 
 ## Summary
 
-Status: in progress
+Status: diagnostic audit complete; fixes intentionally deferred until product decisions and manual validation points are confirmed.
 
 ## Classification Legend
 
@@ -210,6 +210,29 @@ Status: in progress
 | `sed` reads for frontend error reporter and `useLogger` | pass | Exit `0`; captured `route: window.location.pathname`, fetch to `/api/observability/frontend-errors`, query/hash stripping test, and `useLogger` no-op only under `import.meta.env.PROD`. |
 | `sed` reads for observability infrastructure files | pass | Exit `0`; captured Prometheus `polygon-backend` targets, alert rules for service down/5xx/p95/disk/CPU, Alloy Docker log and OTLP pipelines, Loki/Tempo retention config, and Grafana Prometheus/Loki/Tempo datasources. |
 | `rg -n "logger\\.(debug\|verbose\|log\|warn\|error)\|console\\.(log\|debug\|error\|warn)\|useLogger\|password\|token\|refreshToken\|accessToken\|cookie\|authorization\|email\|dto\|payload\|req\\.body\|req\\.headers\|query" ...` | pass | Exit `0`; captured gateway email log interpolation, frontend-error logging, auth Prisma logging, `apiFetch` unconditional `console.log`, and frontend reset/check-email token/email handling. |
+| `npm exec nx test @org/auth` | pass | Exit `0`; 6 suites and 125 tests passed. Output includes expected Nest error logs from negative-path tests plus Nx Cloud 401/unconnected-workspace warning. |
+| `npm exec nx test @org/gateway` | pass | Exit `0`; 4 suites and 20 tests passed. Nx reported `@org/gateway:test` as flaky and emitted Nx Cloud 401/unconnected-workspace warning. |
+| `npm exec nx test @org/shared` | pass | Exit `0`; Vitest 1 file and 2 tests passed. Nx Cloud emitted the unconnected-workspace warning. |
+| `npm exec nx test @org/core` | pass | Exit `0`; 7 suites and 31 tests passed. Output includes Node `NO_COLOR`/`FORCE_COLOR` warnings and Nx Cloud 401/unconnected-workspace warning. |
+| `npm exec nx test @org/messenger` | fail | Exit `130`; dependent client builds fail because `libs/client/shared/src/lib/observability/frontend-error-reporter.ts:1:15` imports `FrontendErrorPayload` from `@org/common`, but `@org/common` does not export it. |
+| `npm exec nx lint @org/auth` | pass-with-warnings | Exit `0`; `github.strategy.ts:28:10` and `google.strategy.ts:28:10` use explicit `any`. |
+| `npm exec nx lint @org/gateway` | pass | Exit `0`; no lint findings beyond environment/Nx Cloud warnings. |
+| `npm exec nx lint @org/messenger` | pass-with-warnings | Exit `0`; `apps/client/messenger/sw.ts:27:38` has `array-callback-return`. |
+| `npm exec nx lint @org/features-auth` | pass | Exit `0`; no lint findings. |
+| `npm exec nx lint @org/entities-user` | pass | Exit `0`; no lint findings. |
+| `npm exec nx lint @org/shared` | pass-with-warnings | Exit `0`; includes `no-console` at `libs/client/shared/src/lib/api/client.ts:14:3` and `:25:3`, plus existing non-null assertion, accessible emoji, and useless-fragment warnings. |
+| `npm exec nx lint @org/core` | pass | Exit `0`; no lint findings. |
+| `npm exec nx typecheck @org/auth` | pass | Exit `0`; dependencies completed from local cache or direct run. Nx reported `@org/common:typecheck` as flaky. |
+| `npm exec nx typecheck @org/auth-service` | pass | Exit `0`; dependencies completed from local cache or direct run. Nx reported `@org/common:typecheck` as flaky. |
+| `npm exec nx typecheck @org/core` | pass | Exit `0`; dependencies completed from local cache or direct run. |
+| `npm exec nx typecheck @org/gateway` | fail | Exit `1`; `frontend-error.controller.ts` imports missing `frontendErrorSchema` and `FrontendErrorPayload` exports from `@org/common`, and its spec hits a stale declaration-build error after the compile failure. |
+| `npm exec nx typecheck @org/shared` | fail | Exit `1`; `@org/shared:typecheck` reports stale `@org/common/dist/index.d.ts` output and the frontend-error reporter import path is part of the failing dependency chain. |
+| `npm exec nx typecheck @org/entities-user` | fail | Exit `130`; dependent `@org/shared:typecheck` and `@org/entities-user:build` fail on missing `FrontendErrorPayload` from `@org/common`. |
+| `npm exec nx typecheck @org/features-auth` | fail | Exit `130`; dependent `@org/shared:typecheck` and `@org/entities-user:build` fail on missing `FrontendErrorPayload` from `@org/common`. |
+| `npm exec nx typecheck @org/messenger` | fail | Exit `130`; multiple dependent client package builds fail on missing `FrontendErrorPayload` from `@org/common`. |
+| `npm exec nx build @org/auth-service` | pass | Exit `0`; webpack compiled successfully. |
+| `npm exec nx build @org/gateway` | pass | Exit `0`; webpack compiled successfully, despite separate `typecheck` failure. |
+| `npm exec nx build @org/messenger` | fail | Exit `130`; frontend dependency builds fail on missing `FrontendErrorPayload` from `@org/common`. |
 
 ## Manual Validation Points
 
@@ -217,6 +240,9 @@ Status: in progress
 | --- | --- | --- | --- |
 | OAuth account creation and linking for GitHub, Google, and Yandex | Provider callbacks and the User-service duplicate-create behavior cannot be proven from auth-library unit tests. | Run each provider callback against configured non-production credentials and confirm new, linked-by-email, and existing-binding flows. | needs-manual-validation |
 | Auth log redaction in JSON and pretty modes | Static Pino redaction configuration exists, but the emitted output from token-bearing auth handlers needs runtime confirmation. | Run the auth service with `LOG_FORMAT=json` and `LOG_FORMAT=pretty`; capture register, refresh, reset, verification, and OAuth callback logs and confirm secrets are absent. | needs-manual-validation |
+| Real verification email delivery | Static review proves auth emits notification events, but not SMTP/template rendering or link correctness. | Register a real test user, receive the verification email, follow the link, and confirm cookies plus redirect behavior. | needs-manual-validation |
+| Real password reset email delivery | Static review proves reset-token generation and notification event emission, but not email content or reset URL behavior. | Trigger forgot-password for an existing and non-existing email, receive the real reset email for the existing user, submit a new password, and confirm old sessions are handled according to the chosen semantics. | needs-manual-validation |
+| Browser cookie behavior in demo/prod mode | Cookie attributes are configured statically, but browser behavior depends on domain, HTTPS, proxy, and SameSite context. | Validate login, refresh, logout, verify-email, session revoke, and revoke-all in a browser against demo/prod-like HTTPS routing. | needs-manual-validation |
 | Auth pages visual behavior | Static review found mobile width, long validation text, long email, and verified-state risks that require browser rendering to confirm. | Run the messenger app and capture `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/reset-password?token=demo`, `/auth/reset-password`, `/auth/check-email?email=very-long-address@example.com`, and `/auth/email-verified` at mobile and desktop widths. | needs-manual-validation |
 | Frontend OAuth provider availability | Backend supports GitHub, Google, and Yandex, but frontend renders GitHub and Google only. | Confirm whether Yandex should be user-visible in demo/prod login/register screens. | needs-manual-validation |
 | Docker observability stack | File inspection cannot prove runtime scrape health, Loki ingestion, or Tempo trace flow. | Start the observability Docker stack and verify Prometheus targets, Grafana dashboards, Loki frontend_error logs, and Tempo traces. | needs-manual-validation |
@@ -225,11 +251,27 @@ Status: in progress
 
 | Decision | Context | Options | Recommendation |
 | --- | --- | --- | --- |
+| Is demo identical to production for logging? | User clarified `demo = prod`; current code sometimes equates safety with `NODE_ENV === 'production'` or `import.meta.env.PROD`. | Require demo builds/runtime to use production log behavior; or introduce explicit `APP_ENV=demo` and treat it as production-safe. | Treat demo as production-safe everywhere and add tests/assertions for no browser console logs and no PII-bearing backend logs. |
+| Should Yandex OAuth be visible in frontend auth screens? | Backend implements a Yandex strategy, but `OAuthButtons` renders only GitHub and Google. | Add Yandex button; or document Yandex as backend-only/disabled. | Add Yandex if credentials exist in demo/prod; otherwise document it as intentionally disabled. |
+| What should happen after email verification? | Gateway sets auth cookies and redirects to `/auth/email-verified`; frontend screen tells the user to sign in and navigates to login, while `GuestGuard` may redirect authenticated users to chats first. | Auto-continue to chats; show verified success with "continue"; or require login despite cookies. | Align on cookie auto-login and send the user to chats or a "continue" state, not a fresh login prompt. |
+| Does "revoke all sessions" include the current session? | Spec says "all other sessions"; backend and frontend currently revoke everything and log the user out. | Preserve current session; or rename/document it as revoke all including current. | Preserve current session for user-facing "revoke other sessions"; keep explicit logout for current-session termination. |
+| How much Zod validation detail is safe in production? | User wants validation errors visible in prod, but request payloads can contain user data. | Return/log structured field-code errors only; or include sanitized messages; never log raw payloads. | Use field paths, issue codes, and safe messages; do not log raw input values in demo/prod. |
+| Should forgot/reset/login errors be generic or specific? | Auth currently avoids enumeration for forgot-password but login/reset behavior may expose more detail depending on route. | Maximize security with generic public errors; or keep specific UX messages where risk is low. | Keep enumeration-safe public messages and put diagnostic detail only in sanitized internal logs. |
 
 ## Prioritized Follow-Up Work
 
 | Priority | Work Item | Reason | Suggested Test Level |
 | --- | --- | --- | --- |
+| P0 | Fix `@org/common` frontend-error contract exports or imports. | `@org/gateway:typecheck`, `@org/shared:typecheck`, `@org/messenger:typecheck`, `@org/features-auth:typecheck`, `@org/entities-user:typecheck`, and `@org/messenger:build` currently fail on missing `frontendErrorSchema`/`FrontendErrorPayload`. | Typecheck/build regression for `@org/common`, `@org/gateway`, `@org/shared`, and `@org/messenger`. |
+| P0 | Remove or production-gate unsafe logs for demo/prod. | Gateway raw email logs, frontend-error free-text logs, auth Prisma `params`, and `apiFetch` console logs can expose PII/tokens in production-equivalent demo. | Logger-output unit tests plus production-build console scan. |
+| P1 | Correct auth session semantics and replay cleanup. | Refresh replay revokes SQL only, revoke-all/reset currently revoke the current session despite spec text, and reset does not clear login attempts. | Auth service unit tests with Redis/session assertions. |
+| P1 | Validate every auth ingress path. | Auth RMQ handlers are partially unvalidated; gateway query/param auth inputs are raw strings; Zod errors need safe production shape. | Auth controller unit tests and gateway Supertest invalid-payload coverage. |
+| P1 | Add gateway auth cookie/error tests. | Cookie behavior is central to the architecture but lacks direct response-header coverage for login, refresh, logout, verify-email, and sessions. | Gateway Supertest integration tests. |
+| P1 | Align frontend auth UX with backend behavior. | Email verification copy conflicts with cookie auto-login, check-email leaks raw email in URL/UI, Yandex provider is absent, and auth layout has mobile overflow risks. | Component, route-guard, and visual regression tests. |
+| P2 | Add missing backend registration/OAuth/password recovery coverage. | Core behaviors are implemented but direct tests are incomplete, especially side effects and provider/linking paths. | Auth service unit tests plus provider callback integration checks. |
+| P2 | Prove observability stack at runtime. | Static config looks coherent, but Prometheus/Loki/Tempo/Grafana/Alloy runtime health is unverified. | Docker-compose smoke test and dashboard/target checklist. |
+| P3 | Correct Swagger/OpenAPI drift after behavior decisions. | Swagger currently misses response schemas, wrong cookie schemes, and session endpoint responses. | Generated OpenAPI snapshot or controller metadata tests. |
+| P3 | Clean existing lint warnings and Nx Cloud/flaky task noise. | Warnings hide signal during audit runs, and Nx reported flaky typecheck/test tasks. | Lint cleanup and CI cache/flaky-task investigation. |
 
 ## Recommended Test Additions
 
