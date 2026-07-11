@@ -19,18 +19,26 @@ Status: in progress
 
 | Document | Reviewed | Notes |
 | --- | --- | --- |
-| `docs/ARCHITECTURE.md` | no | |
-| `docs/DEVELOPMENT.md` | no | |
-| `docs/MONOREPO_GOTCHAS.md` | no | |
-| `docs/specs/auth-service.md` | no | |
-| `docs/specs/gateway-service.md` | no | |
-| `docs/specs/client-messenger.md` | no | |
-| `docs/OBSERVABILITY.md` | no | |
+| `docs/ARCHITECTURE.md` | yes | Cookie auth through gateway, database-per-service, RabbitMQ events, FSD package boundaries. |
+| `docs/DEVELOPMENT.md` | yes | Nx targets, strict TypeScript, Nest repository pattern, package boundary rules. |
+| `docs/MONOREPO_GOTCHAS.md` | yes | Vite proxy, Tailwind source scanning, MSW layout, gateway Supertest strategy. |
+| `docs/specs/auth-service.md` | yes | Auth acceptance criteria and known gaps for bans, instant revoke, email templates. |
+| `docs/specs/gateway-service.md` | yes | Gateway auth/cookie/WebSocket behavior and known gaps for exception filter, instant revoke, roles. |
+| `docs/specs/client-messenger.md` | yes | Client auth/session bootstrap and frontend UX expectations. |
+| `docs/OBSERVABILITY.md` | yes | Metrics, logs, traces, frontend error intake, redaction and retention expectations. |
 
 ## Nx Project Targets Reviewed
 
 | Project | Targets checked | Notes |
 | --- | --- | --- |
+| `@org/auth` | `typecheck`, `lint`, `test`, `prisma-generate` | `test`: yes; `lint`: yes; `typecheck`: yes; `build`: no. |
+| `@org/auth-service` | `typecheck`, `lint`, `test`, `build`, `serve`, `preview`, `serve-static`, `build-deps`, `watch-deps`, `prune-lockfile`, `copy-workspace-modules`, `prune` | `test`: yes; `lint`: yes; `typecheck`: yes; `build`: yes. |
+| `@org/gateway` | `typecheck`, `lint`, `test`, `build`, `serve`, `preview`, `serve-static`, `build-deps`, `watch-deps`, `prune-lockfile`, `copy-workspace-modules`, `prune` | `test`: yes; `lint`: yes; `typecheck`: yes; `build`: yes. |
+| `@org/messenger` | `typecheck`, `build`, `serve`, `dev`, `preview`, `serve-static`, `build-deps`, `watch-deps`, `lint`, `test` | `test`: yes; `lint`: yes; `typecheck`: yes; `build`: yes. |
+| `@org/features-auth` | `typecheck`, `build`, `build-deps`, `watch-deps`, `lint`, `nx-release-publish` | `test`: no; `lint`: yes; `typecheck`: yes; `build`: yes. |
+| `@org/entities-user` | `typecheck`, `build`, `build-deps`, `watch-deps`, `lint`, `nx-release-publish` | `test`: no; `lint`: yes; `typecheck`: yes; `build`: yes. |
+| `@org/shared` | `typecheck`, `build`, `build-deps`, `watch-deps`, `serve`, `dev`, `preview`, `serve-static`, `test`, `lint`, `build-storybook`, `storybook`, `static-storybook`, `nx-release-publish` | `test`: yes; `lint`: yes; `typecheck`: yes; `build`: yes. |
+| `@org/core` | `typecheck`, `lint`, `test` | `test`: yes; `lint`: yes; `typecheck`: yes; `build`: no. |
 
 ## Spec-To-Code Matrix
 
