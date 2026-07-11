@@ -164,8 +164,11 @@ export class AdminBanService implements IAdminBanService {
         ? new AggregateError([error, ...compensationErrors], 'Ban and compensation failed')
         : error;
       this.logger.error(
-        'Unable to establish ban state; session revocation is not reversible',
-        cause,
+        this.errorDiagnostic(
+          'admin_ban_state_compensation_failed',
+          'Unable to establish ban state; session revocation is not reversible',
+          cause,
+        ),
       );
       throw adminRpcException({ statusCode: 503, message: 'Unable to establish ban state' });
     }
@@ -183,14 +186,26 @@ export class AdminBanService implements IAdminBanService {
       try {
         await this.repo.clearBan(target.id);
       } catch (cause) {
-        this.logger.error('Unable to clear persisted ban state', cause);
+        this.logger.error(
+          this.errorDiagnostic(
+            'admin_unban_persisted_clear_failed',
+            'Unable to clear persisted ban state',
+            cause,
+          ),
+        );
         throw adminRpcException({ statusCode: 503, message: 'Unable to clear ban state' });
       }
     }
     try {
       await this.bans.clear(target.id);
     } catch (cause) {
-      this.logger.error('Persisted ban was cleared but Redis marker cleanup failed', cause);
+      this.logger.error(
+        this.errorDiagnostic(
+          'admin_unban_marker_clear_failed',
+          'Persisted ban was cleared but Redis marker cleanup failed',
+          cause,
+        ),
+      );
       throw adminRpcException({ statusCode: 503, message: 'Unable to clear ban state' });
     }
   }
@@ -235,7 +250,7 @@ export class AdminBanService implements IAdminBanService {
       return await operation();
     } catch (error) {
       if (error instanceof RpcException) throw error;
-      this.logger.error(message, error);
+      this.logger.error(this.errorDiagnostic('admin_operation_failed', message, error));
       throw adminRpcException({ statusCode: 503, message });
     }
   }
@@ -253,8 +268,11 @@ export class AdminBanService implements IAdminBanService {
       });
     } catch (cause) {
       this.logger.error(
-        'Unable to reconcile active ban; Redis session revocation is not reversible',
-        cause,
+        this.errorDiagnostic(
+          'admin_active_ban_reconciliation_failed',
+          'Unable to reconcile active ban; Redis session revocation is not reversible',
+          cause,
+        ),
       );
       throw adminRpcException({ statusCode: 503, message: 'Unable to establish ban state' });
     }
@@ -268,7 +286,13 @@ export class AdminBanService implements IAdminBanService {
     try {
       ownershipToken = await this.bans.acquireLock(operationTargetId, this.lockTiming.leaseMs);
     } catch (cause) {
-      this.logger.error('Unable to acquire admin operation lock', cause);
+      this.logger.error(
+        this.errorDiagnostic(
+          'admin_operation_lock_acquire_failed',
+          'Unable to acquire admin operation lock',
+          cause,
+        ),
+      );
       throw adminRpcException({
         statusCode: 503,
         message: 'Unable to acquire admin operation lock',
@@ -309,11 +333,23 @@ export class AdminBanService implements IAdminBanService {
     }
 
     if (releaseError !== undefined) {
-      this.logger.error('Unable to safely release admin operation lock', releaseError);
+      this.logger.error(
+        this.errorDiagnostic(
+          'admin_operation_lock_release_failed',
+          'Unable to safely release admin operation lock',
+          releaseError,
+        ),
+      );
     }
     if (operationFailed) throw operationError;
     if (renewalError !== undefined) {
-      this.logger.error('Admin operation lock renewal failed', renewalError);
+      this.logger.error(
+        this.errorDiagnostic(
+          'admin_operation_lock_renewal_failed',
+          'Admin operation lock renewal failed',
+          renewalError,
+        ),
+      );
       throw adminRpcException({
         statusCode: 503,
         message: 'Admin operation lock renewal failed',
@@ -361,5 +397,14 @@ export class AdminBanService implements IAdminBanService {
       }, this.lockTiming.renewIntervalMs);
       signal.addEventListener('abort', onAbort, { once: true });
     });
+  }
+
+  private errorDiagnostic(eventType: string, operation: string, error: unknown) {
+    return {
+      eventType,
+      operation,
+      hasError: error !== undefined && error !== null,
+      errorType: error instanceof Error ? error.name : typeof error,
+    };
   }
 }

@@ -67,6 +67,7 @@ describe('AdminBanService', () => {
   let sessions: jest.Mocked<ISessionCacheRepository>;
   let bans: jest.Mocked<IBanCacheRepository>;
   let service: AdminBanService;
+  let logger: { error: jest.Mock };
 
   beforeEach(() => {
     repo = {
@@ -96,6 +97,8 @@ describe('AdminBanService', () => {
       leaseMs: 30_000,
       renewIntervalMs: 10_000,
     });
+    logger = { error: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
     repo.findAdminAccount.mockImplementation(async (id) =>
       id === 'actor' ? account(id, 'CREATOR') : account(id, 'USER'),
     );
@@ -214,6 +217,44 @@ describe('AdminBanService', () => {
       statusCode: 503,
       message: expect.any(String),
     });
+  });
+
+  it('does not write raw operational error details to diagnostic logs', async () => {
+    repo.findAdminAccount.mockRejectedValueOnce(
+      new Error('database down for user@example.com token=secret'),
+    );
+
+    await expect(
+      rpcPayload(service.getAccount('actor-secret-id', 'target-secret-id')),
+    ).resolves.toEqual({
+      statusCode: 503,
+      message: 'Unable to get account',
+    });
+
+    bans.acquireLock.mockRejectedValueOnce(new Error('redis lock failed owner=lock-secret-token'));
+    await expect(
+      rpcPayload(
+        service.ban('actor-secret-id', 'target-secret-id', {
+          duration: 'ONE_DAY',
+          reason: 'SPAM',
+        }),
+      ),
+    ).resolves.toEqual({
+      statusCode: 503,
+      message: 'Unable to acquire admin operation lock',
+    });
+
+    const diagnosticPayload = JSON.stringify(logger.error.mock.calls);
+    expect(diagnosticPayload).not.toContain('user@example.com');
+    expect(diagnosticPayload).not.toContain('token=secret');
+    expect(diagnosticPayload).not.toContain('actor-secret-id');
+    expect(diagnosticPayload).not.toContain('target-secret-id');
+    expect(diagnosticPayload).not.toContain('lock-secret-token');
+    expect(diagnosticPayload).not.toContain('database down for');
+    expect(diagnosticPayload).not.toContain('redis lock failed');
+    expect(diagnosticPayload).not.toContain('Error:');
+    expect(diagnosticPayload).toContain('admin_operation_failed');
+    expect(diagnosticPayload).toContain('admin_operation_lock_acquire_failed');
   });
 
   it('authorizes and revokes all target sessions in SQL and Redis', async () => {
