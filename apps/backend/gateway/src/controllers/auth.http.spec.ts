@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import type { IncomingHttpHeaders } from 'http';
 import request from 'supertest';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { LocalStrategy } from '@org/auth';
 import {
@@ -138,6 +138,21 @@ describe('AuthGatewayController HTTP', () => {
     });
   });
 
+  it('returns auth service registration conflicts without converting them to 500', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({ statusCode: 409, message: 'Email already in use' })),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'taken@example.com', username: 'tester', password: 'Aa1!aaaa' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 409,
+      body: { statusCode: 409, message: 'Email already in use' },
+    });
+  });
+
   it('sets secure HttpOnly cookies after login', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/login')
@@ -168,6 +183,35 @@ describe('AuthGatewayController HTTP', () => {
         userAgent: expect.any(String),
       }),
     });
+  });
+
+  it('returns auth service login rate limits without creating a session', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({
+        statusCode: 429,
+        message: 'Too many failed login attempts. Please try again in 15 minutes.',
+      })),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'user@example.com', password: 'password' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 429,
+      body: {
+        statusCode: 429,
+        message: 'Too many failed login attempts. Please try again in 15 minutes.',
+      },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.VALIDATE_CREDENTIALS, {
+      email: 'user@example.com',
+      password: 'password',
+    });
+    expect(authClient.send).not.toHaveBeenCalledWith(
+      AUTH_PATTERNS.LOGIN,
+      expect.anything(),
+    );
   });
 
   it('rotates refresh cookies through the auth service', async () => {
