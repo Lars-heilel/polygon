@@ -1,3 +1,6 @@
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+
 import { AUTH_PATTERNS } from '@org/core';
 
 import type { IAdminBanService, IAuthService } from '../interfaces/auth.interface';
@@ -194,5 +197,39 @@ describe('AuthController administrative RPCs', () => {
     expect(diagnosticPayload).not.toContain('OAuth Secret Name');
     expect(diagnosticPayload).not.toContain('Sensitive User Agent');
     expect(diagnosticPayload).not.toContain('OAuth Sensitive User Agent');
+  });
+
+  it('maps expected HTTP exceptions to serializable RPC errors', async () => {
+    auth.validateCredentials.mockRejectedValueOnce(new UnauthorizedException('Invalid credentials'));
+
+    const result = controller.validateCredentials({
+      email: 'user@example.com',
+      password: 'plain-password-secret',
+    });
+
+    await expect(result).rejects.toMatchObject({
+      error: {
+        statusCode: 401,
+        message: 'Invalid credentials',
+      },
+    });
+    await expect(result).rejects.toBeInstanceOf(RpcException);
+  });
+
+  it('maps registration conflicts to serializable RPC errors', async () => {
+    auth.register.mockRejectedValueOnce(new ConflictException('Email already in use'));
+
+    const result = controller.register({
+      email: 'user@example.com',
+      username: 'tester',
+      password: 'plain-password-secret',
+    });
+
+    await expect(result).rejects.toMatchObject({
+      error: {
+        statusCode: 409,
+        message: 'Email already in use',
+      },
+    });
   });
 });

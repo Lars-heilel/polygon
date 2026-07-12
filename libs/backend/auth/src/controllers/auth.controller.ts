@@ -1,5 +1,5 @@
-import { Controller, Inject, Logger, UsePipes } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Controller, HttpException, Inject, Logger, UsePipes } from '@nestjs/common';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import {
   type AdminBanRequest,
   type AdminSessionsResponse,
@@ -32,7 +32,7 @@ export class AuthController implements IAuthController {
     this.logger.log('RPC [REGISTER]: Received registration request');
     this.logger.debug({ hasEmail: !!dto.email, hasUsername: !!dto.username }, 'RPC [REGISTER]: Payload diagnostic');
 
-    await this.authService.register(dto);
+    await this.rpc(() => this.authService.register(dto));
     this.logger.verbose('RPC [REGISTER]: Success response generated');
     return null;
   }
@@ -41,7 +41,7 @@ export class AuthController implements IAuthController {
   async getRoleById(@Payload() payload: { id: string }): Promise<Role> {
     this.logger.log('RPC [GET_ROLE_BY_ID]: Fetching role');
     this.logger.debug({ hasCredentialsId: !!payload.id }, 'RPC [GET_ROLE_BY_ID]: Payload diagnostic');
-    return await this.authService.getRoleById(payload.id);
+    return await this.rpc(() => this.authService.getRoleById(payload.id));
   }
 
   @MessagePattern(AUTH_PATTERNS.VALIDATE_CREDENTIALS)
@@ -50,7 +50,7 @@ export class AuthController implements IAuthController {
   ): Promise<CredentialsPayload> {
     this.logger.log('RPC [VALIDATE_CREDENTIALS]: Validation request received');
 
-    return await this.authService.validateCredentials(payload.email, payload.password);
+    return await this.rpc(() => this.authService.validateCredentials(payload.email, payload.password));
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGIN)
@@ -68,7 +68,7 @@ export class AuthController implements IAuthController {
       'RPC [LOGIN]: Payload diagnostic',
     );
 
-    const tokens = await this.authService.login(payload.id, payload.clientMetadata);
+    const tokens = await this.rpc(() => this.authService.login(payload.id, payload.clientMetadata));
     this.logger.verbose('RPC [LOGIN]: Completed session creation');
     return tokens;
   }
@@ -78,7 +78,7 @@ export class AuthController implements IAuthController {
     this.logger.log('RPC [LOGOUT]: Received request to terminate session');
     this.logger.verbose({ hasRefreshToken: !!payload.refreshToken }, 'RPC [LOGOUT]: Refresh token context');
 
-    await this.authService.logout(payload.refreshToken);
+    await this.rpc(() => this.authService.logout(payload.refreshToken));
     return null;
   }
 
@@ -87,7 +87,7 @@ export class AuthController implements IAuthController {
     this.logger.log('RPC [REFRESH]: Session token rotation request received');
     this.logger.verbose({ hasRefreshToken: !!payload.refreshToken }, 'RPC [REFRESH]: Received token parameters');
 
-    return await this.authService.refresh(payload.refreshToken);
+    return await this.rpc(() => this.authService.refresh(payload.refreshToken));
   }
 
   @MessagePattern(AUTH_PATTERNS.VERIFY_EMAIL)
@@ -100,20 +100,20 @@ export class AuthController implements IAuthController {
       'RPC [VERIFY_EMAIL]: Verification token and client metadata context',
     );
 
-    return await this.authService.verifyEmail(payload.token, payload.clientMetadata);
+    return await this.rpc(() => this.authService.verifyEmail(payload.token, payload.clientMetadata));
   }
 
   @MessagePattern(AUTH_PATTERNS.RESEND_VERIFICATION)
   async resendVerification(@Payload() payload: { email: string }): Promise<null> {
     this.logger.log('RPC [RESEND_VERIFICATION]: Re-send requested');
-    await this.authService.resendVerification(payload.email);
+    await this.rpc(() => this.authService.resendVerification(payload.email));
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.FORGOT_PASSWORD)
   async forgotPassword(@Payload() payload: { email: string }): Promise<null> {
     this.logger.log('RPC [FORGOT_PASSWORD]: Password reset triggered');
-    await this.authService.forgotPassword(payload.email);
+    await this.rpc(() => this.authService.forgotPassword(payload.email));
     return null;
   }
 
@@ -125,7 +125,7 @@ export class AuthController implements IAuthController {
       'RPC [RESET_PASSWORD]: Provided confirmation token',
     );
 
-    await this.authService.resetPassword(payload.token, payload.newPassword);
+    await this.rpc(() => this.authService.resetPassword(payload.token, payload.newPassword));
     return null;
   }
 
@@ -139,7 +139,7 @@ export class AuthController implements IAuthController {
       'RPC [OAUTH_LOGIN]: OAuth payload and metadata details',
     );
 
-    return await this.authService.oauthLogin(dto, dto.clientMetadata);
+    return await this.rpc(() => this.authService.oauthLogin(dto, dto.clientMetadata));
   }
 
   @MessagePattern(AUTH_PATTERNS.LIST_SESSIONS)
@@ -154,7 +154,9 @@ export class AuthController implements IAuthController {
       },
       'RPC [LIST_SESSIONS]: Payload diagnostic',
     );
-    return await this.authService.listSessions(payload.credentialsId, payload.currentSessionId);
+    return await this.rpc(() =>
+      this.authService.listSessions(payload.credentialsId, payload.currentSessionId),
+    );
   }
 
   @MessagePattern(AUTH_PATTERNS.REVOKE_SESSION)
@@ -166,7 +168,7 @@ export class AuthController implements IAuthController {
       { hasSessionId: !!payload.sessionId, hasCredentialsId: !!payload.credentialsId },
       'RPC [REVOKE_SESSION]: Payload diagnostic',
     );
-    await this.authService.revokeSession(payload.sessionId, payload.credentialsId);
+    await this.rpc(() => this.authService.revokeSession(payload.sessionId, payload.credentialsId));
     return null;
   }
 
@@ -177,7 +179,7 @@ export class AuthController implements IAuthController {
       { hasCredentialsId: !!payload.credentialsId },
       'RPC [REVOKE_ALL_SESSIONS]: Payload diagnostic',
     );
-    await this.authService.revokeAllSessions(payload.credentialsId);
+    await this.rpc(() => this.authService.revokeAllSessions(payload.credentialsId));
     return null;
   }
 
@@ -223,5 +225,33 @@ export class AuthController implements IAuthController {
   async unbanAccount(@Payload() payload: { actorId: string; targetId: string }): Promise<null> {
     await this.adminService.unban(payload.actorId, payload.targetId);
     return null;
+  }
+
+  private async rpc<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      if (error instanceof HttpException) {
+        throw new RpcException(this.httpExceptionPayload(error));
+      }
+      throw error;
+    }
+  }
+
+  private httpExceptionPayload(error: HttpException): { statusCode: number; message: string } {
+    const response = error.getResponse();
+    const message =
+      typeof response === 'object' &&
+      response !== null &&
+      'message' in response &&
+      typeof response.message === 'string'
+        ? response.message
+        : error.message;
+
+    return {
+      statusCode: error.getStatus(),
+      message,
+    };
   }
 }
