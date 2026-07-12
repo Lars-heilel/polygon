@@ -61,6 +61,7 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
           placeholder="••••••••"
           error={errors.password?.message}
           autoComplete="new-password"
+          revealable
         />
         <Input
           {...register('confirmPassword')}
@@ -69,6 +70,7 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
           placeholder="••••••••"
           error={errors.confirmPassword?.message}
           autoComplete="new-password"
+          revealable
         />
       </div>
 

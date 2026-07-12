@@ -48,6 +48,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           placeholder="••••••••"
           error={errors.password?.message}
           autoComplete="current-password"
+          revealable
         />
       </div>
 

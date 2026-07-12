@@ -13,6 +13,7 @@ const meta: Meta<typeof Input> = {
     error: { control: 'text' },
     hint: { control: 'text' },
     disabled: { control: 'boolean' },
+    revealable: { control: 'boolean' },
   },
   decorators: [
     (Story) => (
@@ -45,6 +46,15 @@ export const WithError: Story = {
     label: 'Email',
     error: 'Invalid email address',
     value: 'not-an-email',
+  },
+};
+
+export const Password: Story = {
+  args: {
+    label: 'Password',
+    type: 'password',
+    placeholder: '••••••••',
+    revealable: true,
   },
 };
 

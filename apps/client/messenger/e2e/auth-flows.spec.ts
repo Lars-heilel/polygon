@@ -45,7 +45,7 @@ test('login calls the auth API and redirects authenticated users to chats', asyn
 
   await page.goto('/auth/login');
   await page.getByLabel('Email').fill('user@example.com');
-  await page.getByLabel('Password').fill('password');
+  await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page).toHaveURL(/\/chats$/);
@@ -63,7 +63,7 @@ test('login shows an API error without leaking away from the page', async ({ pag
 
   await page.goto('/auth/login');
   await page.getByLabel('Email').fill('user@example.com');
-  await page.getByLabel('Password').fill('wrong-password');
+  await page.locator('input[name="password"]').fill('wrong-password');
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page.getByText('Invalid email or password')).toBeVisible();
@@ -83,13 +83,27 @@ test('login shows the rate limit message returned by the auth API', async ({ pag
 
   await page.goto('/auth/login');
   await page.getByLabel('Email').fill('user@example.com');
-  await page.getByLabel('Password').fill('wrong-password');
+  await page.locator('input[name="password"]').fill('wrong-password');
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(
     page.getByText('Too many failed login attempts. Please try again in 15 minutes.'),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/auth\/login$/);
+});
+
+test('login lets users show and hide the password value', async ({ page }) => {
+  await page.goto('/auth/login');
+
+  const password = page.locator('input[name="password"]');
+  await password.fill('visible-secret');
+  await expect(password).toHaveAttribute('type', 'password');
+
+  await page.getByRole('button', { name: 'Show password' }).click();
+  await expect(password).toHaveAttribute('type', 'text');
+
+  await page.getByRole('button', { name: 'Hide password' }).click();
+  await expect(password).toHaveAttribute('type', 'password');
 });
 
 test('register validates password confirmation before calling the auth API', async ({ page }) => {

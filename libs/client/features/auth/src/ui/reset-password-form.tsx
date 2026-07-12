@@ -73,6 +73,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           placeholder="••••••••"
           error={errors.password?.message}
           autoComplete="new-password"
+          revealable
         />
         <Input
           {...register('confirmPassword')}
@@ -81,6 +82,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           placeholder="••••••••"
           error={errors.confirmPassword?.message}
           autoComplete="new-password"
+          revealable
         />
       </div>
       <Button
