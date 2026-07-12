@@ -375,6 +375,20 @@ describe('AuthService', () => {
       await expect(service.refresh('bad-token')).rejects.toThrow(UnauthorizedException);
     });
 
+    it('does not write raw invalid refresh token errors to diagnostic logs', async () => {
+      tokenService.verifyRefreshToken.mockImplementation(() => {
+        throw new Error('jwt expired for token=refresh-secret user@example.com');
+      });
+
+      await expect(service.refresh('refresh-secret')).rejects.toThrow(UnauthorizedException);
+
+      const logPayload = JSON.stringify([logger.debug.mock.calls, logger.warn.mock.calls]);
+      expect(logPayload).not.toContain('refresh-secret');
+      expect(logPayload).not.toContain('user@example.com');
+      expect(logPayload).not.toContain('jwt expired for token');
+      expect(logPayload).toContain('hasError');
+    });
+
     it('throws on revoked session (replay attack)', async () => {
       repo.findSessionByTokenHash.mockResolvedValue({ ...mockSession, revokedAt: new Date() });
       await expect(service.refresh(mockRefreshToken)).rejects.toThrow(UnauthorizedException);
@@ -437,6 +451,20 @@ describe('AuthService', () => {
       });
       await expect(service.logout('bad-token')).resolves.toBeUndefined();
       expect(repo.revokeSession).not.toHaveBeenCalled();
+    });
+
+    it('does not write raw invalid logout token errors to diagnostic logs', async () => {
+      tokenService.verifyRefreshToken.mockImplementation(() => {
+        throw new Error('invalid logout token=logout-secret user@example.com');
+      });
+
+      await expect(service.logout('logout-secret')).resolves.toBeUndefined();
+
+      const logPayload = JSON.stringify([logger.debug.mock.calls, logger.warn.mock.calls]);
+      expect(logPayload).not.toContain('logout-secret');
+      expect(logPayload).not.toContain('user@example.com');
+      expect(logPayload).not.toContain('invalid logout token');
+      expect(logPayload).toContain('hasError');
     });
   });
 

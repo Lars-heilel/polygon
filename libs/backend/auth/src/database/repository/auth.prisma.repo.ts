@@ -65,7 +65,10 @@ export class AuthPrismaRepository implements IAuthRepository {
       this.logger.log('Database [Prisma]: Successfully created credentials record');
       return result;
     } catch (error) {
-      this.logger.error('Database [Prisma]: Failure during credentials creation', error);
+      this.logger.error(
+        this.prismaErrorDiagnostic('credentials_create_failed', error),
+        'Database [Prisma]: Failure during credentials creation',
+      );
       handlePrismaError(error);
     }
   }
@@ -85,8 +88,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       this.logger.log('Database [Prisma]: Password hash updated successfully');
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('credentials_password_update_failed', error),
         'Database [Prisma]: Failure updating password hash for credentials',
-        error,
       );
       handlePrismaError(error);
     }
@@ -136,7 +139,10 @@ export class AuthPrismaRepository implements IAuthRepository {
       await this.prisma.oAuthAccount.create({ data });
       this.logger.log(`Database [Prisma]: OAuth mapping created successfully`);
     } catch (error) {
-      this.logger.error('Database [Prisma]: Failure creating OAuth account mapping', error);
+      this.logger.error(
+        this.prismaErrorDiagnostic('oauth_mapping_create_failed', error),
+        'Database [Prisma]: Failure creating OAuth account mapping',
+      );
       handlePrismaError(error);
     }
   }
@@ -174,8 +180,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       this.logger.log('Database [Prisma]: Session successfully written to table');
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('session_create_failed', error),
         'Database [Prisma]: Failure writing session to storage',
-        error,
       );
       handlePrismaError(error);
     }
@@ -205,7 +211,10 @@ export class AuthPrismaRepository implements IAuthRepository {
       });
       this.logger.log('Database [Prisma]: Session successfully revoked');
     } catch (error) {
-      this.logger.error('Database [Prisma]: Failure revoking session by token hash', error);
+      this.logger.error(
+        this.prismaErrorDiagnostic('session_revoke_by_token_hash_failed', error),
+        'Database [Prisma]: Failure revoking session by token hash',
+      );
       handlePrismaError(error);
     }
   }
@@ -223,8 +232,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       this.logger.log(`Database [Prisma]: Revoked ${result.count} active sessions`);
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('sessions_revoke_all_failed', error),
         'Database [Prisma]: Failure revoking all sessions for credentials',
-        error,
       );
       handlePrismaError(error);
     }
@@ -240,7 +249,10 @@ export class AuthPrismaRepository implements IAuthRepository {
       });
       return result.count > 0;
     } catch (error) {
-      this.logger.error('Database [Prisma]: Failure revoking session by ID', error);
+      this.logger.error(
+        this.prismaErrorDiagnostic('session_revoke_by_id_failed', error),
+        'Database [Prisma]: Failure revoking session by ID',
+      );
       handlePrismaError(error);
     }
   }
@@ -273,8 +285,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       });
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('session_last_active_update_failed', error),
         'Database [Prisma]: Failure updating last active field for session',
-        error,
       );
       handlePrismaError(error);
     }
@@ -299,8 +311,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       );
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('session_token_hash_rotate_failed', error),
         'Database [Prisma]: Failure rotating token hash for session',
-        error,
       );
       handlePrismaError(error);
     }
@@ -348,8 +360,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       ]);
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('credentials_ban_transaction_failed', error),
         'Database [Prisma]: Atomic ban transaction failed',
-        error,
       );
       handlePrismaError(error);
     }
@@ -369,7 +381,10 @@ export class AuthPrismaRepository implements IAuthRepository {
         },
       });
     } catch (error) {
-      this.logger.error('Database [Prisma]: Failure clearing ban', error);
+      this.logger.error(
+        this.prismaErrorDiagnostic('credentials_ban_clear_failed', error),
+        'Database [Prisma]: Failure clearing ban',
+      );
       handlePrismaError(error);
     }
   }
@@ -389,7 +404,10 @@ export class AuthPrismaRepository implements IAuthRepository {
       });
       return result.count > 0;
     } catch (error) {
-      this.logger.error('Database [Prisma]: Failure normalizing ban', error);
+      this.logger.error(
+        this.prismaErrorDiagnostic('credentials_ban_normalize_failed', error),
+        'Database [Prisma]: Failure normalizing ban',
+      );
       handlePrismaError(error);
     }
   }
@@ -426,8 +444,8 @@ export class AuthPrismaRepository implements IAuthRepository {
       this.logger.log('Database [Prisma]: Credentials verified successfully');
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('credentials_verify_failed', error),
         'Database [Prisma]: Failure updating verification state for credentials',
-        error,
       );
       handlePrismaError(error);
     }
@@ -454,10 +472,18 @@ export class AuthPrismaRepository implements IAuthRepository {
       return result.count;
     } catch (error) {
       this.logger.error(
+        this.prismaErrorDiagnostic('credentials_cleanup_failed', error),
         'Database [Prisma]: Failure during cleanup of stale unverified records',
-        error,
       );
       handlePrismaError(error);
     }
+  }
+
+  private prismaErrorDiagnostic(eventType: string, error: unknown) {
+    return {
+      eventType,
+      hasError: error !== undefined && error !== null,
+      errorType: error instanceof Error ? error.name : typeof error,
+    };
   }
 }

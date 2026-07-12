@@ -6,6 +6,7 @@ import { AuthPrismaRepository } from './auth.prisma.repo';
 
 describe('AuthPrismaRepository admin persistence', () => {
   const credentials = {
+    create: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
@@ -83,6 +84,30 @@ describe('AuthPrismaRepository admin persistence', () => {
     expect(logPayload).not.toContain('203.0.113.10');
     expect(logPayload).not.toContain('Secret Country');
     expect(logPayload).not.toContain('Secret User Agent');
+  });
+
+  it('does not write raw Prisma error details to diagnostic logs', async () => {
+    const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    jest.spyOn(Logger.prototype, 'debug').mockImplementation();
+    credentials.create.mockRejectedValue(
+      new Error('Prisma failed for secret@example.com token=secret-token'),
+    );
+
+    await expect(
+      repository.createCredentials({
+        email: 'secret@example.com',
+        passwordHash: 'password-hash-secret',
+      }),
+    ).rejects.toThrow('Prisma failed');
+
+    const logPayload = JSON.stringify(errorSpy.mock.calls);
+    expect(logPayload).not.toContain('secret@example.com');
+    expect(logPayload).not.toContain('secret-token');
+    expect(logPayload).not.toContain('password-hash-secret');
+    expect(logPayload).not.toContain('Prisma failed for');
+    expect(logPayload).toContain('credentials_create_failed');
+    expect(logPayload).toContain('hasError');
   });
 
   it('atomically persists the ban and revokes every active SQL session', async () => {

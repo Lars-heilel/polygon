@@ -363,7 +363,7 @@ export class AuthService implements IAuthService {
       payload = this.tokenService.verifyRefreshToken(refreshToken);
     } catch (err) {
       this.logger.warn('Service: Logout failed. Invalid refresh token signature or expiration');
-      this.logger.debug({ err }, 'Service: Invalid token trace');
+      this.logger.debug(this.errorDiagnostic(err), 'Service: Invalid token trace');
       return;
     }
 
@@ -395,7 +395,7 @@ export class AuthService implements IAuthService {
       payload = this.tokenService.verifyRefreshToken(refreshToken);
     } catch (err) {
       this.logger.warn('Service: Refresh failed. Token is invalid or expired');
-      this.logger.debug({ err }, 'Service: Invalid refresh token signature context');
+      this.logger.debug(this.errorDiagnostic(err), 'Service: Invalid refresh token signature context');
       throw new UnauthorizedException();
     }
 
@@ -531,6 +531,13 @@ export class AuthService implements IAuthService {
       hasDevice: !!metadata?.device,
       hasUserAgent: !!metadata?.userAgent,
       hasLoginTime: !!metadata?.loginTime,
+    };
+  }
+
+  private errorDiagnostic(error: unknown) {
+    return {
+      hasError: error !== undefined && error !== null,
+      errorType: error instanceof Error ? error.name : typeof error,
     };
   }
 }
