@@ -11,6 +11,7 @@ import {
   Query,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
   UsePipes,
 } from '@nestjs/common';
@@ -154,6 +155,7 @@ export class AuthGatewayController {
 
     if (!refreshToken) {
       this.logger.warn('Token rotation aborted: refresh_token cookie is missing');
+      throw new UnauthorizedException('Refresh token missing');
     }
     this.logger.debug({ hasToken: !!refreshToken }, 'Refresh request state');
 

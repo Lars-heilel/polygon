@@ -233,6 +233,21 @@ describe('AuthGatewayController HTTP', () => {
     });
   });
 
+  it('rejects refresh without a refresh cookie before auth RPC', async () => {
+    const response = await request(app.getHttpServer()).post('/auth/refresh');
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 401,
+      body: {
+        statusCode: 401,
+        message: 'Refresh token missing',
+        error: 'Unauthorized',
+      },
+    });
+    expect(authClient.send).not.toHaveBeenCalled();
+    expect(response.headers['set-cookie']).toBeUndefined();
+  });
+
   it('clears cookies on logout without refresh cookie', async () => {
     await request(app.getHttpServer())
       .post('/auth/logout')
