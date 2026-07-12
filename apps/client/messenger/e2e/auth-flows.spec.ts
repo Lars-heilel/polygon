@@ -70,6 +70,28 @@ test('login shows an API error without leaking away from the page', async ({ pag
   await expect(page).toHaveURL(/\/auth\/login$/);
 });
 
+test('login shows the rate limit message returned by the auth API', async ({ page }) => {
+  await page.route('**/api/auth/login', (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: 'Too many failed login attempts. Please try again in 15 minutes.',
+      }),
+    }),
+  );
+
+  await page.goto('/auth/login');
+  await page.getByLabel('Email').fill('user@example.com');
+  await page.getByLabel('Password').fill('wrong-password');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+
+  await expect(
+    page.getByText('Too many failed login attempts. Please try again in 15 minutes.'),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/auth\/login$/);
+});
+
 test('register validates password confirmation before calling the auth API', async ({ page }) => {
   let registerRequests = 0;
   await page.route('**/api/auth/register', (route) => {
