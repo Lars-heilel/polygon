@@ -64,6 +64,11 @@ export function SettingsDevicesTab() {
                 )}
                 <button
                   className="text-xs text-danger hover:underline"
+                  aria-label={
+                    session.isCurrent
+                      ? 'Logout current session'
+                      : `Logout ${session.browser || 'Unknown'} on ${session.os || 'Unknown'} session`
+                  }
                   onClick={() => revokeSession(session.id)}
                 >
                   Logout
