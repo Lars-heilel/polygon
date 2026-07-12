@@ -61,8 +61,21 @@ const config = {
 describe('AuthGatewayController HTTP', () => {
   let app: INestApplication;
   let authClient: MockClient;
+  let tokenService: { verifyAccessToken: jest.Mock };
+  let sessionCache: { exists: jest.Mock };
+  let banMarkers: { findActiveMarker: jest.Mock };
 
   beforeEach(async () => {
+    tokenService = {
+      verifyAccessToken: jest.fn().mockReturnValue({
+        sub: 'creds-1',
+        sessionId: 'session-current',
+        role: 'USER',
+        isVerified: true,
+      }),
+    };
+    sessionCache = { exists: jest.fn().mockResolvedValue(true) };
+    banMarkers = { findActiveMarker: jest.fn().mockResolvedValue(null) };
     authClient = {
       send: jest.fn((pattern: string) => {
         if (pattern === AUTH_PATTERNS.VALIDATE_CREDENTIALS) {
@@ -81,9 +94,9 @@ describe('AuthGatewayController HTTP', () => {
         LocalStrategy,
         { provide: AUTH_CLIENT_TOKEN, useValue: authClient },
         { provide: ConfigService, useValue: config },
-        { provide: TokenService, useValue: { verifyAccessToken: jest.fn() } },
-        { provide: SESSION_CACHE_REPOSITORY_TOKEN, useValue: { exists: jest.fn() } },
-        { provide: BanMarkerRepository, useValue: { findActiveMarker: jest.fn() } },
+        { provide: TokenService, useValue: tokenService },
+        { provide: SESSION_CACHE_REPOSITORY_TOKEN, useValue: sessionCache },
+        { provide: BanMarkerRepository, useValue: banMarkers },
       ],
     }).compile();
 
@@ -262,5 +275,101 @@ describe('AuthGatewayController HTTP', () => {
       });
 
     expect(authClient.send).not.toHaveBeenCalled();
+  });
+
+  it('lists current-user sessions through auth RPC', async () => {
+    const sessions = [
+      {
+        id: 'session-current',
+        device: 'Desktop',
+        browser: 'Chrome',
+        os: 'Linux',
+        ip: '127.0.0.1',
+        country: 'Test Country',
+        lastActiveAt: '2026-07-12T17:00:00.000Z',
+        createdAt: '2026-07-12T16:00:00.000Z',
+        isCurrent: true,
+      },
+    ];
+    authClient.send.mockReturnValueOnce(of(sessions));
+
+    const response = await request(app.getHttpServer())
+      .get('/auth/sessions')
+      .set('Cookie', ['access_token=access-token']);
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 200,
+      body: sessions,
+    });
+    expect(tokenService.verifyAccessToken).toHaveBeenCalledWith('access-token');
+    expect(sessionCache.exists).toHaveBeenCalledWith('session-current');
+    expect(banMarkers.findActiveMarker).toHaveBeenCalledWith('creds-1');
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.LIST_SESSIONS, {
+      credentialsId: 'creds-1',
+      currentSessionId: 'session-current',
+    });
+  });
+
+  it('clears cookies when revoking the current session', async () => {
+    authClient.send.mockReturnValueOnce(of(null));
+
+    const response = await request(app.getHttpServer())
+      .delete('/auth/sessions/session-current')
+      .set('Cookie', ['access_token=access-token']);
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 200,
+      body: { message: 'Session revoked' },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.REVOKE_SESSION, {
+      sessionId: 'session-current',
+      credentialsId: 'creds-1',
+    });
+    expect(getSetCookieHeaders(response.headers)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('access_token=;'),
+        expect.stringContaining('refresh_token=;'),
+      ]),
+    );
+  });
+
+  it('keeps cookies when revoking another session', async () => {
+    authClient.send.mockReturnValueOnce(of(null));
+
+    const response = await request(app.getHttpServer())
+      .delete('/auth/sessions/session-other')
+      .set('Cookie', ['access_token=access-token']);
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 200,
+      body: { message: 'Session revoked' },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.REVOKE_SESSION, {
+      sessionId: 'session-other',
+      credentialsId: 'creds-1',
+    });
+    expect(response.headers['set-cookie']).toBeUndefined();
+  });
+
+  it('clears cookies when revoking all sessions', async () => {
+    authClient.send.mockReturnValueOnce(of(null));
+
+    const response = await request(app.getHttpServer())
+      .delete('/auth/sessions')
+      .set('Cookie', ['access_token=access-token']);
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 200,
+      body: { message: 'All sessions revoked' },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.REVOKE_ALL_SESSIONS, {
+      credentialsId: 'creds-1',
+    });
+    expect(getSetCookieHeaders(response.headers)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('access_token=;'),
+        expect.stringContaining('refresh_token=;'),
+      ]),
+    );
   });
 });
