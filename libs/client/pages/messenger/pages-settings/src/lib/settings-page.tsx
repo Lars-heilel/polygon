@@ -4,12 +4,24 @@ import { useNavigate } from 'react-router';
 import { SettingsDevicesTab } from './settings-devices-tab';
 import { SettingsGeneralTab } from './settings-general-tab';
 import { SettingsPrivacyTab } from './settings-privacy-tab';
+import { CLIENT_ROUTES } from '@org/common';
 import { useMeQuery } from '@org/entities-user';
 import { Heading } from '@org/shared';
 
 type SettingsTab = 'general' | 'privacy' | 'devices';
 
 const TABS: SettingsTab[] = ['general', 'privacy', 'devices'];
+
+export function getAdminConsoleHref(origin = window.location.origin) {
+  const url = new URL(CLIENT_ROUTES.admin.root, origin);
+
+  if (url.port === '4200') {
+    url.port = '4300';
+    return url.toString();
+  }
+
+  return CLIENT_ROUTES.admin.root;
+}
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -34,7 +46,7 @@ export function SettingsPage() {
           <a
             aria-label="Admin console"
             className="ml-auto rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated"
-            href="/admin"
+            href={getAdminConsoleHref()}
           >
             Admin console
           </a>
