@@ -30,9 +30,9 @@ export function ResourceList<T>({
     );
   }
 
-  if (isError) return <>{errorState}</>;
+  if (isError) return errorState;
 
-  if (data.length === 0) return <>{emptyState}</>;
+  if (data.length === 0) return emptyState;
 
   return (
     <div className={cn('flex flex-col', className)}>

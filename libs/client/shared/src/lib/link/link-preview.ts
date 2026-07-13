@@ -54,7 +54,14 @@ export function useLinkPreviewQuery(url: string | null) {
     queryKey: ['link-preview-v2', url],
     enabled: Boolean(url),
     staleTime: 1000 * 60 * 60,
-    queryFn: () =>
-      authedFetch<LinkPreview>(`${API_ROUTES.media.linkPreview}?url=${encodeURIComponent(url!)}`),
+    queryFn: () => {
+      if (!url) {
+        throw new Error('Link preview URL is required');
+      }
+
+      return authedFetch<LinkPreview>(
+        `${API_ROUTES.media.linkPreview}?url=${encodeURIComponent(url)}`,
+      );
+    },
   });
 }

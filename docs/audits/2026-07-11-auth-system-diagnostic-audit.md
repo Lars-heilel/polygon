@@ -35,6 +35,7 @@ This section is the working truth for follow-up work. Historical findings below 
 | Frontend auth refresh retry/session fallback | done | `@org/shared` `authedFetch` tests cover a `401` response triggering `/auth/refresh`, retrying the original request, sharing one refresh request across parallel `401`s, and calling the unauthenticated callback when refresh fails. | This closes the central client-side cookie refresh behavior; route-guard rendering can still be expanded separately if UX changes. |
 | Frontend auth session bootstrap | done | `@org/entities-user` now has a Vitest target; `AuthBootstrap` tests cover successful `authApi.me()` setting `isAuthenticated=true` and failed bootstrap setting `isAuthenticated=false` while clearing loading state. | App-level route guard rendering can still be expanded separately if routing UX changes. |
 | Frontend production logger no-op | done | `@org/shared` `useLogger` tests prove production builds do not call `console.log`, `console.warn`, `console.error`, or `console.debug`, while development builds still emit formatted diagnostics. | Demo must continue to use production Vite builds because `demo = prod` for logging behavior. |
+| Shared client lint noise | done | `@org/shared:lint` now exits with 0 errors and 0 warnings after removing the non-null assertion, accessible-emoji warnings, and useless fragments. | Nx Cloud warnings are external workspace-connection noise and remain separate from code lint. |
 | Observability Docker stack runtime | done | Runtime smoke confirmed Prometheus, Grafana, Alloy, Loki, and Tempo readiness; Loki returns docker log counts; Tempo reports received spans; Prometheus `up` is `1` for all configured targets after splitting Gateway to `/api/metrics`. | Fixed stale Gateway scrape path and updated the runbook. |
 | Swagger session endpoint docs | done | `@org/gateway` Swagger spec, full gateway test suite, typecheck, and lint passed after adding session response decorators. | The old Swagger drift row for session response bodies is stale. |
 
@@ -305,7 +306,7 @@ This section is the working truth for follow-up work. Historical findings below 
 | P2 | Add missing backend registration/OAuth/password recovery coverage. | Core behaviors are implemented but direct tests are incomplete, especially side effects and provider/linking paths. | Auth service unit tests plus provider callback integration checks. |
 | P2 | Prove observability stack at runtime. | Static config looks coherent, but Prometheus/Loki/Tempo/Grafana/Alloy runtime health is unverified. | Docker-compose smoke test and dashboard/target checklist. |
 | P3 | Correct Swagger/OpenAPI drift after behavior decisions. | Swagger currently misses response schemas, wrong cookie schemes, and session endpoint responses. | Generated OpenAPI snapshot or controller metadata tests. |
-| P3 | Clean existing lint warnings and Nx Cloud/flaky task noise. | Warnings hide signal during audit runs, and Nx reported flaky typecheck/test tasks. | Lint cleanup and CI cache/flaky-task investigation. |
+| P3 | Clean existing Nx Cloud/flaky task noise. | Code lint noise for `@org/shared` is closed; Nx Cloud connection warnings and occasional flaky-task reports still come from workspace/CI cache behavior. | CI cache/flaky-task investigation. |
 
 ## Recommended Test Additions
 

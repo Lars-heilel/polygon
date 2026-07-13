@@ -61,7 +61,14 @@ export const Password: Story = {
 export const WithIcons: Story = {
   args: {
     label: 'Search',
-    leftIcon: <span>🔍</span>,
+    leftIcon: (
+      <span
+        role="img"
+        aria-label="Search"
+      >
+        🔍
+      </span>
+    ),
     placeholder: 'Search...',
   },
 };
