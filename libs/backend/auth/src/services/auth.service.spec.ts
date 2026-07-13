@@ -252,6 +252,29 @@ describe('AuthService', () => {
     expect(encryption.compare).not.toHaveBeenCalled();
   });
 
+  it('allows password validation on the fourth failed login attempt', async () => {
+    repo.findByEmail.mockResolvedValue(mockCredentials);
+    authCache.incrementLoginAttempts.mockResolvedValue(4);
+    encryption.compare.mockResolvedValue(false);
+
+    await expect(service.validateCredentials(mockCredentials.email, 'wrong-password')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+
+    expect(encryption.compare).toHaveBeenCalledWith('wrong-password', mockCredentials.passwordHash);
+  });
+
+  it('rate limits on the fifth failed login attempt before password validation', async () => {
+    repo.findByEmail.mockResolvedValue(mockCredentials);
+    authCache.incrementLoginAttempts.mockResolvedValue(5);
+
+    await expect(service.validateCredentials(mockCredentials.email, 'password')).rejects.toMatchObject({
+      status: 429,
+    });
+
+    expect(encryption.compare).not.toHaveBeenCalled();
+  });
+
   it('checks a linked-by-email OAuth account before creating the provider binding', async () => {
     repo.findOAuthAccount.mockResolvedValue(null);
     repo.findByEmail.mockResolvedValue(mockCredentials);

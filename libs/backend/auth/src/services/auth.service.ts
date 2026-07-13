@@ -126,7 +126,7 @@ export class AuthService implements IAuthService {
     const attempts = await this.cache.incrementLoginAttempts(email);
     this.logger.debug({ attempts }, 'Service: Login attempts counter incremented');
 
-    if (attempts > AuthService.LOGIN_ATTEMPTS_LIMIT) {
+    if (attempts >= AuthService.LOGIN_ATTEMPTS_LIMIT) {
       this.logger.warn('Service: Login blocked due to rate-limiting');
       throw new HttpException(
         'Too many failed login attempts. Please try again in 15 minutes.',
