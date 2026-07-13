@@ -52,6 +52,12 @@ import type { Request, Response } from 'express';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
 
+const messageResponseSchema = (example: string) => ({
+  type: 'object',
+  properties: { message: { type: 'string', example } },
+  required: ['message'],
+});
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthGatewayController {
@@ -172,7 +178,20 @@ export class AuthGatewayController {
   @Get('verify-email')
   @ApiOperation({ summary: 'Verify email from link — sets cookies and redirects to client' })
   @ApiQuery({ name: 'token', description: 'Email verification token from the link' })
-  @ApiResponse({ status: 302, description: 'Redirects to /auth/email-verified with auth cookies' })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to /auth/email-verified with auth cookies',
+    headers: {
+      Location: {
+        description: 'Client email verification success page',
+        schema: { type: 'string', example: 'http://localhost:4200/auth/email-verified' },
+      },
+      'Set-Cookie': {
+        description: 'HttpOnly access_token and refresh_token cookies',
+        schema: { type: 'string' },
+      },
+    },
+  })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(
     @Query(new ZodValidationPipe()) query: VerifyEmailQueryDto,
@@ -202,7 +221,11 @@ export class AuthGatewayController {
   @Post('resend-verification')
   @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Resend email verification link' })
-  @ApiResponse({ status: 201, description: 'Verification email sent' })
+  @ApiResponse({
+    status: 201,
+    description: 'Verification email sent',
+    schema: messageResponseSchema('Verification email sent'),
+  })
   @ApiResponse({ status: 400, description: 'Account already verified' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 429, description: 'Resend cooldown active (60s)' })
@@ -227,6 +250,7 @@ export class AuthGatewayController {
     status: 201,
     description:
       'Reset link sent if email is registered (always returns success to prevent enumeration)',
+    schema: messageResponseSchema('If this email is registered, a reset link has been sent'),
   })
   @ApiResponse({ status: 429, description: 'Reset cooldown active (60s)' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
