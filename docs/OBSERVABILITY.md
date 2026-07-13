@@ -123,7 +123,7 @@ The shared observability module adds:
 - default Node.js process metrics
 - structured JSON logging with redaction
 
-Gateway, User, and Search already expose HTTP ports. RMQ-only services also start a small HTTP listener for health and metrics:
+Gateway exposes health and metrics behind its global `/api` prefix. User and Search expose them at the service root. RMQ-only services also start a small HTTP listener for health and metrics:
 
 | Service | Port env var | Default |
 | --- | --- | --- |
@@ -277,7 +277,7 @@ http://localhost:9090/targets
 Check app metrics manually:
 
 ```bash
-curl http://localhost:3000/metrics
+curl http://localhost:3000/api/metrics
 curl http://localhost:3012/metrics
 ```
 
@@ -352,7 +352,7 @@ GRAFANA_ADMIN_PASSWORD=change-this-password
 3. Confirm backend health endpoints:
 
 ```bash
-curl http://localhost:3000/health/ready
+curl http://localhost:3000/api/health/ready
 curl http://localhost:3001/health/ready
 curl http://localhost:3006/health/ready
 curl http://localhost:3012/health/ready
