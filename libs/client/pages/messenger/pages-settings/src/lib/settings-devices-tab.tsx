@@ -25,6 +25,7 @@ function DeviceIcon({ isMobile }: { isMobile: boolean }) {
 
 export function SettingsDevicesTab() {
   const { sessions, isLoading, revokeSession, revokeAllSessions, isRevokingAll } = useSessions();
+  const hasOtherSessions = sessions.some((session) => !session.isCurrent);
 
   if (isLoading) {
     return <Text>Loading sessions...</Text>;
@@ -85,9 +86,9 @@ export function SettingsDevicesTab() {
         variant="danger"
         className="w-full"
         onClick={revokeAllSessions}
-        disabled={isRevokingAll}
+        disabled={isRevokingAll || !hasOtherSessions}
       >
-        {isRevokingAll ? 'Logging out...' : 'Logout from all devices'}
+        {isRevokingAll ? 'Logging out other devices...' : 'Logout from other devices'}
       </Button>
     </div>
   );

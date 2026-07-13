@@ -487,7 +487,7 @@ describe('AuthGatewayController HTTP', () => {
     expect(response.headers['set-cookie']).toBeUndefined();
   });
 
-  it('clears cookies when revoking all sessions', async () => {
+  it('keeps cookies when revoking other sessions', async () => {
     authClient.send.mockReturnValueOnce(of(null));
 
     const response = await request(app.getHttpServer())
@@ -496,16 +496,12 @@ describe('AuthGatewayController HTTP', () => {
 
     expect({ status: response.status, body: response.body }).toEqual({
       status: 200,
-      body: { message: 'All sessions revoked' },
+      body: { message: 'Other sessions revoked' },
     });
     expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.REVOKE_ALL_SESSIONS, {
       credentialsId: 'creds-1',
+      currentSessionId,
     });
-    expect(getSetCookieHeaders(response.headers)).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('access_token=;'),
-        expect.stringContaining('refresh_token=;'),
-      ]),
-    );
+    expect(response.headers['set-cookie']).toBeUndefined();
   });
 });

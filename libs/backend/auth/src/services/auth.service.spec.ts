@@ -558,5 +558,21 @@ describe('AuthService', () => {
       expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-2');
       expect(repo.revokeAllSessions).toHaveBeenCalledWith('creds-1');
     });
+
+    it('preserves the current session when revoking other sessions', async () => {
+      repo.findActiveSessions.mockResolvedValue([
+        mockSession,
+        { ...mockSession, id: 'session-2', tokenHash: 'hashed-refresh-token-2' },
+      ]);
+
+      await service.revokeAllSessions('creds-1', 'session-1');
+
+      expect(repo.revokeSession).toHaveBeenCalledWith('hashed-refresh-token-2');
+      expect(repo.revokeAllSessions).not.toHaveBeenCalled();
+      expect(sessionCache.remove).not.toHaveBeenCalledWith('session-1');
+      expect(sessionCache.removeFromUserSessions).not.toHaveBeenCalledWith('creds-1', 'session-1');
+      expect(sessionCache.remove).toHaveBeenCalledWith('session-2');
+      expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-2');
+    });
   });
 });

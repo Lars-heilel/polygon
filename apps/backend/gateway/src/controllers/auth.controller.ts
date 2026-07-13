@@ -406,25 +406,25 @@ export class AuthGatewayController {
 
   @Delete('sessions')
   @UseGuards(SessionGuard, ActiveAccountGuard)
-  @ApiOperation({ summary: 'Revoke all sessions' })
+  @ApiOperation({ summary: 'Revoke all other sessions' })
   @ApiCookieAuth('access_token')
-  async revokeAllSessions(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async revokeAllSessions(@Req() req: Request) {
     const jwtPayload = req.user as JwtPayload;
-    this.logger.log('Full account session flush requested');
+    this.logger.log('Other sessions revocation requested');
     this.logger.debug(
       { jwt: this.jwtPayloadSummary(jwtPayload) },
-      'All sessions revocation JWT payload context',
+      'Other sessions revocation JWT payload context',
     );
 
     await this.send(
       this.authClient.send(AUTH_PATTERNS.REVOKE_ALL_SESSIONS, {
         credentialsId: jwtPayload.sub,
+        currentSessionId: jwtPayload.sessionId,
       }),
     );
 
-    this.clearTokenCookies(res);
-    this.logger.log('All active sessions invalidated and cookies flushed');
-    return { message: 'All sessions revoked' };
+    this.logger.log('Other active sessions invalidated');
+    return { message: 'Other sessions revoked' };
   }
 
   private setTokenCookies(res: Response, tokens: TokenPair): void {

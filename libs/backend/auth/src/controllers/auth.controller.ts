@@ -173,13 +173,13 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_SESSIONS)
-  async revokeAllSessions(@Payload() payload: { credentialsId: string }): Promise<null> {
-    this.logger.log('RPC [REVOKE_ALL_SESSIONS]: Revoking all sessions');
+  async revokeAllSessions(@Payload() payload: { credentialsId: string; currentSessionId?: string }): Promise<null> {
+    this.logger.log('RPC [REVOKE_ALL_SESSIONS]: Revoking sessions');
     this.logger.debug(
-      { hasCredentialsId: !!payload.credentialsId },
+      { hasCredentialsId: !!payload.credentialsId, preserveCurrentSession: !!payload.currentSessionId },
       'RPC [REVOKE_ALL_SESSIONS]: Payload diagnostic',
     );
-    await this.rpc(() => this.authService.revokeAllSessions(payload.credentialsId));
+    await this.rpc(() => this.authService.revokeAllSessions(payload.credentialsId, payload.currentSessionId));
     return null;
   }
 

@@ -88,10 +88,10 @@ test('settings devices tab redirects to login after revoking the current session
   await expect(page).toHaveURL(/\/auth\/login$/);
 });
 
-test('settings devices tab redirects to login after revoking all sessions', async ({ page }) => {
+test('settings devices tab revokes other sessions without logging out the current session', async ({ page }) => {
   await page.goto('/chats/settings');
   await page.getByRole('button', { name: 'devices' }).click();
-  await page.getByRole('button', { name: 'Logout from all devices' }).click();
+  await page.getByRole('button', { name: 'Logout from other devices' }).click();
 
-  await expect(page).toHaveURL(/\/auth\/login$/);
+  await expect(page).toHaveURL(/\/chats\/settings$/);
 });

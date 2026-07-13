@@ -28,8 +28,7 @@ export function useSessions() {
   const revokeAllMutation = useMutation({
     mutationFn: authApi.revokeAllSessions,
     onSuccess: () => {
-      setAuthenticated(false);
-      navigate('/auth/login');
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
     },
   });
 

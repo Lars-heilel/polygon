@@ -497,22 +497,42 @@ export class AuthService implements IAuthService {
     this.logger.log('Service: Session successfully revoked');
   }
 
-  async revokeAllSessions(credentialsId: string): Promise<void> {
-    this.logger.log('Service: Executing global session revocation for user');
+  async revokeAllSessions(credentialsId: string, currentSessionId?: string): Promise<void> {
+    this.logger.log('Service: Executing session revocation for user');
+
+    if (currentSessionId) {
+      const sessions = await this.repo.findActiveSessions(credentialsId);
+      const otherSessions = sessions.filter((session) => session.id !== currentSessionId);
+      this.logger.debug(
+        { hasCredentialsId: !!credentialsId, otherSessionCount: otherSessions.length },
+        'Service: Other active sessions to revoke',
+      );
+
+      for (const session of otherSessions) {
+        await this.repo.revokeSession(session.tokenHash);
+      }
+
+      await this.clearCachedSessions(credentialsId, currentSessionId);
+      this.logger.log('Service: Other sessions terminated for user');
+      return;
+    }
 
     await this.clearCachedSessions(credentialsId);
     await this.repo.revokeAllSessions(credentialsId);
     this.logger.log('Service: All sessions terminated for user');
   }
 
-  private async clearCachedSessions(credentialsId: string): Promise<void> {
+  private async clearCachedSessions(credentialsId: string, preserveSessionId?: string): Promise<void> {
     const sessionIds = await this.sessionCache.getUserSessionIds(credentialsId);
+    const sessionIdsToClear = preserveSessionId
+      ? sessionIds.filter((sessionId) => sessionId !== preserveSessionId)
+      : sessionIds;
     this.logger.debug(
-      { hasCredentialsId: !!credentialsId, sessionCount: sessionIds.length },
+      { hasCredentialsId: !!credentialsId, sessionCount: sessionIdsToClear.length },
       'Service: Cached sessions to clear',
     );
 
-    for (const sid of sessionIds) {
+    for (const sid of sessionIdsToClear) {
       await this.sessionCache.remove(sid);
       await this.sessionCache.removeFromUserSessions(credentialsId, sid);
     }

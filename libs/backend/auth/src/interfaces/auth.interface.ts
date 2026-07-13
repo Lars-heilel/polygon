@@ -96,7 +96,7 @@ export interface IAuthService {
   oauthLogin(dto: OAuthLoginDto, clientMetadata?: ClientMetadata): Promise<TokenPair>;
   listSessions(credentialsId: string, currentSessionId: string): Promise<SessionResponse[]>;
   revokeSession(sessionId: string, credentialsId: string): Promise<void>;
-  revokeAllSessions(credentialsId: string): Promise<void>;
+  revokeAllSessions(credentialsId: string, currentSessionId?: string): Promise<void>;
 }
 
 export interface IAuthController {
@@ -116,7 +116,7 @@ export interface IAuthController {
     currentSessionId: string;
   }): Promise<SessionResponse[]>;
   revokeSession(payload: { sessionId: string; credentialsId: string }): Promise<null>;
-  revokeAllSessions(payload: { credentialsId: string }): Promise<null>;
+  revokeAllSessions(payload: { credentialsId: string; currentSessionId?: string }): Promise<null>;
   getAdminAccount(payload: { actorId: string; targetId: string }): Promise<AuthAdminAccount>;
   listAdminSessions(payload: { actorId: string; targetId: string }): Promise<AdminSessionsResponse>;
   revokeAdminSession(payload: {
