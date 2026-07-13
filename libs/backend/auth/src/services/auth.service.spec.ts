@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { of } from 'rxjs';
 
-import { EncryptionService, TokenService } from '@org/core';
+import { EncryptionService, TokenService, USER_EVENTS, USER_PATTERNS } from '@org/core';
 
 import { AdminBanService } from '../admin/admin-ban.service';
 import type { IAuthRepository, IVerificationService } from '../interfaces/auth.interface';
@@ -80,6 +80,8 @@ describe('AuthService', () => {
   let authCache: { incrementLoginAttempts: jest.Mock; clearLoginAttempts: jest.Mock };
   let encryption: { hash: jest.Mock; compare: jest.Mock };
   let verification: jest.Mocked<IVerificationService>;
+  let userClient: { send: jest.Mock; emit: jest.Mock };
+  let searchClient: { send: jest.Mock; emit: jest.Mock };
 
   beforeEach(async () => {
     sessionCache = {
@@ -112,6 +114,8 @@ describe('AuthService', () => {
       clearLoginAttempts: jest.fn(),
     };
     encryption = { hash: jest.fn(), compare: jest.fn().mockResolvedValue(true) };
+    userClient = { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() };
+    searchClient = { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() };
     verification = {
       verify: jest.fn().mockResolvedValue('creds-1'),
       generateAndSend: jest.fn(),
@@ -183,17 +187,89 @@ describe('AuthService', () => {
         },
         {
           provide: 'USER_CLIENT',
-          useValue: { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() },
+          useValue: userClient,
         },
         {
           provide: 'SEARCH_CLIENT',
-          useValue: { send: jest.fn().mockReturnValue(of({})), emit: jest.fn() },
+          useValue: searchClient,
         },
       ],
     }).compile();
 
     service = module.get(AuthService);
     Object.defineProperty(service, 'logger', { value: logger });
+  });
+
+  describe('register', () => {
+    const registerDto = {
+      email: 'new@example.com',
+      username: 'new-user',
+      password: 'Aa1!aaaa',
+    };
+
+    it('creates credentials, user profile, search event, and verification email', async () => {
+      repo.findByEmail.mockResolvedValue(null);
+      encryption.hash.mockResolvedValue('hashed-new-password');
+      repo.createCredentials.mockResolvedValue({
+        ...mockCredentials,
+        id: 'new-creds',
+        email: registerDto.email,
+      });
+
+      await service.register(registerDto);
+
+      expect(repo.findByEmail).toHaveBeenCalledWith(registerDto.email);
+      expect(encryption.hash).toHaveBeenCalledWith(registerDto.password);
+      expect(repo.createCredentials).toHaveBeenCalledWith({
+        email: registerDto.email,
+        passwordHash: 'hashed-new-password',
+      });
+      expect(userClient.send).toHaveBeenCalledWith(USER_PATTERNS.CREATE, {
+        id: 'new-creds',
+        email: registerDto.email,
+        name: registerDto.username,
+      });
+      expect(searchClient.emit).toHaveBeenCalledWith(USER_EVENTS.REGISTERED, {
+        id: 'new-creds',
+        email: registerDto.email,
+        name: registerDto.username,
+      });
+      expect(verification.generateAndSend).toHaveBeenCalledWith('new-creds', registerDto.email);
+    });
+
+    it('rejects duplicate registration before hashing or side effects', async () => {
+      repo.findByEmail.mockResolvedValue(mockCredentials);
+
+      await expect(service.register(registerDto)).rejects.toMatchObject({
+        status: 409,
+      });
+
+      expect(encryption.hash).not.toHaveBeenCalled();
+      expect(repo.createCredentials).not.toHaveBeenCalled();
+      expect(userClient.send).not.toHaveBeenCalled();
+      expect(searchClient.emit).not.toHaveBeenCalled();
+      expect(verification.generateAndSend).not.toHaveBeenCalled();
+    });
+
+    it('keeps registration successful when verification email dispatch fails', async () => {
+      repo.findByEmail.mockResolvedValue(null);
+      encryption.hash.mockResolvedValue('hashed-new-password');
+      repo.createCredentials.mockResolvedValue({
+        ...mockCredentials,
+        id: 'new-creds',
+        email: registerDto.email,
+      });
+      verification.generateAndSend.mockRejectedValue(new Error('smtp unavailable'));
+
+      await expect(service.register(registerDto)).resolves.toBeUndefined();
+
+      expect(userClient.send).toHaveBeenCalledWith(USER_PATTERNS.CREATE, expect.any(Object));
+      expect(searchClient.emit).toHaveBeenCalledWith(USER_EVENTS.REGISTERED, expect.any(Object));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Service: Failed to send verification email',
+        expect.stringContaining('smtp unavailable'),
+      );
+    });
   });
 
   it.each([
