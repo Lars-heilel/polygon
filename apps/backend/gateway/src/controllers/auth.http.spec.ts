@@ -17,6 +17,7 @@ import {
 } from '@org/core';
 
 import { AuthGatewayController } from './auth.controller';
+import { GatewayHttpExceptionFilter } from '../filters/gateway-http-exception.filter';
 import { ZodValidationExceptionFilter } from '../filters/zod-validation-exception.filter';
 
 type MockClient = {
@@ -39,6 +40,16 @@ const getSetCookieHeaders = (headers: IncomingHttpHeaders): string[] => {
   }
 
   return setCookie;
+};
+
+const expectErrorBody = (
+  body: unknown,
+  expected: { statusCode: number; error: string; message: string; path: string },
+) => {
+  expect(body).toEqual({
+    ...expected,
+    timestamp: expect.any(String),
+  });
 };
 
 const config = {
@@ -103,7 +114,7 @@ describe('AuthGatewayController HTTP', () => {
 
     app = moduleRef.createNestApplication();
     app.use(cookieParser());
-    app.useGlobalFilters(new ZodValidationExceptionFilter());
+    app.useGlobalFilters(new GatewayHttpExceptionFilter(), new ZodValidationExceptionFilter());
     await app.init();
   });
 
@@ -161,10 +172,37 @@ describe('AuthGatewayController HTTP', () => {
       .post('/auth/register')
       .send({ email: 'taken@example.com', username: 'tester', password: 'Aa1!aaaa' });
 
-    expect({ status: response.status, body: response.body }).toEqual({
-      status: 409,
-      body: { statusCode: 409, message: 'Email already in use' },
+    expect(response.status).toBe(409);
+    expectErrorBody(response.body, {
+      statusCode: 409,
+      error: 'Conflict',
+      message: 'Email already in use',
+      path: '/auth/register',
     });
+  });
+
+  it('normalizes unsafe auth RPC failures without exposing downstream details', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({
+        statusCode: 503,
+        message: 'Auth failed for user@example.com with token=secret-token',
+      })),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'new@example.com', username: 'tester', password: 'Aa1!aaaa' });
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      statusCode: 503,
+      error: 'Service Unavailable',
+      message: 'Service temporarily unavailable',
+      path: '/auth/register',
+      timestamp: expect.any(String),
+    });
+    expect(JSON.stringify(response.body)).not.toContain('user@example.com');
+    expect(JSON.stringify(response.body)).not.toContain('secret-token');
   });
 
   it('sets secure HttpOnly cookies after login', async () => {
@@ -211,12 +249,12 @@ describe('AuthGatewayController HTTP', () => {
       .post('/auth/login')
       .send({ email: 'user@example.com', password: 'password' });
 
-    expect({ status: response.status, body: response.body }).toEqual({
-      status: 429,
-      body: {
-        statusCode: 429,
-        message: 'Too many failed login attempts. Please try again in 15 minutes.',
-      },
+    expect(response.status).toBe(429);
+    expectErrorBody(response.body, {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Too many failed login attempts. Please try again in 15 minutes.',
+      path: '/auth/login',
     });
     expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.VALIDATE_CREDENTIALS, {
       email: 'user@example.com',
@@ -250,13 +288,12 @@ describe('AuthGatewayController HTTP', () => {
   it('rejects refresh without a refresh cookie before auth RPC', async () => {
     const response = await request(app.getHttpServer()).post('/auth/refresh');
 
-    expect({ status: response.status, body: response.body }).toEqual({
-      status: 401,
-      body: {
-        statusCode: 401,
-        message: 'Refresh token missing',
-        error: 'Unauthorized',
-      },
+    expect(response.status).toBe(401);
+    expectErrorBody(response.body, {
+      statusCode: 401,
+      error: 'Unauthorized',
+      message: 'Refresh token missing',
+      path: '/auth/refresh',
     });
     expect(authClient.send).not.toHaveBeenCalled();
     expect(response.headers['set-cookie']).toBeUndefined();
@@ -305,9 +342,12 @@ describe('AuthGatewayController HTTP', () => {
       .post('/auth/resend-verification')
       .send({ email: 'pending@example.com' });
 
-    expect({ status: response.status, body: response.body }).toEqual({
-      status: 429,
-      body: { statusCode: 429, message: 'Please wait before requesting again' },
+    expect(response.status).toBe(429);
+    expectErrorBody(response.body, {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Please wait before requesting again',
+      path: '/auth/resend-verification',
     });
   });
 
@@ -343,9 +383,12 @@ describe('AuthGatewayController HTTP', () => {
       .post('/auth/forgot-password')
       .send({ email: 'recover@example.com' });
 
-    expect({ status: response.status, body: response.body }).toEqual({
-      status: 429,
-      body: { statusCode: 429, message: 'Please wait before requesting again' },
+    expect(response.status).toBe(429);
+    expectErrorBody(response.body, {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Please wait before requesting again',
+      path: '/auth/forgot-password',
     });
   });
 
@@ -382,9 +425,12 @@ describe('AuthGatewayController HTTP', () => {
       .post('/auth/reset-password')
       .send({ token: 'reset-token', newPassword: 'Aa1!aaaa' });
 
-    expect({ status: response.status, body: response.body }).toEqual({
-      status: 400,
-      body: { statusCode: 400, message: 'Invalid or expired token' },
+    expect(response.status).toBe(400);
+    expectErrorBody(response.body, {
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'Invalid or expired token',
+      path: '/auth/reset-password',
     });
   });
 
