@@ -271,4 +271,53 @@ describe('AuthController administrative RPCs', () => {
     await expect(result).rejects.toBeInstanceOf(RpcException);
     expect(getMock()).not.toHaveBeenCalled();
   });
+
+  it.each([
+    [
+      'role lookup',
+      () => controller.getRoleById({ id: '' }),
+      () => auth.getRoleById,
+    ],
+    [
+      'login',
+      () => controller.login({ id: '' }),
+      () => auth.login,
+    ],
+    [
+      'logout',
+      () => controller.logout({ refreshToken: '' }),
+      () => auth.logout,
+    ],
+    [
+      'refresh',
+      () => controller.refresh({ refreshToken: '' }),
+      () => auth.refresh,
+    ],
+    [
+      'session listing',
+      () => controller.listSessions({ credentialsId: '', currentSessionId: 'session-id' }),
+      () => auth.listSessions,
+    ],
+    [
+      'session revocation',
+      () => controller.revokeSession({ sessionId: '', credentialsId: 'credentials-id' }),
+      () => auth.revokeSession,
+    ],
+    [
+      'other session revocation',
+      () => controller.revokeAllSessions({ credentialsId: '', currentSessionId: 'session-id' }),
+      () => auth.revokeAllSessions,
+    ],
+  ] as const)('rejects invalid %s identity payloads before auth service execution', async (_name, invoke, getMock) => {
+    const result = invoke();
+
+    await expect(result).rejects.toMatchObject({
+      error: {
+        statusCode: 400,
+        message: 'Validation failed',
+      },
+    });
+    await expect(result).rejects.toBeInstanceOf(RpcException);
+    expect(getMock()).not.toHaveBeenCalled();
+  });
 });

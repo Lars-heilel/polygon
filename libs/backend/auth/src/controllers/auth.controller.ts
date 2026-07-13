@@ -32,6 +32,35 @@ const oauthLoginRpcPayloadSchema = oauthLoginSchema.extend({
   clientMetadata: z.custom<ClientMetadata>().optional(),
 });
 
+const nonEmptyStringSchema = z.string().min(1);
+
+const idPayloadSchema = z.object({
+  id: nonEmptyStringSchema,
+});
+
+const loginRpcPayloadSchema = idPayloadSchema.extend({
+  clientMetadata: z.custom<ClientMetadata>().optional(),
+});
+
+const refreshTokenPayloadSchema = z.object({
+  refreshToken: nonEmptyStringSchema,
+});
+
+const listSessionsPayloadSchema = z.object({
+  credentialsId: nonEmptyStringSchema,
+  currentSessionId: nonEmptyStringSchema,
+});
+
+const revokeSessionPayloadSchema = z.object({
+  sessionId: nonEmptyStringSchema,
+  credentialsId: nonEmptyStringSchema,
+});
+
+const revokeAllSessionsPayloadSchema = z.object({
+  credentialsId: nonEmptyStringSchema,
+  currentSessionId: nonEmptyStringSchema.optional(),
+});
+
 @Controller()
 export class AuthController implements IAuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -54,9 +83,10 @@ export class AuthController implements IAuthController {
 
   @MessagePattern(AUTH_PATTERNS.GET_ROLE_BY_ID)
   async getRoleById(@Payload() payload: { id: string }): Promise<Role> {
+    const dto = this.parseRpcPayload(idPayloadSchema, payload);
     this.logger.log('RPC [GET_ROLE_BY_ID]: Fetching role');
-    this.logger.debug({ hasCredentialsId: !!payload.id }, 'RPC [GET_ROLE_BY_ID]: Payload diagnostic');
-    return await this.rpc(() => this.authService.getRoleById(payload.id));
+    this.logger.debug({ hasCredentialsId: !!dto.id }, 'RPC [GET_ROLE_BY_ID]: Payload diagnostic');
+    return await this.rpc(() => this.authService.getRoleById(dto.id));
   }
 
   @MessagePattern(AUTH_PATTERNS.VALIDATE_CREDENTIALS)
@@ -73,37 +103,40 @@ export class AuthController implements IAuthController {
   async login(
     @Payload() payload: { id: string; clientMetadata?: ClientMetadata },
   ): Promise<TokenPair> {
+    const dto = this.parseRpcPayload(loginRpcPayloadSchema, payload);
     this.logger.log('RPC [LOGIN]: Session creation requested');
     this.logger.debug(
       {
-        hasCredentialsId: !!payload.id,
-        hasClientMetadata: !!payload.clientMetadata,
-        hasUserAgent: !!payload.clientMetadata?.userAgent,
-        hasIp: !!payload.clientMetadata?.ip,
+        hasCredentialsId: !!dto.id,
+        hasClientMetadata: !!dto.clientMetadata,
+        hasUserAgent: !!dto.clientMetadata?.userAgent,
+        hasIp: !!dto.clientMetadata?.ip,
       },
       'RPC [LOGIN]: Payload diagnostic',
     );
 
-    const tokens = await this.rpc(() => this.authService.login(payload.id, payload.clientMetadata));
+    const tokens = await this.rpc(() => this.authService.login(dto.id, dto.clientMetadata));
     this.logger.verbose('RPC [LOGIN]: Completed session creation');
     return tokens;
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGOUT)
   async logout(@Payload() payload: { refreshToken: string }): Promise<null> {
+    const dto = this.parseRpcPayload(refreshTokenPayloadSchema, payload);
     this.logger.log('RPC [LOGOUT]: Received request to terminate session');
-    this.logger.verbose({ hasRefreshToken: !!payload.refreshToken }, 'RPC [LOGOUT]: Refresh token context');
+    this.logger.verbose({ hasRefreshToken: !!dto.refreshToken }, 'RPC [LOGOUT]: Refresh token context');
 
-    await this.rpc(() => this.authService.logout(payload.refreshToken));
+    await this.rpc(() => this.authService.logout(dto.refreshToken));
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.REFRESH)
   async refresh(@Payload() payload: { refreshToken: string }): Promise<TokenPair> {
+    const dto = this.parseRpcPayload(refreshTokenPayloadSchema, payload);
     this.logger.log('RPC [REFRESH]: Session token rotation request received');
-    this.logger.verbose({ hasRefreshToken: !!payload.refreshToken }, 'RPC [REFRESH]: Received token parameters');
+    this.logger.verbose({ hasRefreshToken: !!dto.refreshToken }, 'RPC [REFRESH]: Received token parameters');
 
-    return await this.rpc(() => this.authService.refresh(payload.refreshToken));
+    return await this.rpc(() => this.authService.refresh(dto.refreshToken));
   }
 
   @MessagePattern(AUTH_PATTERNS.VERIFY_EMAIL)
@@ -167,16 +200,17 @@ export class AuthController implements IAuthController {
   async listSessions(
     @Payload() payload: { credentialsId: string; currentSessionId: string },
   ): Promise<SessionResponse[]> {
+    const dto = this.parseRpcPayload(listSessionsPayloadSchema, payload);
     this.logger.log('RPC [LIST_SESSIONS]: Listing sessions');
     this.logger.debug(
       {
-        hasCredentialsId: !!payload.credentialsId,
-        hasCurrentSessionId: !!payload.currentSessionId,
+        hasCredentialsId: !!dto.credentialsId,
+        hasCurrentSessionId: !!dto.currentSessionId,
       },
       'RPC [LIST_SESSIONS]: Payload diagnostic',
     );
     return await this.rpc(() =>
-      this.authService.listSessions(payload.credentialsId, payload.currentSessionId),
+      this.authService.listSessions(dto.credentialsId, dto.currentSessionId),
     );
   }
 
@@ -184,23 +218,25 @@ export class AuthController implements IAuthController {
   async revokeSession(
     @Payload() payload: { sessionId: string; credentialsId: string },
   ): Promise<null> {
+    const dto = this.parseRpcPayload(revokeSessionPayloadSchema, payload);
     this.logger.log('RPC [REVOKE_SESSION]: Revoking session');
     this.logger.debug(
-      { hasSessionId: !!payload.sessionId, hasCredentialsId: !!payload.credentialsId },
+      { hasSessionId: !!dto.sessionId, hasCredentialsId: !!dto.credentialsId },
       'RPC [REVOKE_SESSION]: Payload diagnostic',
     );
-    await this.rpc(() => this.authService.revokeSession(payload.sessionId, payload.credentialsId));
+    await this.rpc(() => this.authService.revokeSession(dto.sessionId, dto.credentialsId));
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_SESSIONS)
   async revokeAllSessions(@Payload() payload: { credentialsId: string; currentSessionId?: string }): Promise<null> {
+    const dto = this.parseRpcPayload(revokeAllSessionsPayloadSchema, payload);
     this.logger.log('RPC [REVOKE_ALL_SESSIONS]: Revoking sessions');
     this.logger.debug(
-      { hasCredentialsId: !!payload.credentialsId, preserveCurrentSession: !!payload.currentSessionId },
+      { hasCredentialsId: !!dto.credentialsId, preserveCurrentSession: !!dto.currentSessionId },
       'RPC [REVOKE_ALL_SESSIONS]: Payload diagnostic',
     );
-    await this.rpc(() => this.authService.revokeAllSessions(payload.credentialsId, payload.currentSessionId));
+    await this.rpc(() => this.authService.revokeAllSessions(dto.credentialsId, dto.currentSessionId));
     return null;
   }
 
