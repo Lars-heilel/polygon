@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import { useResendVerification } from '../model/use-resend-verification';
 
 interface CheckEmailScreenProps {
-  email: string;
+  email?: string;
 }
 
 const resendMessages = {
@@ -29,20 +29,22 @@ export function CheckEmailScreen({ email }: CheckEmailScreenProps) {
     <StatusScreen
       variant="info"
       title="Check your email"
-      description={`We sent a verification link to ${email}. Click the link to activate your account.`}
+      description="We sent a verification link. Click the link to activate your account."
     >
       <FormAlert
         message={resendMessages[status]}
         variant={resendVariants[status]}
       />
-      <Button
-        variant="secondary"
-        size="sm"
-        loading={isPending}
-        onClick={() => resend(email)}
-      >
-        Resend email
-      </Button>
+      {email ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={isPending}
+          onClick={() => resend(email)}
+        >
+          Resend email
+        </Button>
+      ) : null}
       <Text
         size="sm"
         color="muted"

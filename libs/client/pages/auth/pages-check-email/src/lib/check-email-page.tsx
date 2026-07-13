@@ -1,9 +1,14 @@
 import { CheckEmailScreen } from '@org/features-auth';
-import { useSearchParams } from 'react-router';
+import { useLocation } from 'react-router';
+
+type CheckEmailLocationState = {
+  email?: unknown;
+};
 
 export function CheckEmailPage() {
-  const [searchParams] = useSearchParams();
-  const email = searchParams.get('email') ?? '';
+  const location = useLocation();
+  const state = location.state as CheckEmailLocationState | null;
+  const email = typeof state?.email === 'string' ? state.email : undefined;
 
   return (
     <div className="flex min-h-screen items-center justify-center">

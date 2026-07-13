@@ -6,7 +6,7 @@ const authRoutes = [
   ['/auth/forgot-password', 'Reset password'],
   ['/auth/reset-password?token=demo-token', 'New password'],
   ['/auth/reset-password', 'Invalid or expired reset link.'],
-  ['/auth/check-email?email=very-long-address-for-layout-check@example.com', 'Check your email'],
+  ['/auth/check-email', 'Check your email'],
   ['/auth/email-verified', 'Email verified'],
 ] as const;
 

@@ -18,7 +18,7 @@ export function useRegister() {
     setApiError(null);
     try {
       await mutateAsync(values);
-      navigate(`${CLIENT_ROUTES.auth.checkEmail}?email=${encodeURIComponent(values.email)}`);
+      navigate(CLIENT_ROUTES.auth.checkEmail, { state: { email: values.email } });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setApiError('This email is already registered.');

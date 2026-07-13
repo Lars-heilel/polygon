@@ -138,7 +138,9 @@ test('register redirects to check-email after successful registration', async ({
   await page.getByLabel('Confirm password').fill('Aa1!aaaa');
   await page.getByRole('button', { name: 'Create account' }).click();
 
-  await expect(page).toHaveURL(/\/auth\/check-email\?email=new-user%40example\.com$/);
+  await expect(page).toHaveURL(/\/auth\/check-email$/);
+  expect(new URL(page.url()).search).toBe('');
+  await expect(page.getByText('new-user@example.com')).toHaveCount(0);
   expect(registerBody).toEqual({
     username: 'tester',
     email: 'new-user@example.com',
@@ -153,7 +155,15 @@ test('check-email resends the verification email', async ({ page }) => {
     await route.fulfill({ status: 201 });
   });
 
-  await page.goto('/auth/check-email?email=pending%40example.com');
+  await page.goto('/auth/register');
+  await page.evaluate(() => {
+    window.history.pushState(
+      { usr: { email: 'pending@example.com' }, key: 'test-key', idx: 0 },
+      '',
+      '/auth/check-email',
+    );
+    window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+  });
   await page.getByRole('button', { name: 'Resend email' }).click();
 
   await expect(page.getByText('Email sent — check your inbox.')).toBeVisible();
@@ -169,11 +179,29 @@ test('check-email shows resend cooldowns returned by the auth API', async ({ pag
     }),
   );
 
-  await page.goto('/auth/check-email?email=pending%40example.com');
+  await page.goto('/auth/register');
+  await page.evaluate(() => {
+    window.history.pushState(
+      { usr: { email: 'pending@example.com' }, key: 'test-key', idx: 0 },
+      '',
+      '/auth/check-email',
+    );
+    window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+  });
   await page.getByRole('button', { name: 'Resend email' }).click();
 
   await expect(page.getByText('Please wait before requesting another email.')).toBeVisible();
-  await expect(page).toHaveURL(/\/auth\/check-email\?email=pending%40example\.com$/);
+  await expect(page).toHaveURL(/\/auth\/check-email$/);
+});
+
+test('check-email direct visits do not expose resend without route state', async ({ page }) => {
+  await page.goto('/auth/check-email?email=leaked%40example.com');
+
+  await expect(page.getByText('leaked@example.com')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Resend email' })).toHaveCount(0);
+  await expect(
+    page.getByText('We sent a verification link. Click the link to activate your account.'),
+  ).toBeVisible();
 });
 
 test('email verified page continues authenticated users to chats', async ({ page }) => {
