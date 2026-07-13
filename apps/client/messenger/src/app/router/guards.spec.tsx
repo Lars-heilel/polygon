@@ -3,7 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { CLIENT_ROUTES } from '@org/common';
 
-import { AppGuard, GuestGuard } from './guards';
+import { AppGuard, GuestGuard, getAuthenticatedGuestRedirect } from './guards';
 
 const mockSessionState = {
   isAuthenticated: false,
@@ -39,6 +39,7 @@ function renderGuestRoute(initialPath: string) {
         children: [{ index: true, element: <div>Email verified page</div> }],
       },
       { path: CLIENT_ROUTES.chats.root, element: <div>Chats page</div> },
+      { path: CLIENT_ROUTES.admin.root, element: <div>Admin placeholder</div> },
     ],
     { initialEntries: [initialPath] },
   );
@@ -73,6 +74,15 @@ describe('auth route guards', () => {
     renderGuestRoute(CLIENT_ROUTES.auth.login);
 
     expect(await screen.findByText('Chats page')).toBeTruthy();
+  });
+
+  it('resolves authenticated guest redirects back to the Admin app from login', () => {
+    expect(
+      getAuthenticatedGuestRedirect(
+        { pathname: CLIENT_ROUTES.auth.login, search: '?from=/admin/' },
+        'http://localhost:4200',
+      ),
+    ).toEqual({ type: 'external', href: 'http://localhost:4300/admin/' });
   });
 
   it('allows authenticated users to see the email-verified continuation page', async () => {

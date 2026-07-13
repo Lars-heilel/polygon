@@ -3,7 +3,7 @@ import { RouterProvider } from 'react-router';
 
 import type { Role } from '@org/common';
 
-import { redirectToAdminLogin } from './guards';
+import { getAdminLoginUrl, redirectToAdminLogin } from './guards';
 import { createAdminRouter } from './router';
 
 const sessionState = {
@@ -58,12 +58,25 @@ describe('Admin route guards', () => {
     sessionState.meLoading = false;
   });
 
+  it('points from the admin dev server to the messenger login route', () => {
+    expect(getAdminLoginUrl('http://localhost:4300')).toBe(
+      'http://localhost:4200/auth/login?from=/admin/',
+    );
+    expect(getAdminLoginUrl('http://127.0.0.1:4300')).toBe(
+      'http://127.0.0.1:4200/auth/login?from=/admin/',
+    );
+  });
+
+  it('uses the same-origin login route outside the split dev server', () => {
+    expect(getAdminLoginUrl('https://demo.example.com')).toBe('/auth/login?from=/admin/');
+  });
+
   it('assigns the external login URL with the Admin return location', () => {
     const location = { assign: jest.fn() };
 
-    redirectToAdminLogin(location);
+    redirectToAdminLogin(location, 'http://localhost:4300');
 
-    expect(location.assign).toHaveBeenCalledWith('/auth/login?from=/admin');
+    expect(location.assign).toHaveBeenCalledWith('http://localhost:4200/auth/login?from=/admin/');
   });
 
   it('uses full navigation to the login app when unauthenticated', () => {

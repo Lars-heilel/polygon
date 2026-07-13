@@ -10,7 +10,8 @@ import {
 import { Spinner } from '@org/shared';
 import { Navigate, Outlet } from 'react-router';
 
-const ADMIN_LOGIN_URL = '/auth/login?from=/admin';
+const ADMIN_RETURN_PATH = '/admin/';
+const ADMIN_LOGIN_PATH = `/auth/login?from=${ADMIN_RETURN_PATH}`;
 const ADMIN_ALLOWED_ROLES = new Set<Role>(['CREATOR', 'ADMIN']);
 
 function FullPageSpinner() {
@@ -23,8 +24,20 @@ function FullPageSpinner() {
 
 export function redirectToAdminLogin(
   location: Pick<Location, 'assign'> = window.location,
+  origin = window.location.origin,
 ): void {
-  location.assign(ADMIN_LOGIN_URL);
+  location.assign(getAdminLoginUrl(origin));
+}
+
+export function getAdminLoginUrl(origin: string): string {
+  const url = new URL(ADMIN_LOGIN_PATH, origin);
+
+  if (url.port === '4300') {
+    url.port = '4200';
+    return url.toString();
+  }
+
+  return ADMIN_LOGIN_PATH;
 }
 
 function ExternalLoginRedirect() {
