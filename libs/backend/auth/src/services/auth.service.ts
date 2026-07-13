@@ -281,6 +281,9 @@ export class AuthService implements IAuthService {
       'Service: Database password hash updated',
     );
 
+    await this.cache.clearLoginAttempts(credentials.email);
+    this.logger.verbose('Service: Rate-limiting attempts cleared after password reset');
+
     this.logger.log('Service: Revoking all active sessions for credentials');
     await this.revokeAllSessions(credentialsId);
   }

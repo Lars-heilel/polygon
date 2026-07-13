@@ -79,6 +79,7 @@ describe('AuthService', () => {
   let adminBans: { assertAccountActive: jest.Mock };
   let authCache: { incrementLoginAttempts: jest.Mock; clearLoginAttempts: jest.Mock };
   let encryption: { hash: jest.Mock; compare: jest.Mock };
+  let verification: jest.Mocked<IVerificationService>;
 
   beforeEach(async () => {
     sessionCache = {
@@ -111,6 +112,13 @@ describe('AuthService', () => {
       clearLoginAttempts: jest.fn(),
     };
     encryption = { hash: jest.fn(), compare: jest.fn().mockResolvedValue(true) };
+    verification = {
+      verify: jest.fn().mockResolvedValue('creds-1'),
+      generateAndSend: jest.fn(),
+      resend: jest.fn(),
+      generatePasswordReset: jest.fn(),
+      consumePasswordResetToken: jest.fn().mockResolvedValue('creds-1'),
+    } as unknown as jest.Mocked<IVerificationService>;
     logger = {
       debug: jest.fn(),
       error: jest.fn(),
@@ -171,13 +179,7 @@ describe('AuthService', () => {
         },
         {
           provide: 'VERIFICATION_SERVICE_TOKEN',
-          useValue: {
-            verify: jest.fn().mockResolvedValue('creds-1'),
-            generateAndSend: jest.fn(),
-            resend: jest.fn(),
-            generatePasswordReset: jest.fn(),
-            consumePasswordResetToken: jest.fn(),
-          } as unknown as jest.Mocked<IVerificationService>,
+          useValue: verification,
         },
         {
           provide: 'USER_CLIENT',
@@ -289,6 +291,17 @@ describe('AuthService', () => {
       }),
     ).rejects.toThrow('ACCOUNT_BANNED');
     expect(repo.createOAuthAccount).not.toHaveBeenCalled();
+  });
+
+  it('clears login attempts after a successful password reset', async () => {
+    repo.findById.mockResolvedValue(mockCredentials);
+    encryption.hash.mockResolvedValue('new-password-hash');
+
+    await service.resetPassword('reset-token', 'new-password');
+
+    expect(verification.consumePasswordResetToken).toHaveBeenCalledWith('reset-token');
+    expect(repo.updatePasswordHash).toHaveBeenCalledWith('creds-1', 'new-password-hash');
+    expect(authCache.clearLoginAttempts).toHaveBeenCalledWith(mockCredentials.email);
   });
 
   it('does not write OAuth email, provider id, or client metadata to diagnostic logs', async () => {
