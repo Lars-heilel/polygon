@@ -2,7 +2,38 @@
 
 ## Summary
 
-Status: diagnostic audit complete; fixes intentionally deferred until product decisions and manual validation points are confirmed.
+Status: diagnostic audit complete; active remediation is in progress.
+
+## Current Resolution Tracker
+
+This section is the working truth for follow-up work. Historical findings below are kept as audit evidence, but items marked `done` here should not be treated as open unless a new regression is found.
+
+| Area | Current status | Evidence | Notes |
+| --- | --- | --- | --- |
+| Common frontend-error exports/typecheck blocker | done | Fixed before `01994bf`; later gateway/shared/messenger checks passed during auth remediation. | Original P0 blocker is no longer active. |
+| Backend auth registration side effects | done | `8c4ba5d test(auth): cover registration side effects`; `@org/auth` suite reached 156 passing tests. | Credential creation, User/Search calls, verification dispatch, duplicate prevention, and verification-email failure handling are covered. |
+| Backend auth login rate-limit boundary | done | `7919dcb fix(auth): block login on fifth failed attempt`; `@org/auth` tests passed. | Fifth failed attempt now blocks as the spec expects. |
+| Backend auth user-facing revoke other sessions | done | `7488267 fix(auth): preserve current session when revoking others`; gateway HTTP tests cover cookies and RPC payloads. | `DELETE /auth/sessions` preserves the current session and returns `Other sessions revoked`. |
+| Backend auth reset clears login attempts | done | `fd9a47c fix(auth): clear login attempts after password reset`; `@org/auth` tests passed. | Password recovery no longer leaves the login-attempt block active after a successful reset. |
+| Backend auth RPC payload validation | done | `a56015e fix(auth): validate auth rpc payloads`; `be79bd7 fix(auth): validate auth rpc identity payloads`; `@org/auth` tests passed. | Public auth, identity, refresh, session, and OAuth message payloads are parsed through Zod before service code. |
+| Gateway auth query/param validation | done | `d554445 fix(gateway): validate auth query and session params`; gateway HTTP tests cover invalid verify-email tokens and invalid session IDs. | Raw `verifyEmail` query and `sessions/:id` param handling is closed. |
+| Gateway auth cookies and session HTTP behavior | done | Gateway HTTP tests cover login cookies, refresh missing/success, logout, current-session revoke, other-session revoke, and revoke-other-sessions. | Cookie behavior is no longer just static-review coverage. |
+| Gateway auth RPC error propagation logging | done | Gateway controller tests assert downstream sensitive RPC messages are not written to diagnostic logs. | Runtime still uses Nest `HttpException` response shape; no separate normalized envelope decision has been made. |
+| Gateway Zod validation logging | done | `ZodValidationExceptionFilter` is globally registered in `main.ts`; gateway HTTP tests assert sanitized `issues` are logged. | Logs include field path/code/message metadata, not raw request payloads. |
+| Gateway frontend error intake logging | done | `frontend-error.controller.spec.ts` asserts only safe metadata lengths/flags are logged, not message/stack/userAgent free text. | Original free-text logging finding is stale. |
+| Gateway/auth raw email log interpolation | done | Gateway/auth logs use boolean/safe summaries such as `hasEmail`; tests check sensitive downstream messages do not leak. | Keep future logs structured and avoid raw email strings. |
+| Auth Prisma slow-query params | done | Current `PrismaService` logs `{ duration }` plus query text only; serialized `params` are not logged. | Original slow-query `params` finding is stale. |
+| Frontend `apiFetch` console logging | done | Current `libs/client/shared/src/lib/api/client.ts` has no `console.*` calls; API client specs cover requests without console diagnostics. | Original unconditional console logging finding is stale. |
+| Frontend check-email email leak | done | `bd92891 fix(auth-ui): keep verification email out of url`; messenger e2e passed. | Registration uses route state; direct `/auth/check-email` no longer displays/resends raw email from query. |
+| Frontend email verification continuation UX | done | `a2acbd7 fix(auth-ui): align email verification continuation`. | Verified user flow no longer tells the user to sign in again after cookies are set. |
+| Yandex OAuth removal | done | `bca305e refactor(auth): remove yandex oauth provider`; gateway HTTP test asserts `/auth/yandex` is not exposed. | User confirmed Yandex should be removed; related manual-decision rows are stale. |
+| Swagger auth message/verification/session docs | done | `01994bf docs(gateway): document auth swagger contracts`; current working tree extends `auth.swagger.spec.ts` and controller decorators for session responses. | Session docs now describe `SessionResponse[]`, `Session revoked`, and `Other sessions revoked` wire responses. |
+| Backend refresh replay Redis cleanup | open | No remediation commit in current log. | Still needs a focused auth service test/fix unless confirmed elsewhere. |
+| OAuth provider linking/service idempotency | open/manual | SMTP was confirmed working by user; provider callback logic still needs integration-level confirmation for GitHub/Google linking paths. | Yandex is removed and should not be included in future checks. |
+| Frontend auth component/unit tests | open | No direct component test suite exists for auth forms/pages yet. | Still required for validation states, loading, server errors, and route behavior. |
+| Frontend visual regression for auth pages | open/manual | No Playwright screenshot baseline has been added yet. | Still required for mobile/desktop visual bugs. |
+| Observability Docker stack runtime | open/manual | Static config was inspected; live Prometheus/Loki/Tempo/Grafana health is not proven here. | Requires running stack and checking targets/logs/traces. |
+| Swagger session endpoint docs | done | `@org/gateway` Swagger spec, full gateway test suite, typecheck, and lint passed after adding session response decorators. | The old Swagger drift row for session response bodies is stale. |
 
 ## Classification Legend
 

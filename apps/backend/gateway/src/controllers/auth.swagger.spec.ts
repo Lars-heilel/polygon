@@ -107,4 +107,41 @@ describe('AuthGatewayController Swagger', () => {
       },
     });
   });
+
+  it('documents session response bodies', () => {
+    const listSessions = getResponse(getOperation(document, '/auth/sessions', 'get'), '200');
+    const revokeSession = getResponse(
+      getOperation(document, '/auth/sessions/{id}', 'delete'),
+      '200',
+    );
+    const revokeOtherSessions = getResponse(
+      getOperation(document, '/auth/sessions', 'delete'),
+      '200',
+    );
+
+    expect(listSessions.content?.['application/json']?.schema).toEqual(
+      expect.objectContaining({
+        type: 'array',
+        items: expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({
+            id: { type: 'string', format: 'uuid' },
+            lastActiveAt: { type: 'string', format: 'date-time', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            isCurrent: { type: 'boolean' },
+          }),
+        }),
+      }),
+    );
+    expect(revokeSession.content?.['application/json']?.schema).toEqual({
+      type: 'object',
+      properties: { message: { type: 'string', example: 'Session revoked' } },
+      required: ['message'],
+    });
+    expect(revokeOtherSessions.content?.['application/json']?.schema).toEqual({
+      type: 'object',
+      properties: { message: { type: 'string', example: 'Other sessions revoked' } },
+      required: ['message'],
+    });
+  });
 });

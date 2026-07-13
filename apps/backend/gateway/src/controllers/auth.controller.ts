@@ -58,6 +58,24 @@ const messageResponseSchema = (example: string) => ({
   required: ['message'],
 });
 
+const nullableStringSchema = { type: 'string', nullable: true };
+
+const sessionResponseSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    device: nullableStringSchema,
+    os: nullableStringSchema,
+    browser: nullableStringSchema,
+    ip: nullableStringSchema,
+    country: nullableStringSchema,
+    lastActiveAt: { type: 'string', format: 'date-time', nullable: true },
+    createdAt: { type: 'string', format: 'date-time' },
+    isCurrent: { type: 'boolean' },
+  },
+  required: ['id', 'device', 'os', 'browser', 'ip', 'country', 'lastActiveAt', 'createdAt', 'isCurrent'],
+};
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthGatewayController {
@@ -349,6 +367,16 @@ export class AuthGatewayController {
   @UseGuards(SessionGuard, ActiveAccountGuard)
   @ApiOperation({ summary: 'List active sessions for current user' })
   @ApiCookieAuth('access_token')
+  @ApiResponse({
+    status: 200,
+    description: 'Active sessions for current user',
+    schema: {
+      type: 'array',
+      items: sessionResponseSchema,
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Missing, expired, or inactive access token' })
+  @ApiResponse({ status: 403, description: 'Account is banned or inactive' })
   async listSessions(@Req() req: Request): Promise<SessionResponse[]> {
     const jwtPayload = req.user as JwtPayload;
     this.logger.log('Retrieving session directory');
@@ -375,6 +403,14 @@ export class AuthGatewayController {
   @UseGuards(SessionGuard, ActiveAccountGuard)
   @ApiOperation({ summary: 'Revoke a specific session' })
   @ApiCookieAuth('access_token')
+  @ApiResponse({
+    status: 200,
+    description: 'Session revoked',
+    schema: messageResponseSchema('Session revoked'),
+  })
+  @ApiResponse({ status: 400, description: 'Invalid session id' })
+  @ApiResponse({ status: 401, description: 'Missing, expired, or inactive access token' })
+  @ApiResponse({ status: 403, description: 'Account is banned or inactive' })
   async revokeSession(
     @Param(new ZodValidationPipe()) params: SessionIdParamDto,
     @Req() req: Request,
@@ -408,6 +444,13 @@ export class AuthGatewayController {
   @UseGuards(SessionGuard, ActiveAccountGuard)
   @ApiOperation({ summary: 'Revoke all other sessions' })
   @ApiCookieAuth('access_token')
+  @ApiResponse({
+    status: 200,
+    description: 'Other sessions revoked',
+    schema: messageResponseSchema('Other sessions revoked'),
+  })
+  @ApiResponse({ status: 401, description: 'Missing, expired, or inactive access token' })
+  @ApiResponse({ status: 403, description: 'Account is banned or inactive' })
   async revokeAllSessions(@Req() req: Request) {
     const jwtPayload = req.user as JwtPayload;
     this.logger.log('Other sessions revocation requested');
