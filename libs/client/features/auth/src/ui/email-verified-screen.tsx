@@ -9,14 +9,14 @@ export function EmailVerifiedScreen() {
     <StatusScreen
       variant="success"
       title="Email verified"
-      description="Your account is now active. You can sign in."
+      description="Your email is verified. You can continue to chats."
     >
       <Button
         variant="primary"
         size="sm"
-        onClick={() => navigate(CLIENT_ROUTES.auth.login)}
+        onClick={() => navigate(CLIENT_ROUTES.chats.root)}
       >
-        Sign in
+        Continue to chats
       </Button>
     </StatusScreen>
   );

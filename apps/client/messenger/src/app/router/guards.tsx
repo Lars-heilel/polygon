@@ -16,12 +16,13 @@ function FullPageSpinner() {
 export function GuestGuard() {
   const isAuthenticated = useSessionStore(selectIsAuthenticated);
   const isLoading = useSessionStore(selectIsSessionLoading);
+  const location = useLocation();
 
   if (isLoading) {
     return <FullPageSpinner />;
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated && location.pathname !== CLIENT_ROUTES.auth.emailVerified) {
     return (
       <Navigate
         to={CLIENT_ROUTES.chats.root}

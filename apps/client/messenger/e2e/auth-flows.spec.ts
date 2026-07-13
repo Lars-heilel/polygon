@@ -176,6 +176,29 @@ test('check-email shows resend cooldowns returned by the auth API', async ({ pag
   await expect(page).toHaveURL(/\/auth\/check-email\?email=pending%40example\.com$/);
 });
 
+test('email verified page continues authenticated users to chats', async ({ page }) => {
+  await page.unroute('**/api/users/me');
+  await page.route('**/api/users/me', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'user-1',
+        username: 'tester',
+        displayName: 'Tester',
+        role: 'USER',
+      }),
+    }),
+  );
+
+  await page.goto('/auth/email-verified');
+
+  await expect(page.getByText('Your email is verified. You can continue to chats.')).toBeVisible();
+  await page.getByRole('button', { name: 'Continue to chats' }).click();
+
+  await expect(page).toHaveURL(/\/chats$/);
+});
+
 test('register shows a conflict error returned by the auth API', async ({ page }) => {
   await page.route('**/api/auth/register', (route) =>
     route.fulfill({
