@@ -32,8 +32,10 @@ import {
   GoogleGuard,
   LocalGuard,
   ResetPasswordDto,
+  SessionIdParamDto,
   SessionGuard,
   SessionResponse,
+  VerifyEmailQueryDto,
 } from '@org/auth';
 import { LoginDto, RegisterDto, ResendVerificationDto } from '@org/auth';
 import { type CredentialsPayload, type TokenPair } from '@org/common';
@@ -173,19 +175,19 @@ export class AuthGatewayController {
   @ApiResponse({ status: 302, description: 'Redirects to /auth/email-verified with auth cookies' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(
-    @Query('token') token: string,
+    @Query(new ZodValidationPipe()) query: VerifyEmailQueryDto,
     @GetClientMetadata() metadata: ClientMetadata,
     @Res() res: Response,
   ) {
     this.logger.log('Processing email verification request');
     this.logger.debug(
-      { hasToken: !!token, metadata: this.clientMetadataSummary(metadata) },
+      { hasToken: !!query.token, metadata: this.clientMetadataSummary(metadata) },
       'Verify email state and client metadata',
     );
 
     const tokens = await this.send<TokenPair>(
       this.authClient.send(AUTH_PATTERNS.VERIFY_EMAIL, {
-        token,
+        token: query.token,
         clientMetadata: metadata,
       }),
     );
@@ -350,11 +352,12 @@ export class AuthGatewayController {
   @ApiOperation({ summary: 'Revoke a specific session' })
   @ApiCookieAuth('access_token')
   async revokeSession(
-    @Param('id') id: string,
+    @Param(new ZodValidationPipe()) params: SessionIdParamDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const jwtPayload = req.user as JwtPayload;
+    const { id } = params;
     this.logger.log('Session revocation request received');
     this.logger.debug(
       { hasTargetSession: !!id, isCurrentSession: id === jwtPayload.sessionId },

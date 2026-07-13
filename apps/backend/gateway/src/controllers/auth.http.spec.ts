@@ -28,6 +28,9 @@ const tokenPair = {
   refreshToken: 'refresh-token',
 };
 
+const currentSessionId = '11111111-1111-4111-8111-111111111111';
+const otherSessionId = '22222222-2222-4222-8222-222222222222';
+
 const getSetCookieHeaders = (headers: IncomingHttpHeaders): string[] => {
   const setCookie = headers['set-cookie'];
 
@@ -67,7 +70,7 @@ describe('AuthGatewayController HTTP', () => {
     tokenService = {
       verifyAccessToken: jest.fn().mockReturnValue({
         sub: 'creds-1',
-        sessionId: 'session-current',
+        sessionId: currentSessionId,
         role: 'USER',
         isVerified: true,
       }),
@@ -385,10 +388,22 @@ describe('AuthGatewayController HTTP', () => {
     });
   });
 
+  it('rejects missing verify-email tokens before auth RPC', async () => {
+    await request(app.getHttpServer()).get('/auth/verify-email').expect(400);
+
+    expect(authClient.send).not.toHaveBeenCalled();
+  });
+
+  it('rejects empty verify-email tokens before auth RPC', async () => {
+    await request(app.getHttpServer()).get('/auth/verify-email?token=').expect(400);
+
+    expect(authClient.send).not.toHaveBeenCalled();
+  });
+
   it('lists current-user sessions through auth RPC', async () => {
     const sessions = [
       {
-        id: 'session-current',
+        id: currentSessionId,
         device: 'Desktop',
         browser: 'Chrome',
         os: 'Linux',
@@ -410,11 +425,11 @@ describe('AuthGatewayController HTTP', () => {
       body: sessions,
     });
     expect(tokenService.verifyAccessToken).toHaveBeenCalledWith('access-token');
-    expect(sessionCache.exists).toHaveBeenCalledWith('session-current');
+    expect(sessionCache.exists).toHaveBeenCalledWith(currentSessionId);
     expect(banMarkers.findActiveMarker).toHaveBeenCalledWith('creds-1');
     expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.LIST_SESSIONS, {
       credentialsId: 'creds-1',
-      currentSessionId: 'session-current',
+      currentSessionId,
     });
   });
 
@@ -422,7 +437,7 @@ describe('AuthGatewayController HTTP', () => {
     authClient.send.mockReturnValueOnce(of(null));
 
     const response = await request(app.getHttpServer())
-      .delete('/auth/sessions/session-current')
+      .delete(`/auth/sessions/${currentSessionId}`)
       .set('Cookie', ['access_token=access-token']);
 
     expect({ status: response.status, body: response.body }).toEqual({
@@ -430,7 +445,7 @@ describe('AuthGatewayController HTTP', () => {
       body: { message: 'Session revoked' },
     });
     expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.REVOKE_SESSION, {
-      sessionId: 'session-current',
+      sessionId: currentSessionId,
       credentialsId: 'creds-1',
     });
     expect(getSetCookieHeaders(response.headers)).toEqual(
@@ -441,11 +456,24 @@ describe('AuthGatewayController HTTP', () => {
     );
   });
 
+  it('rejects invalid session ids before auth RPC', async () => {
+    await request(app.getHttpServer())
+      .delete('/auth/sessions/not-a-uuid')
+      .set('Cookie', ['access_token=access-token'])
+      .expect(400);
+
+    expect(tokenService.verifyAccessToken).toHaveBeenCalledWith('access-token');
+    expect(authClient.send).not.toHaveBeenCalledWith(
+      AUTH_PATTERNS.REVOKE_SESSION,
+      expect.anything(),
+    );
+  });
+
   it('keeps cookies when revoking another session', async () => {
     authClient.send.mockReturnValueOnce(of(null));
 
     const response = await request(app.getHttpServer())
-      .delete('/auth/sessions/session-other')
+      .delete(`/auth/sessions/${otherSessionId}`)
       .set('Cookie', ['access_token=access-token']);
 
     expect({ status: response.status, body: response.body }).toEqual({
@@ -453,7 +481,7 @@ describe('AuthGatewayController HTTP', () => {
       body: { message: 'Session revoked' },
     });
     expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.REVOKE_SESSION, {
-      sessionId: 'session-other',
+      sessionId: otherSessionId,
       credentialsId: 'creds-1',
     });
     expect(response.headers['set-cookie']).toBeUndefined();

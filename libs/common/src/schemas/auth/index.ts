@@ -9,3 +9,5 @@ export * from './token-pair.schema';
 export * from './oauth-login.schema';
 export * from './resend-verification.schema';
 export * from './reset-password.schema';
+export * from './session-param.schema';
+export * from './verification-query.schema';
