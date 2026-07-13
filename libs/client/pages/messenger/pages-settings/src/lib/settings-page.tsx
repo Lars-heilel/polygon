@@ -11,16 +11,17 @@ import { Heading } from '@org/shared';
 type SettingsTab = 'general' | 'privacy' | 'devices';
 
 const TABS: SettingsTab[] = ['general', 'privacy', 'devices'];
+const ADMIN_APP_ROUTE = `${CLIENT_ROUTES.admin.root}/`;
 
 export function getAdminConsoleHref(origin = window.location.origin) {
-  const url = new URL(CLIENT_ROUTES.admin.root, origin);
+  const url = new URL(ADMIN_APP_ROUTE, origin);
 
   if (url.port === '4200') {
     url.port = '4300';
     return url.toString();
   }
 
-  return CLIENT_ROUTES.admin.root;
+  return ADMIN_APP_ROUTE;
 }
 
 export function SettingsPage() {

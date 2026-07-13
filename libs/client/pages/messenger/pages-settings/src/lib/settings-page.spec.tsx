@@ -38,18 +38,18 @@ function renderSettings(role: Role) {
 
 describe('SettingsPage Admin link', () => {
   it('points from the messenger dev server to the admin dev server', () => {
-    expect(getAdminConsoleHref('http://localhost:4200')).toBe('http://localhost:4300/admin');
-    expect(getAdminConsoleHref('http://127.0.0.1:4200')).toBe('http://127.0.0.1:4300/admin');
+    expect(getAdminConsoleHref('http://localhost:4200')).toBe('http://localhost:4300/admin/');
+    expect(getAdminConsoleHref('http://127.0.0.1:4200')).toBe('http://127.0.0.1:4300/admin/');
   });
 
   it('uses the same-origin admin route outside the split dev server', () => {
-    expect(getAdminConsoleHref('https://demo.example.com')).toBe('/admin');
+    expect(getAdminConsoleHref('https://demo.example.com')).toBe('/admin/');
   });
 
   it.each<Role>(['CREATOR', 'ADMIN'])('shows a full Admin link for %s', (role) => {
     renderSettings(role);
 
-    expect(screen.getByRole('link', { name: 'Admin console' }).getAttribute('href')).toBe('/admin');
+    expect(screen.getByRole('link', { name: 'Admin console' }).getAttribute('href')).toBe('/admin/');
   });
 
   it.each<Role>(['MODERATOR', 'USER'])('hides the Admin link for %s', (role) => {
