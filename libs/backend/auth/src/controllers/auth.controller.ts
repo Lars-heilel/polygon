@@ -4,18 +4,33 @@ import {
   type AdminBanRequest,
   type AdminSessionsResponse,
   type CredentialsPayload,
+  forgotPasswordSchema,
+  loginSchema,
   type OAuthLoginDto,
+  oauthLoginSchema,
   type Role,
+  resendVerificationSchema,
+  resetPasswordSchema,
   type TokenPair,
+  verifyEmailQuerySchema,
 } from '@org/common';
 import type { ClientMetadata } from '@org/core';
 import { AUTH_PATTERNS, AUTH_SERVICE_TOKEN } from '@org/core';
 import { ZodValidationPipe } from 'nestjs-zod';
+import * as z from 'zod';
 
 import { AdminBanService } from '../admin/admin-ban.service';
 import { SessionResponse } from '../dto';
 import { RegisterDto } from '../dto/register.dto';
 import type { AuthAdminAccount, IAuthController, IAuthService } from '../interfaces/auth.interface';
+
+const verifyEmailRpcPayloadSchema = verifyEmailQuerySchema.extend({
+  clientMetadata: z.custom<ClientMetadata>().optional(),
+});
+
+const oauthLoginRpcPayloadSchema = oauthLoginSchema.extend({
+  clientMetadata: z.custom<ClientMetadata>().optional(),
+});
 
 @Controller()
 export class AuthController implements IAuthController {
@@ -48,9 +63,10 @@ export class AuthController implements IAuthController {
   async validateCredentials(
     @Payload() payload: { email: string; password: string },
   ): Promise<CredentialsPayload> {
+    const dto = this.parseRpcPayload(loginSchema, payload);
     this.logger.log('RPC [VALIDATE_CREDENTIALS]: Validation request received');
 
-    return await this.rpc(() => this.authService.validateCredentials(payload.email, payload.password));
+    return await this.rpc(() => this.authService.validateCredentials(dto.email, dto.password));
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGIN)
@@ -94,38 +110,42 @@ export class AuthController implements IAuthController {
   async verifyEmail(
     @Payload() payload: { token: string; clientMetadata?: ClientMetadata },
   ): Promise<TokenPair> {
+    const dto = this.parseRpcPayload(verifyEmailRpcPayloadSchema, payload);
     this.logger.log('RPC [VERIFY_EMAIL]: Email verification confirmation triggered');
     this.logger.debug(
-      { hasToken: !!payload.token, hasClientMetadata: !!payload.clientMetadata },
+      { hasToken: !!dto.token, hasClientMetadata: !!dto.clientMetadata },
       'RPC [VERIFY_EMAIL]: Verification token and client metadata context',
     );
 
-    return await this.rpc(() => this.authService.verifyEmail(payload.token, payload.clientMetadata));
+    return await this.rpc(() => this.authService.verifyEmail(dto.token, dto.clientMetadata));
   }
 
   @MessagePattern(AUTH_PATTERNS.RESEND_VERIFICATION)
   async resendVerification(@Payload() payload: { email: string }): Promise<null> {
+    const dto = this.parseRpcPayload(resendVerificationSchema, payload);
     this.logger.log('RPC [RESEND_VERIFICATION]: Re-send requested');
-    await this.rpc(() => this.authService.resendVerification(payload.email));
+    await this.rpc(() => this.authService.resendVerification(dto.email));
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.FORGOT_PASSWORD)
   async forgotPassword(@Payload() payload: { email: string }): Promise<null> {
+    const dto = this.parseRpcPayload(forgotPasswordSchema, payload);
     this.logger.log('RPC [FORGOT_PASSWORD]: Password reset triggered');
-    await this.rpc(() => this.authService.forgotPassword(payload.email));
+    await this.rpc(() => this.authService.forgotPassword(dto.email));
     return null;
   }
 
   @MessagePattern(AUTH_PATTERNS.RESET_PASSWORD)
   async resetPassword(@Payload() payload: { token: string; newPassword: string }): Promise<null> {
+    const dto = this.parseRpcPayload(resetPasswordSchema, payload);
     this.logger.log('RPC [RESET_PASSWORD]: Consuming reset token to change password');
     this.logger.debug(
-      { hasToken: !!payload.token },
+      { hasToken: !!dto.token },
       'RPC [RESET_PASSWORD]: Provided confirmation token',
     );
 
-    await this.rpc(() => this.authService.resetPassword(payload.token, payload.newPassword));
+    await this.rpc(() => this.authService.resetPassword(dto.token, dto.newPassword));
     return null;
   }
 
@@ -133,13 +153,14 @@ export class AuthController implements IAuthController {
   async oauthLogin(
     @Payload() dto: OAuthLoginDto & { clientMetadata?: ClientMetadata },
   ): Promise<TokenPair> {
-    this.logger.log(`RPC [OAUTH_LOGIN]: Authenticating via provider: ${dto.provider}`);
+    const payload = this.parseRpcPayload(oauthLoginRpcPayloadSchema, dto);
+    this.logger.log(`RPC [OAUTH_LOGIN]: Authenticating via provider: ${payload.provider}`);
     this.logger.debug(
-      { provider: dto.provider, hasEmail: !!dto.email, hasClientMetadata: !!dto.clientMetadata },
+      { provider: payload.provider, hasEmail: !!payload.email, hasClientMetadata: !!payload.clientMetadata },
       'RPC [OAUTH_LOGIN]: OAuth payload and metadata details',
     );
 
-    return await this.rpc(() => this.authService.oauthLogin(dto, dto.clientMetadata));
+    return await this.rpc(() => this.authService.oauthLogin(payload, payload.clientMetadata));
   }
 
   @MessagePattern(AUTH_PATTERNS.LIST_SESSIONS)
@@ -237,6 +258,23 @@ export class AuthController implements IAuthController {
       }
       throw error;
     }
+  }
+
+  private parseRpcPayload<T>(schema: z.ZodType<T>, payload: unknown): T {
+    const result = schema.safeParse(payload);
+    if (!result.success) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Validation failed',
+        issues: result.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          code: issue.code,
+          message: issue.message,
+        })),
+      });
+    }
+
+    return result.data;
   }
 
   private httpExceptionPayload(error: HttpException): { statusCode: number; message: string } {

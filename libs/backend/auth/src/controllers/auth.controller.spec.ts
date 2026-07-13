@@ -151,7 +151,7 @@ describe('AuthController administrative RPCs', () => {
     });
     await controller.resetPassword({
       token: 'reset-token-secret',
-      newPassword: 'new-password-secret',
+      newPassword: 'Aa1!new-password-secret',
     });
     await controller.oauthLogin({
       provider: 'github',
@@ -177,7 +177,7 @@ describe('AuthController administrative RPCs', () => {
       'user@example.com',
       'plain-password-secret',
     );
-    expect(auth.resetPassword).toHaveBeenCalledWith('reset-token-secret', 'new-password-secret');
+    expect(auth.resetPassword).toHaveBeenCalledWith('reset-token-secret', 'Aa1!new-password-secret');
 
     const diagnosticPayload = JSON.stringify([
       logger.debug.mock.calls,
@@ -191,7 +191,7 @@ describe('AuthController administrative RPCs', () => {
     expect(diagnosticPayload).not.toContain('user@example.com');
     expect(diagnosticPayload).not.toContain('plain-password-secret');
     expect(diagnosticPayload).not.toContain('reset-token-secret');
-    expect(diagnosticPayload).not.toContain('new-password-secret');
+    expect(diagnosticPayload).not.toContain('Aa1!new-password-secret');
     expect(diagnosticPayload).not.toContain('provider-secret-id');
     expect(diagnosticPayload).not.toContain('oauth@example.com');
     expect(diagnosticPayload).not.toContain('OAuth Secret Name');
@@ -231,5 +231,44 @@ describe('AuthController administrative RPCs', () => {
         message: 'Email already in use',
       },
     });
+  });
+
+  it.each([
+    [
+      'validate credentials',
+      () => controller.validateCredentials({ email: 'not-an-email', password: 'password' }),
+      () => auth.validateCredentials,
+    ],
+    [
+      'resend verification',
+      () => controller.resendVerification({ email: 'not-an-email' }),
+      () => auth.resendVerification,
+    ],
+    [
+      'forgot password',
+      () => controller.forgotPassword({ email: 'not-an-email' }),
+      () => auth.forgotPassword,
+    ],
+    [
+      'reset password',
+      () => controller.resetPassword({ token: '', newPassword: 'weak' }),
+      () => auth.resetPassword,
+    ],
+    [
+      'verify email',
+      () => controller.verifyEmail({ token: '' }),
+      () => auth.verifyEmail,
+    ],
+  ] as const)('rejects invalid %s payloads before auth service execution', async (_name, invoke, getMock) => {
+    const result = invoke();
+
+    await expect(result).rejects.toMatchObject({
+      error: {
+        statusCode: 400,
+        message: 'Validation failed',
+      },
+    });
+    await expect(result).rejects.toBeInstanceOf(RpcException);
+    expect(getMock()).not.toHaveBeenCalled();
   });
 });
