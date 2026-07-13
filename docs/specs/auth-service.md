@@ -17,6 +17,7 @@
 - OAuth: GitHub, Google
 - Управление сессиями: просмотр, отзыв одной, отзыв всех
 - Блокировка аккаунта при 5+ неудачных попытках логина
+- Административная блокировка аккаунта с отзывом всех сессий
 
 ## 2. Ключевые бизнес-сценарии
 
@@ -46,6 +47,17 @@
 4. Автоматическая очистка всех сессий
 ```
 
+### Административная блокировка аккаунта
+```
+1. Администратор выбирает пользователя и срок блокировки
+2. Auth проверяет роль администратора и иерархию доступа
+3. Состояние блокировки атомарно сохраняется в БД
+4. Все SQL-сессии пользователя отзываются
+5. Все активные Redis-сессии пользователя удаляются
+6. Redis ban marker устанавливается до конца блокировки или бессрочно
+7. Следующий login/guard/check active-state получает 403 ACCOUNT_BANNED
+```
+
 ## 3. Важные нюансы
 
 - **Токены** — Access + Refresh JWT в HttpOnly cookies. Refresh токен хранится в БД как SHA-256 хэш.
@@ -55,6 +67,9 @@
 - **Cooldown писем** — повторная отправка верификации / сброса пароля — не чаще 1 раза в 60 секунд.
 - **Cессии хранят** — метаданные устройства (OS, браузер, IP, страна) для отображения в списке сессий.
 - **Очистка** — неподтверждённые аккаунты старше 24ч удаляются автоматически (каждый час).
+- **Login rate-limit ban** — временная 15-минутная блокировка после 5 неверных попыток входа; успешный reset password очищает счётчик попыток.
+- **Admin ban** — отдельная административная блокировка. Она сохраняется в БД, дублируется Redis marker для быстрых проверок, отзывает все сессии и возвращает безопасный публичный контракт `ACCOUNT_BANNED` без пользовательских payload/log leaks.
+- **Admin ban consistency** — операции ban/unban защищены per-target Redis lock. Если Redis marker не удалось установить после SQL-ban, сервис пытается компенсировать persisted ban и возвращает 503; уже отозванные сессии не восстанавливаются.
 
 ---
 
@@ -228,6 +243,38 @@
 
 ---
 
+### TC-AUTH-9: Административная блокировка аккаунта
+
+**Preconditions:**
+- Actor имеет роль администратора, способную управлять target account
+- Target account существует
+
+**Flow:**
+1. Actor отправляет admin ban command с duration (`ONE_HOUR`, `ONE_DAY`, `SEVEN_DAYS`, `THIRTY_DAYS`, `PERMANENT`) и reason (`SPAM`, `BULLYING`, `UNACCEPTABLE_CONTENT`, `SUSPICIOUS_ACTIVITY`, `CUSTOM`)
+2. Auth проверяет actor/target existence и role hierarchy
+3. Если запрос валиден:
+   → persisted ban state сохраняется в БД
+   → все SQL-сессии target отозваны
+   → все Redis-сессии target удалены
+   → Redis ban marker установлен с TTL или бессрочно
+4. Target пытается войти или пройти active-account check:
+   → получает `403`, `code = ACCOUNT_BANNED`, `message = Account is banned`, `reason`, `bannedUntil`
+5. Если временная блокировка истекла:
+   → следующий active-account check нормализует expired ban и пропускает пользователя
+6. Actor отправляет unban:
+   → persisted ban state очищается
+   → Redis ban marker удаляется
+
+**Ошибки:**
+- **Actor не найден:** `404 Actor not found`
+- **Target не найден:** `404 Target not found`
+- **Недостаточная роль / self-target forbidden:** `403 Insufficient role hierarchy`
+- **Невалидный payload:** `400 Invalid ban request`
+- **Параллельная операция по тому же target:** `409 Account state is being updated`
+- **Redis/DB operational failure:** `503 Unable to establish ban state` или `503 Unable to clear ban state`
+
+---
+
 ## 5. Статус реализации
 
 | Фича | Статус |
@@ -246,6 +293,7 @@
 | Отзыв всех сессий | ✅ Готово |
 | Rate limiting логина | ✅ Готово |
 | Очистка старых аккаунтов | ✅ Готово |
-| Блокировка аккаунта | 📝 Надо |
-| Instant revoke (Redis) | 📝 Надо |
+| Блокировка аккаунта при неудачном логине | ✅ Готово |
+| Административная блокировка аккаунта | ✅ Готово |
+| Instant revoke (Redis) | ✅ Готово |
 | Email-шаблоны (react-email) | 📝 Надо |
