@@ -369,6 +369,115 @@ describe('AuthService', () => {
     expect(repo.createOAuthAccount).not.toHaveBeenCalled();
   });
 
+  describe('oauthLogin', () => {
+    it('uses an existing provider binding without recreating profile or binding records', async () => {
+      repo.findOAuthAccount.mockResolvedValue({ credentials: mockCredentials });
+
+      const result = await service.oauthLogin({
+        provider: 'github',
+        providerId: 'github-provider-id',
+        email: mockCredentials.email,
+        name: 'GitHub User',
+      });
+
+      expect(result).toEqual({ accessToken: mockAccessToken, refreshToken: mockRefreshToken });
+      expect(repo.findOAuthAccount).toHaveBeenCalledWith('github', 'github-provider-id');
+      expect(userClient.send).not.toHaveBeenCalledWith(USER_PATTERNS.CREATE, expect.anything());
+      expect(searchClient.emit).not.toHaveBeenCalledWith(USER_EVENTS.REGISTERED, expect.anything());
+      expect(repo.createOAuthAccount).not.toHaveBeenCalled();
+      expect(repo.verifyCredentials).not.toHaveBeenCalled();
+    });
+
+    it('creates federated credentials, profile, search event, provider binding, and session for a new OAuth user', async () => {
+      const oauthCredentials = {
+        ...mockCredentials,
+        id: 'oauth-creds',
+        email: 'oauth-new@example.com',
+        passwordHash: null,
+        isVerified: false,
+      };
+      repo.findOAuthAccount.mockResolvedValue(null);
+      repo.findByEmail.mockResolvedValue(null);
+      repo.createCredentials.mockResolvedValue(oauthCredentials);
+      repo.findById.mockResolvedValue(oauthCredentials);
+
+      const result = await service.oauthLogin({
+        provider: 'google',
+        providerId: 'google-provider-id',
+        email: oauthCredentials.email,
+        name: 'Google User',
+      });
+
+      expect(result).toEqual({ accessToken: mockAccessToken, refreshToken: mockRefreshToken });
+      expect(repo.createCredentials).toHaveBeenCalledWith({ email: oauthCredentials.email });
+      expect(adminBans.assertAccountActive).toHaveBeenCalledWith('oauth-creds');
+      expect(userClient.send).toHaveBeenCalledWith(USER_PATTERNS.CREATE, {
+        id: 'oauth-creds',
+        email: oauthCredentials.email,
+        name: 'Google User',
+      });
+      expect(searchClient.emit).toHaveBeenCalledWith(USER_EVENTS.REGISTERED, {
+        id: 'oauth-creds',
+        email: oauthCredentials.email,
+        name: 'Google User',
+      });
+      expect(repo.createOAuthAccount).toHaveBeenCalledWith({
+        provider: 'google',
+        providerId: 'google-provider-id',
+        credentialsId: 'oauth-creds',
+      });
+      expect(repo.verifyCredentials).toHaveBeenCalledWith('oauth-creds');
+      expect(repo.saveSession).toHaveBeenCalledWith(expect.objectContaining({ credentialsId: 'oauth-creds' }));
+    });
+
+    it('links an existing email credential without emitting a duplicate search registration event', async () => {
+      repo.findOAuthAccount.mockResolvedValue(null);
+      repo.findByEmail.mockResolvedValue(mockCredentials);
+
+      await service.oauthLogin({
+        provider: 'google',
+        providerId: 'google-provider-id',
+        email: mockCredentials.email,
+        name: 'Existing User',
+      });
+
+      expect(repo.createCredentials).not.toHaveBeenCalled();
+      expect(userClient.send).toHaveBeenCalledWith(USER_PATTERNS.CREATE, {
+        id: mockCredentials.id,
+        email: mockCredentials.email,
+        name: 'Existing User',
+      });
+      expect(searchClient.emit).not.toHaveBeenCalledWith(USER_EVENTS.REGISTERED, expect.anything());
+      expect(repo.createOAuthAccount).toHaveBeenCalledWith({
+        provider: 'google',
+        providerId: 'google-provider-id',
+        credentialsId: mockCredentials.id,
+      });
+      expect(repo.verifyCredentials).not.toHaveBeenCalled();
+    });
+
+    it('auto-verifies an unverified existing credential after linking the provider', async () => {
+      const unverifiedCredentials = { ...mockCredentials, isVerified: false };
+      repo.findOAuthAccount.mockResolvedValue(null);
+      repo.findByEmail.mockResolvedValue(unverifiedCredentials);
+      repo.findById.mockResolvedValue({ ...unverifiedCredentials, isVerified: true });
+
+      await service.oauthLogin({
+        provider: 'github',
+        providerId: 'github-provider-id',
+        email: unverifiedCredentials.email,
+        name: 'Existing GitHub User',
+      });
+
+      expect(repo.createOAuthAccount).toHaveBeenCalledWith({
+        provider: 'github',
+        providerId: 'github-provider-id',
+        credentialsId: unverifiedCredentials.id,
+      });
+      expect(repo.verifyCredentials).toHaveBeenCalledWith(unverifiedCredentials.id);
+    });
+  });
+
   it('clears login attempts after a successful password reset', async () => {
     repo.findById.mockResolvedValue(mockCredentials);
     encryption.hash.mockResolvedValue('new-password-hash');
