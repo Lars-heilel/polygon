@@ -146,6 +146,36 @@ test('register redirects to check-email after successful registration', async ({
   });
 });
 
+test('check-email resends the verification email', async ({ page }) => {
+  let resendBody: unknown;
+  await page.route('**/api/auth/resend-verification', async (route) => {
+    resendBody = route.request().postDataJSON();
+    await route.fulfill({ status: 201 });
+  });
+
+  await page.goto('/auth/check-email?email=pending%40example.com');
+  await page.getByRole('button', { name: 'Resend email' }).click();
+
+  await expect(page.getByText('Email sent — check your inbox.')).toBeVisible();
+  expect(resendBody).toEqual({ email: 'pending@example.com' });
+});
+
+test('check-email shows resend cooldowns returned by the auth API', async ({ page }) => {
+  await page.route('**/api/auth/resend-verification', (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Please wait before requesting again' }),
+    }),
+  );
+
+  await page.goto('/auth/check-email?email=pending%40example.com');
+  await page.getByRole('button', { name: 'Resend email' }).click();
+
+  await expect(page.getByText('Please wait before requesting another email.')).toBeVisible();
+  await expect(page).toHaveURL(/\/auth\/check-email\?email=pending%40example\.com$/);
+});
+
 test('register shows a conflict error returned by the auth API', async ({ page }) => {
   await page.route('**/api/auth/register', (route) =>
     route.fulfill({

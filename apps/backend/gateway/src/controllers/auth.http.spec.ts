@@ -277,6 +277,112 @@ describe('AuthGatewayController HTTP', () => {
     expect(authClient.send).not.toHaveBeenCalled();
   });
 
+  it('resends verification email through auth RPC', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/resend-verification')
+      .send({ email: 'pending@example.com' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 201,
+      body: { message: 'Verification email sent' },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.RESEND_VERIFICATION, {
+      email: 'pending@example.com',
+    });
+  });
+
+  it('returns resend verification cooldowns without converting them to 500', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({ statusCode: 429, message: 'Please wait before requesting again' })),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/resend-verification')
+      .send({ email: 'pending@example.com' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 429,
+      body: { statusCode: 429, message: 'Please wait before requesting again' },
+    });
+  });
+
+  it('rejects invalid forgot-password payloads before auth RPC', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email: 'not-an-email' })
+      .expect(400);
+
+    expect(authClient.send).not.toHaveBeenCalled();
+  });
+
+  it('requests password reset through auth RPC', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email: 'recover@example.com' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 201,
+      body: { message: 'If this email is registered, a reset link has been sent' },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.FORGOT_PASSWORD, {
+      email: 'recover@example.com',
+    });
+  });
+
+  it('returns forgot-password cooldowns without converting them to 500', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({ statusCode: 429, message: 'Please wait before requesting again' })),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email: 'recover@example.com' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 429,
+      body: { statusCode: 429, message: 'Please wait before requesting again' },
+    });
+  });
+
+  it('rejects invalid reset-password payloads before auth RPC', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token: '', newPassword: 'weak' })
+      .expect(400);
+
+    expect(authClient.send).not.toHaveBeenCalled();
+  });
+
+  it('resets password through auth RPC', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token: 'reset-token', newPassword: 'Aa1!aaaa' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 201,
+      body: { message: 'Password reset successfully' },
+    });
+    expect(authClient.send).toHaveBeenCalledWith(AUTH_PATTERNS.RESET_PASSWORD, {
+      token: 'reset-token',
+      newPassword: 'Aa1!aaaa',
+    });
+  });
+
+  it('returns invalid reset tokens without converting them to 500', async () => {
+    authClient.send.mockReturnValueOnce(
+      throwError(() => ({ statusCode: 400, message: 'Invalid or expired token' })),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token: 'reset-token', newPassword: 'Aa1!aaaa' });
+
+    expect({ status: response.status, body: response.body }).toEqual({
+      status: 400,
+      body: { statusCode: 400, message: 'Invalid or expired token' },
+    });
+  });
+
   it('lists current-user sessions through auth RPC', async () => {
     const sessions = [
       {
