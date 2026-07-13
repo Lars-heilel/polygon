@@ -8,7 +8,7 @@
 ## 1. Бизнес-функции
 
 ### Level 1 — Auth & Core
-- Login, Register, OAuth (GitHub, Google, Yandex)
+- Login, Register, OAuth (GitHub, Google)
 - Forgot / Reset password, Email verification
 - Управление сессиями (просмотр, отзыв)
 - Список чатов (поиск, online-фильтр)

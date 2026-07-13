@@ -3,7 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ClientsModule, type RmqOptions, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { GithubStrategy, GoogleStrategy, LocalStrategy, SessionGuard, SessionRedisRepository, YandexStrategy } from '@org/auth';
+import {
+  GithubStrategy,
+  GoogleStrategy,
+  LocalStrategy,
+  SessionGuard,
+  SessionRedisRepository,
+} from '@org/auth';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_QUEUE,
@@ -99,7 +105,6 @@ const rmqClient = (name: string, queue: string) => ({
     ChatSocketGateway,
     LocalStrategy,
     GithubStrategy,
-    YandexStrategy,
     GoogleStrategy,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

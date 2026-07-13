@@ -102,7 +102,6 @@ describe('createLoggerOptions', () => {
         'REDIS_PASSWORD',
         'MEILISEARCH_MASTER_KEY',
         'GITHUB_CLIENT_SECRET',
-        'YANDEX_CLIENT_SECRET',
         'GOOGLE_CLIENT_SECRET',
         'AUTH_DATABASE_URL',
         'USER_DATABASE_URL',

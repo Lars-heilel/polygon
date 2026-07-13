@@ -52,8 +52,6 @@ const config = {
     if (key === 'GITHUB_CLIENT_SECRET') return 'github-secret';
     if (key === 'GOOGLE_CLIENT_ID') return 'google-client';
     if (key === 'GOOGLE_CLIENT_SECRET') return 'google-secret';
-    if (key === 'YANDEX_CLIENT_ID') return 'yandex-client';
-    if (key === 'YANDEX_CLIENT_SECRET') return 'yandex-secret';
     return undefined;
   }),
 };
@@ -275,6 +273,10 @@ describe('AuthGatewayController HTTP', () => {
       });
 
     expect(authClient.send).not.toHaveBeenCalled();
+  });
+
+  it('does not expose a Yandex OAuth entrypoint', async () => {
+    await request(app.getHttpServer()).get('/auth/yandex').expect(404);
   });
 
   it('resends verification email through auth RPC', async () => {

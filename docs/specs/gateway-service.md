@@ -10,7 +10,7 @@
 - Маршрутизация HTTP-запросов в бэкенд-сервисы
 - Аутентификация JWT через HttpOnly cookies
 - WebSocket для real-time (чат, звонки)
-- OAuth редиректы (GitHub, Google, Yandex)
+- OAuth редиректы (GitHub, Google)
 - Swagger документация (dev-режим)
 
 ## 2. Важные нюансы
@@ -27,7 +27,7 @@
 |-----------|--------|
 | HTTP-роутинг (5 контроллеров) | ✅ Готово |
 | JWT аутентификация | ✅ Готово |
-| OAuth (GitHub, Google, Yandex) | ✅ Готово |
+| OAuth (GitHub, Google) | ✅ Готово |
 | Rate limiting | ✅ Готово |
 | WebSocket (чат, typing, online) | ✅ Готово |
 | Swagger docs | ✅ Готово |

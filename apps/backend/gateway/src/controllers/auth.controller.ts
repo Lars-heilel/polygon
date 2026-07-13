@@ -34,7 +34,6 @@ import {
   ResetPasswordDto,
   SessionGuard,
   SessionResponse,
-  YandexGuard,
 } from '@org/auth';
 import { LoginDto, RegisterDto, ResendVerificationDto } from '@org/auth';
 import { type CredentialsPayload, type TokenPair } from '@org/common';
@@ -287,36 +286,6 @@ export class AuthGatewayController {
     const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
 
     this.logger.log(`GitHub authenticating completed. Redirecting to client: ${clientUrl}`);
-    res.redirect(clientUrl);
-  }
-
-  //! ── Yandex OAuth ──────────────────────────────────────────────────
-
-  @Get('yandex')
-  @UseGuards(YandexGuard)
-  @ApiExcludeEndpoint()
-  yandexAuth() {
-    this.logger.verbose('Redirecting user context to Yandex OAuth provider');
-  }
-
-  @Get('yandex/callback')
-  @UseGuards(YandexGuard)
-  @ApiExcludeEndpoint()
-  yandexCallback(
-    @Req() req: Request & { user: TokenPair },
-    @GetClientMetadata() metadata: ClientMetadata,
-    @Res() res: Response,
-  ) {
-    this.logger.log('Yandex OAuth callback route triggered');
-    this.logger.debug(
-      { tokens: this.tokenPairSummary(req.user), metadata: this.clientMetadataSummary(metadata) },
-      'Yandex callback context and client metadata',
-    );
-
-    this.setTokenCookies(res, req.user);
-    const clientUrl = this.config.getOrThrow('CLIENT_URL', { infer: true });
-
-    this.logger.log(`Yandex authenticating completed. Redirecting to client: ${clientUrl}`);
     res.redirect(clientUrl);
   }
 

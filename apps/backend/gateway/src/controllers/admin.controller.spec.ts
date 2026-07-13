@@ -140,8 +140,6 @@ describe('AdminController', () => {
       CLIENT_URL: 'http://localhost:4200',
       GITHUB_CLIENT_ID: 'github-client',
       GITHUB_CLIENT_SECRET: 'github-secret',
-      YANDEX_CLIENT_ID: 'yandex-client',
-      YANDEX_CLIENT_SECRET: 'yandex-secret',
       GOOGLE_CLIENT_ID: 'google-client',
       GOOGLE_CLIENT_SECRET: 'google-secret',
     });

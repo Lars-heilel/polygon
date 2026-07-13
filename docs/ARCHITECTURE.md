@@ -72,7 +72,7 @@
 
 ### Auth Service
 
-Регистрация, вход, JWT access/refresh токены, OAuth (GitHub, Google, Yandex), сброс пароля.
+Регистрация, вход, JWT access/refresh токены, OAuth (GitHub, Google), сброс пароля.
 База данных: `polygon_auth`
 
 ### User Service
