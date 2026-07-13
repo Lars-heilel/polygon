@@ -22,7 +22,7 @@ export class MetricsInterceptor implements NestInterceptor {
     return next.handle().pipe(
       finalize(() => {
         const durationSeconds = Number(process.hrtime.bigint() - started) / 1_000_000_000;
-        const route = request.route?.path ?? request.path ?? 'unknown';
+        const route = request.route?.path ?? 'unknown';
         this.metrics.recordHttpRequest(request.method, route, response.statusCode, durationSeconds);
       }),
     );
