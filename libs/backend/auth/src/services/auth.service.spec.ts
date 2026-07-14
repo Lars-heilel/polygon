@@ -489,6 +489,16 @@ describe('AuthService', () => {
     expect(authCache.clearLoginAttempts).toHaveBeenCalledWith(mockCredentials.email);
   });
 
+  it('revokes every session after an email password reset', async () => {
+    repo.findById.mockResolvedValue(mockCredentials);
+    encryption.hash.mockResolvedValue('new-password-hash');
+
+    await service.resetPassword('reset-token', 'new-password');
+
+    expect(repo.revokeAllSessions).toHaveBeenCalledWith('creds-1');
+    expect(repo.revokeSession).not.toHaveBeenCalled();
+  });
+
   it('does not write OAuth email, provider id, or client metadata to diagnostic logs', async () => {
     repo.findOAuthAccount.mockResolvedValue(null);
     repo.findByEmail.mockResolvedValue(mockCredentials);
