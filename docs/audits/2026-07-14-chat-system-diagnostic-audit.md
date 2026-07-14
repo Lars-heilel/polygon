@@ -209,6 +209,30 @@ Status: in progress
 | `sed -n '1,220p' apps/client/messenger/src/app/socket/chat-socket-manager.ts` | pass | Exit `0`; captured `message:new`, `user:online`, `user:offline`, and `user:typing` cache/store updates and cleanup. |
 | `sed -n '1,180p' libs/client/features/chat-socket/src/use-chat-socket.ts` | pass | Exit `0`; captured active-chat state, mark-read call, and `chat:join`/`chat:leave` emissions. |
 | `sed -n '1,120p' libs/client/shared/src/lib/socket/socket.ts` | pass | Exit `0`; captured Socket.IO client configured with `autoConnect: false` and `withCredentials: true`. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx test @org/chat` | fail | Exit `1`; Jest found no tests in `libs/backend/chat` and target does not use `--passWithNoTests`. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx test @org/chat-service` | pass | Exit `0`; no tests found, but target uses `--passWithNoTests=true`. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx test @org/gateway` | pass | Exit `0`; 9 test suites and 61 tests passed. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx test @org/messenger` | pass | Exit `0`; 1 test suite and 5 tests passed. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx test @org/common` | pass | Exit `0`; 3 test suites and 11 tests passed. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx typecheck @org/chat` | pass | Exit `0`; `tsc --build tsconfig.json --emitDeclarationOnly` completed. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx typecheck @org/chat-service` | pass | Exit `0`; `tsc --build tsconfig.json --emitDeclarationOnly` completed. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx typecheck @org/gateway` | pass | Exit `0`; `tsc --build tsconfig.json --emitDeclarationOnly` completed. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx typecheck @org/messenger` | pass | Exit `0`; app and dependent chat/page/feature typechecks completed, many from cache. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/chat` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/gateway` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/messenger` | pass | Exit `0`; ESLint completed, output served from matching cache. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/entities-chat` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/entities-message` | pass-with-warning | Exit `0`; one `@typescript-eslint/no-explicit-any` warning at `libs/client/entities/message/src/ui/file-message.tsx:378`. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/features-create-chat` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/features-send-message` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/features-chat-socket` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/features-chat-media` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/pages-chat-page` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx lint @org/pages-chats-layout` | pass | Exit `0`; ESLint completed with no reported problems. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx build @org/chat-service` | pass | Exit `0`; webpack production build compiled successfully. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx build @org/gateway` | pass | Exit `0`; webpack production build compiled successfully. |
+| `env NX_ISOLATE_PLUGINS=false npm exec nx build @org/messenger` | pass | Exit `0`; Vite production build completed, 651 modules transformed. |
+| Nx Cloud remote cache | warning | Most Nx runs reported workspace-not-connected `401` warnings for remote cache/artifact storage; local task execution still completed. |
 
 ## Manual Validation Points
 
