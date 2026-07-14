@@ -1,6 +1,6 @@
 import type { Message as MessageBase } from '@org/common';
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import { createJSONStorage, persist, subscribeWithSelector } from 'zustand/middleware';
 
 type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
@@ -28,49 +28,58 @@ interface ChatActions {
 type ChatStore = ChatState & ChatActions;
 
 export const useChatStore = create<ChatStore>()(
-  subscribeWithSelector((set) => ({
-    activeChatId: null,
-    activeMessageId: null,
-    typingUsers: {},
-    lastReceivedMessage: null,
-    unreadByChatId: {},
-    setActiveChat: (chatId) => set({ activeChatId: chatId }),
-    setActiveMessage: (messageId) => set({ activeMessageId: messageId }),
-    setIsTyping: (userId, isTyping) =>
-      set((state) => ({
-        typingUsers: isTyping
-          ? { ...state.typingUsers, [userId]: true }
-          : Object.fromEntries(Object.entries(state.typingUsers).filter(([k]) => k !== userId)),
-      })),
-    setLastReceivedMessage: (msg) => set({ lastReceivedMessage: msg }),
-    incrementUnread: (chatId) =>
-      set((state) => ({
-        unreadByChatId: {
-          ...state.unreadByChatId,
-          [chatId]: (state.unreadByChatId[chatId] ?? 0) + 1,
-        },
-      })),
-    markChatRead: (chatId) =>
-      set((state) => {
-        if (!(chatId in state.unreadByChatId)) {
-          return state;
-        }
-
-        return {
-          unreadByChatId: Object.fromEntries(
-            Object.entries(state.unreadByChatId).filter(([key]) => key !== chatId),
-          ),
-        };
-      }),
-    reset: () =>
-      set({
+  subscribeWithSelector(
+    persist(
+      (set) => ({
         activeChatId: null,
         activeMessageId: null,
         typingUsers: {},
         lastReceivedMessage: null,
         unreadByChatId: {},
+        setActiveChat: (chatId) => set({ activeChatId: chatId }),
+        setActiveMessage: (messageId) => set({ activeMessageId: messageId }),
+        setIsTyping: (userId, isTyping) =>
+          set((state) => ({
+            typingUsers: isTyping
+              ? { ...state.typingUsers, [userId]: true }
+              : Object.fromEntries(Object.entries(state.typingUsers).filter(([k]) => k !== userId)),
+          })),
+        setLastReceivedMessage: (msg) => set({ lastReceivedMessage: msg }),
+        incrementUnread: (chatId) =>
+          set((state) => ({
+            unreadByChatId: {
+              ...state.unreadByChatId,
+              [chatId]: (state.unreadByChatId[chatId] ?? 0) + 1,
+            },
+          })),
+        markChatRead: (chatId) =>
+          set((state) => {
+            if (!(chatId in state.unreadByChatId)) {
+              return state;
+            }
+
+            return {
+              unreadByChatId: Object.fromEntries(
+                Object.entries(state.unreadByChatId).filter(([key]) => key !== chatId),
+              ),
+            };
+          }),
+        reset: () =>
+          set({
+            activeChatId: null,
+            activeMessageId: null,
+            typingUsers: {},
+            lastReceivedMessage: null,
+            unreadByChatId: {},
+          }),
       }),
-  })),
+      {
+        name: 'chat-unread-state',
+        storage: createJSONStorage(() => localStorage),
+        partialize: (state) => ({ unreadByChatId: state.unreadByChatId }),
+      },
+    ),
+  ),
 );
 
 // Selectors

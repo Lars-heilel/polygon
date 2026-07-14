@@ -5,23 +5,16 @@ import type { Message, MessagePage } from '@org/entities-message';
 import { queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
+import { appendMessageToPages, updateChatListLastMessage } from './chat-cache-updaters';
 
 function handleNewMessage(msg: Message) {
   unstable_batchedUpdates(() => {
-    queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) => {
-      if (!old) return old;
-      if (old.pages.some((page) => page.messages.some((m) => m.id === msg.id))) return old;
-
-      return {
-        ...old,
-        pages: old.pages.map((page, i) =>
-          i === 0 ? { ...page, messages: [...page.messages, msg] } : page,
-        ),
-      };
-    });
+    queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
+      appendMessageToPages(old, msg),
+    );
 
     queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
-      old.map((chat) => (chat.id === msg.chatId ? { ...chat, messages: [msg] } : chat)),
+      updateChatListLastMessage(old, msg),
     );
   });
 

@@ -19,7 +19,10 @@ export const MessageContent = memo(function MessageContent({
 
   return (
     <div>
-      <span className="whitespace-pre-wrap wrap-break-word">
+      <span
+        data-testid="message-text"
+        className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+      >
         {parts.map((part, index) =>
           part.type === 'link' ? (
             <a

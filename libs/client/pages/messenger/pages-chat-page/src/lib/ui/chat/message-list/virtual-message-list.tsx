@@ -33,7 +33,12 @@ const ChatMessageRow = memo(({
   audioQueueIndexByMessageId,
 }: ChatMessageRowProps) => {
   return (
-    <div className="px-4 pb-3">
+    <div
+      className="px-4 pb-3"
+      data-testid="message-row"
+      data-message-id={msg.id}
+      data-message-type={msg.fileCategory ?? msg.type}
+    >
       <MessageBubble
         message={msg}
         isMine={isMine}

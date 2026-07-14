@@ -325,7 +325,7 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors',
+        'flex max-w-full min-w-0 items-center gap-3 rounded-lg border px-3 py-2 transition-colors',
         isMine
           ? 'bg-white/10 border-white/20 hover:bg-white/15'
           : 'bg-surface-elevated border-border hover:bg-surface-elevated/80',
@@ -443,7 +443,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
   return (
     <div
       className={cn(
-        'flex min-w-56 items-center gap-3 rounded-xl px-3 py-2',
+        'flex w-64 max-w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2',
         isMine ? 'bg-white/10' : 'bg-surface-elevated',
       )}
     >
@@ -529,7 +529,7 @@ const StreamingAudioMessage = memo(function StreamingAudioMessage({
   return (
     <div
       className={cn(
-        'flex min-w-56 items-center gap-3 rounded-xl px-3 py-2',
+        'flex w-64 max-w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2',
         isMine ? 'bg-white/10' : 'bg-surface-elevated',
       )}
     >
@@ -557,7 +557,7 @@ const StreamingAudioMessage = memo(function StreamingAudioMessage({
             {formatAudioTime(currentTime)}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex h-10 items-end gap-1 overflow-hidden rounded-lg">
+            <div className="grid h-10 grid-cols-[repeat(36,minmax(0,1fr))] items-end gap-1 overflow-hidden rounded-lg">
               {bars.map((bar, index) => {
                 const barProgress = bars.length <= 1 ? 1 : index / (bars.length - 1);
                 const isActive = barProgress <= progress;
@@ -568,7 +568,7 @@ const StreamingAudioMessage = memo(function StreamingAudioMessage({
                     type="button"
                     onClick={() => seek(duration * barProgress)}
                     className={cn(
-                      'w-[4px] shrink-0 rounded-full transition-colors',
+                      'w-full min-w-0 rounded-full transition-colors',
                       isActive
                         ? (isMine ? 'bg-white' : 'bg-primary')
                         : (isMine ? 'bg-white/25' : 'bg-border'),
