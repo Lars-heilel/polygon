@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { apiFetch } from './client';
+import { apiFetch, resolveApiBaseUrl } from './client';
 
 describe('apiFetch', () => {
   afterEach(() => {
@@ -41,6 +41,30 @@ describe('apiFetch', () => {
       }),
     );
     expect(fetchMock.mock.calls[0]?.[0]).not.toContain('/api//auth/login');
+  });
+
+  it('uses the same-origin Vite proxy for split dev frontend apps', () => {
+    expect(
+      resolveApiBaseUrl(
+        { DEV: true, VITE_API_URL: 'http://localhost:3000/api' },
+        { hostname: 'localhost', port: '4300', protocol: 'http:' },
+      ),
+    ).toBe('/api');
+    expect(
+      resolveApiBaseUrl(
+        { DEV: true, VITE_API_URL: 'http://localhost:3000/api' },
+        { hostname: 'localhost', port: '4200', protocol: 'http:' },
+      ),
+    ).toBe('/api');
+  });
+
+  it('keeps the configured absolute API URL outside local split dev', () => {
+    expect(
+      resolveApiBaseUrl(
+        { DEV: false, VITE_API_URL: 'https://www.polygon-by-lars-heilel.ru/api' },
+        { hostname: 'www.polygon-by-lars-heilel.ru', port: '', protocol: 'https:' },
+      ),
+    ).toBe('https://www.polygon-by-lars-heilel.ru/api');
   });
 
   it('preserves sanitized error response data for auth error handling', async () => {
