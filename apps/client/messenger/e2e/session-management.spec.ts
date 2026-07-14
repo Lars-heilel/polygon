@@ -27,16 +27,47 @@ const sessions = [
 
 async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
   await page.route('**/socket.io/**', (route) => route.fulfill({ status: 204 }));
+  await page.route('**/api/notifications/push/vapid-key', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ publicKey: 'BNmH7Y8dummyPushPublicKeyForE2ETestsOnly' }),
+    }),
+  );
+  await page.route('**/api/notifications/push/subscribe', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+  await page.route('**/api/notifications/push/unsubscribe', (route) =>
+    route.fulfill({ status: 204 }),
+  );
   await page.route('**/api/users/me', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         id: 'user-1',
+        email: 'user@example.com',
+        name: 'Tester',
         username: 'tester',
         displayName: 'Tester',
+        avatarUrl: null,
+        bio: null,
         role: 'USER',
       }),
+    }),
+  );
+  await page.route('**/api/chats**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    }),
+  );
+  await page.route('**/api/search/users**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
     }),
   );
   await page.route('**/api/auth/refresh', (route) => route.fulfill({ status: 201 }));

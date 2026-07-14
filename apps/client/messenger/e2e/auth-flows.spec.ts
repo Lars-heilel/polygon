@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 async function mockGuestSession(page: import('@playwright/test').Page) {
   await page.route('**/socket.io/**', (route) => route.fulfill({ status: 204 }));
+  await mockPushEndpoints(page);
   await page.route('**/api/users/me', (route) =>
     route.fulfill({
       status: 401,
@@ -14,6 +15,54 @@ async function mockGuestSession(page: import('@playwright/test').Page) {
       status: 401,
       contentType: 'application/json',
       body: JSON.stringify({ message: 'Unauthenticated' }),
+    }),
+  );
+}
+
+async function mockPushEndpoints(page: import('@playwright/test').Page) {
+  await page.route('**/api/notifications/push/vapid-key', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ publicKey: 'BNmH7Y8dummyPushPublicKeyForE2ETestsOnly' }),
+    }),
+  );
+  await page.route('**/api/notifications/push/subscribe', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+  await page.route('**/api/notifications/push/unsubscribe', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+}
+
+async function mockAuthenticatedAppApis(page: import('@playwright/test').Page) {
+  await page.route('**/api/users/me', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'user-1',
+        email: 'user@example.com',
+        name: 'Tester',
+        displayName: 'Tester',
+        avatarUrl: null,
+        bio: null,
+        role: 'USER',
+      }),
+    }),
+  );
+  await page.route('**/api/chats**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    }),
+  );
+  await page.route('**/api/search/users**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
     }),
   );
 }
@@ -38,8 +87,35 @@ test('login validates client-side before calling the auth API', async ({ page })
 
 test('login calls the auth API and redirects authenticated users to chats', async ({ page }) => {
   let loginBody: unknown;
+  let isLoggedIn = false;
+
+  await mockAuthenticatedAppApis(page);
+  await page.route('**/api/users/me', (route) => {
+    if (!isLoggedIn) {
+      return route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Unauthenticated' }),
+      });
+    }
+
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'user-1',
+        email: 'user@example.com',
+        name: 'Tester',
+        displayName: 'Tester',
+        avatarUrl: null,
+        bio: null,
+        role: 'USER',
+      }),
+    });
+  });
   await page.route('**/api/auth/login', async (route) => {
     loginBody = route.request().postDataJSON();
+    isLoggedIn = true;
     await route.fulfill({ status: 201 });
   });
 
@@ -206,18 +282,7 @@ test('check-email direct visits do not expose resend without route state', async
 
 test('email verified page continues authenticated users to chats', async ({ page }) => {
   await page.unroute('**/api/users/me');
-  await page.route('**/api/users/me', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        id: 'user-1',
-        username: 'tester',
-        displayName: 'Tester',
-        role: 'USER',
-      }),
-    }),
-  );
+  await mockAuthenticatedAppApis(page);
 
   await page.goto('/auth/email-verified');
 
