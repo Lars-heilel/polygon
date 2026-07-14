@@ -58,6 +58,30 @@ const messageResponseSchema = (example: string) => ({
   required: ['message'],
 });
 
+const tokenCookieResponseHeaders = {
+  'Set-Cookie': {
+    description: 'HttpOnly access_token and refresh_token cookies',
+    schema: { type: 'string' },
+  },
+};
+
+const normalizedErrorResponseSchema = (
+  statusCode: number,
+  error: string,
+  message: string,
+  path: string,
+) => ({
+  type: 'object',
+  properties: {
+    statusCode: { type: 'number', example: statusCode },
+    error: { type: 'string', example: error },
+    message: { type: 'string', example: message },
+    path: { type: 'string', example: path },
+    timestamp: { type: 'string', format: 'date-time' },
+  },
+  required: ['statusCode', 'error', 'message', 'path', 'timestamp'],
+});
+
 const nullableStringSchema = { type: 'string', nullable: true };
 
 const sessionResponseSchema = {
@@ -89,9 +113,22 @@ export class AuthGatewayController {
   @Post('register')
   @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Register a new user with email and password' })
-  @ApiResponse({ status: 201, description: 'Registered successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Registered successfully',
+    schema: messageResponseSchema('Registered successfully'),
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 409, description: 'Email already in use' })
+  @ApiResponse({
+    status: 409,
+    description: 'Email already in use',
+    schema: normalizedErrorResponseSchema(
+      409,
+      'Conflict',
+      'Email already in use',
+      '/auth/register',
+    ),
+  })
   async register(@Body() dto: RegisterDto, @GetClientMetadata() metadata: ClientMetadata) {
     this.logger.log('Processing registration request');
     this.logger.debug(
@@ -113,6 +150,8 @@ export class AuthGatewayController {
   @ApiResponse({
     status: 201,
     description: 'Logged in — sets access_token and refresh_token cookies',
+    schema: messageResponseSchema('Logged in successfully'),
+    headers: tokenCookieResponseHeaders,
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials or email not verified' })
   @ApiResponse({ status: 429, description: 'Too many failed attempts' })
@@ -149,8 +188,12 @@ export class AuthGatewayController {
 
   @Post('logout')
   @ApiOperation({ summary: 'Logout — revokes refresh token and clears cookies' })
-  @ApiCookieAuth('access_token')
-  @ApiResponse({ status: 201, description: 'Logged out' })
+  @ApiResponse({
+    status: 201,
+    description: 'Logged out',
+    schema: messageResponseSchema('Logged out successfully'),
+    headers: tokenCookieResponseHeaders,
+  })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     this.logger.log('Processing logout request');
     const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
@@ -171,9 +214,23 @@ export class AuthGatewayController {
 
   @Post('refresh')
   @ApiOperation({ summary: 'Rotate token pair using refresh_token cookie' })
-  @ApiCookieAuth('access_token')
-  @ApiResponse({ status: 201, description: 'New access_token and refresh_token cookies set' })
-  @ApiResponse({ status: 401, description: 'Refresh token missing, expired, or revoked' })
+  @ApiCookieAuth('refresh_token')
+  @ApiResponse({
+    status: 201,
+    description: 'New access_token and refresh_token cookies set',
+    schema: messageResponseSchema('Tokens refreshed'),
+    headers: tokenCookieResponseHeaders,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token missing, expired, or revoked',
+    schema: normalizedErrorResponseSchema(
+      401,
+      'Unauthorized',
+      'Refresh token missing',
+      '/auth/refresh',
+    ),
+  })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     this.logger.log('Processing token refresh rotation');
     const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
@@ -204,10 +261,7 @@ export class AuthGatewayController {
         description: 'Client email verification success page',
         schema: { type: 'string', example: 'http://localhost:4200/auth/email-verified' },
       },
-      'Set-Cookie': {
-        description: 'HttpOnly access_token and refresh_token cookies',
-        schema: { type: 'string' },
-      },
+      ...tokenCookieResponseHeaders,
     },
   })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
@@ -286,7 +340,11 @@ export class AuthGatewayController {
   @Post('reset-password')
   @UsePipes(ZodValidationPipe)
   @ApiOperation({ summary: 'Reset password using token from email' })
-  @ApiResponse({ status: 201, description: 'Password reset — all sessions revoked' })
+  @ApiResponse({
+    status: 201,
+    description: 'Password reset — all sessions revoked',
+    schema: messageResponseSchema('Password reset successfully'),
+  })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     this.logger.log('Processing final password-reset step');
