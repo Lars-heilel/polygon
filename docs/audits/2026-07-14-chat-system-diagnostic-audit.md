@@ -152,6 +152,9 @@ Status: in progress
 
 | Viewport | Route Or Component | Observation | Status | Follow-up |
 | --- | --- | --- | --- | --- |
+| Desktop | `/chats`, chat detail | Not executed in this pass; requires running gateway/chat/auth/user/media dependencies plus messenger dev server and seeded users. | pending | Validate sidebar density, chat selection, create-chat modal, message list virtualization, attachment preview, and error states. |
+| Mobile | `/chats`, `/chats/:id` | Not executed in this pass; static audit confirmed mobile layout switch, but no screenshot/browser validation was run. | pending | Validate `/chats` tab, detail back button, footer controls, recorder controls, and long-message wrapping at mobile widths. |
+| Two-session realtime | `/chats/:id` in two browsers | Not executed in this pass; requires two authenticated users and live Socket.IO. | pending | Validate direct message delivery, typing, presence, unread behavior, and socket reconnect after reload/logout. |
 
 ## Automated Verification Results
 
@@ -243,6 +246,8 @@ Status: in progress
 | Presence online/offline | Requires connect/disconnect and UI state observation. | Two users, browser tab close/logout, and active chat room join. | pending |
 | Session revoke while socket is connected | Requires active socket and session revoke action. | Two sessions for one user, gateway socket connection, session management UI/API. | pending |
 | Initial app bootstrap socket connect | Static code reacts to auth transitions; browser startup order determines whether an already-authenticated session connects. | Existing valid cookies before app load, client dev server, network/socket inspection. | pending |
+| Create-chat modal selection | Static audit found modal selection wired to profile-open handler, not create-chat mutation. | Messenger UI, at least one searchable user, create-chat modal open path. | pending |
+| Attachment upload failure UX | Static audit found upload/permission failures are not surfaced to the user. | Browser with denied microphone/camera permissions and/or failing MinIO presigned upload. | pending |
 
 ## Decisions Needed
 
