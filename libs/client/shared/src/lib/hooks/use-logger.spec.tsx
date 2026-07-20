@@ -6,7 +6,7 @@ async function loadUseLogger(production: boolean) {
   vi.stubEnv('PROD', production);
 
   const mod = await import('./use-logger');
-  return mod.useLogger;
+  return mod;
 }
 
 describe('useLogger', () => {
@@ -15,7 +15,7 @@ describe('useLogger', () => {
   });
 
   it('does not write browser console output in production builds', async () => {
-    const useLogger = await loadUseLogger(true);
+    const { useLogger } = await loadUseLogger(true);
     const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -36,7 +36,7 @@ describe('useLogger', () => {
   });
 
   it('writes formatted diagnostics in development builds', async () => {
-    const useLogger = await loadUseLogger(false);
+    const { useLogger } = await loadUseLogger(false);
     const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     const { result } = renderHook(() => useLogger('Auth'));
@@ -50,6 +50,23 @@ describe('useLogger', () => {
       expect.any(String),
       expect.any(String),
       expect.any(String),
+    );
+  });
+
+  it('provides a non-hook logger for development-only diagnostics', async () => {
+    const { frontendLog } = await loadUseLogger(false);
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    frontendLog('warn', 'Env', 'invalid_env', { issueCount: 1 });
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('[Env]'),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      { issueCount: 1 },
     );
   });
 });

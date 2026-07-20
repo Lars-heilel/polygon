@@ -2,8 +2,10 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   HttpException,
   Inject,
+  Logger,
   Param,
   Post,
   Query,
@@ -18,7 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateDirectChatDto, SendMessageDto } from '@org/chat';
+import { CreateDirectChatDto, MarkChatReadDto, SendMessageDto } from '@org/chat';
 import type { ForwardMessageInput, MessagePage, UserPublic } from '@org/common';
 import { chatMediaQuerySchema } from '@org/common';
 import {
@@ -41,6 +43,8 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 @Controller('chats')
 @UseGuards(JwtGuard, ActiveAccountGuard)
 export class ChatGatewayController {
+  private readonly logger = new Logger(ChatGatewayController.name);
+
   constructor(
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
@@ -52,6 +56,11 @@ export class ChatGatewayController {
   @ApiResponse({ status: 201, description: 'Chat object' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   createDirect(@CurrentUser() user: JwtPayload, @Body() dto: CreateDirectChatDto) {
+    this.logger.log({
+      eventType: 'direct_chat_create_requested',
+      hasUserId: !!user.sub,
+      hasTargetUserId: !!dto.targetUserId,
+    });
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.CREATE_DIRECT, {
         userId: user.sub,
@@ -60,11 +69,18 @@ export class ChatGatewayController {
     );
   }
 
+  @Post('self')
+  createSelf(@CurrentUser() user: JwtPayload) {
+    this.logger.log({ eventType: 'self_chat_create_requested', hasUserId: !!user.sub });
+    return this.send(this.chatClient.send(CHAT_PATTERNS.CREATE_SELF, { userId: user.sub }));
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   async getChats(@CurrentUser() user: JwtPayload) {
+    this.logger.log({ eventType: 'chat_list_requested', hasUserId: !!user.sub });
     const chats = await this.send<{ members: { userId: string }[] }[]>(
       this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub }),
     );
@@ -151,6 +167,14 @@ export class ChatGatewayController {
     @Param('id') chatId: string,
     @Body() dto: SendMessageDto,
   ) {
+    this.logger.debug({
+      eventType: 'message_send_requested',
+      hasChatId: !!chatId,
+      hasUserId: !!user.sub,
+      type: dto.type ?? 'TEXT',
+      hasText: !!dto.text,
+      hasFile: !!dto.fileId,
+    });
     const message = await this.send(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId,
@@ -163,6 +187,7 @@ export class ChatGatewayController {
         fileName: dto.fileName ?? null,
         fileSize: dto.fileSize ?? null,
         fileMime: dto.fileMime ?? null,
+        fileCategory: dto.fileCategory ?? null,
       }),
     );
 
@@ -170,6 +195,28 @@ export class ChatGatewayController {
     await this.socketGateway.triggerPushForOfflineRecipients(chatId, user.sub, message);
 
     return message;
+  }
+
+  @Post(':id/read')
+  @HttpCode(200)
+  markRead(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') chatId: string,
+    @Body() dto: MarkChatReadDto,
+  ) {
+    this.logger.debug({
+      eventType: 'chat_read_mark_requested',
+      hasChatId: !!chatId,
+      hasUserId: !!user.sub,
+      hasMessageId: !!dto.messageId,
+    });
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.MARK_READ, {
+        chatId,
+        userId: user.sub,
+        messageId: dto.messageId ?? null,
+      }),
+    );
   }
 
   @Post(':id/forward')

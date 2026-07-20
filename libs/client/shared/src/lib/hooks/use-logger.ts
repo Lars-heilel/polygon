@@ -34,6 +34,48 @@ const noop = () => {
   /* no-op */
 };
 
+export function frontendLog(
+  level: LogLevel,
+  context: string,
+  message: string,
+  details?: Record<string, unknown>,
+): void {
+  if (isProduction) return;
+
+  const timestamp = new Date().toLocaleTimeString([], {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const levelLabel = level.toUpperCase().padEnd(7);
+
+  const consoleMethodMap: Record<LogLevel, keyof Console> = {
+    log: 'log',
+    error: 'error',
+    warn: 'warn',
+    debug: 'debug',
+    verbose: 'debug',
+  };
+
+  const method = consoleMethodMap[level];
+
+  // Centralized browser console writer. All frontend call sites must use this helper.
+  // eslint-disable-next-line no-console
+  const consoleFn = (console[method] as (...data: unknown[]) => void) || console.log;
+
+  consoleFn(
+    `%c[React] ${BROWSER_PID}  - %c${timestamp}    %c${levelLabel} %c[${context}] %c${message}`,
+    COLORS.prefix,
+    COLORS.timestamp,
+    COLORS[level],
+    COLORS.context,
+    'color: inherit;',
+    ...(details ? [details] : []),
+  );
+}
+
 export const useLogger = (context: string): Logger => {
   return useMemo(() => {
     if (isProduction) {
@@ -47,39 +89,9 @@ export const useLogger = (context: string): Logger => {
     }
 
     const print = (level: LogLevel, message: string, ...args: unknown[]) => {
-      const timestamp = new Date().toLocaleTimeString([], {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-
-      const levelLabel = level.toUpperCase().padEnd(7);
-
-      const consoleMethodMap: Record<LogLevel, keyof Console> = {
-        log: 'log',
-        error: 'error',
-        warn: 'warn',
-        debug: 'debug',
-        verbose: 'debug',
-      };
-
-      const method = consoleMethodMap[level];
-
-      // 2. Исправляем no-console
-      // Так как это сервис логирования, использование console здесь — это его прямая задача.
-      // eslint-disable-next-line no-console
-      const consoleFn = (console[method] as (...data: unknown[]) => void) || console.log;
-
-      consoleFn(
-        `%c[React] ${BROWSER_PID}  - %c${timestamp}    %c${levelLabel} %c[${context}] %c${message}`,
-        COLORS.prefix,
-        COLORS.timestamp,
-        COLORS[level],
-        COLORS.context,
-        'color: inherit;',
-        ...args,
-      );
+      const details =
+        args.length === 0 ? undefined : args.length === 1 && isRecord(args[0]) ? args[0] : { args };
+      frontendLog(level, context, message, details);
     };
 
     return {
@@ -91,3 +103,7 @@ export const useLogger = (context: string): Logger => {
     };
   }, [context]);
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

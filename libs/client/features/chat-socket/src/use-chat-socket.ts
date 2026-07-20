@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { useChatStore } from '@org/entities-chat';
-import { socket } from '@org/shared';
+import { chatApi, useChatStore } from '@org/entities-chat';
+import { frontendLog, socket } from '@org/shared';
 
 export function useChatSocket(chatId: string) {
   const setActiveChat = useChatStore((s) => s.setActiveChat);
@@ -9,6 +9,8 @@ export function useChatSocket(chatId: string) {
 
   useEffect(() => {
     setActiveChat(chatId);
+    frontendLog('debug', 'ChatSocket', 'chat_join_requested', { hasChatId: !!chatId });
+    void chatApi.markRead(chatId).catch(() => undefined);
     markChatRead(chatId);
     socket.emit('chat:join', { chatId });
 

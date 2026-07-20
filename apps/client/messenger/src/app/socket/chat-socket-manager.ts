@@ -2,12 +2,18 @@ import type { Chat } from '@org/entities-chat';
 import { useChatStore } from '@org/entities-chat';
 import { usePresenceStore } from '@org/entities-chat';
 import type { Message, MessagePage } from '@org/entities-message';
-import { queryClient, socket } from '@org/shared';
+import { frontendLog, queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
 import { appendMessageToPages, updateChatListLastMessage } from './chat-cache-updaters';
 
 function handleNewMessage(msg: Message) {
+  frontendLog('debug', 'ChatSocket', 'message_received', {
+    hasChatId: !!msg.chatId,
+    hasMessageId: !!msg.id,
+    type: msg.type,
+  });
+
   unstable_batchedUpdates(() => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
       appendMessageToPages(old, msg),
@@ -34,6 +40,7 @@ function handleUserTyping(payload: { userId: string; chatId: string; isTyping: b
 }
 
 export function initChatSocketManager(): () => void {
+  frontendLog('debug', 'ChatSocket', 'chat_socket_manager_started');
   socket.on('message:new', handleNewMessage);
   socket.on('user:online', handleUserOnline);
   socket.on('user:offline', handleUserOffline);

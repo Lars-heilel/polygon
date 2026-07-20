@@ -1,7 +1,8 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 import { cn, formatAudioTime, MediaViewer, type MediaViewerItem, useAudioTrack } from '@org/shared';
 import type { AudioTrack } from '@org/shared';
+import type WaveSurfer from 'wavesurfer.js';
 
 import type { Message } from '../message.api.js';
 import { ImageLightbox } from './image-lightbox.js';
@@ -295,24 +296,6 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
   );
 });
 
-const AudioFileMessage = memo(function AudioFileMessage({
-  message,
-  isMine,
-  audioQueue,
-  audioQueueIndex,
-}: FileMessageProps) {
-  return (
-    <StreamingAudioMessage
-      trackId={`audio-${message.id}`}
-      title={message.fileName ?? 'Audio'}
-      url={`/api/media/files/${message.fileId}/content`}
-      isMine={isMine}
-      audioQueue={audioQueue}
-      audioQueueIndex={audioQueueIndex}
-    />
-  );
-});
-
 const FileAttachmentMessage = memo(function FileAttachmentMessage({
   message,
   isMine,
@@ -357,11 +340,46 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
   );
 });
 
+const AudioFileMessage = memo(function AudioFileMessage({
+  message,
+  isMine,
+  audioQueue,
+  audioQueueIndex,
+}: FileMessageProps) {
+  const track = {
+    id: `audio-${message.id}`,
+    title: message.fileName ?? 'Audio',
+    subtitle: 'Audio file',
+    url: `/api/media/files/${message.fileId}/content`,
+  };
+  const player = useAudioTrack(track, {
+    queue: audioQueue,
+    index: audioQueueIndex,
+  });
+
+  return (
+    <WaveformAudioMessage
+      variant="audio"
+      title={track.title}
+      url={track.url}
+      isMine={isMine}
+      player={player}
+    />
+  );
+});
+
 interface WaveformAudioMessageProps {
   variant: 'audio' | 'voice';
   title: string;
   url: string;
   isMine: boolean;
+  player?: {
+    isPlaying: boolean;
+    currentTime: number;
+    duration: number;
+    toggle: () => void;
+    seek: (time: number) => void;
+  };
 }
 
 const WaveformAudioMessage = memo(function WaveformAudioMessage({
@@ -369,13 +387,14 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
   title,
   url,
   isMine,
+  player,
 }: WaveformAudioMessageProps) {
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [waveReady, setWaveReady] = useState(false);
   const waveformRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<any>(null);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
 
   useEffect(() => {
     if (!waveformRef.current) return;
@@ -430,18 +449,35 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     };
   }, [isMine, url, variant]);
 
+  const isPlaying = player?.isPlaying ?? playing;
+  const displayDuration = player?.duration ?? duration;
+  const displayCurrentTime = player?.currentTime ?? currentTime;
+
   const toggle = () => {
+    if (player) {
+      player.toggle();
+      return;
+    }
+
     wavesurferRef.current?.playPause();
   };
 
   const seek = (nextTime: number) => {
-    if (!wavesurferRef.current || duration <= 0) return;
-    wavesurferRef.current.seekTo(nextTime / duration);
+    if (displayDuration <= 0) return;
+
+    if (player) {
+      player.seek(nextTime);
+      return;
+    }
+
+    if (!wavesurferRef.current) return;
+    wavesurferRef.current.seekTo(nextTime / displayDuration);
     setCurrentTime(nextTime);
   };
 
   return (
     <div
+      data-testid={`${variant}-waveform-message`}
       className={cn(
         'flex w-64 max-w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2',
         isMine ? 'bg-white/10' : 'bg-surface-elevated',
@@ -449,92 +485,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     >
       <button
         type="button"
-        onClick={toggle}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30"
-      >
-        {playing ? (
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-          </svg>
-        ) : (
-          <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        )}
-      </button>
-      <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-sm font-medium', isMine ? 'text-white' : 'text-text')}>
-          {title}
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-          <span className={cn('w-8 text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
-            {formatAudioTime(currentTime)}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div
-              ref={waveformRef}
-              className={cn(
-                'w-full overflow-hidden rounded-lg',
-                !waveReady && 'h-10 animate-pulse bg-border/60',
-              )}
-            />
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              step={0.1}
-              value={Math.min(currentTime, duration || 0)}
-              onChange={(event) => seek(Number(event.target.value))}
-              className="sr-only"
-            />
-          </div>
-          <span className={cn('w-8 text-right text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
-            {formatAudioTime(duration)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-interface StreamingAudioMessageProps {
-  trackId: string;
-  title: string;
-  url: string;
-  isMine: boolean;
-  audioQueue?: AudioTrack[];
-  audioQueueIndex?: number;
-}
-
-const StreamingAudioMessage = memo(function StreamingAudioMessage({
-  trackId,
-  title,
-  url,
-  isMine,
-  audioQueue,
-  audioQueueIndex,
-}: StreamingAudioMessageProps) {
-  const { isPlaying, currentTime, duration, toggle, seek } = useAudioTrack({
-    id: trackId,
-    title,
-    subtitle: 'Audio file',
-    url,
-  }, {
-    queue: audioQueue,
-    index: audioQueueIndex,
-  });
-  const bars = useMemo(() => createWaveformBars(trackId), [trackId]);
-  const progress = duration > 0 ? currentTime / duration : 0;
-
-  return (
-    <div
-      className={cn(
-        'flex w-64 max-w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2',
-        isMine ? 'bg-white/10' : 'bg-surface-elevated',
-      )}
-    >
-      <button
-        type="button"
+        aria-label={isPlaying ? `Pause ${variant}` : `Play ${variant}`}
         onClick={toggle}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30"
       >
@@ -554,53 +505,33 @@ const StreamingAudioMessage = memo(function StreamingAudioMessage({
         </p>
         <div className="mt-2 flex items-center gap-2">
           <span className={cn('w-8 text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
-            {formatAudioTime(currentTime)}
+            {formatAudioTime(displayCurrentTime)}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="grid h-10 grid-cols-[repeat(36,minmax(0,1fr))] items-end gap-1 overflow-hidden rounded-lg">
-              {bars.map((bar, index) => {
-                const barProgress = bars.length <= 1 ? 1 : index / (bars.length - 1);
-                const isActive = barProgress <= progress;
-
-                return (
-                  <button
-                    key={`${trackId}-${index}`}
-                    type="button"
-                    onClick={() => seek(duration * barProgress)}
-                    className={cn(
-                      'w-full min-w-0 rounded-full transition-colors',
-                      isActive
-                        ? (isMine ? 'bg-white' : 'bg-primary')
-                        : (isMine ? 'bg-white/25' : 'bg-border'),
-                    )}
-                    style={{ height: `${bar}px` }}
-                  />
-                );
-              })}
-            </div>
+            <div
+              data-testid="audio-waveform"
+              ref={waveformRef}
+              className={cn(
+                'w-full overflow-hidden rounded-lg',
+                !waveReady && 'h-10 animate-pulse bg-border/60',
+              )}
+            />
+            <input
+              aria-label={`Seek ${variant}`}
+              type="range"
+              min={0}
+              max={displayDuration || 0}
+              step={0.1}
+              value={Math.min(displayCurrentTime, displayDuration || 0)}
+              onChange={(event) => seek(Number(event.target.value))}
+              className="sr-only"
+            />
           </div>
           <span className={cn('w-8 text-right text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
-            {formatAudioTime(duration)}
+            {formatAudioTime(displayDuration)}
           </span>
         </div>
       </div>
     </div>
   );
 });
-
-function createWaveformBars(seed: string): number[] {
-  const bars: number[] = [];
-  let hash = 0;
-
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(index)) | 0;
-  }
-
-  for (let index = 0; index < 36; index += 1) {
-    hash = (hash * 1664525 + 1013904223) | 0;
-    const normalized = Math.abs(hash % 100) / 100;
-    bars.push(12 + Math.round(normalized * 28));
-  }
-
-  return bars;
-}

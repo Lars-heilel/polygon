@@ -12,6 +12,8 @@ export const CHAT_MEMBER_SELECT_FIELDS = {
   userId: true,
   role: true,
   joinedAt: true,
+  lastReadMessageId: true,
+  lastReadAt: true,
 } as const;
 
 export const MESSAGE_SELECT_FIELDS = {

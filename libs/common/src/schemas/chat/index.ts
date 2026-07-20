@@ -6,3 +6,4 @@ export * from './chat-media.schema';
 export * from './create-direct-chat.schema';
 export * from './send-message.schema';
 export * from './forward-message.schema';
+export * from './read-chat.schema';

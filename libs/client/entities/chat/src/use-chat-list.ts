@@ -32,7 +32,7 @@ export function useChatList(myId: string) {
           avatarUrl: other?.avatarUrl ?? chat.avatarUrl ?? undefined,
           lastMessage: getMessagePreview(chat.lastMessage),
           time: chat.lastMessage?.createdAt ?? null,
-          unread: unreadByChatId[chat.id] ?? 0,
+          unread: chat.unreadCount ?? unreadByChatId[chat.id] ?? 0,
           online: other ? (onlineUsers[other.userId] ?? false) : false,
         };
       })

@@ -115,6 +115,31 @@ function buildMessagesWithLatest(latestMessage: ReturnType<typeof message>) {
   return [...baseMessages, latestMessage];
 }
 
+function silentWavBuffer(durationSeconds = 0.25) {
+  const sampleRate = 8_000;
+  const channelCount = 1;
+  const bytesPerSample = 2;
+  const sampleCount = Math.floor(sampleRate * durationSeconds);
+  const dataSize = sampleCount * channelCount * bytesPerSample;
+  const buffer = Buffer.alloc(44 + dataSize);
+
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write('WAVE', 8);
+  buffer.write('fmt ', 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(channelCount, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * channelCount * bytesPerSample, 28);
+  buffer.writeUInt16LE(channelCount * bytesPerSample, 32);
+  buffer.writeUInt16LE(8 * bytesPerSample, 34);
+  buffer.write('data', 36);
+  buffer.writeUInt32LE(dataSize, 40);
+
+  return buffer;
+}
+
 function chatFor(chatMessages: Array<ReturnType<typeof message>>) {
   return {
     id: 'chat-1',
@@ -178,16 +203,25 @@ async function mockChatApis(page: Page, chatMessages = mixedMessages) {
       }),
     }),
   );
-  await page.route('**/api/media/files/**/content', (route) =>
-    route.fulfill({
+  await page.route('**/api/media/files/**/content', (route) => {
+    const url = route.request().url();
+    if (url.includes('audio') || url.includes('voice')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'audio/wav',
+        body: silentWavBuffer(),
+      });
+    }
+
+    return route.fulfill({
       status: 200,
       contentType: 'image/png',
       body: Buffer.from(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
         'base64',
       ),
-    }),
-  );
+    });
+  });
   await page.route('**/api/chats/chat-1/messages**', (route) =>
     route.fulfill({
       status: 200,
@@ -195,6 +229,7 @@ async function mockChatApis(page: Page, chatMessages = mixedMessages) {
       body: JSON.stringify({ messages: chatMessages, nextCursor: null }),
     }),
   );
+  await page.route('**/api/chats/chat-1/read', (route) => route.fulfill({ status: 204 }));
   await page.route('**/api/chats**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname !== '/api/chats') {
@@ -276,7 +311,7 @@ test('chat message list opens at latest messages and does not overflow horizonta
   await mockChatApis(page);
   await page.goto('/chats/chat-1');
 
-  await expect(page.getByText('Latest message 080')).toBeVisible();
+  await expect(page.locator('[data-testid="message-row"][data-message-id="message-80"]')).toBeVisible();
   await expect(page.getByTestId('message-bubble').first()).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
@@ -402,3 +437,36 @@ for (const { name, latest } of latestMessageCases) {
     await expectNoHorizontalOverflow(page);
   });
 }
+
+test('uploaded audio file exposes waveform controls and responds to mobile tap', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'mobile playback smoke runs only against mobile project');
+
+  await mockChatApis(
+    page,
+    buildMessagesWithLatest(
+      message(90, {
+        id: 'latest-audio-mobile',
+        type: 'AUDIO',
+        text: null,
+        fileId: 'latest-audio-mobile-file',
+        fileName: 'latest-audio-mobile.wav',
+        fileSize: 2048,
+        fileMime: 'audio/wav',
+        fileCategory: 'AUDIO',
+      }),
+    ),
+  );
+  await page.goto('/chats/chat-1');
+
+  const row = page.locator('[data-testid="message-row"][data-message-id="latest-audio-mobile"]');
+  await expect(row).toBeVisible();
+  await expect(row.getByTestId('audio-waveform-message')).toBeVisible();
+  await expect(row.getByTestId('audio-waveform')).toBeVisible();
+
+  const playButton = row.getByRole('button', { name: /play audio/i });
+  await expect(playButton).toBeVisible();
+  await playButton.tap();
+
+  await expect(page.getByTestId('floating-audio-player')).toBeVisible();
+  await expect(page.getByTestId('floating-audio-player').getByText('latest-audio-mobile.wav')).toBeVisible();
+});

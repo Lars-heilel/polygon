@@ -4,6 +4,7 @@ import { useSessionStore } from '@org/entities-user';
 import {
   configureAuthedFetch,
   configureFrontendErrorReporting,
+  frontendLog,
   registerGlobalFrontendErrorHandlers,
   reportFrontendError,
 } from '@org/shared';
@@ -25,7 +26,7 @@ if ('serviceWorker' in navigator) {
       const error = err instanceof Error ? err : new Error('Service worker registration failed');
       reportFrontendError(error);
       if (import.meta.env.DEV) {
-        console.error('SW registration failed:', err);
+        frontendLog('error', 'ServiceWorker', 'registration_failed', { hasError: !!err });
       }
     });
   });

@@ -173,6 +173,12 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
           .to(`chat:${payload.chatId}`)
           .emit('user:online', { userId, chatId: payload.chatId });
       }
+    } else {
+      this.logger.warn({
+        eventType: 'chat_membership_denied',
+        hasUserId: !!userId,
+        hasChatId: !!payload.chatId,
+      });
     }
   }
 
@@ -211,6 +217,15 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
+
+    this.logger.debug({
+      eventType: 'socket_message_send_requested',
+      hasUserId: !!userId,
+      hasChatId: !!payload.chatId,
+      type: payload.type ?? 'TEXT',
+      hasText: !!payload.text,
+      hasFile: !!payload.fileId,
+    });
 
     const message = await lastValueFrom(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {

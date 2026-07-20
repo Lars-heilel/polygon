@@ -31,20 +31,24 @@ export class PrismaService extends PrismaClient {
 
     // @ts-expect-error Prisma не пробрасывает LogOpts через extends
     this.$on('error', (e: { message: string; target: string }) => {
-      this.logger.error({ target: e.target }, e.message);
+      this.logger.error({
+        eventType: 'prisma_error',
+        hasTarget: !!e.target,
+        hasError: !!e.message,
+      });
     });
 
     if (isDev) {
       // @ts-expect-error Prisma client typings omit 'warn' event from $on overloads
       this.$on('warn', (e: { message: string }) => {
-        this.logger.warn(e.message);
+        this.logger.warn({ eventType: 'prisma_warning', hasMessage: !!e.message });
       });
       // @ts-expect-error Prisma client typings omit 'query' event from $on overloads
       this.$on('query', (e: { query: string; params: string; duration: number }) => {
         if (e.duration >= PrismaService.SLOW_QUERY_MS) {
-          this.logger.warn({ duration: e.duration, params: e.params }, `Slow query: ${e.query}`);
+          this.logger.warn({ eventType: 'prisma_slow_query', duration: e.duration });
         } else {
-          this.logger.debug({ duration: e.duration }, e.query);
+          this.logger.debug({ eventType: 'prisma_query_completed', duration: e.duration });
         }
       });
     }

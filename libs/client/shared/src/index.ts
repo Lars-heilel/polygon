@@ -36,7 +36,7 @@ export { Toggle } from './ui/toggle';
 export { ThemeProvider, useTheme } from './lib/theme/theme';
 export { queryClient } from './lib/query/query-client';
 export { useDisclosure } from './lib/hooks/use-disclosure';
-export { useLogger } from './lib/hooks/use-logger';
+export { frontendLog, useLogger } from './lib/hooks/use-logger';
 export {
   formatAudioTime,
   useAudioPlayerStore,

@@ -20,7 +20,11 @@
     ],
     "targets": {
       "prisma-generate": {
-        "command": "prisma generate --config prisma.config.ts"
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "prisma generate --config prisma.config.ts",
+          "cwd": "libs/backend/chat"
+        }
       }
     }
   }

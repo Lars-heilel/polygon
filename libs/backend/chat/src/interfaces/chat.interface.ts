@@ -12,6 +12,7 @@ import type {
 export type ChatWithPreview = Chat & {
   members: ChatMember[];
   lastMessage: Message | null;
+  unreadCount: number;
 };
 
 export interface CreateMessageData {
@@ -39,11 +40,14 @@ export interface ForwardMessagesData {
 export interface IChatRepository {
   findChatById(id: string): Promise<Chat | null>;
   findDirectChatBetween(userId1: string, userId2: string): Promise<Chat | null>;
+  findSelfChat(userId: string): Promise<Chat | null>;
+  createSelfChat(userId: string): Promise<Chat>;
   findChatsForUser(userId: string): Promise<ChatWithPreview[]>;
   createChat(data: {
     type: ChatType;
     name?: string | null;
     avatarUrl?: string | null;
+    selfOwnerId?: string | null;
   }): Promise<Chat>;
   deleteChat(id: string): Promise<void>;
   findChatMember(chatId: string, userId: string): Promise<ChatMember | null>;
@@ -64,10 +68,18 @@ export interface IChatRepository {
   findMessageById(id: string): Promise<Message | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
   createMessagesMany(data: CreateMessageData[]): Promise<number>;
+  countUnreadMessages(
+    chatId: string,
+    userId: string,
+    lastReadAt?: Date | null,
+    lastReadMessageId?: string | null,
+  ): Promise<number>;
+  markChatRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
 }
 
 export interface IChatService {
   createDirectChat(userId: string, targetUserId: string): Promise<Chat>;
+  createSelfChat(userId: string): Promise<Chat>;
   getChats(userId: string): Promise<ChatWithPreview[]>;
   getMessages(
     chatId: string,
@@ -98,12 +110,14 @@ export interface IChatService {
     },
   ): Promise<Message>;
   forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
+  markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
   getMembers(chatId: string): Promise<{ userId: string }[]>;
 }
 
 export interface IChatController {
   createDirect(payload: { userId: string; targetUserId: string }): Promise<Chat>;
+  createSelf(payload: { userId: string }): Promise<Chat>;
   getChats(payload: { userId: string }): Promise<ChatWithPreview[]>;
   getMessages(payload: {
     chatId: string;
@@ -132,6 +146,7 @@ export interface IChatController {
     fileCategory?: string | null;
   }): Promise<Message>;
   forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
+  markRead(payload: { chatId: string; userId: string; messageId?: string | null }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
   getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
 }

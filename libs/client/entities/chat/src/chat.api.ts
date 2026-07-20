@@ -27,6 +27,7 @@ export type Chat = Omit<ChatBase, 'createdAt' | 'updatedAt'> & {
   updatedAt: string;
   members: ChatMember[];
   lastMessage: Message | null;
+  unreadCount: number;
 };
 
 export const chatApi = {
@@ -34,6 +35,17 @@ export const chatApi = {
 
   createDirectChat: (body: { targetUserId: string }) =>
     authedFetch<Chat>(API_ROUTES.chats.direct, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  createSelfChat: () =>
+    authedFetch<Chat>(API_ROUTES.chats.self, {
+      method: 'POST',
+    }),
+
+  markRead: (chatId: string, body: { messageId?: string | null } = {}) =>
+    authedFetch(API_ROUTES.chats.read(chatId), {
       method: 'POST',
       body: JSON.stringify(body),
     }),

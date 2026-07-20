@@ -7,6 +7,8 @@ export const chatMemberSchema = z.object({
   userId: z.uuid(),
   role: chatRoleSchema,
   joinedAt: z.date(),
+  lastReadMessageId: z.string().uuid().nullable(),
+  lastReadAt: z.date().nullable(),
 });
 
 export type ChatMember = z.infer<typeof chatMemberSchema>;

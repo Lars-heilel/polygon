@@ -1,5 +1,6 @@
 # Git
 .git
+.worktrees
 .gitignore
 .gitattributes
 .gitmodules

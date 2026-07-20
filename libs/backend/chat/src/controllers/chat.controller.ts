@@ -1,6 +1,6 @@
-import { Controller, Inject } from '@nestjs/common';
+import { Controller, Inject, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import type { Chat, Message, MessagePage } from '@org/common';
+import type { Chat, ChatMember, Message, MessagePage } from '@org/common';
 import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
 
 import type {
@@ -12,11 +12,18 @@ import type {
 
 @Controller()
 export class ChatController implements IChatController {
+  private readonly logger = new Logger(ChatController.name);
+
   constructor(@Inject(CHAT_SERVICE_TOKEN) private readonly chatService: IChatService) {}
 
   @MessagePattern(CHAT_PATTERNS.CREATE_DIRECT)
   createDirect(@Payload() payload: { userId: string; targetUserId: string }): Promise<Chat> {
     return this.chatService.createDirectChat(payload.userId, payload.targetUserId);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.CREATE_SELF)
+  createSelf(@Payload() payload: { userId: string }): Promise<Chat> {
+    return this.chatService.createSelfChat(payload.userId);
   }
 
   @MessagePattern(CHAT_PATTERNS.GET_CHATS)
@@ -79,6 +86,14 @@ export class ChatController implements IChatController {
       fileCategory?: string | null;
     },
   ): Promise<Message> {
+    this.logger.debug({
+      eventType: 'message_send_requested',
+      hasChatId: !!payload.chatId,
+      hasSenderId: !!payload.senderId,
+      type: payload.type,
+      hasText: !!payload.text,
+      hasFile: !!payload.fileId,
+    });
     return this.chatService.sendMessage(payload.chatId, payload.senderId, {
       type: payload.type,
       text: payload.text,
@@ -95,6 +110,19 @@ export class ChatController implements IChatController {
   @MessagePattern(CHAT_PATTERNS.FORWARD_MESSAGES)
   forwardMessages(@Payload() payload: ForwardMessagesData): Promise<Message[]> {
     return this.chatService.forwardMessages(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.MARK_READ)
+  markRead(
+    @Payload() payload: { chatId: string; userId: string; messageId?: string | null },
+  ): Promise<ChatMember> {
+    this.logger.debug({
+      eventType: 'chat_read_mark_requested',
+      hasChatId: !!payload.chatId,
+      hasUserId: !!payload.userId,
+      hasMessageId: !!payload.messageId,
+    });
+    return this.chatService.markRead(payload.chatId, payload.userId, payload.messageId ?? null);
   }
 
   @MessagePattern(CHAT_PATTERNS.CHECK_MEMBERSHIP)

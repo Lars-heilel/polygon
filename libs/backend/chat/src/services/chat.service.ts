@@ -1,5 +1,5 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { Chat, ChatMediaFilter, Message, MessagePage } from '@org/common';
+import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { Chat, ChatMediaFilter, ChatMember, Message, MessagePage } from '@org/common';
 import { CHAT_PRISMA_REPOSITORY_TOKEN } from '@org/core';
 
 import type {
@@ -11,20 +11,27 @@ import type {
 
 @Injectable()
 export class ChatService implements IChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(@Inject(CHAT_PRISMA_REPOSITORY_TOKEN) private readonly repo: IChatRepository) {}
 
   async createDirectChat(userId: string, targetUserId: string): Promise<Chat> {
-    const existing = await this.repo.findDirectChatBetween(userId, targetUserId);
+    const isSelfChat = targetUserId === userId;
+    const existing = isSelfChat
+      ? await this.repo.findSelfChat(userId)
+      : await this.repo.findDirectChatBetween(userId, targetUserId);
     if (existing) return existing;
+
+    if (isSelfChat) {
+      return this.repo.createSelfChat(userId);
+    }
 
     const chat = await this.repo.createChat({
       type: 'DIRECT',
-      name: targetUserId === userId ? 'Личное' : null,
+      name: null,
     });
     await this.repo.addChatMember({ chatId: chat.id, userId });
-    if (targetUserId !== userId) {
-      await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
-    }
+    await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
 
     return this.repo.findChatById(chat.id).then((c) => {
       if (!c) throw new NotFoundException('Chat not found after creation');
@@ -33,8 +40,13 @@ export class ChatService implements IChatService {
   }
 
   async getChats(userId: string): Promise<ChatWithPreview[]> {
-    await this.createDirectChat(userId, userId);
+    this.logger.log({ eventType: 'chat_list_requested', hasUserId: !!userId });
     return this.repo.findChatsForUser(userId);
+  }
+
+  async createSelfChat(userId: string): Promise<Chat> {
+    this.logger.log({ eventType: 'self_chat_create_requested', hasUserId: !!userId });
+    return this.createDirectChat(userId, userId);
   }
 
   async getMessages(
@@ -75,8 +87,23 @@ export class ChatService implements IChatService {
       fileCategory?: string | null;
     },
   ): Promise<Message> {
+    this.logger.debug({
+      eventType: 'message_send_requested',
+      hasChatId: !!chatId,
+      hasSenderId: !!senderId,
+      type: input.type,
+      hasText: !!input.text,
+      hasFile: !!input.fileId,
+    });
     const member = await this.repo.findChatMember(chatId, senderId);
-    if (!member) throw new ForbiddenException('Not a member of this chat');
+    if (!member) {
+      this.logger.warn({
+        eventType: 'chat_membership_denied',
+        hasChatId: !!chatId,
+        hasUserId: !!senderId,
+      });
+      throw new ForbiddenException('Not a member of this chat');
+    }
 
     return this.repo.createMessage({
       chatId,
@@ -125,6 +152,36 @@ export class ChatService implements IChatService {
     }
 
     return messages;
+  }
+
+  async markRead(
+    chatId: string,
+    userId: string,
+    messageId?: string | null,
+  ): Promise<ChatMember> {
+    this.logger.debug({
+      eventType: 'chat_read_mark_requested',
+      hasChatId: !!chatId,
+      hasUserId: !!userId,
+      hasMessageId: !!messageId,
+    });
+    const member = await this.repo.findChatMember(chatId, userId);
+    if (!member) {
+      this.logger.warn({
+        eventType: 'chat_membership_denied',
+        hasChatId: !!chatId,
+        hasUserId: !!userId,
+      });
+      throw new ForbiddenException('Not a member of this chat');
+    }
+    const chatMember = await this.repo.markChatRead(chatId, userId, messageId ?? null);
+    this.logger.log({
+      eventType: 'chat_read_marked',
+      hasChatId: !!chatId,
+      hasUserId: !!userId,
+      hasMessageId: !!messageId,
+    });
+    return chatMember;
   }
 
   async checkMembership(chatId: string, userId: string): Promise<boolean> {

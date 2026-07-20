@@ -5,9 +5,10 @@ import { formatAudioTime, useAudioPlayerStore } from '../../lib/audio/audio-play
 
 interface GlobalAudioPlayerProps {
   mode?: 'floating' | 'embedded';
+  className?: string;
 }
 
-export function GlobalAudioPlayer({ mode = 'floating' }: GlobalAudioPlayerProps) {
+export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentTrack = useAudioPlayerStore((state) => state.currentTrack);
   const currentTime = useAudioPlayerStore((state) => state.currentTime);
@@ -95,10 +96,12 @@ export function GlobalAudioPlayer({ mode = 'floating' }: GlobalAudioPlayerProps)
       />
       {currentTrack && (
         <div
+          data-testid={`${mode}-audio-player`}
           className={cn(
             mode === 'floating'
               ? 'pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-3'
               : 'border-t border-border bg-background/95',
+            className,
           )}
         >
           <div

@@ -59,8 +59,8 @@ RUN ./node_modules/.bin/prisma generate --config libs/backend/auth/prisma.config
 RUN ./node_modules/.bin/tsc -p libs/common/tsconfig.build.json
 
 # Layer 7: Build all backend apps (parallel, with Nx cache)
-RUN ./node_modules/.bin/nx sync && \
-    ./node_modules/.bin/nx run-many -t build --projects='@org/gateway,@org/auth-service,@org/user-service,@org/chat-service,@org/media-service,@org/notification-service,@org/search-service' --parallel
+RUN NX_ISOLATE_PLUGINS=false ./node_modules/.bin/nx sync && \
+    NX_ISOLATE_PLUGINS=false ./node_modules/.bin/nx run-many -t build --projects='@org/gateway,@org/auth-service,@org/user-service,@org/chat-service,@org/media-service,@org/notification-service,@org/search-service' --parallel
 
 # Layer 8: Prepare runtime assets (keep prisma CLI for migrations)
 RUN node -e "const p=require('./package.json');p.dependencies.prisma=p.devDependencies.prisma;delete p.devDependencies.prisma;require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))" && \

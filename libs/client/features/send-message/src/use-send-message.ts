@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { socket } from '@org/shared';
+import { frontendLog, socket } from '@org/shared';
 import { debounce } from 'es-toolkit';
 
 export interface FileAttachment {
@@ -76,6 +76,12 @@ export function useSendMessage(chatId: string | null) {
     if (file) {
       pendingFileRef.current = null;
       setMessageText('');
+      frontendLog('debug', 'SendMessage', 'message_send_requested', {
+        hasChatId: !!chatIdRef.current,
+        hasFile: true,
+        hasText: false,
+        type: getMessageTypeFromCategory(file.fileCategory),
+      });
       socket.emit('message:send', {
         chatId: chatIdRef.current,
         type: getMessageTypeFromCategory(file.fileCategory),
@@ -94,6 +100,12 @@ export function useSendMessage(chatId: string | null) {
     const trimmed = messageText.trim();
     if (!trimmed) return;
     setMessageText('');
+    frontendLog('debug', 'SendMessage', 'message_send_requested', {
+      hasChatId: !!chatIdRef.current,
+      hasFile: false,
+      hasText: true,
+      type: 'TEXT',
+    });
     socket.emit('message:send', { chatId: chatIdRef.current, text: trimmed });
     stopTyping();
   }, [messageText, stopTyping]);

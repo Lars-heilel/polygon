@@ -4,8 +4,8 @@ ENV_FILE := ../../.env.production
 .PHONY: build start stop restart logs backup clean
 
 build:
-	cd $(ROOT_DIR) && NODE_ENV=production npm exec nx -- build @org/messenger --mode production
-	cd $(ROOT_DIR) && NODE_ENV=production npm exec nx -- build @org/admin --mode production
+	cd $(ROOT_DIR) && NODE_ENV=production NX_ISOLATE_PLUGINS=false npm exec nx -- build @org/messenger --mode production
+	cd $(ROOT_DIR) && NODE_ENV=production NX_ISOLATE_PLUGINS=false npm exec nx -- build @org/admin --mode production
 	mkdir -p nginx/html nginx/html/admin
 	cp -r $(ROOT_DIR)/apps/client/messenger/dist/* nginx/html/
 	cp -r $(ROOT_DIR)/apps/client/admin/dist/* nginx/html/admin/

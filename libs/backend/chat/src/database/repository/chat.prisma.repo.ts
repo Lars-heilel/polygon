@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CHAT_MEMBER_SELECT_FIELDS, CHAT_SELECT_FIELDS, MESSAGE_SELECT_FIELDS } from '@org/common';
 import type {
   Chat,
@@ -39,6 +39,51 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
+  async findSelfChat(userId: string): Promise<Chat | null> {
+    return this.prisma.chat.findFirst({
+      where: {
+        type: 'DIRECT',
+        selfOwnerId: userId,
+        members: {
+          some: { userId },
+          every: { userId },
+        },
+      },
+      select: CHAT_SELECT_FIELDS,
+    });
+  }
+
+  async createSelfChat(userId: string): Promise<Chat> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const chat = await tx.chat.create({
+          data: {
+            type: 'DIRECT',
+            name: 'Личное',
+            selfOwnerId: userId,
+            members: {
+              create: { userId },
+            },
+          },
+          select: CHAT_SELECT_FIELDS,
+        });
+
+        return chat;
+      });
+    } catch (error) {
+      const existing = await this.findChatBySelfOwner(userId);
+      if (existing) return existing;
+      return handlePrismaError(error);
+    }
+  }
+
+  private async findChatBySelfOwner(userId: string): Promise<Chat | null> {
+    return this.prisma.chat.findUnique({
+      where: { selfOwnerId: userId },
+      select: CHAT_SELECT_FIELDS,
+    });
+  }
+
   async findChatsForUser(userId: string): Promise<ChatWithPreview[]> {
     const chats = await this.prisma.chat.findMany({
       where: { members: { some: { userId } } },
@@ -54,16 +99,30 @@ export class ChatPrismaRepository implements IChatRepository {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return chats.map(({ messages, ...chat }) => ({
-      ...chat,
-      lastMessage: messages[0] ?? null,
-    }));
+    return Promise.all(
+      chats.map(async ({ messages, ...chat }) => {
+        const ownMember = chat.members.find((member) => member.userId === userId);
+        const unreadCount = await this.countUnreadMessages(
+          chat.id,
+          userId,
+          ownMember?.lastReadAt ?? null,
+          ownMember?.lastReadMessageId ?? null,
+        );
+
+        return {
+          ...chat,
+          lastMessage: messages[0] ?? null,
+          unreadCount,
+        };
+      }),
+    );
   }
 
   async createChat(data: {
     type: ChatType;
     name?: string | null;
     avatarUrl?: string | null;
+    selfOwnerId?: string | null;
   }): Promise<Chat> {
     return this.prisma.chat.create({ data, select: CHAT_SELECT_FIELDS });
   }
@@ -200,6 +259,98 @@ export class ChatPrismaRepository implements IChatRepository {
         })),
       });
       return result.count;
+    } catch (error) {
+      return handlePrismaError(error);
+    }
+  }
+
+  async countUnreadMessages(
+    chatId: string,
+    userId: string,
+    lastReadAt?: Date | null,
+    lastReadMessageId?: string | null,
+  ): Promise<number> {
+    return this.prisma.message.count({
+      where: {
+        chatId,
+        senderId: { not: userId },
+        ...(lastReadAt
+          ? {
+              OR: [
+                { createdAt: { gt: lastReadAt } },
+                ...(lastReadMessageId
+                  ? [{ createdAt: lastReadAt, id: { gt: lastReadMessageId } }]
+                  : []),
+              ],
+            }
+          : {}),
+      },
+    });
+  }
+
+  async markChatRead(
+    chatId: string,
+    userId: string,
+    messageId?: string | null,
+  ): Promise<ChatMember> {
+    try {
+      let nextReadMessageId: string | null = null;
+      let nextReadAt = new Date();
+
+      if (messageId) {
+        const message = await this.prisma.message.findUnique({
+          where: { id: messageId },
+          select: { id: true, chatId: true, createdAt: true },
+        });
+
+        if (!message) throw new NotFoundException('Message not found');
+        if (message.chatId !== chatId) throw new BadRequestException('Message does not belong to chat');
+
+        nextReadMessageId = message.id;
+        nextReadAt = message.createdAt;
+      } else {
+        const latestMessage = await this.prisma.message.findFirst({
+          where: { chatId },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          select: { id: true, createdAt: true },
+        });
+
+        if (latestMessage) {
+          nextReadMessageId = latestMessage.id;
+          nextReadAt = latestMessage.createdAt;
+        }
+      }
+
+      await this.prisma.chatMember.updateMany({
+        where: {
+          chatId,
+          userId,
+          OR: [
+            { lastReadAt: null },
+            { lastReadAt: { lt: nextReadAt } },
+            ...(nextReadMessageId
+              ? [
+                  {
+                    lastReadAt: nextReadAt,
+                    OR: [
+                      { lastReadMessageId: null },
+                      { lastReadMessageId: { lt: nextReadMessageId } },
+                    ],
+                  },
+                ]
+              : []),
+          ],
+        },
+        data: { lastReadMessageId: nextReadMessageId, lastReadAt: nextReadAt },
+      });
+
+      const member = await this.prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId, userId } },
+        select: CHAT_MEMBER_SELECT_FIELDS,
+      });
+
+      if (!member) throw new NotFoundException('Chat member not found');
+      return member;
     } catch (error) {
       return handlePrismaError(error);
     }

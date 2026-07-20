@@ -17,7 +17,9 @@ export const API_ROUTES = {
   chats: {
     root: 'chats',
     direct: 'chats/direct',
+    self: 'chats/self',
     byId: (id: string) => `chats/${id}`,
+    read: (id: string) => `chats/${id}/read`,
     messages: (id: string) => `chats/${id}/messages`,
     mediaMessages: (id: string) => `chats/${id}/media/messages`,
   },

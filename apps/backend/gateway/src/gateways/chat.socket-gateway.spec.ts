@@ -31,11 +31,15 @@ describe('ChatSocketGateway ban enforcement', () => {
       senderId: string,
       message: { text?: string | null; [key: string]: unknown },
     ): Promise<void>;
+    handleSendMessage(
+      socket: never,
+      payload: { chatId: string; text?: string; type?: string; fileName?: string },
+    ): Promise<void>;
   };
   const tokenService: TokenServiceMock = {
     verifyAccessToken: jest.fn(),
   };
-  type ChatClientResult = boolean | { userId: string }[];
+  type ChatClientResult = boolean | { userId: string }[] | { id: string; text?: string | null };
   const chatClient: { send: jest.Mock<Observable<ChatClientResult>, [string]> } = {
     send: jest.fn((_pattern: string) => of(true)),
   };
@@ -262,5 +266,33 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(diagnosticPayload).not.toContain('message-secret-id');
     expect(diagnosticPayload).not.toContain('Secret Sender');
     expect(diagnosticPayload).not.toContain('Secret Display');
+  });
+
+  it('does not write raw socket message contents or file names to diagnostic logs', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-secret-id';
+    chatClient.send.mockReturnValue(of({ id: 'message-secret-id', text: 'message text token=secret' }));
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-secret-id',
+      type: 'FILE',
+      text: 'message text token=secret',
+      fileName: 'file.png',
+    });
+
+    const diagnosticPayload = JSON.stringify([
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+      logger.error.mock.calls,
+      logger.debug.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('user-secret-id');
+    expect(diagnosticPayload).not.toContain('chat-secret-id');
+    expect(diagnosticPayload).not.toContain('message text');
+    expect(diagnosticPayload).not.toContain('file.png');
+    expect(diagnosticPayload).not.toContain('token=secret');
+    expect(logger.debug).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'socket_message_send_requested', hasChatId: true, hasUserId: true }),
+    );
   });
 });

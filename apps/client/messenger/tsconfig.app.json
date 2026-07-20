@@ -35,12 +35,6 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../../libs/client/entities/message/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../libs/client/entities/chat/tsconfig.lib.json"
-    },
-    {
       "path": "../../../libs/client/pages/system/pages-not-found/tsconfig.lib.json"
     },
     {
@@ -95,10 +89,19 @@
       "path": "../../../libs/client/features/notifications/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/shared/tsconfig.lib.json"
+      "path": "../../../libs/client/entities/message/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/entities/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/features/chat-socket/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/shared/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/entities/chat/tsconfig.lib.json"
     }
   ]
 }
