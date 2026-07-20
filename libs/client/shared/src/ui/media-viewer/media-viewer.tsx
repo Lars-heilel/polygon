@@ -4,6 +4,8 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '../../lib/utils/cn';
+import { IconButton } from '../icon-button';
+import { Text } from '../typography';
 
 export interface MediaViewerItem {
   id: string;
@@ -74,84 +76,95 @@ export function MediaViewer({
     return null;
   }
 
+  const activeItem = items[selectedIndex];
+
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90"
+      data-testid="media-viewer"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-background/95 p-3 text-text sm:p-6"
       onClick={onClose}
     >
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute right-4 top-4 z-10 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+      <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
+
+      <div
+        className="relative z-10 flex h-full w-full max-w-6xl flex-col"
+        onClick={(event) => event.stopPropagation()}
       >
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      {items.length > 1 && (
-        <>
-          <button
+        <div
+          data-testid="media-viewer-chrome"
+          className="mb-3 flex min-h-11 items-center justify-between gap-3 rounded-md border border-border bg-surface px-2 py-2 shadow-lg sm:px-3"
+        >
+          <Text size="sm" className="min-w-0 flex-1 truncate">
+            {activeItem?.label ?? activeItem?.alt ?? 'Media'}
+          </Text>
+          {items.length > 1 && (
+            <Text size="xs" color="muted" className="shrink-0 tabular-nums">
+              {selectedIndex + 1} / {items.length}
+            </Text>
+          )}
+          <IconButton
             type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              scrollPrev();
-            }}
-            className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white transition-colors hover:bg-black/70"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              scrollNext();
-            }}
-            className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white transition-colors hover:bg-black/70"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </>
-      )}
-
-      <div className="w-full max-w-6xl px-16" onClick={(event) => event.stopPropagation()}>
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex">
-            {items.map((item) => (
-              <div key={item.id} className="flex min-w-0 shrink-0 basis-full items-center justify-center">
-                {item.type === 'image' ? (
-                  <img
-                    src={item.src}
-                    alt={item.alt ?? item.label ?? 'Media'}
-                    className="max-h-[88vh] max-w-full object-contain"
-                  />
-                ) : (
-                  <video
-                    src={item.src}
-                    className="max-h-[88vh] max-w-full rounded-xl object-contain"
-                    controls
-                    autoPlay={selectedIndex === items.indexOf(item)}
-                    playsInline
-                  />
-                )}
-              </div>
-            ))}
-          </div>
+            label="Close media viewer"
+            size="sm"
+            variant="ghost"
+            onClick={onClose}
+            icon={<span aria-hidden="true" className="text-lg leading-none">x</span>}
+          />
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-4 text-white/80">
-          <div className="min-w-0 flex-1 truncate text-sm">
-            {items[selectedIndex]?.label ?? items[selectedIndex]?.alt ?? ''}
-          </div>
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-md bg-black">
           {items.length > 1 && (
-            <div className="text-xs tabular-nums">
-              {selectedIndex + 1} / {items.length}
-            </div>
+            <>
+              <IconButton
+                type="button"
+                label="Previous media"
+                size="lg"
+                variant="secondary"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  scrollPrev();
+                }}
+                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-surface/90 sm:left-4"
+                icon={<span aria-hidden="true" className="text-2xl leading-none">‹</span>}
+              />
+              <IconButton
+                type="button"
+                label="Next media"
+                size="lg"
+                variant="secondary"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  scrollNext();
+                }}
+                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-surface/90 sm:right-4"
+                icon={<span aria-hidden="true" className="text-2xl leading-none">›</span>}
+              />
+            </>
           )}
+
+          <div className="h-full overflow-hidden" ref={emblaRef}>
+            <div className="flex h-full">
+              {items.map((item, index) => (
+                <div key={item.id} className="flex min-w-0 shrink-0 basis-full items-center justify-center p-2 sm:p-6">
+                  {item.type === 'image' ? (
+                    <img
+                      src={item.src}
+                      alt={item.alt ?? item.label ?? 'Media'}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <video
+                      src={item.src}
+                      className="max-h-full max-w-full rounded-md object-contain"
+                      controls
+                      autoPlay={selectedIndex === index}
+                      playsInline
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {items.length > 1 && (
@@ -160,10 +173,11 @@ export function MediaViewer({
               <button
                 key={item.id}
                 type="button"
+                aria-label={`Open media ${index + 1}`}
                 onClick={() => emblaApi?.scrollTo(index)}
                 className={cn(
                   'h-2 w-2 rounded-full transition-colors',
-                  index === selectedIndex ? 'bg-white' : 'bg-white/35',
+                  index === selectedIndex ? 'bg-primary' : 'bg-surface-elevated',
                 )}
               />
             ))}
