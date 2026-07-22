@@ -29,6 +29,10 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} />;
 }
 
+export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} />;
+}
+
 export function IconButton({
   icon,
   label,

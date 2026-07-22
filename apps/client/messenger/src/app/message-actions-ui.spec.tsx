@@ -5,8 +5,43 @@ import type { Chat } from '@org/entities-chat';
 import { MessageActionsMenu } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { authedFetch, queryClient } from '@org/shared';
+import { ChatFooter } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/chat-window/ChatFooter';
 import { DeleteMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/delete-message-modal';
 import { ForwardMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/forward-message-modal';
+
+jest.mock('@org/entities-user', () => ({
+  useMeSuspenseQuery: () => ({ data: { id: 'user-1' } }),
+  useSearchUsersQuery: () => ({ data: [] }),
+}));
+
+jest.mock('@org/features-emoji', () => ({
+  EmojiPicker: () => <button type="button" aria-label="Emoji picker" />,
+}));
+
+jest.mock('@org/features-send-message', () => {
+  const recorder = {
+    isRecording: false,
+    duration: 0,
+    start: jest.fn(),
+    stop: jest.fn(),
+    formatDuration: () => '0:00',
+  };
+
+  return {
+    confirmChatFileUpload: jest.fn(),
+    getCategoryFromMime: jest.fn(() => 'FILE'),
+    initChatFileUpload: jest.fn(),
+    uploadFileToMinio: jest.fn(),
+    useCircleRecorder: () => recorder,
+    useSendMessage: () => ({
+      messageText: '',
+      setMessageText: jest.fn(),
+      handleSend: jest.fn(),
+      setFileAttachment: jest.fn(),
+    }),
+    useVoiceRecorder: () => recorder,
+  };
+});
 
 const baseMessage: Message = {
   id: 'message-1',
@@ -35,11 +70,20 @@ const baseMessage: Message = {
 
 describe('message actions ui', () => {
   beforeEach(() => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1024,
+    });
     queryClient.clear();
     jest.clearAllMocks();
   });
 
   it('shows edit only for own text messages without files', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    });
+
     render(
       <MessageActionsMenu
         message={baseMessage}
@@ -54,7 +98,10 @@ describe('message actions ui', () => {
 
     expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeTruthy();
     expect(screen.getByRole('menu').className).toContain('fixed');
-    expect(screen.getByRole('button', { name: 'Message actions' }).className).toContain('h-9');
+    expect(screen.getByRole('button', { name: 'Message actions' }).className).toContain('h-8');
+    expect(screen.getByRole('button', { name: 'Message actions' }).className).not.toContain('shadow-[');
+    expect(screen.getByRole('menuitem', { name: 'Edit' }).className).toContain('h-9');
+    expect(screen.getByRole('menu').getAttribute('style')).toContain('bottom: 12px');
   });
 
   it('hides edit for file messages and keeps forward copy delete', () => {
@@ -74,6 +121,16 @@ describe('message actions ui', () => {
     expect(screen.getByRole('menuitem', { name: 'Forward' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Copy' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeTruthy();
+  });
+
+  it('keeps circle video recording hidden on desktop', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChatFooter chatId="chat-1" />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Circle video' }).className).toContain('lg:hidden');
   });
 
   it('defaults own message delete confirmation to delete for everyone', () => {

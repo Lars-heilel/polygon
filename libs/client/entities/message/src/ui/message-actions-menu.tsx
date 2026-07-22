@@ -15,6 +15,7 @@ interface MessageActionsMenuProps {
 
 const MENU_WIDTH = 176;
 const MENU_MARGIN = 8;
+const MOBILE_MENU_MARGIN = 12;
 
 function getMenuPosition(trigger: HTMLElement | null): CSSProperties {
   if (typeof window === 'undefined' || !trigger) {
@@ -23,9 +24,9 @@ function getMenuPosition(trigger: HTMLElement | null): CSSProperties {
 
   if (window.innerWidth < 640) {
     return {
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: MOBILE_MENU_MARGIN,
+      left: MOBILE_MENU_MARGIN,
+      right: MOBILE_MENU_MARGIN,
     };
   }
 
@@ -58,7 +59,7 @@ function MenuActionButton({ children, danger, disabled, onClick }: MenuActionBut
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'flex h-11 w-full items-center px-4 text-left text-sm font-medium transition-colors',
+        'flex h-9 w-full items-center px-3 text-left text-sm font-medium transition-colors',
         'disabled:cursor-not-allowed disabled:opacity-45',
         danger
           ? 'text-danger hover:bg-danger/10'
@@ -146,14 +147,17 @@ export const MessageActionsMenu = memo(function MessageActionsMenu({
         <IconButton
           type="button"
           label="Message actions"
-          icon={<span aria-hidden="true" className="text-lg leading-none">...</span>}
-          size="md"
-          variant="secondary"
+          icon={<span aria-hidden="true" className="text-base leading-none">⋯</span>}
+          size="sm"
+          variant="ghost"
           onClick={handleOpenChange}
           className={cn(
-            'h-9 w-9 rounded-full border-border/80 bg-surface-elevated/95 shadow-[var(--shadow-surface)]',
-            'text-text transition-colors hover:border-primary/50 hover:bg-surface-elevated',
-            isOpen && 'border-primary/50 bg-surface-elevated',
+            'h-8 w-8 rounded-md border-0 bg-transparent shadow-none',
+            'transition-colors',
+            isMine
+              ? 'text-text-inverse/70 hover:bg-white/10 hover:text-text-inverse'
+              : 'text-text-muted hover:bg-surface-elevated hover:text-text',
+            isOpen && (isMine ? 'bg-white/10 text-text-inverse' : 'bg-surface-elevated text-text'),
           )}
         />
       </span>
@@ -172,7 +176,7 @@ export const MessageActionsMenu = memo(function MessageActionsMenu({
             style={menuPosition}
             className={cn(
               'fixed z-50 overflow-hidden border border-border bg-surface-elevated shadow-[var(--shadow-surface)]',
-              'max-sm:rounded-t-md max-sm:border-x-0 max-sm:border-b-0 max-sm:p-2',
+              'max-sm:rounded-md max-sm:p-1',
               'sm:w-44 sm:rounded-md sm:py-1',
             )}
           >

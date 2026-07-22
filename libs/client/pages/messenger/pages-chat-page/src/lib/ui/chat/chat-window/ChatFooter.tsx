@@ -341,7 +341,7 @@ export const ChatFooter = memo(function ChatFooter({
               onClick={handleRecordCircle}
               disabled={isRecording && !circleRecorder.isRecording}
               className={cn(
-                'rounded-full',
+                'rounded-full lg:hidden',
                 circleRecorder.isRecording && 'bg-info text-text-inverse hover:opacity-90 animate-pulse',
               )}
               icon={<CircleVideoIcon />}
