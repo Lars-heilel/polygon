@@ -19,6 +19,7 @@ export type {
 } from './message.types.js';
 export { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
 export { MessageBubble } from './ui/message-bubble.js';
+export { MessageActionsMenu } from './ui/message-actions-menu.js';
 export { MessageBubbleSkeleton } from './ui/message-bubble-skeleton.js';
 export { MessageListSkeleton } from './ui/message-list-skeleton.js';
 export { FileMessage } from './ui/file-message.js';

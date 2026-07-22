@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   isMine: boolean;
   senderName?: string;
   senderAvatarUrl?: string;
-  contentSlot?: ReactNode;
+  actionsSlot?: ReactNode;
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -17,6 +17,7 @@ export const MessageBubble = memo(function MessageBubble({
   isMine,
   senderName,
   senderAvatarUrl,
+  actionsSlot,
   children,
 }: MessageBubbleProps & { children: React.ReactNode }) {
   return (
@@ -39,14 +40,16 @@ export const MessageBubble = memo(function MessageBubble({
         )}
       >
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">{children}</div>
-        <p
+        <div
           className={cn(
-            'text-[10px] mt-1 text-right',
+            'mt-1 flex items-center justify-end gap-2 text-[10px]',
             isMine ? 'text-text-inverse/70' : 'text-text-muted',
           )}
         >
-          {formatTime(message.createdAt)}
-        </p>
+          {message.editedAt ? <span>edited</span> : null}
+          <span>{formatTime(message.createdAt)}</span>
+          {actionsSlot}
+        </div>
       </div>
     </div>
   );

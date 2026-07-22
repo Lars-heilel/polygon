@@ -28,13 +28,55 @@ export function Button({
 export function IconButton({
   icon,
   label,
+  children,
   ...props
 }: {
-  icon: ReactNode;
-  label: string;
+  icon?: ReactNode;
+  label?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button aria-label={label} {...props}>{icon}</button>;
+  return <button aria-label={label ?? props['aria-label']} {...props}>{icon ?? children}</button>;
 }
+
+function DropdownRoot({
+  isOpen,
+  children,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  return <div>{children}</div>;
+}
+
+DropdownRoot.Trigger = function DropdownTrigger({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+};
+
+DropdownRoot.Menu = function DropdownMenu({ isOpen, children }: { isOpen?: boolean; children: ReactNode }) {
+  return <div role="menu" hidden={isOpen === false}>{children}</div>;
+};
+
+DropdownRoot.Item = function DropdownItem({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button type="button" role="menuitem" disabled={disabled} onClick={onClick}>
+      {children}
+    </button>
+  );
+};
+
+DropdownRoot.Divider = function DropdownDivider() {
+  return <hr />;
+};
+
+export const Dropdown = DropdownRoot;
 
 export function Heading({ children }: { children: ReactNode }) {
   return <h2>{children}</h2>;
