@@ -1,7 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import { VirtualFeed } from './virtual-feed';
+
+const frontendLog = vi.fn();
+
+vi.mock('../../lib/hooks/use-logger', () => ({
+  frontendLog: (...args: unknown[]) => frontendLog(...args),
+}));
 
 vi.mock('react-virtuoso', () => ({
   Virtuoso: ({
@@ -29,6 +35,11 @@ describe('VirtualFeed', () => {
     { id: '1', label: 'one' },
     { id: '2', label: 'two' },
   ];
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
 
   it('renders items through the provided renderer', () => {
     render(
@@ -74,5 +85,32 @@ describe('VirtualFeed', () => {
     expect(screen.getByTestId('virtual-feed').getAttribute('data-item-count')).toBe('2');
     expect(screen.getByTestId('virtual-feed').getAttribute('data-first-key')).toBe('1');
     expect(screen.getByTestId('virtual-feed').getAttribute('data-last-key')).toBe('2');
+  });
+
+  it('adds diagnostic context to virtual feed logs when diagnostics are forced', async () => {
+    render(
+      <VirtualFeed
+        items={items}
+        mode="reverse"
+        getKey={(item) => item.id}
+        renderItem={(item) => <div>{item.label}</div>}
+        diagnosticName="messages"
+        diagnostics="always"
+        diagnosticContext={{ chatKey: 'chat#1' }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(frontendLog).toHaveBeenCalledWith(
+        'debug',
+        'VirtualFeed',
+        'items_committed',
+        expect.objectContaining({
+          name: 'messages',
+          context: { chatKey: 'chat#1' },
+          scroll: null,
+        }),
+      );
+    });
   });
 });

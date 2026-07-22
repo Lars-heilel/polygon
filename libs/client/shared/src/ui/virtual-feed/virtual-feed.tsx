@@ -16,6 +16,9 @@ export interface VirtualFeedHandle {
   scrollToEnd: (behavior?: 'auto' | 'smooth') => void;
 }
 
+type VirtualFeedDiagnosticValue = string | number | boolean | null;
+type VirtualFeedDiagnostics = 'localStorage' | 'always' | 'off';
+
 export interface VirtualFeedProps<TItem> {
   items: TItem[];
   mode: 'reverse' | 'forward';
@@ -36,12 +39,17 @@ export interface VirtualFeedProps<TItem> {
   atBottomThreshold?: number;
   onAtBottomChange?: (isAtBottom: boolean) => void;
   diagnosticName?: string;
+  diagnosticContext?: Record<string, VirtualFeedDiagnosticValue>;
+  diagnostics?: VirtualFeedDiagnostics;
 }
 
 const DEFAULT_BASE_INDEX = 10_000;
 
-function canLogVirtualFeedDiagnostics(): boolean {
+function canLogVirtualFeedDiagnostics(mode: VirtualFeedDiagnostics): boolean {
   if (import.meta.env.PROD) return false;
+  if (mode === 'always') return true;
+  if (mode === 'off') return false;
+
   try {
     return globalThis.localStorage?.getItem('polygon.debug.virtualFeed') === '1';
   } catch {
@@ -84,6 +92,8 @@ function VirtualFeedInner<TItem>(
     atBottomThreshold = 24,
     onAtBottomChange,
     diagnosticName,
+    diagnosticContext,
+    diagnostics = 'localStorage',
   }: VirtualFeedProps<TItem>,
   ref: React.ForwardedRef<VirtualFeedHandle>,
 ) {
@@ -102,9 +112,10 @@ function VirtualFeedInner<TItem>(
 
   useImperativeHandle(ref, () => ({
     scrollToEnd: (behavior = 'smooth') => {
-      if (canLogVirtualFeedDiagnostics()) {
+      if (canLogVirtualFeedDiagnostics(diagnostics)) {
         frontendLog('debug', 'VirtualFeed', 'scroll_to_end_requested', {
           name: diagnosticName ?? 'virtual-feed',
+          context: diagnosticContext,
           behavior,
           itemCount: items.length,
           scroll: getScrollerSnapshot(rootRef.current),
@@ -112,10 +123,10 @@ function VirtualFeedInner<TItem>(
       }
       virtuosoRef.current?.scrollToIndex({ index: 'LAST', align: 'end', behavior });
     },
-  }), [diagnosticName, items.length]);
+  }), [diagnosticContext, diagnosticName, diagnostics, items.length]);
 
   useEffect(() => {
-    if (!canLogVirtualFeedDiagnostics()) {
+    if (!canLogVirtualFeedDiagnostics(diagnostics)) {
       diagnosticsRef.current = {
         itemCount: items.length,
         firstItemIndex,
@@ -138,6 +149,7 @@ function VirtualFeedInner<TItem>(
     const frame = window.requestAnimationFrame(() => {
       frontendLog('debug', 'VirtualFeed', 'items_committed', {
         name: diagnosticName ?? 'virtual-feed',
+        context: diagnosticContext,
         mode,
         itemCount: items.length,
         itemCountDelta: items.length - previous.itemCount,
@@ -151,7 +163,7 @@ function VirtualFeedInner<TItem>(
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [diagnosticName, firstItemIndex, firstKey, items.length, lastKey, mode]);
+  }, [diagnosticContext, diagnosticName, diagnostics, firstItemIndex, firstKey, items.length, lastKey, mode]);
 
   const components = useMemo(
     () => ({
@@ -203,9 +215,10 @@ function VirtualFeedInner<TItem>(
         followOutput={mode === 'reverse' ? (bottom) => (bottom ? 'smooth' : false) : false}
         atBottomStateChange={(isAtBottom) => {
           diagnosticsRef.current.atBottom = isAtBottom;
-          if (canLogVirtualFeedDiagnostics()) {
+          if (canLogVirtualFeedDiagnostics(diagnostics)) {
             frontendLog('debug', 'VirtualFeed', 'at_bottom_changed', {
               name: diagnosticName ?? 'virtual-feed',
+              context: diagnosticContext,
               atBottom: isAtBottom,
               itemCount: items.length,
               scroll: getScrollerSnapshot(rootRef.current),
@@ -214,9 +227,10 @@ function VirtualFeedInner<TItem>(
           onAtBottomChange?.(isAtBottom);
         }}
         startReached={() => {
-          if (canLogVirtualFeedDiagnostics()) {
+          if (canLogVirtualFeedDiagnostics(diagnostics)) {
             frontendLog('debug', 'VirtualFeed', 'start_reached', {
               name: diagnosticName ?? 'virtual-feed',
+              context: diagnosticContext,
               mode,
               hasPrevious: !!hasPrevious,
               isLoadingPrevious: !!isLoadingPrevious,
@@ -227,9 +241,10 @@ function VirtualFeedInner<TItem>(
           if (mode === 'reverse' && hasPrevious && !isLoadingPrevious) loadPrevious?.();
         }}
         endReached={() => {
-          if (canLogVirtualFeedDiagnostics()) {
+          if (canLogVirtualFeedDiagnostics(diagnostics)) {
             frontendLog('debug', 'VirtualFeed', 'end_reached', {
               name: diagnosticName ?? 'virtual-feed',
+              context: diagnosticContext,
               mode,
               hasNext: !!hasNext,
               isLoadingNext: !!isLoadingNext,

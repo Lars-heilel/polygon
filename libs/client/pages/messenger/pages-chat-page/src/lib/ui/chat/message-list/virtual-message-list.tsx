@@ -21,6 +21,11 @@ interface ChatMessageRowProps {
   audioQueueIndexByMessageId: Map<string, number>;
 }
 
+interface VirtualMessageListProps {
+  chatId: string;
+  diagnosticContext?: Record<string, string | number | boolean | null>;
+}
+
 export function getMessageVirtualKey(msg: Pick<Message, 'id' | 'clientId'>): string {
   return msg.clientId ? `client:${msg.clientId}` : `server:${msg.id}`;
 }
@@ -79,7 +84,10 @@ const EmptyState = memo(() => (
   </div>
 ));
 
-export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId: string }) {
+export const VirtualMessageList = memo(function MessageList({
+  chatId,
+  diagnosticContext,
+}: VirtualMessageListProps) {
   const {
     data: infiniteData,
     fetchNextPage,
@@ -174,6 +182,8 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
       <VirtualFeed
         ref={feedRef}
         diagnosticName="chat-message-list"
+        diagnosticContext={diagnosticContext}
+        diagnostics="always"
         mode="reverse"
         items={allMessages}
         getKey={getMessageVirtualKey}
