@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
 
@@ -22,6 +22,9 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMediaMessagesByChat: jest.fn(),
     findMessageById: jest.fn(),
     createMessage: jest.fn(),
+    updateMessageText: jest.fn(),
+    deleteMessageForEveryone: jest.fn(),
+    hideMessageForUser: jest.fn(),
     createMessagesMany: jest.fn(),
     countUnreadMessages: jest.fn(),
     markChatRead: jest.fn(),
@@ -129,5 +132,205 @@ describe('ChatService', () => {
 
     await expect(service.markRead('chat-1', 'user-1', 'message-1')).resolves.toEqual(member);
     expect(repo.markChatRead).toHaveBeenCalledWith('chat-1', 'user-1', 'message-1');
+  });
+
+  it('edits only own text messages without files', async () => {
+    const repo = repoMock();
+    const message = {
+      id: 'message-1',
+      clientId: null,
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT' as const,
+      text: 'before',
+      fileId: null,
+      fileBucket: null,
+      fileKey: null,
+      fileName: null,
+      fileSize: null,
+      fileMime: null,
+      fileCategory: null,
+      forwardedFromId: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    };
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageById.mockResolvedValue(message);
+    repo.updateMessageText.mockResolvedValue({ ...message, text: 'after', editedAt: new Date() });
+    const service = new ChatService(repo);
+
+    await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).resolves.toMatchObject({
+      id: 'message-1',
+      text: 'after',
+    });
+
+    expect(repo.updateMessageText).toHaveBeenCalledWith('message-1', 'after');
+  });
+
+  it('rejects editing file-backed messages', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageById.mockResolvedValue({
+      id: 'message-1',
+      clientId: null,
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'caption',
+      fileId: '11111111-1111-4111-8111-111111111111',
+      fileBucket: null,
+      fileKey: null,
+      fileName: null,
+      fileSize: null,
+      fileMime: null,
+      fileCategory: null,
+      forwardedFromId: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    });
+    const service = new ChatService(repo);
+
+    await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(repo.updateMessageText).not.toHaveBeenCalled();
+  });
+
+  it('allows any member to delete a visible message for themselves', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-2',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageById.mockResolvedValue({
+      id: 'message-1',
+      clientId: null,
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hello',
+      fileId: null,
+      fileBucket: null,
+      fileKey: null,
+      fileName: null,
+      fileSize: null,
+      fileMime: null,
+      fileCategory: null,
+      forwardedFromId: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    });
+    const service = new ChatService(repo);
+
+    await expect(service.deleteMessage('chat-1', 'message-1', 'user-2', 'ME')).resolves.toEqual({
+      id: 'message-1',
+      chatId: 'chat-1',
+    });
+
+    expect(repo.hideMessageForUser).toHaveBeenCalledWith('message-1', 'user-2');
+  });
+
+  it('rejects delete-for-everyone when the requester is not the sender', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-2',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageById.mockResolvedValue({
+      id: 'message-1',
+      clientId: null,
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hello',
+      fileId: null,
+      fileBucket: null,
+      fileKey: null,
+      fileName: null,
+      fileSize: null,
+      fileMime: null,
+      fileCategory: null,
+      forwardedFromId: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    });
+    const service = new ChatService(repo);
+
+    await expect(service.deleteMessage('chat-1', 'message-1', 'user-2', 'EVERYONE')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(repo.deleteMessageForEveryone).not.toHaveBeenCalled();
+  });
+
+  it('returns not found for messages outside the requested chat', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageById.mockResolvedValue({
+      id: 'message-1',
+      clientId: null,
+      chatId: 'chat-2',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hello',
+      fileId: null,
+      fileBucket: null,
+      fileKey: null,
+      fileName: null,
+      fileSize: null,
+      fileMime: null,
+      fileCategory: null,
+      forwardedFromId: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    });
+    const service = new ChatService(repo);
+
+    await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

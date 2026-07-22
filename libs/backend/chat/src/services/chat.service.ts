@@ -123,6 +123,89 @@ export class ChatService implements IChatService {
     });
   }
 
+  async editMessage(
+    chatId: string,
+    messageId: string,
+    userId: string,
+    text: string,
+  ): Promise<Message> {
+    this.logger.log({
+      eventType: 'message_edit_requested',
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasUserId: !!userId,
+    });
+    await this.requireMember(chatId, userId);
+    const message = await this.requireMessageInChat(chatId, messageId);
+
+    if (message.senderId !== userId || message.type !== 'TEXT' || message.fileId || message.deletedAt) {
+      this.logger.warn({
+        eventType: 'message_edit_rejected',
+        hasChatId: !!chatId,
+        hasMessageId: !!messageId,
+        hasUserId: !!userId,
+      });
+      throw new ForbiddenException('Message cannot be edited');
+    }
+
+    const updated = await this.repo.updateMessageText(messageId, text);
+    this.logger.log({
+      eventType: 'message_edited',
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasUserId: !!userId,
+    });
+    return updated;
+  }
+
+  async deleteMessage(
+    chatId: string,
+    messageId: string,
+    userId: string,
+    mode: 'ME' | 'EVERYONE',
+  ): Promise<Message | { id: string; chatId: string }> {
+    this.logger.log({
+      eventType: 'message_delete_requested',
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasUserId: !!userId,
+      mode,
+    });
+    await this.requireMember(chatId, userId);
+    const message = await this.requireMessageInChat(chatId, messageId);
+
+    if (mode === 'EVERYONE') {
+      if (message.senderId !== userId) {
+        this.logger.warn({
+          eventType: 'message_delete_rejected',
+          hasChatId: !!chatId,
+          hasMessageId: !!messageId,
+          hasUserId: !!userId,
+          mode,
+        });
+        throw new ForbiddenException('Only the sender can delete this message for everyone');
+      }
+
+      const deleted = await this.repo.deleteMessageForEveryone(messageId, userId);
+      this.logger.log({
+        eventType: 'message_deleted_for_everyone',
+        hasChatId: !!chatId,
+        hasMessageId: !!messageId,
+        hasUserId: !!userId,
+      });
+      return deleted;
+    }
+
+    await this.repo.hideMessageForUser(messageId, userId);
+    this.logger.log({
+      eventType: 'message_deleted_for_user',
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasUserId: !!userId,
+    });
+    return { id: messageId, chatId };
+  }
+
   async forwardMessages(data: ForwardMessagesData): Promise<Message[]> {
     const { sourceChatId, targetChatId, messageIds, userId } = data;
 
@@ -196,5 +279,16 @@ export class ChatService implements IChatService {
   async getMembers(chatId: string): Promise<{ userId: string }[]> {
     const members = await this.repo.findMembersByChat(chatId);
     return members.map((m) => ({ userId: m.userId }));
+  }
+
+  private async requireMember(chatId: string, userId: string): Promise<void> {
+    const member = await this.repo.findChatMember(chatId, userId);
+    if (!member) throw new ForbiddenException('Not a member of this chat');
+  }
+
+  private async requireMessageInChat(chatId: string, messageId: string): Promise<Message> {
+    const message = await this.repo.findMessageById(messageId);
+    if (!message || message.chatId !== chatId) throw new NotFoundException('Message not found');
+    return message;
   }
 }

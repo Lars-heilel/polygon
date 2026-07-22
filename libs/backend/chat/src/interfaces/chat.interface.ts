@@ -116,6 +116,13 @@ export interface IChatService {
       fileCategory?: string | null;
     },
   ): Promise<Message>;
+  editMessage(chatId: string, messageId: string, userId: string, text: string): Promise<Message>;
+  deleteMessage(
+    chatId: string,
+    messageId: string,
+    userId: string,
+    mode: 'ME' | 'EVERYONE',
+  ): Promise<Message | { id: string; chatId: string }>;
   forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
   markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
