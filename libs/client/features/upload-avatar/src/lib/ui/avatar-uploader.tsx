@@ -1,4 +1,7 @@
-import { useRef, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
+
+import { Button } from '@org/shared';
+
 import { useAvatarUpload } from '../hooks/use-avatar-upload.js';
 
 interface AvatarUploaderProps {
@@ -8,10 +11,13 @@ interface AvatarUploaderProps {
 export function AvatarUploader({ onDone }: AvatarUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { upload, reset, progress, step, error } = useAvatarUpload();
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const disabled = step !== 'idle' && step !== 'error' && step !== 'done';
 
   const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFileName(file.name);
     await upload(file);
     await new Promise((r) => setTimeout(r, 800));
     onDone?.();
@@ -24,35 +30,50 @@ export function AvatarUploader({ onDone }: AvatarUploaderProps) {
         <input
           ref={inputRef}
           type="file"
+          aria-label="Choose avatar image"
           accept="image/*"
           onChange={handleFile}
-          disabled={step !== 'idle' && step !== 'error' && step !== 'done'}
-          className="block w-full text-sm text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer disabled:opacity-50"
+          disabled={disabled}
+          className="sr-only"
         />
+        <Button
+          type="button"
+          size="sm"
+          disabled={disabled}
+          onClick={() => inputRef.current?.click()}
+        >
+          Choose file
+        </Button>
+        <span className="min-w-0 truncate text-sm text-text-muted">
+          {selectedFileName ?? 'No file selected'}
+        </span>
       </div>
 
       {step === 'uploading' && (
         <div>
-          <div className="flex justify-between text-xs text-zinc-400 mb-1">
+          <div className="mb-1 flex justify-between text-xs text-text-muted">
             <span>Uploading…</span>
             <span>{progress}%</span>
           </div>
-          <div className="w-full h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
             <div
-              className="h-full bg-yellow-500 transition-all duration-300"
+              className="h-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
       )}
 
-
-      {step === 'done' && <p className="text-xs text-green-400">Avatar updated!</p>}
+      {step === 'done' && <p className="text-xs text-success">Avatar updated!</p>}
 
       {step === 'error' && (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-red-400">{error}</span>
-          <button onClick={reset} className="text-xs text-zinc-500 hover:text-zinc-300 underline">
+          <span className="text-xs text-danger">{error}</span>
+          <button
+            type="button"
+            onClick={reset}
+            className="text-xs text-text-muted underline hover:text-text"
+          >
             Try again
           </button>
         </div>

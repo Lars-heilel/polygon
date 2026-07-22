@@ -1,5 +1,5 @@
 import { useNotificationStore } from '@org/features-notifications';
-import { showComingSoonToast, Text, Toggle, useTheme } from '@org/shared';
+import { Text, Toggle, useTheme } from '@org/shared';
 
 export function SettingsGeneralTab() {
   const { theme, toggleTheme } = useTheme();
@@ -66,20 +66,6 @@ export function SettingsGeneralTab() {
           checked={theme === 'dark'}
           onChange={toggleTheme}
         />
-      </div>
-      <div>
-        <Text
-          size="sm"
-          weight="medium"
-          className="mb-2"
-        >
-          Language
-        </Text>
-        <select onChange={showComingSoonToast} className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm">
-          <option>English</option>
-          <option>Русский</option>
-          <option>Español</option>
-        </select>
       </div>
     </div>
   );

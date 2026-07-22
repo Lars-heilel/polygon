@@ -57,4 +57,10 @@ describe('SettingsPage Admin link', () => {
 
     expect(screen.queryByRole('link', { name: 'Admin console' })).toBeNull();
   });
+
+  it('does not expose the privacy settings tab while the section is disabled', () => {
+    renderSettings('USER');
+
+    expect(screen.queryByRole('button', { name: /privacy/i })).toBeNull();
+  });
 });

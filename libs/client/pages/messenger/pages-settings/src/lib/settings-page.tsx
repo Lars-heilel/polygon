@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router';
 
 import { SettingsDevicesTab } from './settings-devices-tab';
 import { SettingsGeneralTab } from './settings-general-tab';
-import { SettingsPrivacyTab } from './settings-privacy-tab';
 import { CLIENT_ROUTES } from '@org/common';
 import { useMeQuery } from '@org/entities-user';
 import { Heading } from '@org/shared';
 
-type SettingsTab = 'general' | 'privacy' | 'devices';
+type SettingsTab = 'general' | 'devices';
 
-const TABS: SettingsTab[] = ['general', 'privacy', 'devices'];
+const TABS: SettingsTab[] = ['general', 'devices'];
 const ADMIN_APP_ROUTE = `${CLIENT_ROUTES.admin.root}/`;
 
 export function getAdminConsoleHref(origin = window.location.origin) {
@@ -72,7 +71,6 @@ export function SettingsPage() {
 
       <div className="flex-1 overflow-y-auto p-6">
         {activeTab === 'general' && <SettingsGeneralTab />}
-        {activeTab === 'privacy' && <SettingsPrivacyTab />}
         {activeTab === 'devices' && <SettingsDevicesTab />}
       </div>
     </div>

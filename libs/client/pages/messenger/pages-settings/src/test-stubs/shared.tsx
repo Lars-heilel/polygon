@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 
 export function Heading({
   as,
@@ -11,4 +11,31 @@ export function Heading({
   const Component = as ?? 'h2';
 
   return <Component>{children}</Component>;
+}
+
+export function Text({ children }: { children: ReactNode }) {
+  return <span>{children}</span>;
+}
+
+export function Toggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.checked)}
+    />
+  );
+}
+
+export function useTheme() {
+  return {
+    theme: 'dark',
+    toggleTheme: jest.fn(),
+  };
 }
