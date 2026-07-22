@@ -375,7 +375,6 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
 
 const AudioFileMessage = memo(function AudioFileMessage({
   message,
-  isMine,
   audioQueue,
   audioQueueIndex,
 }: FileMessageProps) {
@@ -391,13 +390,40 @@ const AudioFileMessage = memo(function AudioFileMessage({
   });
 
   return (
-    <WaveformAudioMessage
-      variant="audio"
-      title={track.title}
-      url={track.url}
-      isMine={isMine}
-      player={player}
-    />
+    <div
+      data-testid="audio-file-message"
+      className={cn(
+        'flex min-h-[60px] w-[min(100%,300px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        'border-border bg-surface text-text',
+      )}
+    >
+      <button
+        type="button"
+        aria-label={player.isPlaying ? 'Pause audio' : 'Play audio'}
+        onClick={player.toggle}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90"
+      >
+        {player.isPlaying ? (
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+          </svg>
+        ) : (
+          <svg className="ml-0.5 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-text">
+          {track.title}
+        </p>
+        <p className="mt-1 truncate text-xs text-text-muted">
+          {player.duration > 0
+            ? `${formatAudioTime(player.currentTime)} / ${formatAudioTime(player.duration)}`
+            : message.fileSize ? formatFileSize(message.fileSize) : 'Audio file'}
+        </p>
+      </div>
+    </div>
   );
 });
 
@@ -406,13 +432,6 @@ interface WaveformAudioMessageProps {
   title: string;
   url: string;
   isMine: boolean;
-  player?: {
-    isPlaying: boolean;
-    currentTime: number;
-    duration: number;
-    toggle: () => void;
-    seek: (time: number) => void;
-  };
 }
 
 const WaveformAudioMessage = memo(function WaveformAudioMessage({
@@ -420,7 +439,6 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
   title,
   url,
   isMine,
-  player,
 }: WaveformAudioMessageProps) {
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -486,26 +504,16 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     };
   }, [isMine, url, variant]);
 
-  const isPlaying = player?.isPlaying ?? playing;
-  const displayDuration = player?.duration ?? duration;
-  const displayCurrentTime = player?.currentTime ?? currentTime;
+  const isPlaying = playing;
+  const displayDuration = duration;
+  const displayCurrentTime = currentTime;
 
   const toggle = () => {
-    if (player) {
-      player.toggle();
-      return;
-    }
-
     wavesurferRef.current?.playPause();
   };
 
   const seek = (nextTime: number) => {
     if (displayDuration <= 0) return;
-
-    if (player) {
-      player.seek(nextTime);
-      return;
-    }
 
     if (!wavesurferRef.current) return;
     wavesurferRef.current.seekTo(nextTime / displayDuration);

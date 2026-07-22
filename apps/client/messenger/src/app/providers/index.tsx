@@ -20,7 +20,6 @@ export function Providers({ children }: ProvidersProps) {
           {children}
           <GlobalAudioPlayer
             mode="floating"
-            className="md:hidden"
           />
           <Toaster />
         </ThemeProvider>

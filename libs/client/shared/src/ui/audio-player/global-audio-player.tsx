@@ -99,7 +99,7 @@ export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioP
           data-testid={`${mode}-audio-player`}
           className={cn(
             mode === 'floating'
-              ? 'pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-3'
+              ? 'pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center border-b border-border bg-background/95 px-3 backdrop-blur'
               : 'border-t border-border bg-background/95',
             className,
           )}
@@ -107,7 +107,7 @@ export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioP
           <div
             className={cn(
               'pointer-events-auto w-full',
-              mode === 'floating' && 'max-w-xl rounded-2xl border border-border shadow-2xl backdrop-blur',
+              mode === 'floating' && 'max-w-5xl',
             )}
           >
           <div className="flex items-center gap-3 px-4 py-3">

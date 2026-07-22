@@ -44,7 +44,7 @@ describe('message audio rendering', () => {
     __resetAudioTrackStub();
   });
 
-  it('renders uploaded audio files with the same waveform player contract as voice messages', () => {
+  it('renders uploaded audio files as compact global-player launchers', () => {
     const audioQueue = [
       {
         id: 'audio-message-1',
@@ -63,11 +63,12 @@ describe('message audio rendering', () => {
       />,
     );
 
-    expect(screen.getByTestId('audio-waveform-message')).toBeTruthy();
-    expect(screen.getByTestId('audio-waveform-frame').className).toContain('h-8');
-    expect(screen.getByTestId('audio-waveform')).toBeTruthy();
+    expect(screen.getByTestId('audio-file-message')).toBeTruthy();
+    expect(screen.getByTestId('audio-file-message').className).toContain('min-h-[60px]');
+    expect(screen.getByTestId('audio-file-message').className).toContain('w-[min(100%,300px)]');
+    expect(screen.queryByTestId('audio-waveform')).toBeNull();
     expect(screen.getByRole('button', { name: /play audio/i })).toBeTruthy();
-    expect(screen.getByLabelText(/seek audio/i)).toBeTruthy();
+    expect(screen.getByText('audio.webm')).toBeTruthy();
     expect(__getAudioTrackCalls()).toEqual([
       {
         track: audioQueue[0],
@@ -84,14 +85,12 @@ describe('message audio rendering', () => {
       />,
     );
 
-    const card = screen.getByTestId('audio-waveform-message');
+    const card = screen.getByTestId('audio-file-message');
     expect(card.className).toContain('bg-surface');
     expect(card.className).toContain('border-border');
     expect(screen.getByText('Vända.flac').className).not.toContain('text-white');
     expect(screen.getByText('Vända.flac').className).toContain('text-text');
-    for (const timestamp of screen.getAllByText('0:00')) {
-      expect(timestamp.className).toContain('text-text-muted');
-    }
+    expect(screen.getByText('1.0 KB').className).toContain('text-text-muted');
   });
 
   it('keeps voice messages on the waveform player contract', () => {
@@ -110,18 +109,21 @@ describe('message audio rendering', () => {
     expect(screen.getByLabelText(/seek voice/i)).toBeTruthy();
   });
 
-  it('uses the same stable audio frame size for audio files and voice messages', () => {
-    const { rerender } = render(
+  it('keeps audio files compact while voice messages keep waveform geometry', () => {
+    render(
       <FileMessage
         message={baseMessage}
         isMine={false}
       />,
     );
 
-    expect(screen.getByTestId('audio-waveform-message').className).toContain('min-h-[88px]');
-    expect(screen.getByTestId('audio-waveform-message').className).toContain('w-[min(100%,320px)]');
+    expect(screen.getByTestId('audio-file-message').className).toContain('min-h-[60px]');
+    expect(screen.getByTestId('audio-file-message').className).toContain('w-[min(100%,300px)]');
+    expect(screen.queryByTestId('audio-waveform-message')).toBeNull();
+  });
 
-    rerender(
+  it('keeps voice messages on a stable waveform frame', () => {
+    render(
       <FileMessage
         message={{ ...baseMessage, kind: 'voice', fileCategory: 'VOICE', fileName: 'voice.webm' }}
         isMine={false}
