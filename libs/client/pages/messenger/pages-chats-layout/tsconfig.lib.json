@@ -46,6 +46,9 @@
       "path": "../../../features/notifications/tsconfig.lib.json"
     },
     {
+      "path": "../../../features/upload-avatar/tsconfig.lib.json"
+    },
+    {
       "path": "../../../features/user-profile/tsconfig.lib.json"
     }
   ]

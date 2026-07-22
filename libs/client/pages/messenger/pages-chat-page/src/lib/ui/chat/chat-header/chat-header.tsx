@@ -7,6 +7,7 @@ import {
   usePresenceStore,
 } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
+import { AvatarCarousel } from '@org/features-upload-avatar';
 import { UserProfileModal } from '@org/features-user-profile';
 import { Avatar, Badge, Heading, IconButton, Text } from '@org/shared';
 import { useNavigate } from 'react-router';
@@ -26,6 +27,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
   const typingUsers = useChatStore((s) => s.typingUsers);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [avatarHistoryUserId, setAvatarHistoryUserId] = useState<string | null>(null);
 
   const chat = chats.find((c) => c.id === chatId);
   const displayName = chat ? getChatDisplayName(chat, me.id) : 'Chat';
@@ -158,7 +160,16 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
         <UserProfileModal
           userId={profileUserId}
           chatId={chatId}
+          onAvatarClick={() => setAvatarHistoryUserId(profileUserId)}
           onClose={() => setProfileUserId(null)}
+        />
+      )}
+      {avatarHistoryUserId && (
+        <AvatarCarousel
+          isOpen
+          onClose={() => setAvatarHistoryUserId(null)}
+          userId={avatarHistoryUserId}
+          readOnly
         />
       )}
     </header>

@@ -5,6 +5,7 @@ import { ChatItem } from '@org/entities-chat';
 import { useMeQuery, useSearchUsers } from '@org/entities-user';
 import { useChatList } from '@org/entities-chat';
 import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
+import { AvatarCarousel } from '@org/features-upload-avatar';
 import { UserProfileModal } from '@org/features-user-profile';
 import { Avatar, Input, Logo, Spinner, Text } from '@org/shared';
 
@@ -27,6 +28,7 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
     isCreating,
   } = useCreateChat();
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [avatarHistoryUserId, setAvatarHistoryUserId] = useState<string | null>(null);
 
   const isSearchActive = search.inputValue.trim().length >= 2;
 
@@ -138,7 +140,16 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
         <UserProfileModal
           userId={profileUserId}
           onClose={handleCloseProfile}
+          onAvatarClick={() => setAvatarHistoryUserId(profileUserId)}
           showSendButton
+        />
+      )}
+      {avatarHistoryUserId && (
+        <AvatarCarousel
+          isOpen
+          onClose={() => setAvatarHistoryUserId(null)}
+          userId={avatarHistoryUserId}
+          readOnly
         />
       )}
     </>

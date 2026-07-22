@@ -9,6 +9,7 @@ import { Avatar, Badge, IconButton, Input, Spinner, Text } from '@org/shared';
 
 import { useChatList } from '@org/entities-chat';
 import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
+import { AvatarCarousel } from '@org/features-upload-avatar';
 import { SidebarHeader } from '../sidebar-header';
 
 interface SidebarContentProps {
@@ -35,6 +36,7 @@ export function SidebarContent({
     isCreating,
   } = useCreateChat();
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [avatarHistoryUserId, setAvatarHistoryUserId] = useState<string | null>(null);
 
   const handleSelectUser = useCallback((userId: string) => {
     setProfileUserId(userId);
@@ -187,7 +189,16 @@ export function SidebarContent({
         <UserProfileModal
           userId={profileUserId}
           onClose={() => setProfileUserId(null)}
+          onAvatarClick={() => setAvatarHistoryUserId(profileUserId)}
           showSendButton
+        />
+      )}
+      {avatarHistoryUserId && (
+        <AvatarCarousel
+          isOpen
+          onClose={() => setAvatarHistoryUserId(null)}
+          userId={avatarHistoryUserId}
+          readOnly
         />
       )}
     </>
