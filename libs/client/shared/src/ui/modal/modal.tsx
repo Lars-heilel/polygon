@@ -3,6 +3,7 @@ import { type MouseEvent, type ReactNode, createContext, useContext, useEffect }
 import { createPortal } from 'react-dom';
 
 import { cn } from '../../lib/utils/cn';
+import { IconButton } from '../icon-button';
 import { Heading } from '../typography';
 
 interface ModalContextValue {
@@ -44,26 +45,14 @@ function ModalHeader({ title, onClose, children, className }: ModalHeaderProps) 
         >
           {title}
         </Heading>
-        <button
+        <IconButton
           type="button"
+          label="Close"
+          size="sm"
+          variant="ghost"
           onClick={handleClose}
-          className="p-2 hover:bg-surface-elevated rounded-lg"
-          aria-label="Close"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+          icon={<CloseIcon />}
+        />
       </div>
     );
   }
@@ -136,14 +125,17 @@ function ModalRoot({ isOpen, onClose, children, className, overlayClassName }: M
     <ModalContext.Provider value={{ onClose }}>
       <div
         className={cn(
-          'fixed inset-0 z-50 flex items-center justify-center bg-black/50',
+          'fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4',
           overlayClassName,
         )}
         onClick={handleOverlayClick}
       >
         <div
+          role="dialog"
+          aria-modal="true"
           className={cn(
-            'bg-surface rounded-2xl shadow-2xl overflow-hidden max-w-md w-full mx-4',
+            'max-h-[min(90vh,42rem)] w-full max-w-md overflow-hidden rounded-lg',
+            'border border-border bg-surface text-text shadow-[var(--shadow-popover)]',
             className,
           )}
           onClick={(e) => e.stopPropagation()}
@@ -161,3 +153,22 @@ export const Modal = Object.assign(ModalRoot, {
   Body: ModalBody,
   Footer: ModalFooter,
 });
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
+    </svg>
+  );
+}
