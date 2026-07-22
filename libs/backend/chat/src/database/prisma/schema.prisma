@@ -88,11 +88,51 @@ model Message {
 
   chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
   deletions MessageDeletion[]
+  attachments    MessageAttachment[]
+  forwardContext MessageForwardContext?
 
   @@index([chatId, createdAt])
   @@index([chatId, clientId])
   @@index([deletedAt])
   @@index([forwardedFromSenderId])
+}
+
+model MessageAttachment {
+  id               String   @id @default(uuid())
+  messageId        String   @map("message_id")
+  mediaId          String   @map("media_id")
+  fileNameSnapshot String?  @map("file_name_snapshot")
+  fileSizeSnapshot Int?     @map("file_size_snapshot")
+  mimeSnapshot     String?  @map("mime_snapshot")
+  category         String   @map("category")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([mediaId])
+  @@map("message_attachments")
+}
+
+model MessageForwardContext {
+  messageId                         String      @id @map("message_id")
+  originalMessageId                 String?     @map("original_message_id")
+  originalChatId                    String?     @map("original_chat_id")
+  originalAuthorId                  String      @map("original_author_id")
+  originalAuthorNameSnapshot        String      @map("original_author_name_snapshot")
+  originalAuthorDisplayNameSnapshot String?     @map("original_author_display_name_snapshot")
+  originalMessageCreatedAt          DateTime    @map("original_message_created_at")
+  originalMessageType               MessageType @map("original_message_type")
+  originalTextPreview               String?     @map("original_text_preview")
+  originalFileNamePreview           String?     @map("original_file_name_preview")
+  snapshotVersion                   Int         @default(1) @map("snapshot_version")
+  createdAt                         DateTime    @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([originalAuthorId])
+  @@index([originalChatId])
+  @@map("message_forward_contexts")
 }
 
 model MessageDeletion {

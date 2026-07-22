@@ -1,9 +1,15 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { Message } from '@org/common';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
 
 import type { IChatRepository } from '../interfaces/chat.interface';
 import { ChatService } from './chat.service';
+
+const messageRelations: Pick<Message, 'attachments' | 'forwardContext'> = {
+  attachments: [],
+  forwardContext: null,
+};
 
 function repoMock(): jest.Mocked<IChatRepository> {
   return {
@@ -22,6 +28,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMediaMessagesByChat: jest.fn(),
     findMessageById: jest.fn(),
     createMessage: jest.fn(),
+    createMessageWithRelations: jest.fn(),
     updateMessageText: jest.fn(),
     deleteMessageForEveryone: jest.fn(),
     hideMessageForUser: jest.fn(),
@@ -186,6 +193,7 @@ describe('ChatService', () => {
       senderId: 'original-sender',
       type: 'TEXT' as const,
       text: 'original text',
+      ...messageRelations,
       fileId: null,
       fileBucket: null,
       fileKey: null,
@@ -279,6 +287,7 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'TEXT' as const,
       text: 'before',
+      ...messageRelations,
       fileId: null,
       fileBucket: null,
       fileKey: null,
@@ -335,6 +344,7 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'TEXT',
       text: 'caption',
+      ...messageRelations,
       fileId: '11111111-1111-4111-8111-111111111111',
       fileBucket: null,
       fileKey: null,
@@ -379,6 +389,7 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'TEXT',
       text: 'hello',
+      ...messageRelations,
       fileId: null,
       fileBucket: null,
       fileKey: null,
@@ -425,6 +436,7 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'TEXT',
       text: 'hello',
+      ...messageRelations,
       fileId: null,
       fileBucket: null,
       fileKey: null,
@@ -469,6 +481,7 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'TEXT',
       text: 'hello',
+      ...messageRelations,
       fileId: null,
       fileBucket: null,
       fileKey: null,

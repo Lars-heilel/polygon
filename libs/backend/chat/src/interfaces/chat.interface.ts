@@ -36,6 +36,31 @@ export interface CreateMessageData {
   forwardedFromFileName?: string | null;
 }
 
+export interface CreateMessageAttachmentData {
+  mediaId: string;
+  fileNameSnapshot?: string | null;
+  fileSizeSnapshot?: number | null;
+  mimeSnapshot?: string | null;
+  category: string;
+}
+
+export interface CreateMessageForwardContextData {
+  originalMessageId?: string | null;
+  originalChatId?: string | null;
+  originalAuthorId: string;
+  originalAuthorNameSnapshot: string;
+  originalAuthorDisplayNameSnapshot?: string | null;
+  originalMessageCreatedAt: Date;
+  originalMessageType: MessageType;
+  originalTextPreview?: string | null;
+  originalFileNamePreview?: string | null;
+}
+
+export type CreateMessageWithRelationsData = CreateMessageData & {
+  attachments?: CreateMessageAttachmentData[];
+  forwardContext?: CreateMessageForwardContextData | null;
+};
+
 export interface ForwardMessagesData {
   sourceChatId: string;
   targetChatId: string;
@@ -75,6 +100,7 @@ export interface IChatRepository {
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
+  createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
   updateMessageText(messageId: string, text: string): Promise<Message>;
   deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;
   hideMessageForUser(messageId: string, userId: string): Promise<void>;

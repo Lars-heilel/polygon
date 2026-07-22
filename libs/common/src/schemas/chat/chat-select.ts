@@ -66,6 +66,8 @@ export const MESSAGE_SELECT_FIELDS = {
   editedAt: true,
   deletedAt: true,
   deletedById: true,
+  attachments: { select: MESSAGE_ATTACHMENT_SELECT_FIELDS },
+  forwardContext: { select: MESSAGE_FORWARD_CONTEXT_SELECT_FIELDS },
   createdAt: true,
   updatedAt: true,
 } as const;

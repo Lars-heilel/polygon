@@ -262,6 +262,109 @@ describe('ChatPrismaRepository', () => {
     );
   });
 
+  it('creates a message with attachments and forward context in one repository call', async () => {
+    const createdAt = new Date('2026-07-22T10:00:00.000Z');
+    const originalMessageCreatedAt = new Date('2026-07-22T09:00:00.000Z');
+    const createdMessage = {
+      id: 'message-1',
+      chatId: 'target-chat',
+      senderId: 'user-1',
+      type: 'VOICE',
+      text: null,
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-1',
+          mediaId: 'media-1',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt,
+        },
+      ],
+      forwardContext: {
+        messageId: 'message-1',
+        originalMessageId: 'source-message-1',
+        originalChatId: 'source-chat',
+        originalAuthorId: 'author-1',
+        originalAuthorNameSnapshot: 'tamilka',
+        originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+        originalMessageCreatedAt,
+        originalMessageType: 'VOICE',
+        originalTextPreview: null,
+        originalFileNamePreview: 'voice.ogg',
+        snapshotVersion: 1,
+        createdAt,
+      },
+    };
+    message.create.mockResolvedValue(createdMessage);
+
+    await expect(
+      repository.createMessageWithRelations({
+        chatId: 'target-chat',
+        senderId: 'user-1',
+        type: 'VOICE',
+        text: null,
+        attachments: [
+          {
+            mediaId: 'media-1',
+            fileNameSnapshot: 'voice.ogg',
+            fileSizeSnapshot: 33000,
+            mimeSnapshot: 'audio/ogg',
+            category: 'VOICE',
+          },
+        ],
+        forwardContext: {
+          originalMessageId: 'source-message-1',
+          originalChatId: 'source-chat',
+          originalAuthorId: 'author-1',
+          originalAuthorNameSnapshot: 'tamilka',
+          originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+          originalMessageCreatedAt,
+          originalMessageType: 'VOICE',
+          originalTextPreview: null,
+          originalFileNamePreview: 'voice.ogg',
+        },
+      }),
+    ).resolves.toEqual(createdMessage);
+
+    expect(message.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          attachments: {
+            create: [
+              {
+                mediaId: 'media-1',
+                fileNameSnapshot: 'voice.ogg',
+                fileSizeSnapshot: 33000,
+                mimeSnapshot: 'audio/ogg',
+                category: 'VOICE',
+              },
+            ],
+          },
+          forwardContext: {
+            create: {
+              originalMessageId: 'source-message-1',
+              originalChatId: 'source-chat',
+              originalAuthorId: 'author-1',
+              originalAuthorNameSnapshot: 'tamilka',
+              originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+              originalMessageCreatedAt,
+              originalMessageType: 'VOICE',
+              originalTextPreview: null,
+              originalFileNamePreview: 'voice.ogg',
+            },
+          },
+        }),
+        select: expect.objectContaining({
+          attachments: expect.any(Object),
+          forwardContext: expect.any(Object),
+        }),
+      }),
+    );
+  });
+
   it('updates message text and editedAt', async () => {
     message.update.mockResolvedValue({
       id: 'message-1',

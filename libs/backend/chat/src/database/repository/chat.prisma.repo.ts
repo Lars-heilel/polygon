@@ -11,7 +11,12 @@ import type {
 } from '@org/common';
 import { handlePrismaError } from '@org/core';
 
-import type { ChatWithPreview, CreateMessageData, IChatRepository } from '../../interfaces/chat.interface';
+import type {
+  ChatWithPreview,
+  CreateMessageData,
+  CreateMessageWithRelationsData,
+  IChatRepository,
+} from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -244,6 +249,63 @@ export class ChatPrismaRepository implements IChatRepository {
           forwardedFromType: data.forwardedFromType ?? null,
           forwardedFromText: data.forwardedFromText ?? null,
           forwardedFromFileName: data.forwardedFromFileName ?? null,
+        },
+        select: MESSAGE_SELECT_FIELDS,
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message> {
+    try {
+      return await this.prisma.message.create({
+        data: {
+          chatId: data.chatId,
+          clientId: data.clientId ?? null,
+          senderId: data.senderId,
+          type: data.type ?? 'TEXT',
+          text: data.text ?? null,
+          fileId: data.fileId ?? null,
+          fileBucket: data.fileBucket ?? null,
+          fileKey: data.fileKey ?? null,
+          fileName: data.fileName ?? null,
+          fileSize: data.fileSize ?? null,
+          fileMime: data.fileMime ?? null,
+          fileCategory: data.fileCategory ?? null,
+          forwardedFromId: data.forwardedFromId ?? null,
+          forwardedFromSenderId: data.forwardedFromSenderId ?? null,
+          forwardedFromCreatedAt: data.forwardedFromCreatedAt ?? null,
+          forwardedFromType: data.forwardedFromType ?? null,
+          forwardedFromText: data.forwardedFromText ?? null,
+          forwardedFromFileName: data.forwardedFromFileName ?? null,
+          attachments: data.attachments
+            ? {
+                create: data.attachments.map((attachment) => ({
+                  mediaId: attachment.mediaId,
+                  fileNameSnapshot: attachment.fileNameSnapshot ?? null,
+                  fileSizeSnapshot: attachment.fileSizeSnapshot ?? null,
+                  mimeSnapshot: attachment.mimeSnapshot ?? null,
+                  category: attachment.category,
+                })),
+              }
+            : undefined,
+          forwardContext: data.forwardContext
+            ? {
+                create: {
+                  originalMessageId: data.forwardContext.originalMessageId ?? null,
+                  originalChatId: data.forwardContext.originalChatId ?? null,
+                  originalAuthorId: data.forwardContext.originalAuthorId,
+                  originalAuthorNameSnapshot: data.forwardContext.originalAuthorNameSnapshot,
+                  originalAuthorDisplayNameSnapshot:
+                    data.forwardContext.originalAuthorDisplayNameSnapshot ?? null,
+                  originalMessageCreatedAt: data.forwardContext.originalMessageCreatedAt,
+                  originalMessageType: data.forwardContext.originalMessageType,
+                  originalTextPreview: data.forwardContext.originalTextPreview ?? null,
+                  originalFileNamePreview: data.forwardContext.originalFileNamePreview ?? null,
+                },
+              }
+            : undefined,
         },
         select: MESSAGE_SELECT_FIELDS,
       });
