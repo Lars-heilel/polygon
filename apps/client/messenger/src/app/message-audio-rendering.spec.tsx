@@ -71,6 +71,24 @@ describe('message audio rendering', () => {
     ]);
   });
 
+  it('keeps uploaded audio files readable inside own message bubbles', () => {
+    render(
+      <FileMessage
+        message={{ ...baseMessage, fileName: 'Vända.flac', fileMime: 'audio/flac' }}
+        isMine
+      />,
+    );
+
+    const card = screen.getByTestId('audio-waveform-message');
+    expect(card.className).toContain('bg-surface');
+    expect(card.className).toContain('border-border');
+    expect(screen.getByText('Vända.flac').className).not.toContain('text-white');
+    expect(screen.getByText('Vända.flac').className).toContain('text-text');
+    for (const timestamp of screen.getAllByText('0:00')) {
+      expect(timestamp.className).toContain('text-text-muted');
+    }
+  });
+
   it('keeps voice messages on the waveform player contract', () => {
     render(
       <FileMessage

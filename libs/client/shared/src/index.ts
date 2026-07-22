@@ -54,5 +54,7 @@ export { showComingSoonToast } from './ui/coming-soon';
 export { GlobalAudioPlayer } from './ui/audio-player/global-audio-player';
 export { MediaViewer } from './ui/media-viewer/media-viewer';
 export type { MediaViewerItem } from './ui/media-viewer/media-viewer';
+export { MediaFrame } from './ui/media-frame';
+export type { MediaFrameProps } from './ui/media-frame';
 export { VirtualFeed } from './ui/virtual-feed';
 export type { VirtualFeedHandle, VirtualFeedProps } from './ui/virtual-feed';

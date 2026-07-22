@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 
-import { cn, formatAudioTime, MediaViewer, type MediaViewerItem, useAudioTrack } from '@org/shared';
+import { cn, formatAudioTime, MediaFrame, MediaViewer, type MediaViewerItem, useAudioTrack } from '@org/shared';
 import type { AudioTrack } from '@org/shared';
 import type WaveSurfer from 'wavesurfer.js';
 
@@ -40,6 +40,13 @@ function getFileIcon(fileName: string): string {
     default:
       return '📎';
   }
+}
+
+function getMediaDimensions(message: Message): { width: number | null; height: number | null } {
+  return {
+    width: message.media?.width ?? null,
+    height: message.media?.height ?? null,
+  };
 }
 
 export const FileMessage = memo(function FileMessage({
@@ -114,22 +121,30 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
     label: message.fileName ?? 'Image',
   }];
 
-  // w-full max-w-[280px] позволяет картинке сжиматься под размеры родителя, не выходя за его рамки
-  const thumbnailBoxClass =
-    'w-full max-w-[280px] h-[160px] rounded-lg overflow-hidden block relative';
+  const mediaDimensions = getMediaDimensions(message);
 
   return (
     <>
       <button
+        data-testid="image-message"
+        aria-label={`Open image ${message.fileName ?? 'Image'}`}
         onClick={() => setLightboxOpen(true)}
-        className={`${thumbnailBoxClass} hover:opacity-90 transition-opacity focus:outline-none`}
+        className="block w-full max-w-[280px] transition-opacity hover:opacity-90 focus:outline-none"
       >
-        <img
-          src={imageUrl}
-          alt={message.fileName ?? 'Image'}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        <MediaFrame
+          data-testid="image-message-frame"
+          width={mediaDimensions.width}
+          height={mediaDimensions.height}
+          maxWidth={280}
+        >
+          <img
+            data-testid="image-message-media"
+            src={imageUrl}
+            alt={message.fileName ?? 'Image'}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </MediaFrame>
       </button>
       {lightboxOpen && (
         <ImageLightbox
@@ -175,24 +190,37 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
 
   return (
     <>
-      <button
-        onClick={() => setLightboxOpen(true)}
-        className="relative w-24 h-24 block"
+      <div
+        data-testid="circle-message"
+        className="relative inline-block"
       >
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          className="w-full h-full object-cover rounded-full"
-          loop
-          autoPlay
-          muted={muted}
-          playsInline
-        />
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleMute();
-          }}
+        <MediaFrame
+          data-testid="circle-message-frame"
+          fixedSize={200}
+          shape="circle"
+        >
+          <button
+            type="button"
+            aria-label={`Open circle video ${message.fileName ?? 'Circle video'}`}
+            onClick={() => setLightboxOpen(true)}
+            className="block h-full w-full focus:outline-none"
+          >
+            <video
+              data-testid="circle-message-media"
+              ref={videoRef}
+              src={videoUrl}
+              className="h-full w-full rounded-full object-cover"
+              loop
+              autoPlay
+              muted={muted}
+              playsInline
+            />
+          </button>
+        </MediaFrame>
+        <button
+          type="button"
+          aria-label={muted ? 'Unmute circle video' : 'Mute circle video'}
+          onClick={toggleMute}
           className="absolute bottom-0 right-0 w-6 h-6 flex items-center justify-center rounded-full bg-black/50 text-white text-xs"
         >
           {muted ? (
@@ -230,8 +258,8 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
               />
             </svg>
           )}
-        </span>
-      </button>
+        </button>
+      </div>
 
       {lightboxOpen && (
         <MediaViewer
@@ -248,6 +276,7 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
 const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const videoUrl = `/api/media/files/${message.fileId}/content`;
+  const mediaDimensions = getMediaDimensions(message);
   const viewerItems: MediaViewerItem[] = [{
     id: message.id,
     type: 'video',
@@ -256,32 +285,38 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
     label: message.fileName ?? 'Video',
   }];
 
-  // Применяем ту же отзывчивую логику и для видео
-  const thumbnailBoxClass =
-    'w-full max-w-[280px] h-[160px] rounded-lg overflow-hidden block relative';
-
   return (
     <>
       <button
+        data-testid="video-message"
+        aria-label={`Play video ${message.fileName ?? 'Video'}`}
         onClick={() => setLightboxOpen(true)}
-        className={`${thumbnailBoxClass} bg-surface-elevated hover:opacity-90 transition-opacity focus:outline-none`}
+        className="block w-full max-w-[280px] transition-opacity hover:opacity-90 focus:outline-none"
       >
-        <video
-          src={videoUrl}
-          className="w-full h-full object-cover rounded-lg"
-          preload="metadata"
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
-            <svg
-              className="w-6 h-6 text-white ml-0.5"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
+        <MediaFrame
+          data-testid="video-message-frame"
+          width={mediaDimensions.width}
+          height={mediaDimensions.height}
+          maxWidth={280}
+        >
+          <video
+            data-testid="video-message-media"
+            src={videoUrl}
+            className="h-full w-full rounded-lg object-cover"
+            preload="metadata"
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60">
+              <svg
+                className="ml-0.5 h-6 w-6 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
           </div>
-        </div>
+        </MediaFrame>
       </button>
 
       {lightboxOpen && (
@@ -303,6 +338,7 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
 
   return (
     <a
+      data-testid="file-message"
       href={fileUrl}
       target="_blank"
       rel="noopener noreferrer"
@@ -403,8 +439,12 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
 
       const ws = WaveSurferMod.default.create({
         container: waveformRef.current,
-        waveColor: isMine ? 'rgba(255,255,255,0.28)' : 'rgba(59,130,246,0.22)',
-        progressColor: isMine ? 'rgba(255,255,255,0.82)' : 'rgb(59,130,246)',
+        waveColor: variant === 'audio'
+          ? 'rgba(112,59,247,0.48)'
+          : isMine ? 'rgba(255,255,255,0.34)' : 'rgba(112,59,247,0.48)',
+        progressColor: variant === 'audio'
+          ? 'rgb(112,59,247)'
+          : isMine ? 'rgba(255,255,255,0.9)' : 'rgb(112,59,247)',
         barWidth: variant === 'voice' ? 2 : 3,
         barGap: 1.5,
         barRadius: 999,
@@ -476,15 +516,22 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     <div
       data-testid={`${variant}-waveform-message`}
       className={cn(
-        'flex w-64 max-w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2',
-        isMine ? 'bg-white/10' : 'bg-surface-elevated',
+        'flex h-[72px] w-64 max-w-full min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        variant === 'audio'
+          ? 'border-border bg-surface'
+          : isMine ? 'border-white/20 bg-white/10' : 'border-border bg-surface',
       )}
     >
       <button
         type="button"
         aria-label={isPlaying ? `Pause ${variant}` : `Play ${variant}`}
         onClick={toggle}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 transition-colors hover:bg-primary/30"
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors',
+          variant !== 'audio' && isMine
+            ? 'bg-white/20 text-white hover:bg-white/30'
+            : 'bg-primary/20 text-primary hover:bg-primary/30',
+        )}
       >
         {isPlaying ? (
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -497,11 +544,11 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
         )}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-sm font-medium', isMine ? 'text-white' : 'text-text')}>
+        <p className={cn('truncate text-sm font-medium', variant !== 'audio' && isMine ? 'text-white' : 'text-text')}>
           {title}
         </p>
         <div className="mt-2 flex items-center gap-2">
-          <span className={cn('w-8 text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
+          <span className={cn('w-8 text-[11px] font-medium tabular-nums', variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted')}>
             {formatAudioTime(displayCurrentTime)}
           </span>
           <div className="min-w-0 flex-1">
@@ -510,7 +557,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
               ref={waveformRef}
               className={cn(
                 'w-full overflow-hidden rounded-lg',
-                !waveReady && 'h-10 animate-pulse bg-border/60',
+                !waveReady && 'h-10 animate-pulse bg-primary/15',
               )}
             />
             <input
@@ -524,7 +571,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
               className="sr-only"
             />
           </div>
-          <span className={cn('w-8 text-right text-[11px] tabular-nums', isMine ? 'text-white/60' : 'text-text-muted')}>
+          <span className={cn('w-8 text-right text-[11px] font-medium tabular-nums', variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted')}>
             {formatAudioTime(displayDuration)}
           </span>
         </div>

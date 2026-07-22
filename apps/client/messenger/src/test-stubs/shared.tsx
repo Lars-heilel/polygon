@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient();
@@ -9,6 +9,44 @@ export function Avatar({ name }: { name?: string | null }) {
 
 export function Spinner() {
   return <div role="status">Loading</div>;
+}
+
+export function MediaFrame({
+  children,
+  width,
+  height,
+  maxWidth = 280,
+  fixedSize,
+  shape = 'rounded',
+  className,
+  style,
+  ...props
+}: {
+  children?: ReactNode;
+  width?: number | null;
+  height?: number | null;
+  maxWidth?: number;
+  fixedSize?: number;
+  shape?: 'rounded' | 'circle';
+} & HTMLAttributes<HTMLDivElement>) {
+  const frameStyle: CSSProperties = fixedSize
+    ? { width: fixedSize, height: fixedSize, ...style }
+    : {
+        width: '100%',
+        maxWidth,
+        aspectRatio: `${width && width > 0 ? width : 280} / ${height && height > 0 ? height : 160}`,
+        ...style,
+      };
+
+  return (
+    <div
+      {...props}
+      style={frameStyle}
+      className={cn(shape === 'circle' ? 'rounded-full' : 'rounded-lg', className)}
+    >
+      {children}
+    </div>
+  );
 }
 
 export async function authedFetch<T>(): Promise<T> {
