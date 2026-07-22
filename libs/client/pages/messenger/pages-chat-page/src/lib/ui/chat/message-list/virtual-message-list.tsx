@@ -15,6 +15,7 @@ import type { AudioTrack, VirtualFeedHandle } from '@org/shared';
 import { Button, Text, VirtualFeed, socket } from '@org/shared';
 
 import { DeleteMessageModal } from './delete-message-modal';
+import { ForwardMessageModal } from './forward-message-modal';
 
 interface ChatMessageRowProps {
   msg: Message;
@@ -25,6 +26,7 @@ interface ChatMessageRowProps {
   audioQueueIndexByMessageId: Map<string, number>;
   onEditMessage?: (message: Message) => void;
   onDeleteMessage?: (message: Message) => void;
+  onForwardMessage?: (message: Message) => void;
 }
 
 interface VirtualMessageListProps {
@@ -46,6 +48,7 @@ export const ChatMessageRow = memo(({
   audioQueueIndexByMessageId,
   onEditMessage,
   onDeleteMessage,
+  onForwardMessage,
 }: ChatMessageRowProps) => {
   return (
     <div
@@ -66,7 +69,7 @@ export const ChatMessageRow = memo(({
             message={msg}
             isMine={isMine}
             onEdit={(message) => onEditMessage?.(message)}
-            onForward={() => undefined}
+            onForward={(message) => onForwardMessage?.(message)}
             onDelete={(message) => onDeleteMessage?.(message)}
           />
         }
@@ -117,6 +120,7 @@ export const VirtualMessageList = memo(function MessageList({
   const { data: chats } = useGetChatsSuspenseQuery();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [messagePendingDelete, setMessagePendingDelete] = useState<Message | null>(null);
+  const [messagePendingForward, setMessagePendingForward] = useState<Message | null>(null);
   const isAtBottomRef = useRef(true);
   const feedRef = useRef<VirtualFeedHandle>(null);
   const deleteMessage = useDeleteMessageMutation(chatId);
@@ -215,6 +219,7 @@ export const VirtualMessageList = memo(function MessageList({
               audioQueueIndexByMessageId={audioQueueIndexByMessageId}
               onEditMessage={onEditMessage}
               onDeleteMessage={setMessagePendingDelete}
+              onForwardMessage={setMessagePendingForward}
             />
           );
         }}
@@ -232,6 +237,14 @@ export const VirtualMessageList = memo(function MessageList({
             { onSettled: () => setMessagePendingDelete(null) },
           );
         }}
+      />
+
+      <ForwardMessageModal
+        isOpen={messagePendingForward !== null}
+        sourceChatId={chatId}
+        currentUserId={me.id}
+        message={messagePendingForward}
+        onClose={() => setMessagePendingForward(null)}
       />
 
       {!isAtBottom && (

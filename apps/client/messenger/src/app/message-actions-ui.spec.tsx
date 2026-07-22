@@ -1,8 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { MessageActionsMenu } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
+import { authedFetch, queryClient } from '@org/shared';
 import { DeleteMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/delete-message-modal';
+import { ForwardMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/forward-message-modal';
 
 const baseMessage: Message = {
   id: 'message-1',
@@ -30,6 +33,11 @@ const baseMessage: Message = {
 };
 
 describe('message actions ui', () => {
+  beforeEach(() => {
+    queryClient.clear();
+    jest.clearAllMocks();
+  });
+
   it('shows edit only for own text messages without files', () => {
     render(
       <MessageActionsMenu
@@ -95,5 +103,50 @@ describe('message actions ui', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(onConfirm).toHaveBeenCalledWith('ME');
+  });
+
+  it('opens a Forward to modal with Saved Messages first', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ForwardMessageModal
+          isOpen
+          sourceChatId="chat-1"
+          currentUserId="user-1"
+          message={baseMessage}
+          onClose={jest.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Forward to...' })).toBeTruthy();
+    expect(screen.getAllByTestId('forward-target-row')[0].textContent).toContain('Saved Messages');
+  });
+
+  it('forwards to saved messages by creating self chat first', async () => {
+    (authedFetch as jest.Mock).mockImplementation(async (url: string) => {
+      if (url === 'chats/self') return { id: 'self-chat-id' };
+      if (url === 'chats/self-chat-id/forward') return [];
+      if (url === 'chats') return [];
+      return [];
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ForwardMessageModal
+          isOpen
+          sourceChatId="chat-1"
+          currentUserId="user-1"
+          message={baseMessage}
+          onClose={jest.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Saved Messages'));
+
+    await waitFor(() => {
+      expect(authedFetch).toHaveBeenCalledWith('chats/self', expect.objectContaining({ method: 'POST' }));
+      expect(authedFetch).toHaveBeenCalledWith('chats/self-chat-id/forward', expect.objectContaining({ method: 'POST' }));
+    });
   });
 });

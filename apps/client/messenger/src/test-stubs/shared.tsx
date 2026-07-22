@@ -25,6 +25,10 @@ export function Button({
   return <button disabled={disabled || loading} {...props}>{loading ? 'Loading' : children}</button>;
 }
 
+export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} />;
+}
+
 export function IconButton({
   icon,
   label,

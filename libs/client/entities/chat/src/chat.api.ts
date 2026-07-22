@@ -74,3 +74,13 @@ export function useCreateDirectChatMutation() {
     },
   });
 }
+
+export function useCreateSelfChatMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: chatApi.createSelfChat,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+    },
+  });
+}

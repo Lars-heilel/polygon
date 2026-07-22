@@ -4,6 +4,7 @@ export {
   useGetChatsQuery,
   useGetChatsSuspenseQuery,
   useCreateDirectChatMutation,
+  useCreateSelfChatMutation,
 } from './chat.api';
 
 export {
