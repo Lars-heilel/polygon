@@ -3,6 +3,11 @@ type MessageLike = {
   clientId?: string | null;
   chatId: string;
   createdAt: string;
+  senderId?: string | null;
+  type?: string | null;
+  text?: string | null;
+  fileId?: string | null;
+  fileCategory?: string | null;
   localStatus?: 'sending' | 'sent' | 'error';
 };
 
@@ -10,10 +15,10 @@ type MessagePageLike<TMessage extends MessageLike> = {
   messages: TMessage[];
 };
 
-type ChatLike<TMessage extends MessageLike> = {
+type ChatLike = {
   id: string;
   updatedAt: string;
-  lastMessage: TMessage | null;
+  lastMessage: unknown;
 };
 
 export function upsertMessageIntoPages<
@@ -32,8 +37,9 @@ export function upsertMessageIntoPages<
     messages: page.messages.map((message) => {
       const sameServerId = message.id === msg.id;
       const sameClientId = Boolean(message.clientId) && message.clientId === msg.clientId;
+      const samePendingMessage = isMatchingPendingEcho(message, msg);
 
-      if (!sameServerId && !sameClientId) return message;
+      if (!sameServerId && !sameClientId && !samePendingMessage) return message;
 
       replaced = true;
       return {
@@ -54,6 +60,20 @@ export function upsertMessageIntoPages<
   }
 
   return appendMessageToPages({ ...old, pages } as TData, msg);
+}
+
+function isMatchingPendingEcho<TMessage extends MessageLike>(message: TMessage, msg: TMessage): boolean {
+  if (message.localStatus !== 'sending') return false;
+  if (msg.localStatus === 'sending') return false;
+  if (message.chatId !== msg.chatId) return false;
+  if (message.senderId && msg.senderId && message.senderId !== msg.senderId) return false;
+  if (message.type && msg.type && message.type !== msg.type) return false;
+
+  if (message.fileId || msg.fileId) {
+    return Boolean(message.fileId) && message.fileId === msg.fileId;
+  }
+
+  return Boolean(message.text) && message.text === msg.text;
 }
 
 export function appendMessageToPages<
@@ -98,12 +118,12 @@ export function markMessageSendError<
   } as TData;
 }
 
-export function updateChatListLastMessage<TChat extends ChatLike<TMessage>, TMessage extends MessageLike>(
+export function updateChatListLastMessage<TChat extends ChatLike, TMessage extends MessageLike>(
   chats: TChat[] | undefined,
   msg: TMessage,
 ): TChat[] {
   const next = (chats ?? []).map((chat) =>
-    chat.id === msg.chatId ? { ...chat, lastMessage: msg } : chat,
+    chat.id === msg.chatId ? { ...chat, lastMessage: msg } as TChat : chat,
   );
 
   next.sort((left, right) => {
