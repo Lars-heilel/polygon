@@ -228,6 +228,22 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
+  async findVisibleMessagesByIds(
+    chatId: string,
+    messageIds: string[],
+    userId: string,
+  ): Promise<Message[]> {
+    if (messageIds.length === 0) return [];
+
+    return this.prisma.message.findMany({
+      where: {
+        ...buildVisibleMessagesWhere(chatId, userId),
+        id: { in: messageIds },
+      },
+      select: MESSAGE_SELECT_FIELDS,
+    });
+  }
+
   async findMessageAttachmentForAccess(
     input: MessageAttachmentAccessInput,
   ): Promise<{ mediaId: string } | null> {

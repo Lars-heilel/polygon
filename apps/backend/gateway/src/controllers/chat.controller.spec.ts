@@ -131,23 +131,102 @@ describe('ChatGatewayController', () => {
     expect(ctx.socketGateway.emitToUser).not.toHaveBeenCalled();
   });
 
-  it('enriches forwarded messages with their original sender profile before broadcasting', async () => {
+  it('prepares source messages, snapshots original authors, and sends clone command', async () => {
     const ctx = controller();
-    ctx.chatClient.send.mockReturnValue(of([
-      {
-        id: '11111111-1111-4111-8111-111111111111',
+    ctx.chatClient.send
+      .mockReturnValueOnce(of([{
+        messageId: '11111111-1111-4111-8111-111111111111',
         chatId: '22222222-2222-4222-8222-222222222222',
         senderId: '33333333-3333-4333-8333-333333333333',
-        forwardedFromId: '44444444-4444-4444-8444-444444444444',
-        forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
-        forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
-      },
-    ]));
+        type: 'VOICE',
+        text: null,
+        createdAt: new Date('2026-07-22T10:00:00.000Z'),
+        attachments: [{
+          mediaId: '44444444-4444-4444-8444-444444444444',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+        }],
+        forwardContext: null,
+      }]))
+      .mockReturnValueOnce(of([{
+        id: 'cloned-message',
+        chatId: 'target-chat',
+        senderId: 'forwarder',
+        type: 'VOICE',
+        text: null,
+        attachments: [],
+        forwardContext: null,
+      }]));
+    ctx.userClient.send.mockReturnValue(of([{
+      id: '33333333-3333-4333-8333-333333333333',
+      name: 'tamilka',
+      displayName: 'Тамилка:3',
+      avatarUrl: null,
+      bio: null,
+    }]));
+
+    await ctx.controller.forwardMessages({ sub: 'forwarder' } as never, 'target-chat', {
+      sourceChatId: 'source-chat',
+      messageIds: ['11111111-1111-4111-8111-111111111111'],
+    });
+
+    expect(ctx.chatClient.send).toHaveBeenNthCalledWith(
+      1,
+      CHAT_PATTERNS.PREPARE_FORWARD_MESSAGES,
+      expect.any(Object),
+    );
+    expect(ctx.userClient.send).toHaveBeenCalled();
+    expect(ctx.chatClient.send).toHaveBeenNthCalledWith(
+      2,
+      CHAT_PATTERNS.CLONE_FORWARD_MESSAGES,
+      expect.objectContaining({
+        messages: [expect.objectContaining({
+          originalAuthorNameSnapshot: 'tamilka',
+          originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+        })],
+      }),
+    );
+  });
+
+  it('preserves an existing root forward context when cloning', async () => {
+    const ctx = controller();
+    ctx.chatClient.send
+      .mockReturnValueOnce(of([{
+        messageId: '11111111-1111-4111-8111-111111111111',
+        chatId: '22222222-2222-4222-8222-222222222222',
+        senderId: '33333333-3333-4333-8333-333333333333',
+        type: 'TEXT',
+        text: 'visible copy',
+        createdAt: new Date('2026-07-21T10:15:00.000Z'),
+        attachments: [],
+        forwardContext: {
+          originalMessageId: '44444444-4444-4444-8444-444444444444',
+          originalChatId: 'source-chat',
+          originalAuthorId: '55555555-5555-4555-8555-555555555555',
+          originalAuthorNameSnapshot: 'Saved Alice',
+          originalAuthorDisplayNameSnapshot: 'Saved A.',
+          originalMessageCreatedAt: new Date('2026-07-20T10:15:00.000Z'),
+          originalMessageType: 'TEXT',
+          originalTextPreview: 'original visible copy',
+          originalFileNamePreview: null,
+        },
+      }]))
+      .mockReturnValueOnce(of([{
+        id: 'cloned-message',
+        chatId: 'target-chat',
+        senderId: '33333333-3333-4333-8333-333333333333',
+        type: 'TEXT',
+        text: 'visible copy',
+        attachments: [],
+        forwardContext: null,
+      }]));
     ctx.userClient.send.mockReturnValue(of([
       {
         id: '55555555-5555-4555-8555-555555555555',
-        name: 'Alice',
-        displayName: 'Alice A.',
+        name: 'Updated Alice',
+        displayName: 'Updated A.',
         avatarUrl: null,
         bio: null,
       },
@@ -158,20 +237,23 @@ describe('ChatGatewayController', () => {
         sourceChatId: 'source-chat',
         messageIds: ['44444444-4444-4444-8444-444444444444'],
       }),
-    ).resolves.toEqual([
-      expect.objectContaining({
-        forwardedFromSender: expect.objectContaining({
-          id: '55555555-5555-4555-8555-555555555555',
-          displayName: 'Alice A.',
-        }),
-      }),
-    ]);
+    ).resolves.toEqual([expect.objectContaining({ id: 'cloned-message' })]);
 
+    expect(ctx.chatClient.send).toHaveBeenNthCalledWith(
+      2,
+      CHAT_PATTERNS.CLONE_FORWARD_MESSAGES,
+      expect.objectContaining({
+        messages: [expect.objectContaining({
+          forwardContext: expect.objectContaining({
+            originalAuthorNameSnapshot: 'Saved Alice',
+            originalAuthorDisplayNameSnapshot: 'Saved A.',
+          }),
+        })],
+      }),
+    );
     expect(ctx.socketGateway.broadcastMessage).toHaveBeenCalledWith(
       'target-chat',
-      expect.objectContaining({
-        forwardedFromSender: expect.objectContaining({ id: '55555555-5555-4555-8555-555555555555' }),
-      }),
+      expect.objectContaining({ id: 'cloned-message' }),
     );
   });
 
@@ -179,17 +261,18 @@ describe('ChatGatewayController', () => {
     const ctx = controller();
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(ctx.controller, 'logger', { value: logger });
-    ctx.chatClient.send.mockReturnValue(of([
-      {
-        id: '11111111-1111-4111-8111-111111111111',
+    ctx.chatClient.send
+      .mockReturnValueOnce(of([{
+        messageId: '11111111-1111-4111-8111-111111111111',
         chatId: '22222222-2222-4222-8222-222222222222',
         senderId: '33333333-3333-4333-8333-333333333333',
         text: 'secret forwarded text',
-        forwardedFromId: '44444444-4444-4444-8444-444444444444',
-        forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
-        forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
-      },
-    ]));
+        type: 'TEXT',
+        createdAt: new Date('2026-07-21T10:15:00.000Z'),
+        attachments: [],
+        forwardContext: null,
+      }]))
+      .mockReturnValueOnce(of([]));
     ctx.userClient.send.mockReturnValue(of([]));
 
     await ctx.controller.forwardMessages(
@@ -209,8 +292,8 @@ describe('ChatGatewayController', () => {
       messageCount: 1,
     }));
     expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'forwarded_message_sender_profiles_missing',
-      senderCount: 1,
+      eventType: 'message_forward_author_snapshot_missing',
+      authorCount: 1,
       profileCount: 0,
       missingCount: 1,
     }));

@@ -6,10 +6,12 @@ import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
 import type {
   ChatWithPreview,
   CreateMessageAttachmentData,
+  CloneForwardMessagesData,
   ForwardMessagesData,
   IChatController,
   IChatService,
   MessageAttachmentAccessInput,
+  PreparedForwardMessage,
 } from '../interfaces/chat.interface';
 
 @Controller()
@@ -117,6 +119,16 @@ export class ChatController implements IChatController {
   @MessagePattern(CHAT_PATTERNS.FORWARD_MESSAGES)
   forwardMessages(@Payload() payload: ForwardMessagesData): Promise<Message[]> {
     return this.chatService.forwardMessages(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.PREPARE_FORWARD_MESSAGES)
+  prepareForwardMessages(@Payload() payload: ForwardMessagesData): Promise<PreparedForwardMessage[]> {
+    return this.chatService.prepareForwardMessages!(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.CLONE_FORWARD_MESSAGES)
+  cloneForwardMessages(@Payload() payload: CloneForwardMessagesData): Promise<Message[]> {
+    return this.chatService.cloneForwardMessages!(payload);
   }
 
   @MessagePattern(CHAT_PATTERNS.EDIT_MESSAGE)

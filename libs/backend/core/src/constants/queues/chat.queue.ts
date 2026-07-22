@@ -12,6 +12,8 @@ export const CHAT_PATTERNS = {
   DELETE_MESSAGE: 'chat.deleteMessage',
   MARK_READ: 'chat.markRead',
   FORWARD_MESSAGES: 'chat.forwardMessages',
+  PREPARE_FORWARD_MESSAGES: 'chat.prepareForwardMessages',
+  CLONE_FORWARD_MESSAGES: 'chat.cloneForwardMessages',
   CHECK_MEMBERSHIP: 'chat.checkMembership',
   GET_MEMBERS: 'chat.getMembers',
   GET_MESSAGE_ATTACHMENT_FOR_ACCESS: 'chat.messageAttachment.getForAccess',

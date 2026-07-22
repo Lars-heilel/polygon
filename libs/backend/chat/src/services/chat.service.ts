@@ -12,11 +12,15 @@ import { lastValueFrom } from 'rxjs';
 
 import type {
   ChatWithPreview,
+  CloneForwardMessagesData,
+  CloneForwardMessageInput,
   CreateMessageAttachmentData,
+  CreateMessageForwardContextData,
   ForwardMessagesData,
   IChatRepository,
   IChatService,
   MessageAttachmentAccessInput,
+  PreparedForwardMessage,
   SendMessageData,
 } from '../interfaces/chat.interface';
 
@@ -476,6 +480,259 @@ export class ChatService implements IChatService {
     });
 
     return messages;
+  }
+
+  async prepareForwardMessages(data: ForwardMessagesData): Promise<PreparedForwardMessage[]> {
+    const { sourceChatId, targetChatId, messageIds, userId } = data;
+    this.logger.log({
+      eventType: 'message_forward_prepare_requested',
+      hasSourceChatId: !!sourceChatId,
+      hasTargetChatId: !!targetChatId,
+      hasUserId: !!userId,
+      messageCount: messageIds.length,
+    });
+
+    const [sourceMember, targetMember] = await Promise.all([
+      this.repo.findChatMember(sourceChatId, userId),
+      this.repo.findChatMember(targetChatId, userId),
+    ]);
+    if (!sourceMember || !targetMember) {
+      this.logger.warn({
+        eventType: 'message_forward_prepare_denied',
+        hasSourceChatId: !!sourceChatId,
+        hasTargetChatId: !!targetChatId,
+        hasUserId: !!userId,
+        hasSourceMembership: !!sourceMember,
+        hasTargetMembership: !!targetMember,
+      });
+      throw new ForbiddenException('Not a member of a forwarded chat');
+    }
+
+    if (messageIds.length === 0) {
+      this.logger.debug({
+        eventType: 'message_forward_prepare_skipped',
+        messageCount: 0,
+        skippedCount: 0,
+      });
+      return [];
+    }
+
+    const visibleMessages = this.repo.findVisibleMessagesByIds
+      ? await this.repo.findVisibleMessagesByIds(sourceChatId, messageIds, userId)
+      : (await Promise.all(messageIds.map((messageId) => this.repo.findMessageById(messageId))))
+        .filter((message): message is Message => (
+          message !== null && message.chatId === sourceChatId && message.deletedAt === null
+        ));
+    const messagesById = new Map(visibleMessages.map((message) => [message.id, message]));
+    const prepared = messageIds.flatMap((messageId) => {
+      const message = messagesById.get(messageId);
+      return message ? [this.toPreparedForwardMessage(message)] : [];
+    });
+    const skippedCount = messageIds.length - prepared.length;
+
+    if (skippedCount > 0) {
+      this.logger.warn({
+        eventType: 'message_forward_prepare_skipped',
+        messageCount: messageIds.length,
+        skippedCount,
+      });
+    }
+    this.logger.log({
+      eventType: 'message_forward_prepare_completed',
+      messageCount: messageIds.length,
+      preparedCount: prepared.length,
+      skippedCount,
+    });
+
+    return prepared;
+  }
+
+  async cloneForwardMessages(data: CloneForwardMessagesData): Promise<Message[]> {
+    const { targetChatId, userId, messages } = data;
+    this.logger.log({
+      eventType: 'message_forward_clone_requested',
+      hasTargetChatId: !!targetChatId,
+      hasUserId: !!userId,
+      messageCount: messages.length,
+      attachmentCount: messages.reduce((count, message) => count + message.attachments.length, 0),
+    });
+
+    const targetMember = await this.repo.findChatMember(targetChatId, userId);
+    if (!targetMember) {
+      this.logger.warn({
+        eventType: 'message_forward_clone_failed',
+        hasTargetChatId: !!targetChatId,
+        hasUserId: !!userId,
+        messageCount: messages.length,
+        createdCount: 0,
+        reason: 'target_membership_denied',
+      });
+      throw new ForbiddenException('Not a member of the target chat');
+    }
+
+    const cloned: Message[] = [];
+    try {
+      for (const message of messages) {
+        const created = await this.repo.createMessageWithRelations({
+          chatId: targetChatId,
+          clientId: null,
+          senderId: userId,
+          type: message.type,
+          text: message.text,
+          attachments: message.attachments,
+          forwardContext: this.buildForwardContext(message),
+        });
+        await this.createForwardAttachmentReferences(created, message.attachments.length);
+        cloned.push(created);
+        this.logger.log({
+          eventType: 'message_attachment_clone_created',
+          hasMessageId: !!created.id,
+          attachmentCount: message.attachments.length,
+        });
+      }
+    } catch (error) {
+      this.logger.error({
+        eventType: 'message_forward_clone_failed',
+        hasTargetChatId: !!targetChatId,
+        hasUserId: !!userId,
+        messageCount: messages.length,
+        createdCount: cloned.length,
+        hasError: !!error,
+      });
+      throw error;
+    }
+
+    this.logger.log({
+      eventType: 'message_forward_clone_created',
+      hasTargetChatId: !!targetChatId,
+      messageCount: messages.length,
+      createdCount: cloned.length,
+      attachmentCount: messages.reduce((count, message) => count + message.attachments.length, 0),
+    });
+    return cloned;
+  }
+
+  private toPreparedForwardMessage(message: Message): PreparedForwardMessage {
+    return {
+      messageId: message.id,
+      chatId: message.chatId,
+      senderId: message.senderId,
+      type: message.type,
+      text: message.text,
+      createdAt: message.createdAt,
+      attachments: message.attachments.map((attachment) => ({
+        mediaId: attachment.mediaId,
+        fileNameSnapshot: attachment.fileNameSnapshot,
+        fileSizeSnapshot: attachment.fileSizeSnapshot,
+        mimeSnapshot: attachment.mimeSnapshot,
+        category: attachment.category,
+      })),
+      forwardContext: message.forwardContext
+        ? {
+            originalMessageId: message.forwardContext.originalMessageId,
+            originalChatId: message.forwardContext.originalChatId,
+            originalAuthorId: message.forwardContext.originalAuthorId,
+            originalAuthorNameSnapshot: message.forwardContext.originalAuthorNameSnapshot,
+            originalAuthorDisplayNameSnapshot:
+              message.forwardContext.originalAuthorDisplayNameSnapshot,
+            originalMessageCreatedAt: message.forwardContext.originalMessageCreatedAt,
+            originalMessageType: message.forwardContext.originalMessageType,
+            originalTextPreview: message.forwardContext.originalTextPreview,
+            originalFileNamePreview: message.forwardContext.originalFileNamePreview,
+          }
+        : null,
+    };
+  }
+
+  private buildForwardContext(message: CloneForwardMessageInput): CreateMessageForwardContextData {
+    if (message.forwardContext) return message.forwardContext;
+
+    return {
+      originalMessageId: message.messageId,
+      originalChatId: message.chatId,
+      originalAuthorId: message.originalAuthorId,
+      originalAuthorNameSnapshot: message.originalAuthorNameSnapshot,
+      originalAuthorDisplayNameSnapshot: message.originalAuthorDisplayNameSnapshot,
+      originalMessageCreatedAt: message.createdAt,
+      originalMessageType: message.type,
+      originalTextPreview: message.text,
+      originalFileNamePreview: message.attachments[0]?.fileNameSnapshot ?? null,
+    };
+  }
+
+  private async createForwardAttachmentReferences(
+    message: Message,
+    attachmentCount: number,
+  ): Promise<void> {
+    if (attachmentCount === 0) return;
+
+    const attachments = message.attachments ?? [];
+    if (attachments.length !== attachmentCount || !this.mediaClient) {
+      const error = new Error('Forwarded message attachments could not be protected');
+      this.logger.error({
+        eventType: 'message_forward_clone_failed',
+        hasMessageId: !!message.id,
+        attachmentCount,
+        hasMediaClient: !!this.mediaClient,
+      });
+      await this.compensateFailedForwardClone(message, []);
+      throw error;
+    }
+
+    const referencedAttachments: Message['attachments'] = [];
+    try {
+      for (const attachment of attachments) {
+        await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.CREATE_REFERENCE, {
+          fileId: attachment.mediaId,
+          ownerType: 'MESSAGE_ATTACHMENT',
+          ownerId: attachment.id,
+        }));
+        referencedAttachments.push(attachment);
+      }
+    } catch (error) {
+      await this.compensateFailedForwardClone(message, referencedAttachments);
+      throw error;
+    }
+
+    this.logger.log({
+      eventType: 'media_reference_created',
+      hasMessageId: !!message.id,
+      referenceCount: referencedAttachments.length,
+    });
+  }
+
+  private async compensateFailedForwardClone(
+    message: Message,
+    referencedAttachments: Message['attachments'],
+  ): Promise<void> {
+    if (this.mediaClient) {
+      for (const attachment of referencedAttachments) {
+        try {
+          await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.DELETE_REFERENCE, {
+            fileId: attachment.mediaId,
+            ownerType: 'MESSAGE_ATTACHMENT',
+            ownerId: attachment.id,
+          }));
+        } catch (error) {
+          this.logger.warn({
+            eventType: 'media_reference_delete_skipped',
+            hasMessageId: !!message.id,
+            hasError: !!error,
+          });
+        }
+      }
+    }
+
+    try {
+      await this.repo.deleteCreatedMessage(message.id);
+    } catch (error) {
+      this.logger.error({
+        eventType: 'message_forward_clone_failed',
+        hasMessageId: !!message.id,
+        hasError: !!error,
+        reason: 'compensation_failed',
+      });
+    }
   }
 
   async markRead(

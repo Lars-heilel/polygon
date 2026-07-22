@@ -22,7 +22,15 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateDirectChatDto, DeleteMessageDto, EditMessageDto, MarkChatReadDto, SendMessageDto } from '@org/chat';
+import {
+  CreateDirectChatDto,
+  DeleteMessageDto,
+  EditMessageDto,
+  MarkChatReadDto,
+  SendMessageDto,
+  type CloneForwardMessageInput,
+  type PreparedForwardMessage,
+} from '@org/chat';
 import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
 import { chatMediaQuerySchema } from '@org/common';
 import {
@@ -316,12 +324,20 @@ export class ChatGatewayController {
     });
 
     try {
-      const messages = await this.send<Message[]>(
-        this.chatClient.send(CHAT_PATTERNS.FORWARD_MESSAGES, {
+      const preparedMessages = await this.send<PreparedForwardMessage[]>(
+        this.chatClient.send(CHAT_PATTERNS.PREPARE_FORWARD_MESSAGES, {
           sourceChatId,
           targetChatId,
           messageIds: dto.messageIds,
           userId: user.sub,
+        }),
+      );
+      const cloneInputs = await this.enrichPreparedForwardMessages(preparedMessages);
+      const messages = await this.send<Message[]>(
+        this.chatClient.send(CHAT_PATTERNS.CLONE_FORWARD_MESSAGES, {
+          targetChatId,
+          userId: user.sub,
+          messages: cloneInputs,
         }),
       );
       this.logger.log({
@@ -329,19 +345,18 @@ export class ChatGatewayController {
         requestedCount: dto.messageIds.length,
         createdCount: messages.length,
       });
-      const enrichedMessages = await this.enrichForwardedMessages(messages);
 
-      for (const msg of enrichedMessages) {
+      for (const msg of messages) {
         this.socketGateway.broadcastMessage(targetChatId, msg);
       }
 
       this.logger.log({
         eventType: 'message_forward_broadcasted',
-        createdCount: enrichedMessages.length,
+        createdCount: messages.length,
         hasTargetChatId: !!targetChatId,
       });
 
-      return enrichedMessages;
+      return messages;
     } catch (error) {
       this.logger.warn({
         eventType: 'message_forward_failed',
@@ -354,57 +369,61 @@ export class ChatGatewayController {
     }
   }
 
-  private async enrichForwardedMessages<T extends { forwardedFromSenderId?: string | null }>(
-    messages: T[],
-  ): Promise<Array<T & { forwardedFromSender?: UserPublic | null }>> {
-    const senderIds = [...new Set(
+  private async enrichPreparedForwardMessages(
+    messages: PreparedForwardMessage[],
+  ): Promise<CloneForwardMessageInput[]> {
+    const originalAuthorIds = [...new Set(
       messages
-        .map((message) => message.forwardedFromSenderId)
+        .map((message) => message.forwardContext?.originalAuthorId ?? message.senderId)
         .filter((id): id is string => Boolean(id)),
     )];
 
-    if (senderIds.length === 0) {
+    if (originalAuthorIds.length === 0) {
       this.logger.debug({
-        eventType: 'forwarded_message_sender_enrichment_skipped',
+        eventType: 'message_forward_author_snapshot_requested',
         messageCount: messages.length,
-        senderCount: 0,
+        authorCount: 0,
       });
-      return messages.map((message) => ({ ...message, forwardedFromSender: null }));
+      return [];
     }
 
     this.logger.debug({
-      eventType: 'forwarded_message_sender_enrichment_requested',
+      eventType: 'message_forward_author_snapshot_requested',
       messageCount: messages.length,
-      senderCount: senderIds.length,
+      authorCount: originalAuthorIds.length,
     });
     const profiles = await this.send<UserPublic[]>(
-      this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: senderIds }),
+      this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: originalAuthorIds }),
     );
     const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
-    const missingCount = senderIds.filter((id) => !profileMap.has(id)).length;
+    const missingCount = originalAuthorIds.filter((id) => !profileMap.has(id)).length;
 
     if (missingCount > 0) {
       this.logger.warn({
-        eventType: 'forwarded_message_sender_profiles_missing',
-        senderCount: senderIds.length,
+        eventType: 'message_forward_author_snapshot_missing',
+        authorCount: originalAuthorIds.length,
         profileCount: profiles.length,
         missingCount,
       });
     }
 
     this.logger.debug({
-      eventType: 'forwarded_message_sender_enrichment_completed',
+      eventType: 'message_forward_author_snapshot_completed',
       messageCount: messages.length,
-      senderCount: senderIds.length,
+      authorCount: originalAuthorIds.length,
       profileCount: profiles.length,
       missingCount,
     });
 
     return messages.map((message) => ({
       ...message,
-      forwardedFromSender: message.forwardedFromSenderId
-        ? profileMap.get(message.forwardedFromSenderId) ?? null
-        : null,
+      originalAuthorId: message.forwardContext?.originalAuthorId ?? message.senderId,
+      originalAuthorNameSnapshot: profileMap.get(
+        message.forwardContext?.originalAuthorId ?? message.senderId,
+      )?.name ?? 'Deleted user',
+      originalAuthorDisplayNameSnapshot: profileMap.get(
+        message.forwardContext?.originalAuthorId ?? message.senderId,
+      )?.displayName ?? null,
     }));
   }
 

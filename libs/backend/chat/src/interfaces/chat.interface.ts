@@ -82,6 +82,29 @@ export interface ForwardMessagesData {
   userId: string;
 }
 
+export interface PreparedForwardMessage {
+  messageId: string;
+  chatId: string;
+  senderId: string;
+  type: MessageType;
+  text: string | null;
+  createdAt: Date;
+  attachments: CreateMessageAttachmentData[];
+  forwardContext: CreateMessageForwardContextData | null;
+}
+
+export type CloneForwardMessageInput = PreparedForwardMessage & {
+  originalAuthorId: string;
+  originalAuthorNameSnapshot: string;
+  originalAuthorDisplayNameSnapshot: string | null;
+};
+
+export interface CloneForwardMessagesData {
+  targetChatId: string;
+  userId: string;
+  messages: CloneForwardMessageInput[];
+}
+
 export interface MessageAttachmentAccessInput {
   chatId: string;
   messageId: string;
@@ -120,6 +143,11 @@ export interface IChatRepository {
     userId: string,
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
+  findVisibleMessagesByIds?(
+    chatId: string,
+    messageIds: string[],
+    userId: string,
+  ): Promise<Message[]>;
   findMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
@@ -167,6 +195,8 @@ export interface IChatService {
     mode: 'ME' | 'EVERYONE',
   ): Promise<Message | { id: string; chatId: string }>;
   forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
+  prepareForwardMessages?(data: ForwardMessagesData): Promise<PreparedForwardMessage[]>;
+  cloneForwardMessages?(data: CloneForwardMessagesData): Promise<Message[]>;
   markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
   getMembers(chatId: string): Promise<{ userId: string }[]>;
@@ -195,6 +225,8 @@ export interface IChatController {
     senderId: string;
   } & SendMessageData): Promise<Message>;
   forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
+  prepareForwardMessages(payload: ForwardMessagesData): Promise<PreparedForwardMessage[]>;
+  cloneForwardMessages(payload: CloneForwardMessagesData): Promise<Message[]>;
   markRead(payload: { chatId: string; userId: string; messageId?: string | null }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
   getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
