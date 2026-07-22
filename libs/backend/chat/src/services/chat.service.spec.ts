@@ -89,6 +89,7 @@ describe('ChatService', () => {
       type: 'DIRECT',
       name: 'Личное',
       avatarUrl: null,
+      selfOwnerId: 'user-1',
       createdAt: new Date('2026-07-14T10:00:00.000Z'),
       updatedAt: new Date('2026-07-14T10:00:00.000Z'),
     } as const;
@@ -103,6 +104,71 @@ describe('ChatService', () => {
     expect(repo.createSelfChat).toHaveBeenCalledWith('user-1');
     expect(repo.createChat).not.toHaveBeenCalled();
     expect(repo.addChatMember).not.toHaveBeenCalled();
+  });
+
+  it('preserves forwarded source sender and original creation time', async () => {
+    const repo = repoMock();
+    const sourceMember = {
+      chatId: 'source-chat',
+      userId: 'forwarder',
+      role: 'MEMBER' as const,
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    };
+    const targetMember = { ...sourceMember, chatId: 'target-chat' };
+    const originalCreatedAt = new Date('2026-07-21T10:15:00.000Z');
+    const original = {
+      id: 'original-message',
+      clientId: null,
+      chatId: 'source-chat',
+      senderId: 'original-sender',
+      type: 'TEXT' as const,
+      text: 'original text',
+      fileId: null,
+      fileBucket: null,
+      fileKey: null,
+      fileName: null,
+      fileSize: null,
+      fileMime: null,
+      fileCategory: null,
+      forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: originalCreatedAt,
+      updatedAt: originalCreatedAt,
+    };
+
+    repo.findChatMember
+      .mockResolvedValueOnce(sourceMember)
+      .mockResolvedValueOnce(targetMember);
+    repo.findMessageById.mockResolvedValue(original);
+    repo.createMessage.mockResolvedValue({
+      ...original,
+      id: 'forwarded-message',
+      chatId: 'target-chat',
+      senderId: 'forwarder',
+      forwardedFromId: 'original-message',
+      forwardedFromSenderId: 'original-sender',
+      forwardedFromCreatedAt: originalCreatedAt,
+    });
+    const service = new ChatService(repo);
+
+    await service.forwardMessages({
+      sourceChatId: 'source-chat',
+      targetChatId: 'target-chat',
+      messageIds: ['original-message'],
+      userId: 'forwarder',
+    });
+
+    expect(repo.createMessage).toHaveBeenCalledWith(expect.objectContaining({
+      forwardedFromId: 'original-message',
+      forwardedFromSenderId: 'original-sender',
+      forwardedFromCreatedAt: originalCreatedAt,
+    }));
   });
 
   it('marks a chat read only for chat members', async () => {
@@ -151,6 +217,8 @@ describe('ChatService', () => {
       fileMime: null,
       fileCategory: null,
       forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
       editedAt: null,
       deletedAt: null,
       deletedById: null,
@@ -202,6 +270,8 @@ describe('ChatService', () => {
       fileMime: null,
       fileCategory: null,
       forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
       editedAt: null,
       deletedAt: null,
       deletedById: null,
@@ -241,6 +311,8 @@ describe('ChatService', () => {
       fileMime: null,
       fileCategory: null,
       forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
       editedAt: null,
       deletedAt: null,
       deletedById: null,
@@ -282,6 +354,8 @@ describe('ChatService', () => {
       fileMime: null,
       fileCategory: null,
       forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
       editedAt: null,
       deletedAt: null,
       deletedById: null,
@@ -321,6 +395,8 @@ describe('ChatService', () => {
       fileMime: null,
       fileCategory: null,
       forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
       editedAt: null,
       deletedAt: null,
       deletedById: null,

@@ -21,6 +21,9 @@ const message = {
   fileMime: null,
   fileCategory: null,
   forwardedFromId: null,
+  forwardedFromSenderId: null,
+  forwardedFromCreatedAt: null,
+  forwardedFromSender: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
 } as const;
@@ -60,5 +63,32 @@ describe('message layout', () => {
 
     expect(screen.getByTestId('message-row').getAttribute('data-message-client-id')).toBe('client-1');
     expect(screen.getByTestId('message-row').getAttribute('data-message-virtual-key')).toBe('client:client-1');
+  });
+
+  it('shows forwarded source author and original timestamp above forwarded content', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          forwardedFromId: 'forward-source',
+          forwardedFromSenderId: 'user-source',
+          forwardedFromCreatedAt: '2026-07-13T09:30:00.000Z',
+          forwardedFromSender: {
+            id: 'user-source',
+            name: 'Alice',
+            displayName: 'Alice A.',
+            avatarUrl: null,
+            bio: null,
+          },
+        }}
+        isMine={false}
+        senderName="Forwarder"
+      >
+        <MessageContent text="forwarded text" isMine={false} />
+      </MessageBubble>,
+    );
+
+    expect(screen.getByText('Forwarded from Alice A.')).toBeTruthy();
+    expect(screen.getByText('13.07.2026 12:30')).toBeTruthy();
   });
 });

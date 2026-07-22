@@ -66,6 +66,9 @@ const baseMessage: Message = {
   fileMime: null,
   fileCategory: null,
   forwardedFromId: null,
+  forwardedFromSenderId: null,
+  forwardedFromCreatedAt: null,
+  forwardedFromSender: null,
 };
 
 describe('message actions ui', () => {

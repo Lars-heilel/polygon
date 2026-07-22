@@ -1,4 +1,5 @@
 import type { MessageType } from '@org/common';
+import type { UserPublic } from '@org/common';
 
 export type MessageKind =
   | 'text'
@@ -54,6 +55,9 @@ export interface RawMessage {
   fileMime: string | null;
   fileCategory: string | null;
   forwardedFromId: string | null;
+  forwardedFromSenderId: string | null;
+  forwardedFromCreatedAt: string | null;
+  forwardedFromSender?: UserPublic | null;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;
@@ -84,6 +88,9 @@ export interface Message {
   fileMime: string | null;
   fileCategory: string | null;
   forwardedFromId: string | null;
+  forwardedFromSenderId: string | null;
+  forwardedFromCreatedAt: string | null;
+  forwardedFromSender: UserPublic | null;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;

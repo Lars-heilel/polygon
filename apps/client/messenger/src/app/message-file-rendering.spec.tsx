@@ -20,6 +20,9 @@ const baseMessage = {
   fileMime: 'application/octet-stream',
   fileCategory: 'FILE',
   forwardedFromId: null,
+  forwardedFromSenderId: null,
+  forwardedFromCreatedAt: null,
+  forwardedFromSender: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
 } as const;

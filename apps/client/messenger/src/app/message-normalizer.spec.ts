@@ -16,6 +16,9 @@ const baseRaw: RawMessage = {
   fileMime: null,
   fileCategory: null,
   forwardedFromId: null,
+  forwardedFromSenderId: null,
+  forwardedFromCreatedAt: null,
+  forwardedFromSender: null,
   createdAt: '2026-07-22T07:00:00.000Z',
   updatedAt: '2026-07-22T07:00:00.000Z',
   media: null,
@@ -62,5 +65,24 @@ describe('message normalization', () => {
     expect(page.messages).toHaveLength(1);
     expect(page.nextCursor).toBe('cursor-1');
     expect(page.messages[0].kind).toBe('text');
+  });
+
+  it('preserves forwarded source context and sender profile', () => {
+    const message = normalizeMessage({
+      ...baseRaw,
+      forwardedFromId: '55555555-5555-4555-8555-555555555555',
+      forwardedFromSenderId: '66666666-6666-4666-8666-666666666666',
+      forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
+      forwardedFromSender: {
+        id: '66666666-6666-4666-8666-666666666666',
+        name: 'Alice',
+        displayName: 'Alice A.',
+        avatarUrl: null,
+        bio: null,
+      },
+    });
+
+    expect(message.forwardedFromSender?.displayName).toBe('Alice A.');
+    expect(message.forwardedFromCreatedAt).toBe('2026-07-21T10:15:00.000Z');
   });
 });

@@ -33,6 +33,8 @@ describe('message action schemas', () => {
         fileMime: null,
         fileCategory: null,
         forwardedFromId: null,
+        forwardedFromSenderId: null,
+        forwardedFromCreatedAt: null,
         editedAt: null,
         deletedAt: null,
         deletedById: null,
@@ -40,6 +42,40 @@ describe('message action schemas', () => {
         updatedAt: createdAt,
       }),
     ).toMatchObject({ editedAt: null, deletedAt: null, deletedById: null });
+  });
+
+  it('includes forwarded source metadata on messages', () => {
+    const createdAt = new Date('2026-07-22T00:00:00.000Z');
+    const forwardedFromCreatedAt = new Date('2026-07-21T10:15:00.000Z');
+
+    expect(
+      messageSchema.parse({
+        id: '11111111-1111-4111-8111-111111111111',
+        clientId: null,
+        chatId: '22222222-2222-4222-8222-222222222222',
+        senderId: '33333333-3333-4333-8333-333333333333',
+        type: 'TEXT',
+        text: 'forwarded text',
+        fileId: null,
+        fileBucket: null,
+        fileKey: null,
+        fileName: null,
+        fileSize: null,
+        fileMime: null,
+        fileCategory: null,
+        forwardedFromId: '44444444-4444-4444-8444-444444444444',
+        forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
+        forwardedFromCreatedAt,
+        editedAt: null,
+        deletedAt: null,
+        deletedById: null,
+        createdAt,
+        updatedAt: createdAt,
+      }),
+    ).toMatchObject({
+      forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
+      forwardedFromCreatedAt,
+    });
   });
 
   it('builds message action routes', () => {

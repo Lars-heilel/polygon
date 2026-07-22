@@ -189,7 +189,9 @@ export const socket = {
 };
 
 export function formatTime(value: string) {
-  return value;
+  const date = new Date(value);
+  const pad = (part: number) => part.toString().padStart(2, '0');
+  return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export function formatAudioTime(value: number) {

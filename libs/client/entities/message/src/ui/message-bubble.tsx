@@ -20,6 +20,10 @@ export const MessageBubble = memo(function MessageBubble({
   actionsSlot,
   children,
 }: MessageBubbleProps & { children: React.ReactNode }) {
+  const forwardedFromName = message.forwardedFromSender?.displayName
+    ?? message.forwardedFromSender?.name
+    ?? (message.forwardedFromSenderId ? 'Unknown sender' : null);
+
   return (
     <div className={`flex min-w-0 items-end gap-2 ${isMine ? 'flex-row-reverse lg:flex-row' : 'flex-row'}`}>
       {!isMine && (
@@ -39,6 +43,21 @@ export const MessageBubble = memo(function MessageBubble({
             : 'border-border bg-surface text-text rounded-bl-sm',
         )}
       >
+        {message.forwardedFromId ? (
+          <div
+            className={cn(
+              'mb-1.5 min-w-0 border-l-2 pl-2 text-[11px] leading-snug',
+              isMine ? 'border-white/35 text-text-inverse/75' : 'border-primary/60 text-text-muted',
+            )}
+          >
+            <div className={cn('truncate font-medium', isMine ? 'text-text-inverse/90' : 'text-text')}>
+              Forwarded from {forwardedFromName ?? 'Unknown sender'}
+            </div>
+            {message.forwardedFromCreatedAt ? (
+              <div className="truncate">{formatTime(message.forwardedFromCreatedAt)}</div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">{children}</div>
         <div
           className={cn(

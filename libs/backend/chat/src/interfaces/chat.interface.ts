@@ -29,6 +29,8 @@ export interface CreateMessageData {
   fileMime?: string | null;
   fileCategory?: string | null;
   forwardedFromId?: string | null;
+  forwardedFromSenderId?: string | null;
+  forwardedFromCreatedAt?: Date | null;
 }
 
 export interface ForwardMessagesData {

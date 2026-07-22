@@ -23,7 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateDirectChatDto, DeleteMessageDto, EditMessageDto, MarkChatReadDto, SendMessageDto } from '@org/chat';
-import type { ForwardMessageInput, MessagePage, UserPublic } from '@org/common';
+import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
 import { chatMediaQuerySchema } from '@org/common';
 import {
   CHAT_CLIENT_TOKEN,
@@ -118,13 +118,13 @@ export class ChatGatewayController {
   @ApiResponse({ status: 200, description: '{ messages, nextCursor }' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   @ApiResponse({ status: 403, description: 'Not a member of this chat' })
-  getMessages(
+  async getMessages(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
-  ) {
-    return this.send(
+  ): Promise<MessagePage> {
+    const page = await this.send<MessagePage>(
       this.chatClient.send(CHAT_PATTERNS.GET_MESSAGES, {
         chatId,
         userId: user.sub,
@@ -132,6 +132,11 @@ export class ChatGatewayController {
         take: take ? parseInt(take, 10) : undefined,
       }),
     );
+
+    return {
+      ...page,
+      messages: await this.enrichForwardedMessages(page.messages),
+    };
   }
 
   @Get(':id/media/messages')
@@ -140,13 +145,13 @@ export class ChatGatewayController {
   @ApiQuery({ name: 'filter', required: false, description: 'ALL | IMAGE | VIDEO | AUDIO | FILE | LINK' })
   @ApiQuery({ name: 'cursor', required: false, description: 'ID of the last fetched message' })
   @ApiQuery({ name: 'take', required: false, description: 'Number of messages to return (default 50)' })
-  getMediaMessages(
+  async getMediaMessages(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
     @Query(new ZodValidationPipe()) query: unknown,
   ): Promise<MessagePage> {
     const parsed = chatMediaQuerySchema.parse(query);
-    return this.send(
+    const page = await this.send<MessagePage>(
       this.chatClient.send(CHAT_PATTERNS.GET_MEDIA_MESSAGES, {
         chatId,
         userId: user.sub,
@@ -155,6 +160,11 @@ export class ChatGatewayController {
         filter: parsed.filter,
       }),
     );
+
+    return {
+      ...page,
+      messages: await this.enrichForwardedMessages(page.messages),
+    };
   }
 
   @Post(':id/messages')
@@ -296,7 +306,7 @@ export class ChatGatewayController {
     @Param('id') targetChatId: string,
     @Body() dto: ForwardMessageInput,
   ) {
-    const messages = await this.send<unknown[]>(
+    const messages = await this.send<Message[]>(
       this.chatClient.send(CHAT_PATTERNS.FORWARD_MESSAGES, {
         sourceChatId: dto.sourceChatId ?? targetChatId,
         targetChatId,
@@ -304,12 +314,39 @@ export class ChatGatewayController {
         userId: user.sub,
       }),
     );
+    const enrichedMessages = await this.enrichForwardedMessages(messages);
 
-    for (const msg of messages) {
+    for (const msg of enrichedMessages) {
       this.socketGateway.broadcastMessage(targetChatId, msg);
     }
 
-    return messages;
+    return enrichedMessages;
+  }
+
+  private async enrichForwardedMessages<T extends { forwardedFromSenderId?: string | null }>(
+    messages: T[],
+  ): Promise<Array<T & { forwardedFromSender?: UserPublic | null }>> {
+    const senderIds = [...new Set(
+      messages
+        .map((message) => message.forwardedFromSenderId)
+        .filter((id): id is string => Boolean(id)),
+    )];
+
+    if (senderIds.length === 0) {
+      return messages.map((message) => ({ ...message, forwardedFromSender: null }));
+    }
+
+    const profiles = await this.send<UserPublic[]>(
+      this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: senderIds }),
+    );
+    const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+
+    return messages.map((message) => ({
+      ...message,
+      forwardedFromSender: message.forwardedFromSenderId
+        ? profileMap.get(message.forwardedFromSenderId) ?? null
+        : null,
+    }));
   }
 
   private async send<T>(observable: Observable<T>): Promise<T> {

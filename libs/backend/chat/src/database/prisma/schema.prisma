@@ -75,6 +75,8 @@ model Message {
   fileMime        String?     @map("file_mime")
   fileCategory    String?     @map("file_category")
   forwardedFromId String?     @map("forwarded_from_id")
+  forwardedFromSenderId String?   @map("forwarded_from_sender_id")
+  forwardedFromCreatedAt DateTime? @map("forwarded_from_created_at")
   editedAt        DateTime?   @map("edited_at")
   deletedAt       DateTime?   @map("deleted_at")
   deletedById     String?     @map("deleted_by_id")
@@ -87,6 +89,7 @@ model Message {
   @@index([chatId, createdAt])
   @@index([chatId, clientId])
   @@index([deletedAt])
+  @@index([forwardedFromSenderId])
 }
 
 model MessageDeletion {

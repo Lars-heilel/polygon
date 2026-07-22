@@ -15,6 +15,8 @@ describe('ChatController', () => {
       getMessages: jest.fn(),
       getMediaMessages: jest.fn(),
       sendMessage: jest.fn(),
+      editMessage: jest.fn(),
+      deleteMessage: jest.fn(),
       forwardMessages: jest.fn(),
       checkMembership: jest.fn(),
       getMembers: jest.fn(),

@@ -17,6 +17,7 @@ describe('ChatGatewayController', () => {
     };
     return {
       chatClient,
+      userClient,
       socketGateway,
       controller: new ChatGatewayController(
         chatClient as unknown as ClientProxy,
@@ -128,6 +129,47 @@ describe('ChatGatewayController', () => {
 
     expect(ctx.socketGateway.broadcastMessageDeleted).toHaveBeenCalledWith('chat-1', 'message-1');
     expect(ctx.socketGateway.emitToUser).not.toHaveBeenCalled();
+  });
+
+  it('enriches forwarded messages with their original sender profile before broadcasting', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValue(of([
+      {
+        id: 'forwarded-message',
+        chatId: 'target-chat',
+        senderId: 'forwarder',
+        forwardedFromId: 'original-message',
+        forwardedFromSenderId: 'original-sender',
+        forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
+      },
+    ]));
+    ctx.userClient.send.mockReturnValue(of([
+      {
+        id: 'original-sender',
+        name: 'Alice',
+        displayName: 'Alice A.',
+        avatarUrl: null,
+        bio: null,
+      },
+    ]));
+
+    await expect(
+      ctx.controller.forwardMessages({ sub: 'forwarder' } as never, 'target-chat', {
+        sourceChatId: 'source-chat',
+        messageIds: ['original-message'],
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        forwardedFromSender: expect.objectContaining({ id: 'original-sender', displayName: 'Alice A.' }),
+      }),
+    ]);
+
+    expect(ctx.socketGateway.broadcastMessage).toHaveBeenCalledWith(
+      'target-chat',
+      expect.objectContaining({
+        forwardedFromSender: expect.objectContaining({ id: 'original-sender' }),
+      }),
+    );
   });
 
   it('does not write raw HTTP chat request data to diagnostic logs', async () => {
