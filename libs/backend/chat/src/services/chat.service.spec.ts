@@ -1,5 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Message } from '@org/common';
+import { MEDIA_PATTERNS } from '@org/core';
+import { of, throwError } from 'rxjs';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
 
@@ -30,6 +32,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMessageAttachmentForAccess: jest.fn(),
     createMessage: jest.fn(),
     createMessageWithRelations: jest.fn(),
+    deleteCreatedMessage: jest.fn(),
     updateMessageText: jest.fn(),
     deleteMessageForEveryone: jest.fn(),
     hideMessageForUser: jest.fn(),
@@ -40,6 +43,151 @@ function repoMock(): jest.Mocked<IChatRepository> {
 }
 
 describe('ChatService', () => {
+  it('creates an attachment when sending a legacy file message', async () => {
+    const repo = repoMock();
+    const member = {
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER' as const,
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    };
+    const messageWithAttachment = {
+      id: 'message-1',
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-1',
+          mediaId: '55555555-5555-4555-8555-555555555555',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
+    } as Message;
+    const mediaClient = { send: jest.fn(() => of({ id: 'reference-1' })) };
+    repo.findChatMember.mockResolvedValue(member);
+    repo.createMessageWithRelations.mockResolvedValue(messageWithAttachment);
+    const service = new ChatService(repo, mediaClient as never);
+
+    await service.sendMessage('chat-1', 'user-1', {
+      type: 'VOICE',
+      fileId: '55555555-5555-4555-8555-555555555555',
+      fileName: 'voice.ogg',
+      fileSize: 33000,
+      fileMime: 'audio/ogg',
+      fileCategory: 'VOICE',
+    });
+
+    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(expect.objectContaining({
+      attachments: [expect.objectContaining({
+        mediaId: '55555555-5555-4555-8555-555555555555',
+        fileNameSnapshot: 'voice.ogg',
+        category: 'VOICE',
+      })],
+    }));
+  });
+
+  it('creates a media reference for every attachment after sending a file message', async () => {
+    const repo = repoMock();
+    const mediaClient = { send: jest.fn(() => of({ id: 'reference-1' })) };
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.createMessageWithRelations.mockResolvedValue({
+      id: 'message-1',
+      attachments: [{
+        id: 'attachment-1',
+        messageId: 'message-1',
+        mediaId: '55555555-5555-4555-8555-555555555555',
+        fileNameSnapshot: 'voice.ogg',
+        fileSizeSnapshot: 33000,
+        mimeSnapshot: 'audio/ogg',
+        category: 'VOICE',
+        createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      }],
+    } as Message);
+    const service = new ChatService(repo);
+    Object.defineProperty(service, 'mediaClient', { value: mediaClient });
+
+    await service.sendMessage('chat-1', 'user-1', {
+      type: 'VOICE',
+      fileId: '55555555-5555-4555-8555-555555555555',
+      fileName: 'voice.ogg',
+      fileSize: 33000,
+      fileMime: 'audio/ogg',
+      fileCategory: 'VOICE',
+    });
+
+    expect(mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.CREATE_REFERENCE, {
+      fileId: '55555555-5555-4555-8555-555555555555',
+      ownerType: 'MESSAGE_ATTACHMENT',
+      ownerId: 'attachment-1',
+    });
+  });
+
+  it('removes the created message when media reference creation fails', async () => {
+    const repo = repoMock() as jest.Mocked<IChatRepository> & { deleteCreatedMessage: jest.Mock };
+    const mediaClient = { send: jest.fn(() => throwError(() => new Error('media unavailable'))) };
+    repo.deleteCreatedMessage = jest.fn().mockResolvedValue(undefined);
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.createMessageWithRelations.mockResolvedValue({
+      id: 'message-1',
+      attachments: [{
+        id: 'attachment-1',
+        messageId: 'message-1',
+        mediaId: '55555555-5555-4555-8555-555555555555',
+        fileNameSnapshot: 'voice.ogg',
+        fileSizeSnapshot: 33000,
+        mimeSnapshot: 'audio/ogg',
+        category: 'VOICE',
+        createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      }],
+    } as Message);
+    const service = new ChatService(repo);
+    Object.defineProperty(service, 'mediaClient', { value: mediaClient });
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.sendMessage('chat-1', 'user-1', {
+      type: 'VOICE',
+      fileId: '55555555-5555-4555-8555-555555555555',
+      fileName: 'voice.ogg',
+      fileSize: 33000,
+      fileMime: 'audio/ogg',
+      fileCategory: 'VOICE',
+    })).rejects.toThrow('media unavailable');
+
+    expect(repo.deleteCreatedMessage).toHaveBeenCalledWith('message-1');
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'media_reference_create_failed',
+      attachmentCount: 1,
+    }));
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_send_failed',
+      hasMessageId: true,
+    }));
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_send_compensated',
+      hasMessageId: true,
+    }));
+  });
+
   it('does not write raw chat request data to diagnostic logs', async () => {
     const repo = repoMock();
     repo.findChatsForUser.mockResolvedValue([]);

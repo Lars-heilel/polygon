@@ -5,22 +5,42 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import type { ClientProxy } from '@nestjs/microservices';
 import type { Chat, ChatMediaFilter, ChatMember, Message, MessagePage } from '@org/common';
-import { CHAT_PRISMA_REPOSITORY_TOKEN } from '@org/core';
+import { CHAT_PRISMA_REPOSITORY_TOKEN, MEDIA_CLIENT_TOKEN, MEDIA_PATTERNS } from '@org/core';
+import { lastValueFrom } from 'rxjs';
 
 import type {
   ChatWithPreview,
+  CreateMessageAttachmentData,
   ForwardMessagesData,
   IChatRepository,
   IChatService,
   MessageAttachmentAccessInput,
+  SendMessageData,
 } from '../interfaces/chat.interface';
+
+function buildAttachmentInput(input: SendMessageData): CreateMessageAttachmentData[] {
+  if (input.attachments?.length) return input.attachments;
+  if (!input.fileId) return [];
+
+  return [{
+    mediaId: input.fileId,
+    fileNameSnapshot: input.fileName ?? null,
+    fileSizeSnapshot: input.fileSize ?? null,
+    mimeSnapshot: input.fileMime ?? null,
+    category: input.fileCategory ?? input.type ?? 'FILE',
+  }];
+}
 
 @Injectable()
 export class ChatService implements IChatService {
   private readonly logger = new Logger(ChatService.name);
 
-  constructor(@Inject(CHAT_PRISMA_REPOSITORY_TOKEN) private readonly repo: IChatRepository) {}
+  constructor(
+    @Inject(CHAT_PRISMA_REPOSITORY_TOKEN) private readonly repo: IChatRepository,
+    @Inject(MEDIA_CLIENT_TOKEN) private readonly mediaClient?: ClientProxy,
+  ) {}
 
   async createDirectChat(userId: string, targetUserId: string): Promise<Chat> {
     const isSelfChat = targetUserId === userId;
@@ -134,18 +154,7 @@ export class ChatService implements IChatService {
   async sendMessage(
     chatId: string,
     senderId: string,
-    input: {
-      clientId?: string | null;
-      type: string;
-      text?: string | null;
-      fileId?: string | null;
-      fileBucket?: string | null;
-      fileKey?: string | null;
-      fileName?: string | null;
-      fileSize?: number | null;
-      fileMime?: string | null;
-      fileCategory?: string | null;
-    },
+    input: SendMessageData,
   ): Promise<Message> {
     this.logger.debug({
       eventType: 'message_send_requested',
@@ -166,7 +175,8 @@ export class ChatService implements IChatService {
       throw new ForbiddenException('Not a member of this chat');
     }
 
-    return this.repo.createMessage({
+    const attachments = buildAttachmentInput(input);
+    const message = await this.repo.createMessageWithRelations({
       chatId,
       clientId: input.clientId ?? null,
       senderId,
@@ -179,7 +189,118 @@ export class ChatService implements IChatService {
       fileSize: input.fileSize ?? null,
       fileMime: input.fileMime ?? null,
       fileCategory: input.fileCategory ?? null,
+      attachments,
     });
+
+    this.logger.log({
+      eventType: 'message_attachment_created',
+      hasMessageId: !!message.id,
+      attachmentCount: attachments.length,
+    });
+
+    if (attachments.length === 0) {
+      this.logger.debug({ eventType: 'media_reference_create_skipped', attachmentCount: 0 });
+      return message;
+    }
+
+    const createdAttachments = message.attachments ?? [];
+    if (createdAttachments.length !== attachments.length || !this.mediaClient) {
+      const error = new Error('Message attachments could not be protected');
+      this.logger.error({
+        eventType: 'media_reference_create_failed',
+        hasMessageId: !!message.id,
+        attachmentCount: attachments.length,
+        hasMediaClient: !!this.mediaClient,
+      });
+      await this.compensateFailedMessageSend(message, []);
+      this.logger.error({
+        eventType: 'message_send_failed',
+        hasMessageId: !!message.id,
+        attachmentCount: attachments.length,
+      });
+      throw error;
+    }
+
+    const createdReferences: CreateMessageAttachmentData[] = [];
+    this.logger.debug({
+      eventType: 'media_reference_create_requested',
+      hasMessageId: !!message.id,
+      attachmentCount: createdAttachments.length,
+    });
+
+    try {
+      for (const attachment of createdAttachments) {
+        this.logger.debug({ eventType: 'media_reference_create_started', hasMessageId: !!message.id });
+        await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.CREATE_REFERENCE, {
+          fileId: attachment.mediaId,
+          ownerType: 'MESSAGE_ATTACHMENT',
+          ownerId: attachment.id,
+        }));
+        createdReferences.push({
+          mediaId: attachment.mediaId,
+          fileNameSnapshot: null,
+          fileSizeSnapshot: null,
+          mimeSnapshot: null,
+          category: attachment.category,
+        });
+      }
+    } catch (error) {
+      this.logger.error({
+        eventType: 'media_reference_create_failed',
+        hasMessageId: !!message.id,
+        attachmentCount: createdAttachments.length,
+        createdReferenceCount: createdReferences.length,
+        hasError: !!error,
+      });
+      await this.compensateFailedMessageSend(message, createdAttachments.slice(0, createdReferences.length));
+      this.logger.error({
+        eventType: 'message_send_failed',
+        hasMessageId: !!message.id,
+        attachmentCount: createdAttachments.length,
+      });
+      throw error;
+    }
+
+    this.logger.log({
+      eventType: 'media_reference_created',
+      hasMessageId: !!message.id,
+      referenceCount: createdReferences.length,
+    });
+    return message;
+  }
+
+  private async compensateFailedMessageSend(
+    message: Message,
+    referencedAttachments: Message['attachments'],
+  ): Promise<void> {
+    if (this.mediaClient) {
+      for (const attachment of referencedAttachments) {
+        try {
+          await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.DELETE_REFERENCE, {
+            fileId: attachment.mediaId,
+            ownerType: 'MESSAGE_ATTACHMENT',
+            ownerId: attachment.id,
+          }));
+        } catch (error) {
+          this.logger.warn({
+            eventType: 'media_reference_delete_skipped',
+            hasMessageId: !!message.id,
+            hasError: !!error,
+          });
+        }
+      }
+    }
+
+    try {
+      await this.repo.deleteCreatedMessage(message.id);
+      this.logger.warn({ eventType: 'message_send_compensated', hasMessageId: !!message.id });
+    } catch (error) {
+      this.logger.error({
+        eventType: 'message_send_compensation_failed',
+        hasMessageId: !!message.id,
+        hasError: !!error,
+      });
+    }
   }
 
   async editMessage(

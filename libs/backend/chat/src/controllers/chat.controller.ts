@@ -5,6 +5,7 @@ import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
 
 import type {
   ChatWithPreview,
+  CreateMessageAttachmentData,
   ForwardMessagesData,
   IChatController,
   IChatService,
@@ -79,6 +80,7 @@ export class ChatController implements IChatController {
       senderId: string;
       type: string;
       text?: string | null;
+      attachments?: CreateMessageAttachmentData[];
       fileId?: string | null;
       fileBucket?: string | null;
       fileKey?: string | null;
@@ -101,6 +103,7 @@ export class ChatController implements IChatController {
       clientId: payload.clientId ?? null,
       type: payload.type,
       text: payload.text,
+      attachments: payload.attachments,
       fileId: payload.fileId,
       fileBucket: payload.fileBucket,
       fileKey: payload.fileKey,

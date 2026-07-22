@@ -61,6 +61,20 @@ export type CreateMessageWithRelationsData = CreateMessageData & {
   forwardContext?: CreateMessageForwardContextData | null;
 };
 
+export type SendMessageData = {
+  clientId?: string | null;
+  type: string;
+  text?: string | null;
+  attachments?: CreateMessageAttachmentData[];
+  fileId?: string | null;
+  fileBucket?: string | null;
+  fileKey?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  fileMime?: string | null;
+  fileCategory?: string | null;
+};
+
 export interface ForwardMessagesData {
   sourceChatId: string;
   targetChatId: string;
@@ -109,6 +123,7 @@ export interface IChatRepository {
   findMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
+  deleteCreatedMessage(messageId: string): Promise<void>;
   updateMessageText(messageId: string, text: string): Promise<Message>;
   deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;
   hideMessageForUser(messageId: string, userId: string): Promise<void>;
@@ -142,18 +157,7 @@ export interface IChatService {
   sendMessage(
     chatId: string,
     senderId: string,
-    input: {
-      clientId?: string | null;
-      type: string;
-      text?: string | null;
-      fileId?: string | null;
-      fileBucket?: string | null;
-      fileKey?: string | null;
-      fileName?: string | null;
-      fileSize?: number | null;
-      fileMime?: string | null;
-      fileCategory?: string | null;
-    },
+    input: SendMessageData,
   ): Promise<Message>;
   editMessage(chatId: string, messageId: string, userId: string, text: string): Promise<Message>;
   deleteMessage(
@@ -188,18 +192,8 @@ export interface IChatController {
   }): Promise<MessagePage>;
   sendMessage(payload: {
     chatId: string;
-    clientId?: string | null;
     senderId: string;
-    type: string;
-    text?: string | null;
-    fileId?: string | null;
-    fileBucket?: string | null;
-    fileKey?: string | null;
-    fileName?: string | null;
-    fileSize?: number | null;
-    fileMime?: string | null;
-    fileCategory?: string | null;
-  }): Promise<Message>;
+  } & SendMessageData): Promise<Message>;
   forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
   markRead(payload: { chatId: string; userId: string; messageId?: string | null }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;

@@ -337,6 +337,14 @@ export class ChatPrismaRepository implements IChatRepository {
     }
   }
 
+  async deleteCreatedMessage(messageId: string): Promise<void> {
+    try {
+      await this.prisma.message.delete({ where: { id: messageId } });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
   async updateMessageText(messageId: string, text: string): Promise<Message> {
     try {
       return await this.prisma.message.update({
