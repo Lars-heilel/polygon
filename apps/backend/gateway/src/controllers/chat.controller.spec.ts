@@ -135,17 +135,17 @@ describe('ChatGatewayController', () => {
     const ctx = controller();
     ctx.chatClient.send.mockReturnValue(of([
       {
-        id: 'forwarded-message',
-        chatId: 'target-chat',
-        senderId: 'forwarder',
-        forwardedFromId: 'original-message',
-        forwardedFromSenderId: 'original-sender',
+        id: '11111111-1111-4111-8111-111111111111',
+        chatId: '22222222-2222-4222-8222-222222222222',
+        senderId: '33333333-3333-4333-8333-333333333333',
+        forwardedFromId: '44444444-4444-4444-8444-444444444444',
+        forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
         forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
       },
     ]));
     ctx.userClient.send.mockReturnValue(of([
       {
-        id: 'original-sender',
+        id: '55555555-5555-4555-8555-555555555555',
         name: 'Alice',
         displayName: 'Alice A.',
         avatarUrl: null,
@@ -154,22 +154,76 @@ describe('ChatGatewayController', () => {
     ]));
 
     await expect(
-      ctx.controller.forwardMessages({ sub: 'forwarder' } as never, 'target-chat', {
+      ctx.controller.forwardMessages({ sub: '33333333-3333-4333-8333-333333333333' } as never, 'target-chat', {
         sourceChatId: 'source-chat',
-        messageIds: ['original-message'],
+        messageIds: ['44444444-4444-4444-8444-444444444444'],
       }),
     ).resolves.toEqual([
       expect.objectContaining({
-        forwardedFromSender: expect.objectContaining({ id: 'original-sender', displayName: 'Alice A.' }),
+        forwardedFromSender: expect.objectContaining({
+          id: '55555555-5555-4555-8555-555555555555',
+          displayName: 'Alice A.',
+        }),
       }),
     ]);
 
     expect(ctx.socketGateway.broadcastMessage).toHaveBeenCalledWith(
       'target-chat',
       expect.objectContaining({
-        forwardedFromSender: expect.objectContaining({ id: 'original-sender' }),
+        forwardedFromSender: expect.objectContaining({ id: '55555555-5555-4555-8555-555555555555' }),
       }),
     );
+  });
+
+  it('logs forwarded sender enrichment misses without raw ids or message text', async () => {
+    const ctx = controller();
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(ctx.controller, 'logger', { value: logger });
+    ctx.chatClient.send.mockReturnValue(of([
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        chatId: '22222222-2222-4222-8222-222222222222',
+        senderId: '33333333-3333-4333-8333-333333333333',
+        text: 'secret forwarded text',
+        forwardedFromId: '44444444-4444-4444-8444-444444444444',
+        forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
+        forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
+      },
+    ]));
+    ctx.userClient.send.mockReturnValue(of([]));
+
+    await ctx.controller.forwardMessages(
+      { sub: '33333333-3333-4333-8333-333333333333' } as never,
+      '22222222-2222-4222-8222-222222222222',
+      {
+        sourceChatId: '66666666-6666-4666-8666-666666666666',
+        messageIds: ['44444444-4444-4444-8444-444444444444'],
+      },
+    );
+
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_requested',
+      hasTargetChatId: true,
+      hasSourceChatId: true,
+      hasUserId: true,
+      messageCount: 1,
+    }));
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'forwarded_message_sender_profiles_missing',
+      senderCount: 1,
+      profileCount: 0,
+      missingCount: 1,
+    }));
+
+    const diagnosticPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.error.mock.calls,
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('33333333-3333-4333-8333-333333333333');
+    expect(diagnosticPayload).not.toContain('55555555-5555-4555-8555-555555555555');
+    expect(diagnosticPayload).not.toContain('secret forwarded text');
   });
 
   it('does not write raw HTTP chat request data to diagnostic logs', async () => {

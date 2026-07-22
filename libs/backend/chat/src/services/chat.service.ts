@@ -208,17 +208,47 @@ export class ChatService implements IChatService {
 
   async forwardMessages(data: ForwardMessagesData): Promise<Message[]> {
     const { sourceChatId, targetChatId, messageIds, userId } = data;
+    this.logger.log({
+      eventType: 'message_forward_requested',
+      hasSourceChatId: !!sourceChatId,
+      hasTargetChatId: !!targetChatId,
+      hasUserId: !!userId,
+      messageCount: messageIds.length,
+    });
 
     const isSourceMember = await this.repo.findChatMember(sourceChatId, userId);
-    if (!isSourceMember) throw new ForbiddenException('Not a member of the source chat');
+    if (!isSourceMember) {
+      this.logger.warn({
+        eventType: 'message_forward_source_membership_denied',
+        hasSourceChatId: !!sourceChatId,
+        hasUserId: !!userId,
+      });
+      throw new ForbiddenException('Not a member of the source chat');
+    }
 
     const isTargetMember = await this.repo.findChatMember(targetChatId, userId);
-    if (!isTargetMember) throw new ForbiddenException('Not a member of the target chat');
+    if (!isTargetMember) {
+      this.logger.warn({
+        eventType: 'message_forward_target_membership_denied',
+        hasTargetChatId: !!targetChatId,
+        hasUserId: !!userId,
+      });
+      throw new ForbiddenException('Not a member of the target chat');
+    }
 
     const messages: Message[] = [];
+    let missingCount = 0;
+    let wrongChatCount = 0;
     for (const msgId of messageIds) {
       const original = await this.repo.findMessageById(msgId);
-      if (!original || original.chatId !== sourceChatId) continue;
+      if (!original) {
+        missingCount += 1;
+        continue;
+      }
+      if (original.chatId !== sourceChatId) {
+        wrongChatCount += 1;
+        continue;
+      }
 
       const copied = await this.repo.createMessage({
         chatId: targetChatId,
@@ -242,6 +272,28 @@ export class ChatService implements IChatService {
       });
       messages.push(copied);
     }
+
+    if (missingCount > 0) {
+      this.logger.warn({
+        eventType: 'message_forward_source_missing',
+        hasSourceChatId: !!sourceChatId,
+        missingCount,
+      });
+    }
+    if (wrongChatCount > 0) {
+      this.logger.warn({
+        eventType: 'message_forward_source_chat_mismatch',
+        hasSourceChatId: !!sourceChatId,
+        mismatchCount: wrongChatCount,
+      });
+    }
+    this.logger.log({
+      eventType: 'messages_forwarded',
+      requestedCount: messageIds.length,
+      createdCount: messages.length,
+      missingCount,
+      wrongChatCount,
+    });
 
     return messages;
   }

@@ -98,4 +98,29 @@ describe('message layout', () => {
     expect(screen.getByText('13.07.2026 12:30')).toBeTruthy();
     expect(screen.getByText('original forwarded text')).toBeTruthy();
   });
+
+  it('does not render unknown sender when forwarded sender profile is missing', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          forwardedFromId: 'forward-source',
+          forwardedFromSenderId: 'user-source',
+          forwardedFromCreatedAt: '2026-07-13T09:30:00.000Z',
+          forwardedFromType: 'TEXT',
+          forwardedFromText: 'original forwarded text',
+          forwardedFromFileName: null,
+          forwardedFromSender: null,
+        }}
+        isMine={false}
+        senderName="Forwarder"
+      >
+        <MessageContent text="forwarded text" isMine={false} />
+      </MessageBubble>,
+    );
+
+    expect(screen.queryByText(/Unknown sender/i)).toBeNull();
+    expect(screen.getByText('Forwarded message')).toBeTruthy();
+    expect(screen.getByText('original forwarded text')).toBeTruthy();
+  });
 });

@@ -306,21 +306,52 @@ export class ChatGatewayController {
     @Param('id') targetChatId: string,
     @Body() dto: ForwardMessageInput,
   ) {
-    const messages = await this.send<Message[]>(
-      this.chatClient.send(CHAT_PATTERNS.FORWARD_MESSAGES, {
-        sourceChatId: dto.sourceChatId ?? targetChatId,
-        targetChatId,
-        messageIds: dto.messageIds,
-        userId: user.sub,
-      }),
-    );
-    const enrichedMessages = await this.enrichForwardedMessages(messages);
+    const sourceChatId = dto.sourceChatId ?? targetChatId;
+    this.logger.log({
+      eventType: 'message_forward_requested',
+      hasTargetChatId: !!targetChatId,
+      hasSourceChatId: !!sourceChatId,
+      hasUserId: !!user.sub,
+      messageCount: dto.messageIds.length,
+    });
 
-    for (const msg of enrichedMessages) {
-      this.socketGateway.broadcastMessage(targetChatId, msg);
+    try {
+      const messages = await this.send<Message[]>(
+        this.chatClient.send(CHAT_PATTERNS.FORWARD_MESSAGES, {
+          sourceChatId,
+          targetChatId,
+          messageIds: dto.messageIds,
+          userId: user.sub,
+        }),
+      );
+      this.logger.log({
+        eventType: 'message_forward_created',
+        requestedCount: dto.messageIds.length,
+        createdCount: messages.length,
+      });
+      const enrichedMessages = await this.enrichForwardedMessages(messages);
+
+      for (const msg of enrichedMessages) {
+        this.socketGateway.broadcastMessage(targetChatId, msg);
+      }
+
+      this.logger.log({
+        eventType: 'message_forward_broadcasted',
+        createdCount: enrichedMessages.length,
+        hasTargetChatId: !!targetChatId,
+      });
+
+      return enrichedMessages;
+    } catch (error) {
+      this.logger.warn({
+        eventType: 'message_forward_failed',
+        hasTargetChatId: !!targetChatId,
+        hasSourceChatId: !!sourceChatId,
+        hasUserId: !!user.sub,
+        messageCount: dto.messageIds.length,
+      });
+      throw error;
     }
-
-    return enrichedMessages;
   }
 
   private async enrichForwardedMessages<T extends { forwardedFromSenderId?: string | null }>(
@@ -333,13 +364,41 @@ export class ChatGatewayController {
     )];
 
     if (senderIds.length === 0) {
+      this.logger.debug({
+        eventType: 'forwarded_message_sender_enrichment_skipped',
+        messageCount: messages.length,
+        senderCount: 0,
+      });
       return messages.map((message) => ({ ...message, forwardedFromSender: null }));
     }
 
+    this.logger.debug({
+      eventType: 'forwarded_message_sender_enrichment_requested',
+      messageCount: messages.length,
+      senderCount: senderIds.length,
+    });
     const profiles = await this.send<UserPublic[]>(
       this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: senderIds }),
     );
     const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+    const missingCount = senderIds.filter((id) => !profileMap.has(id)).length;
+
+    if (missingCount > 0) {
+      this.logger.warn({
+        eventType: 'forwarded_message_sender_profiles_missing',
+        senderCount: senderIds.length,
+        profileCount: profiles.length,
+        missingCount,
+      });
+    }
+
+    this.logger.debug({
+      eventType: 'forwarded_message_sender_enrichment_completed',
+      messageCount: messages.length,
+      senderCount: senderIds.length,
+      profileCount: profiles.length,
+      missingCount,
+    });
 
     return messages.map((message) => ({
       ...message,

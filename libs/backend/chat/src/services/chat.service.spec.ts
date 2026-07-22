@@ -70,6 +70,67 @@ describe('ChatService', () => {
     );
   });
 
+  it('logs forward lifecycle without raw ids or message text', async () => {
+    const repo = repoMock();
+    repo.findChatMember
+      .mockResolvedValueOnce({
+        chatId: 'source-secret-chat',
+        userId: 'user-secret-id',
+        role: 'MEMBER',
+        joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+        lastReadMessageId: null,
+        lastReadAt: null,
+      })
+      .mockResolvedValueOnce({
+        chatId: 'target-secret-chat',
+        userId: 'user-secret-id',
+        role: 'MEMBER',
+        joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+        lastReadMessageId: null,
+        lastReadAt: null,
+      });
+    repo.findMessageById.mockResolvedValue(null);
+    const service = new ChatService(repo);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await service.forwardMessages({
+      sourceChatId: 'source-secret-chat',
+      targetChatId: 'target-secret-chat',
+      messageIds: ['message-secret-id'],
+      userId: 'user-secret-id',
+    });
+
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_requested',
+      hasSourceChatId: true,
+      hasTargetChatId: true,
+      hasUserId: true,
+      messageCount: 1,
+    }));
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_source_missing',
+      hasSourceChatId: true,
+      missingCount: 1,
+    }));
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'messages_forwarded',
+      requestedCount: 1,
+      createdCount: 0,
+    }));
+
+    const diagnosticPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.error.mock.calls,
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('user-secret-id');
+    expect(diagnosticPayload).not.toContain('source-secret-chat');
+    expect(diagnosticPayload).not.toContain('target-secret-chat');
+    expect(diagnosticPayload).not.toContain('message-secret-id');
+  });
+
   it('gets chats without creating a self chat as a side effect', async () => {
     const repo = repoMock();
     repo.findChatsForUser.mockResolvedValue([]);

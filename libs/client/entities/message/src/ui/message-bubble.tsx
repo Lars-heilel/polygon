@@ -22,7 +22,7 @@ export const MessageBubble = memo(function MessageBubble({
 }: MessageBubbleProps & { children: React.ReactNode }) {
   const forwardedFromName = message.forwardedFromSender?.displayName
     ?? message.forwardedFromSender?.name
-    ?? (message.forwardedFromSenderId ? 'Unknown sender' : null);
+    ?? null;
   const forwardedPreview = getForwardedPreview(message);
 
   return (
@@ -52,7 +52,7 @@ export const MessageBubble = memo(function MessageBubble({
             )}
           >
             <div className={cn('truncate font-medium', isMine ? 'text-text-inverse/90' : 'text-text')}>
-              Forwarded from {forwardedFromName ?? 'Unknown sender'}
+              {forwardedFromName ? `Forwarded from ${forwardedFromName}` : 'Forwarded message'}
             </div>
             {message.forwardedFromCreatedAt ? (
               <div className="truncate">{formatTime(message.forwardedFromCreatedAt)}</div>
