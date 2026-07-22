@@ -3,6 +3,7 @@ export const CHAT_SELECT_FIELDS = {
   type: true,
   name: true,
   avatarUrl: true,
+  selfOwnerId: true,
   createdAt: true,
   updatedAt: true,
 } as const;

@@ -11,6 +11,7 @@ export const chatSchema = z.object({
   type: chatTypeSchema,
   name: z.string().nullable(),
   avatarUrl: z.url().nullable(),
+  selfOwnerId: z.uuid().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

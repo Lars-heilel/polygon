@@ -39,9 +39,13 @@ export function ForwardMessageModal({
   const forwardMessages = useForwardMessagesMutation();
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const existingSelfChat = useMemo(() => {
+    return (chats.data ?? []).find((chat) => isSelfChat(chat, currentUserId)) ?? null;
+  }, [chats.data, currentUserId]);
   const chatTargets = useMemo(() => {
     return (chats.data ?? [])
       .filter((chat) => chat.id !== sourceChatId)
+      .filter((chat) => !isSelfChat(chat, currentUserId))
       .filter((chat) => {
         if (!normalizedQuery) return true;
         return getChatDisplayName(chat, currentUserId)
@@ -73,6 +77,11 @@ export function ForwardMessageModal({
   };
 
   const handleSavedMessages = () => {
+    if (existingSelfChat) {
+      forwardToChat(existingSelfChat.id);
+      return;
+    }
+
     createSelfChat.mutate(undefined, {
       onSuccess: (chat) => forwardToChat(chat.id),
     });
@@ -143,6 +152,13 @@ export function ForwardMessageModal({
       </Modal.Body>
     </Modal>
   );
+}
+
+function isSelfChat(chat: Chat, currentUserId: string): boolean {
+  if (chat.selfOwnerId === currentUserId) return true;
+  return chat.type === 'DIRECT'
+    && chat.members.length === 1
+    && chat.members[0]?.userId === currentUserId;
 }
 
 function getDirectPeerId(chat: Chat, currentUserId: string): string | null {

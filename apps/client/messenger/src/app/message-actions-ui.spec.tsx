@@ -258,4 +258,59 @@ describe('message actions ui', () => {
       expect(authedFetch).toHaveBeenCalledWith('chats/self-chat-id/forward', expect.objectContaining({ method: 'POST' }));
     });
   });
+
+  it('uses the existing self chat as Saved Messages without showing a duplicate personal chat', async () => {
+    const selfChat: Chat = {
+      id: 'existing-self-chat-id',
+      type: 'DIRECT',
+      name: 'Личное',
+      avatarUrl: null,
+      selfOwnerId: 'user-1',
+      createdAt: '2026-07-22T00:00:00.000Z',
+      updatedAt: '2026-07-22T00:00:00.000Z',
+      unreadCount: 0,
+      lastMessage: null,
+      members: [
+        {
+          chatId: 'existing-self-chat-id',
+          userId: 'user-1',
+          role: 'MEMBER',
+          joinedAt: '2026-07-22T00:00:00.000Z',
+          lastReadMessageId: null,
+          lastReadAt: null,
+          profile: null,
+        },
+      ],
+    };
+
+    queryClient.setQueryData(['chats'], [selfChat]);
+    (authedFetch as jest.Mock).mockImplementation(async (url: string) => {
+      if (url === 'chats') return [selfChat];
+      if (url === 'chats/existing-self-chat-id/forward') return [];
+      return [];
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ForwardMessageModal
+          isOpen
+          sourceChatId="chat-1"
+          currentUserId="user-1"
+          message={baseMessage}
+          senderName="Alice"
+          sourceChatTitle="General"
+          onClose={jest.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.queryByText('Личное')).toBeNull();
+
+    fireEvent.click(screen.getByText('Saved Messages'));
+
+    await waitFor(() => {
+      expect(authedFetch).not.toHaveBeenCalledWith('chats/self', expect.anything());
+      expect(authedFetch).toHaveBeenCalledWith('chats/existing-self-chat-id/forward', expect.objectContaining({ method: 'POST' }));
+    });
+  });
 });
