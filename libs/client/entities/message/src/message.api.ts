@@ -1,5 +1,4 @@
 import { API_ROUTES } from '@org/common';
-import type { Message as MessageBase } from '@org/common';
 import { authedFetch } from '@org/shared';
 import {
   type InfiniteData,
@@ -9,29 +8,27 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 
-export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
-  createdAt: string;
-  updatedAt: string;
-};
+import { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
+import type { Message, MessagePage, RawMessage, RawMessagePage } from './message.types.js';
 
-export type MessagePage = {
-  messages: Message[];
-  nextCursor: string | null;
-};
+export type { Message, MessagePage, RawMessage, RawMessagePage };
 
 export const messageApi = {
-  getMessages: (chatId: string, cursor?: string) => {
+  async getMessages(chatId: string, cursor?: string): Promise<MessagePage> {
     const url = cursor
       ? `${API_ROUTES.chats.messages(chatId)}?cursor=${cursor}`
       : API_ROUTES.chats.messages(chatId);
-    return authedFetch<MessagePage>(url);
+    const raw = await authedFetch<RawMessagePage>(url);
+    return normalizeMessagePage(raw);
   },
 
-  sendMessage: (chatId: string, text: string) =>
-    authedFetch<Message>(API_ROUTES.chats.messages(chatId), {
+  async sendMessage(chatId: string, text: string): Promise<Message> {
+    const raw = await authedFetch<RawMessage>(API_ROUTES.chats.messages(chatId), {
       method: 'POST',
       body: JSON.stringify({ text }),
-    }),
+    });
+    return normalizeMessage(raw);
+  },
 };
 
 export function useInfiniteMessagesQuery(chatId: string) {
