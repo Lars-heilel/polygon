@@ -8,6 +8,7 @@ import type {
   CreateMediaReferenceInput,
   DeleteFileResult,
   DeleteMediaReferenceInput,
+  DeleteMediaReferenceResult,
   IMediaService,
   MediaReferenceResponse,
 } from '../interfaces/media.interface';
@@ -96,7 +97,12 @@ export class MediaController {
   @MessagePattern(MEDIA_PATTERNS.DELETE_REFERENCE)
   async deleteReference(
     @Payload() payload: DeleteMediaReferenceInput,
-  ): Promise<{ deleted: boolean; remainingCount: number }> {
+  ): Promise<DeleteMediaReferenceResult> {
     return this.mediaService.deleteReference(payload);
+  }
+
+  @MessagePattern(MEDIA_PATTERNS.COUNT_REFERENCES)
+  async countReferences(@Payload() { fileId }: { fileId: string }): Promise<number> {
+    return this.mediaService.countReferences(fileId);
   }
 }

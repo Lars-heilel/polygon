@@ -4,9 +4,18 @@ import type { File } from '@org/common';
 jest.mock('@org/core', () => ({
   MEDIA_PRISMA_REPOSITORY_TOKEN: Symbol('MEDIA_PRISMA_REPOSITORY_TOKEN'),
   STORAGE_PROVIDER_TOKEN: Symbol('STORAGE_PROVIDER_TOKEN'),
+  MEDIA_PATTERNS: {
+    GET_FILE_CONTENT: 'media.getFileContent',
+    GET_ADMIN_AVATAR_HISTORY: 'media.admin.getAvatarHistory',
+    CREATE_FILE: 'media.createFile',
+    CREATE_REFERENCE: 'media.references.create',
+    DELETE_REFERENCE: 'media.references.delete',
+    COUNT_REFERENCES: 'media.references.count',
+  },
 }));
 
 import type { IMediaRepository } from '../interfaces/media.interface';
+import { MediaController } from '../controllers/media.controller';
 import { MediaService } from './media.service';
 
 type MediaReferenceOwnerType = 'MESSAGE_ATTACHMENT';
@@ -28,17 +37,26 @@ interface CreateMediaReferenceInput {
 interface DeleteMediaReferenceInput {
   ownerType: MediaReferenceOwnerType;
   ownerId: string;
+  fileId?: string;
 }
+
+type DeleteClaimResult =
+  | { outcome: 'MISSING' }
+  | { outcome: 'REFERENCED'; referenceCount: number }
+  | { outcome: 'CLAIMED'; file: File; referenceCount: 0 };
 
 type MediaRepositoryWithReferences = IMediaRepository & {
   createReference: jest.Mock<Promise<MediaReferenceResponse>, [CreateMediaReferenceInput]>;
   deleteReference: jest.Mock<Promise<MediaReferenceResponse | null>, [DeleteMediaReferenceInput]>;
   countReferences: jest.Mock<Promise<number>, [string]>;
+  claimForDeletion: jest.Mock<Promise<DeleteClaimResult>, [string]>;
+  releaseDeletionClaim: jest.Mock<Promise<void>, [string]>;
 };
 
 type MediaServiceWithReferences = MediaService & {
   createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse>;
-  deleteReference(input: DeleteMediaReferenceInput): Promise<{ deleted: boolean; remainingCount: number }>;
+  deleteReference(input: DeleteMediaReferenceInput): Promise<{ deleted: boolean; remainingCount: number | null }>;
+  countReferences(fileId: string): Promise<number>;
   delete(id: string): Promise<{ success: boolean; reason?: 'REFERENCED' }>;
 };
 
@@ -70,6 +88,8 @@ function repoMock(): jest.Mocked<MediaRepositoryWithReferences> {
     createReference: jest.fn(),
     deleteReference: jest.fn(),
     countReferences: jest.fn(),
+    claimForDeletion: jest.fn(),
+    releaseDeletionClaim: jest.fn(),
   };
 }
 
@@ -188,11 +208,68 @@ describe('MediaService', () => {
     }));
   });
 
-  it('does not delete the physical object while media references remain', async () => {
+  it('returns the supplied file reference count when a repeated delete finds no reference', async () => {
     const repo = repoMock();
     const storage = storageMock();
-    repo.findById.mockResolvedValue(file);
-    repo.countReferences.mockResolvedValue(1);
+    repo.deleteReference.mockResolvedValue(null);
+    repo.countReferences.mockResolvedValue(2);
+    const service = new MediaService(repo, storage) as MediaServiceWithReferences;
+
+    await expect(service.deleteReference({
+      ownerType: 'MESSAGE_ATTACHMENT',
+      ownerId: 'attachment-secret-id',
+      fileId: file.id,
+    })).resolves.toEqual({ deleted: false, remainingCount: 2 });
+
+    expect(repo.countReferences).toHaveBeenCalledWith(file.id);
+  });
+
+  it('does not invent a remaining count when a repeated delete has no file id', async () => {
+    const repo = repoMock();
+    const storage = storageMock();
+    repo.deleteReference.mockResolvedValue(null);
+    const service = new MediaService(repo, storage) as MediaServiceWithReferences;
+
+    await expect(service.deleteReference({
+      ownerType: 'MESSAGE_ATTACHMENT',
+      ownerId: 'attachment-secret-id',
+    })).resolves.toEqual({ deleted: false, remainingCount: null });
+
+    expect(repo.countReferences).not.toHaveBeenCalled();
+  });
+
+  it('counts references through the service and logs a redacted lifecycle', async () => {
+    const repo = repoMock();
+    const storage = storageMock();
+    repo.countReferences.mockResolvedValue(3);
+    const service = new MediaService(repo, storage) as MediaServiceWithReferences;
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.countReferences(file.id)).resolves.toBe(3);
+
+    expect(repo.countReferences).toHaveBeenCalledWith(file.id);
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'media_reference_counted',
+      hasFileId: true,
+      referenceCount: 3,
+    }));
+    expect(JSON.stringify(logger.log.mock.calls)).not.toContain(file.id);
+  });
+
+  it('exposes reference counting through the media RPC controller', async () => {
+    const countReferences = jest.fn().mockResolvedValue(4);
+    const controller = new MediaController({ countReferences } as unknown as never);
+
+    await expect(controller.countReferences({ fileId: file.id })).resolves.toBe(4);
+
+    expect(countReferences).toHaveBeenCalledWith(file.id);
+  });
+
+  it('does not delete the physical object while media references remain after an atomic claim', async () => {
+    const repo = repoMock();
+    const storage = storageMock();
+    repo.claimForDeletion.mockResolvedValue({ outcome: 'REFERENCED', referenceCount: 1 });
     const service = new MediaService(repo, storage) as MediaServiceWithReferences;
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
@@ -202,17 +279,17 @@ describe('MediaService', () => {
     expect(storage.delete).not.toHaveBeenCalled();
     expect(repo.delete).not.toHaveBeenCalled();
     expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'media_reference_delete_skipped',
+      eventType: 'media_file_delete_skipped',
       hasFileId: true,
       referenceCount: 1,
+      reason: 'REFERENCED',
     }));
   });
 
-  it('deletes the physical object when no media references remain', async () => {
+  it('deletes the physical object only after atomically claiming an unreferenced file', async () => {
     const repo = repoMock();
     const storage = storageMock();
-    repo.findById.mockResolvedValue(file);
-    repo.countReferences.mockResolvedValue(0);
+    repo.claimForDeletion.mockResolvedValue({ outcome: 'CLAIMED', file, referenceCount: 0 });
     const service = new MediaService(repo, storage) as MediaServiceWithReferences;
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
@@ -231,5 +308,43 @@ describe('MediaService', () => {
     expect(diagnosticPayload).not.toContain(file.bucket);
     expect(diagnosticPayload).not.toContain(file.key);
     expect(diagnosticPayload).not.toContain(file.originalName);
+  });
+
+  it('releases the deletion claim when object storage deletion fails', async () => {
+    const repo = repoMock();
+    const storage = storageMock();
+    repo.claimForDeletion.mockResolvedValue({ outcome: 'CLAIMED', file, referenceCount: 0 });
+    storage.delete.mockRejectedValue(new Error('bucket-secret failure'));
+    const service = new MediaService(repo, storage) as MediaServiceWithReferences;
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.delete(file.id)).rejects.toThrow('bucket-secret failure');
+
+    expect(repo.releaseDeletionClaim).toHaveBeenCalledWith(file.id);
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'media_file_gc_failed',
+      hasFileId: true,
+      stage: 'STORAGE_DELETE',
+    }));
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('bucket-secret');
+  });
+
+  it('logs a sanitized delete failure when acquiring the deletion claim fails', async () => {
+    const repo = repoMock();
+    const storage = storageMock();
+    repo.claimForDeletion.mockRejectedValue(new Error('query-secret failure'));
+    const service = new MediaService(repo, storage) as MediaServiceWithReferences;
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.delete(file.id)).rejects.toThrow('query-secret failure');
+
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'media_file_delete_failed',
+      hasFileId: true,
+      stage: 'CLAIM',
+    }));
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('query-secret');
   });
 });

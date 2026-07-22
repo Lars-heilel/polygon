@@ -10,6 +10,7 @@ import type {
   CreateMediaReferenceInput,
   DeleteFileResult,
   DeleteMediaReferenceInput,
+  DeleteMediaReferenceResult,
   FileContentResult,
   FileResponse,
   IMediaRepository,
@@ -128,33 +129,64 @@ export class MediaService implements IMediaService {
 
   async delete(id: string): Promise<DeleteFileResult> {
     this.logger.log({ eventType: 'media_file_delete_requested', hasFileId: !!id });
-    const file = await this.repo.findById(id);
-    if (!file) {
-      this.logger.log({ eventType: 'media_file_delete_skipped', hasFileId: !!id, reason: 'FILE_NOT_FOUND' });
-      return { success: false };
-    }
-
-    const referenceCount = await this.repo.countReferences(id);
-    if (referenceCount > 0) {
-      this.logger.log({
-        eventType: 'media_reference_delete_skipped',
-        hasFileId: !!id,
-        referenceCount,
-      });
-      return { success: false, reason: 'REFERENCED' };
-    }
-
-    this.logger.log({ eventType: 'media_file_gc_started', hasFileId: !!id, referenceCount });
+    this.logger.log({ eventType: 'media_file_delete_started', hasFileId: !!id });
+    let stage = 'CLAIM';
     try {
-      await this.storage.delete(file.bucket, file.key);
-      await this.repo.delete(id);
+      const claim = await this.repo.claimForDeletion(id);
+      if (claim.outcome === 'MISSING') {
+        this.logger.log({ eventType: 'media_file_delete_skipped', hasFileId: !!id, reason: 'FILE_NOT_FOUND' });
+        return { success: false };
+      }
+      if (claim.outcome === 'UNAVAILABLE') {
+        this.logger.log({ eventType: 'media_file_delete_skipped', hasFileId: !!id, reason: 'FILE_NOT_READY' });
+        return { success: false };
+      }
+      if (claim.outcome === 'REFERENCED') {
+        this.logger.log({
+          eventType: 'media_file_delete_skipped',
+          hasFileId: !!id,
+          referenceCount: claim.referenceCount,
+          reason: 'REFERENCED',
+        });
+        return { success: false, reason: 'REFERENCED' };
+      }
+
+      this.logger.log({
+        eventType: 'media_file_gc_started',
+        hasFileId: !!id,
+        referenceCount: claim.referenceCount,
+      });
+      stage = 'STORAGE_DELETE';
+      try {
+        await this.storage.delete(claim.file.bucket, claim.file.key);
+      } catch (error) {
+        this.logger.error({ eventType: 'media_file_gc_failed', hasFileId: !!id, stage });
+        try {
+          await this.repo.releaseDeletionClaim(id);
+        } catch {
+          this.logger.error({ eventType: 'media_file_delete_failed', hasFileId: !!id, stage: 'RELEASE_CLAIM' });
+        }
+        throw error;
+      }
+
+      stage = 'METADATA_DELETE';
+      try {
+        await this.repo.delete(id);
+      } catch (error) {
+        this.logger.error({ eventType: 'media_file_gc_failed', hasFileId: !!id, stage });
+        throw error;
+      }
+
+      this.logger.log({
+        eventType: 'media_file_gc_deleted',
+        hasFileId: !!id,
+        referenceCount: claim.referenceCount,
+      });
+      return { success: true };
     } catch (error) {
-      this.logger.error({ eventType: 'media_file_gc_failed', hasFileId: !!id });
+      this.logger.error({ eventType: 'media_file_delete_failed', hasFileId: !!id, stage });
       throw error;
     }
-
-    this.logger.log({ eventType: 'media_file_gc_deleted', hasFileId: !!id, referenceCount });
-    return { success: true };
   }
 
   async createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse> {
@@ -189,7 +221,7 @@ export class MediaService implements IMediaService {
 
   async deleteReference(
     input: DeleteMediaReferenceInput,
-  ): Promise<{ deleted: boolean; remainingCount: number }> {
+  ): Promise<DeleteMediaReferenceResult> {
     this.logger.log({
       eventType: 'media_reference_delete_requested',
       hasOwnerId: !!input.ownerId,
@@ -204,13 +236,18 @@ export class MediaService implements IMediaService {
     try {
       const reference = await this.repo.deleteReference(input);
       if (!reference) {
+        const remainingCount = input.fileId
+          ? await this.repo.countReferences(input.fileId)
+          : null;
         this.logger.log({
           eventType: 'media_reference_delete_skipped',
+          hasFileId: !!input.fileId,
           hasOwnerId: !!input.ownerId,
           ownerType: input.ownerType,
-          referenceCount: 0,
+          remainingCount,
+          reason: 'REFERENCE_NOT_FOUND',
         });
-        return { deleted: false, remainingCount: 0 };
+        return { deleted: false, remainingCount };
       }
 
       const remainingCount = await this.repo.countReferences(reference.fileId);
@@ -227,6 +264,24 @@ export class MediaService implements IMediaService {
         hasOwnerId: !!input.ownerId,
         ownerType: input.ownerType,
       });
+      throw error;
+    }
+  }
+
+  async countReferences(fileId: string): Promise<number> {
+    this.logger.log({ eventType: 'media_reference_count_requested', hasFileId: !!fileId });
+    this.logger.log({ eventType: 'media_reference_count_started', hasFileId: !!fileId });
+
+    try {
+      const referenceCount = await this.repo.countReferences(fileId);
+      this.logger.log({
+        eventType: 'media_reference_counted',
+        hasFileId: !!fileId,
+        referenceCount,
+      });
+      return referenceCount;
+    } catch (error) {
+      this.logger.error({ eventType: 'media_reference_count_failed', hasFileId: !!fileId });
       throw error;
     }
   }

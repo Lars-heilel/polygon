@@ -5,6 +5,7 @@ import { handlePrismaError } from '@org/core';
 
 import type {
   CreateMediaReferenceInput,
+  DeleteClaimResult,
   DeleteMediaReferenceInput,
   IMediaRepository,
   MediaReferenceResponse,
@@ -113,7 +114,20 @@ export class MediaPrismaRepository implements IMediaRepository {
 
   async createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse> {
     try {
-      return await this.prisma.mediaReference.create({ data: input });
+      return await this.prisma.$transaction(async (tx) => {
+        const [file] = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+          SELECT "id", "status"::text AS "status"
+          FROM "File"
+          WHERE "id" = ${input.fileId}
+          FOR UPDATE
+        `;
+
+        if (!file || file.status !== 'READY') {
+          throw new Error('File is not available for reference');
+        }
+
+        return tx.mediaReference.create({ data: input });
+      });
     } catch (error) {
       handlePrismaError(error);
     }
@@ -142,6 +156,46 @@ export class MediaPrismaRepository implements IMediaRepository {
   async countReferences(fileId: string): Promise<number> {
     try {
       return await this.prisma.mediaReference.count({ where: { fileId } });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async claimForDeletion(fileId: string): Promise<DeleteClaimResult> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const [file] = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+          SELECT "id", "status"::text AS "status"
+          FROM "File"
+          WHERE "id" = ${fileId}
+          FOR UPDATE
+        `;
+
+        if (!file) return { outcome: 'MISSING' };
+        if (file.status !== 'READY') return { outcome: 'UNAVAILABLE' };
+
+        const referenceCount = await tx.mediaReference.count({ where: { fileId } });
+        if (referenceCount > 0) {
+          return { outcome: 'REFERENCED', referenceCount };
+        }
+
+        const claimedFile = await tx.file.update({
+          where: { id: fileId },
+          data: { status: 'DELETING' },
+        });
+        return { outcome: 'CLAIMED', file: claimedFile, referenceCount: 0 };
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async releaseDeletionClaim(fileId: string): Promise<void> {
+    try {
+      await this.prisma.file.updateMany({
+        where: { id: fileId, status: 'DELETING' },
+        data: { status: 'READY' },
+      });
     } catch (error) {
       handlePrismaError(error);
     }

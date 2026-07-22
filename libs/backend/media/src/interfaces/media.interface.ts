@@ -11,6 +11,7 @@ export interface CreateMediaReferenceInput {
 export interface DeleteMediaReferenceInput {
   ownerType: MediaReferenceOwnerType;
   ownerId: string;
+  fileId?: string;
 }
 
 export interface MediaReferenceResponse {
@@ -24,6 +25,17 @@ export interface MediaReferenceResponse {
 export type DeleteFileResult =
   | { success: true }
   | { success: false; reason?: 'REFERENCED' };
+
+export type DeleteMediaReferenceResult = {
+  deleted: boolean;
+  remainingCount: number | null;
+};
+
+export type DeleteClaimResult =
+  | { outcome: 'MISSING' }
+  | { outcome: 'UNAVAILABLE' }
+  | { outcome: 'REFERENCED'; referenceCount: number }
+  | { outcome: 'CLAIMED'; file: File; referenceCount: 0 };
 
 export interface IMediaRepository {
   findById(id: string): Promise<File | null>;
@@ -50,6 +62,8 @@ export interface IMediaRepository {
   createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse>;
   deleteReference(input: DeleteMediaReferenceInput): Promise<MediaReferenceResponse | null>;
   countReferences(fileId: string): Promise<number>;
+  claimForDeletion(fileId: string): Promise<DeleteClaimResult>;
+  releaseDeletionClaim(fileId: string): Promise<void>;
 }
 
 export interface FileContentResult {
@@ -114,7 +128,8 @@ export interface IMediaService {
   getFileContent(id: string): Promise<FileContentResult>;
   delete(id: string): Promise<DeleteFileResult>;
   createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse>;
-  deleteReference(input: DeleteMediaReferenceInput): Promise<{ deleted: boolean; remainingCount: number }>;
+  deleteReference(input: DeleteMediaReferenceInput): Promise<DeleteMediaReferenceResult>;
+  countReferences(fileId: string): Promise<number>;
   getHistory(uploaderId: string, category?: FileCategory): Promise<FileResponse[]>;
   getChatHistory(
     chatId: string,
