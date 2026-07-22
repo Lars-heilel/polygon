@@ -195,6 +195,16 @@ export function Text({ children, className }: { children: ReactNode; className?:
   return <span className={className}>{children}</span>;
 }
 
+let linkPreviewStub: unknown = null;
+
+export function __setLinkPreviewStub(value: unknown) {
+  linkPreviewStub = value;
+}
+
+export function __resetLinkPreviewStub() {
+  linkPreviewStub = null;
+}
+
 export function useLinkPreviewQuery() {
-  return { data: null };
+  return { data: linkPreviewStub };
 }

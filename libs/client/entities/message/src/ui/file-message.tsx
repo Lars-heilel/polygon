@@ -448,7 +448,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
         barWidth: variant === 'voice' ? 2 : 3,
         barGap: 1.5,
         barRadius: 999,
-        height: variant === 'voice' ? 36 : 44,
+        height: 32,
         cursorWidth: 0,
         url,
         normalize: true,
@@ -516,7 +516,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     <div
       data-testid={`${variant}-waveform-message`}
       className={cn(
-        'flex h-[72px] w-64 max-w-full min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        'flex min-h-[88px] w-[min(100%,320px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
         variant === 'audio'
           ? 'border-border bg-surface'
           : isMine ? 'border-white/20 bg-white/10' : 'border-border bg-surface',
@@ -551,13 +551,16 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
           <span className={cn('w-8 text-[11px] font-medium tabular-nums', variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted')}>
             {formatAudioTime(displayCurrentTime)}
           </span>
-          <div className="min-w-0 flex-1">
+          <div
+            data-testid="audio-waveform-frame"
+            className="h-8 min-w-0 flex-1"
+          >
             <div
               data-testid="audio-waveform"
               ref={waveformRef}
               className={cn(
-                'w-full overflow-hidden rounded-lg',
-                !waveReady && 'h-10 animate-pulse bg-primary/15',
+                'h-full w-full overflow-hidden rounded-lg',
+                !waveReady && 'animate-pulse bg-primary/15',
               )}
             />
             <input

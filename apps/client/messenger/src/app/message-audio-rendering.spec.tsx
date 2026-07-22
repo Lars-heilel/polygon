@@ -19,10 +19,14 @@ jest.mock('wavesurfer.js', () => ({
 
 const baseMessage = {
   id: 'message-1',
+  clientId: null,
   chatId: 'chat-1',
   senderId: 'user-1',
+  kind: 'audio',
   type: 'FILE',
   text: null,
+  media: null,
+  linkPreview: null,
   fileId: 'file-1',
   fileBucket: 'media',
   fileKey: 'chat/audio.webm',
@@ -60,6 +64,7 @@ describe('message audio rendering', () => {
     );
 
     expect(screen.getByTestId('audio-waveform-message')).toBeTruthy();
+    expect(screen.getByTestId('audio-waveform-frame').className).toContain('h-8');
     expect(screen.getByTestId('audio-waveform')).toBeTruthy();
     expect(screen.getByRole('button', { name: /play audio/i })).toBeTruthy();
     expect(screen.getByLabelText(/seek audio/i)).toBeTruthy();
@@ -98,9 +103,33 @@ describe('message audio rendering', () => {
     );
 
     expect(screen.getByTestId('voice-waveform-message')).toBeTruthy();
+    expect(screen.getByTestId('voice-waveform-message').className).toContain('min-h-[88px]');
+    expect(screen.getByTestId('audio-waveform-frame').className).toContain('h-8');
     expect(screen.getByTestId('audio-waveform')).toBeTruthy();
     expect(screen.getByRole('button', { name: /play voice/i })).toBeTruthy();
     expect(screen.getByLabelText(/seek voice/i)).toBeTruthy();
+  });
+
+  it('uses the same stable audio frame size for audio files and voice messages', () => {
+    const { rerender } = render(
+      <FileMessage
+        message={baseMessage}
+        isMine={false}
+      />,
+    );
+
+    expect(screen.getByTestId('audio-waveform-message').className).toContain('min-h-[88px]');
+    expect(screen.getByTestId('audio-waveform-message').className).toContain('w-[min(100%,320px)]');
+
+    rerender(
+      <FileMessage
+        message={{ ...baseMessage, kind: 'voice', fileCategory: 'VOICE', fileName: 'voice.webm' }}
+        isMine={false}
+      />,
+    );
+
+    expect(screen.getByTestId('voice-waveform-message').className).toContain('min-h-[88px]');
+    expect(screen.getByTestId('voice-waveform-message').className).toContain('w-[min(100%,320px)]');
   });
 
   it('falls back to a generic file attachment when audio metadata is inconsistent', () => {
