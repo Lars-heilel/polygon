@@ -143,7 +143,7 @@ export interface IChatRepository {
     userId: string,
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
-  findVisibleMessagesByIds?(
+  findVisibleMessagesByIds(
     chatId: string,
     messageIds: string[],
     userId: string,
@@ -195,8 +195,8 @@ export interface IChatService {
     mode: 'ME' | 'EVERYONE',
   ): Promise<Message | { id: string; chatId: string }>;
   forwardMessages(data: ForwardMessagesData): Promise<Message[]>;
-  prepareForwardMessages?(data: ForwardMessagesData): Promise<PreparedForwardMessage[]>;
-  cloneForwardMessages?(data: CloneForwardMessagesData): Promise<Message[]>;
+  prepareForwardMessages(data: ForwardMessagesData): Promise<PreparedForwardMessage[]>;
+  cloneForwardMessages(data: CloneForwardMessagesData): Promise<Message[]>;
   markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
   getMembers(chatId: string): Promise<{ userId: string }[]>;

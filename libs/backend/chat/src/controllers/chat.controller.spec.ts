@@ -22,6 +22,8 @@ describe('ChatController', () => {
       getMembers: jest.fn(),
       createSelfChat: jest.fn(),
       markRead: jest.fn(),
+      prepareForwardMessages: jest.fn(),
+      cloneForwardMessages: jest.fn(),
       getMessageAttachmentForAccess: jest.fn(),
     };
     controller = new ChatController(service);
@@ -97,6 +99,35 @@ describe('ChatController', () => {
       messageId: 'message-1',
       attachmentId: 'attachment-1',
       userId: 'user-1',
+    });
+  });
+
+  it('delegates forward preparation and cloning to the service', async () => {
+    service.prepareForwardMessages.mockResolvedValue([{ messageId: 'message-1' }] as never);
+    service.cloneForwardMessages.mockResolvedValue([{ id: 'cloned-message' }] as never);
+
+    await expect(controller.prepareForwardMessages({
+      sourceChatId: 'source-chat',
+      targetChatId: 'target-chat',
+      messageIds: ['message-1'],
+      userId: 'user-1',
+    })).resolves.toEqual([{ messageId: 'message-1' }]);
+    await expect(controller.cloneForwardMessages({
+      targetChatId: 'target-chat',
+      userId: 'user-1',
+      messages: [{ messageId: 'message-1' } as never],
+    })).resolves.toEqual([{ id: 'cloned-message' }]);
+
+    expect(service.prepareForwardMessages).toHaveBeenCalledWith({
+      sourceChatId: 'source-chat',
+      targetChatId: 'target-chat',
+      messageIds: ['message-1'],
+      userId: 'user-1',
+    });
+    expect(service.cloneForwardMessages).toHaveBeenCalledWith({
+      targetChatId: 'target-chat',
+      userId: 'user-1',
+      messages: [{ messageId: 'message-1' }],
     });
   });
 });

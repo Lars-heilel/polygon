@@ -29,6 +29,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMessagesByChat: jest.fn(),
     findMediaMessagesByChat: jest.fn(),
     findMessageById: jest.fn(),
+    findVisibleMessagesByIds: jest.fn(),
     findMessageAttachmentForAccess: jest.fn(),
     createMessage: jest.fn(),
     createMessageWithRelations: jest.fn(),
@@ -285,6 +286,254 @@ describe('ChatService', () => {
     expect(diagnosticPayload).not.toContain('source-secret-chat');
     expect(diagnosticPayload).not.toContain('target-secret-chat');
     expect(diagnosticPayload).not.toContain('message-secret-id');
+  });
+
+  it('prepares only visible messages for forwarding using the visibility-aware repository query', async () => {
+    const repo = repoMock();
+    const sourceMember = {
+      chatId: 'source-chat',
+      userId: 'forwarder',
+      role: 'MEMBER' as const,
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    };
+    const targetMember = { ...sourceMember, chatId: 'target-chat' };
+    const visibleMessage = {
+      id: 'visible-message',
+      clientId: null,
+      chatId: 'source-chat',
+      senderId: 'original-sender',
+      type: 'VOICE' as const,
+      text: null,
+      ...messageRelations,
+      fileId: 'file-1',
+      fileBucket: null,
+      fileKey: null,
+      fileName: 'voice.ogg',
+      fileSize: 33000,
+      fileMime: 'audio/ogg',
+      fileCategory: 'VOICE',
+      forwardedFromId: null,
+      forwardedFromSenderId: null,
+      forwardedFromCreatedAt: null,
+      forwardedFromType: null,
+      forwardedFromText: null,
+      forwardedFromFileName: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-21T10:15:00.000Z'),
+      updatedAt: new Date('2026-07-21T10:15:00.000Z'),
+    };
+    repo.findChatMember.mockResolvedValueOnce(sourceMember).mockResolvedValueOnce(targetMember);
+    repo.findVisibleMessagesByIds.mockResolvedValue([visibleMessage]);
+    const service = new ChatService(repo);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.prepareForwardMessages({
+      sourceChatId: 'source-chat',
+      targetChatId: 'target-chat',
+      messageIds: ['visible-message', 'hidden-message'],
+      userId: 'forwarder',
+    })).resolves.toEqual([
+      expect.objectContaining({
+        messageId: 'visible-message',
+        chatId: 'source-chat',
+        senderId: 'original-sender',
+        attachments: [],
+        forwardContext: null,
+      }),
+    ]);
+
+    expect(repo.findVisibleMessagesByIds).toHaveBeenCalledWith(
+      'source-chat',
+      ['visible-message', 'hidden-message'],
+      'forwarder',
+    );
+    expect(repo.findMessageById).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_prepare_skipped',
+      messageCount: 2,
+      skippedCount: 1,
+    }));
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_prepare_completed',
+      messageCount: 2,
+      preparedCount: 1,
+      skippedCount: 1,
+    }));
+  });
+
+  it('clones prepared forwarded messages with preserved root context and attachment references', async () => {
+    const repo = repoMock();
+    const mediaClient = { send: jest.fn(() => of({ id: 'reference-1' })) };
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'target-chat',
+      userId: 'forwarder',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.createMessageWithRelations.mockResolvedValue({
+      id: 'cloned-message',
+      attachments: [{
+        id: 'attachment-1',
+        messageId: 'cloned-message',
+        mediaId: 'media-1',
+        fileNameSnapshot: 'voice.ogg',
+        fileSizeSnapshot: 33000,
+        mimeSnapshot: 'audio/ogg',
+        category: 'VOICE',
+        createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      }],
+      forwardContext: {
+        messageId: 'cloned-message',
+        originalMessageId: 'root-message',
+        originalChatId: 'root-chat',
+        originalAuthorId: 'author-1',
+        originalAuthorNameSnapshot: 'tamilka',
+        originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+        originalMessageCreatedAt: new Date('2026-07-21T10:15:00.000Z'),
+        originalMessageType: 'VOICE',
+        originalTextPreview: null,
+        originalFileNamePreview: 'voice.ogg',
+        snapshotVersion: 1,
+        createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      },
+    } as Message);
+    const service = new ChatService(repo, mediaClient as never);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.cloneForwardMessages({
+      targetChatId: 'target-chat',
+      userId: 'forwarder',
+      messages: [{
+        messageId: 'source-message',
+        chatId: 'source-chat',
+        senderId: 'original-sender',
+        originalAuthorId: 'author-1',
+        originalAuthorNameSnapshot: 'tamilka',
+        originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+        type: 'VOICE',
+        text: null,
+        createdAt: new Date('2026-07-21T10:15:00.000Z'),
+        attachments: [{
+          mediaId: 'media-1',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+        }],
+        forwardContext: {
+          originalMessageId: 'root-message',
+          originalChatId: 'root-chat',
+          originalAuthorId: 'author-1',
+          originalAuthorNameSnapshot: 'tamilka',
+          originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+          originalMessageCreatedAt: new Date('2026-07-20T10:15:00.000Z'),
+          originalMessageType: 'VOICE',
+          originalTextPreview: null,
+          originalFileNamePreview: 'voice.ogg',
+        },
+      }],
+    })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'cloned-message',
+        attachments: expect.arrayContaining([
+          expect.objectContaining({ mediaId: 'media-1', category: 'VOICE' }),
+        ]),
+      }),
+    ]);
+
+    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(expect.objectContaining({
+      chatId: 'target-chat',
+      senderId: 'forwarder',
+      attachments: [expect.objectContaining({ mediaId: 'media-1' })],
+      forwardContext: expect.objectContaining({
+        originalMessageId: 'root-message',
+        originalAuthorNameSnapshot: 'tamilka',
+      }),
+    }));
+    expect(mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.CREATE_REFERENCE, {
+      fileId: 'media-1',
+      ownerType: 'MESSAGE_ATTACHMENT',
+      ownerId: 'attachment-1',
+    });
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_clone_created',
+      hasTargetChatId: true,
+      messageCount: 1,
+      createdCount: 1,
+      attachmentCount: 1,
+    }));
+  });
+
+  it('compensates forwarded clones when media reference protection fails', async () => {
+    const repo = repoMock();
+    const mediaClient = { send: jest.fn(() => throwError(() => new Error('media unavailable'))) };
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'target-chat',
+      userId: 'forwarder',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.createMessageWithRelations.mockResolvedValue({
+      id: 'cloned-message',
+      attachments: [{
+        id: 'attachment-1',
+        messageId: 'cloned-message',
+        mediaId: 'media-1',
+        fileNameSnapshot: 'voice.ogg',
+        fileSizeSnapshot: 33000,
+        mimeSnapshot: 'audio/ogg',
+        category: 'VOICE',
+        createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      }],
+    } as Message);
+    repo.deleteCreatedMessage.mockResolvedValue(undefined);
+    const service = new ChatService(repo, mediaClient as never);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.cloneForwardMessages({
+      targetChatId: 'target-chat',
+      userId: 'forwarder',
+      messages: [{
+        messageId: 'source-message',
+        chatId: 'source-chat',
+        senderId: 'original-sender',
+        originalAuthorId: 'author-1',
+        originalAuthorNameSnapshot: 'tamilka',
+        originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+        type: 'VOICE',
+        text: null,
+        createdAt: new Date('2026-07-21T10:15:00.000Z'),
+        attachments: [{
+          mediaId: 'media-1',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+        }],
+        forwardContext: null,
+      }],
+    })).rejects.toThrow('media unavailable');
+
+    expect(repo.deleteCreatedMessage).toHaveBeenCalledWith('cloned-message');
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_forward_clone_failed',
+      hasTargetChatId: true,
+      hasUserId: true,
+      messageCount: 1,
+      createdCount: 0,
+      hasError: true,
+    }));
   });
 
   it('returns attachment media access only for chat members and logs the redacted lifecycle', async () => {

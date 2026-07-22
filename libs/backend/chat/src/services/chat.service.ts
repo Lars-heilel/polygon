@@ -517,12 +517,11 @@ export class ChatService implements IChatService {
       return [];
     }
 
-    const visibleMessages = this.repo.findVisibleMessagesByIds
-      ? await this.repo.findVisibleMessagesByIds(sourceChatId, messageIds, userId)
-      : (await Promise.all(messageIds.map((messageId) => this.repo.findMessageById(messageId))))
-        .filter((message): message is Message => (
-          message !== null && message.chatId === sourceChatId && message.deletedAt === null
-        ));
+    const visibleMessages = await this.repo.findVisibleMessagesByIds(
+      sourceChatId,
+      messageIds,
+      userId,
+    );
     const messagesById = new Map(visibleMessages.map((message) => [message.id, message]));
     const prepared = messageIds.flatMap((messageId) => {
       const message = messagesById.get(messageId);
