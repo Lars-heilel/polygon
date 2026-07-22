@@ -698,6 +698,7 @@ git commit -m "feat(media): add media references"
 - Modify: `libs/backend/chat/src/controllers/chat.controller.ts`
 - Modify: `libs/backend/chat/src/services/chat.service.ts`
 - Modify: `libs/backend/chat/src/interfaces/chat.interface.ts`
+- Modify: `libs/backend/chat/src/database/repository/chat.prisma.repo.ts`
 - Modify: `libs/backend/core/src/constants/queues/chat.queue.ts`
 
 **Interfaces:**
