@@ -54,6 +54,9 @@ export interface RawMessage {
   fileMime: string | null;
   fileCategory: string | null;
   forwardedFromId: string | null;
+  editedAt: string | null;
+  deletedAt: string | null;
+  deletedById: string | null;
   createdAt: string;
   updatedAt: string;
   media?: MessageMedia | null;
@@ -81,6 +84,9 @@ export interface Message {
   fileMime: string | null;
   fileCategory: string | null;
   forwardedFromId: string | null;
+  editedAt: string | null;
+  deletedAt: string | null;
+  deletedById: string | null;
 }
 
 export interface RawMessagePage {

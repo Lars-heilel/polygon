@@ -15,6 +15,9 @@ export function normalizeMessage(raw: RawMessage): Message {
   return {
     ...raw,
     clientId: raw.clientId ?? null,
+    editedAt: raw.editedAt ?? null,
+    deletedAt: raw.deletedAt ?? null,
+    deletedById: raw.deletedById ?? null,
     kind: resolveKind(raw, media),
     media,
     linkPreview: raw.linkPreview ?? null,

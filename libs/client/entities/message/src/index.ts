@@ -1,10 +1,15 @@
 export type { Message, MessagePage, RawMessage, RawMessagePage } from './message.api.js';
 export {
   messageApi,
+  useDeleteMessageMutation,
+  useEditMessageMutation,
+  useForwardMessagesMutation,
   useInfiniteMessagesQuery,
   useMessagesQuery,
   useSendMessageMutation,
 } from './message.api.js';
+export type { DeleteMessageMode, ForwardMessagesInput } from './message.api.js';
+export { removeMessageFromPages, updateMessageInPages } from './message-cache.js';
 export type {
   LinkPreview,
   LocalMessageStatus,

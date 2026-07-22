@@ -88,6 +88,9 @@ function createOptimisticMessage(input: {
     fileMime: file?.fileMime ?? null,
     fileCategory: file?.fileCategory ?? null,
     forwardedFromId: null,
+    editedAt: null,
+    deletedAt: null,
+    deletedById: null,
   };
 }
 
