@@ -47,18 +47,15 @@ export const MessageBubble = memo(function MessageBubble({
         {message.forwardedFromId ? (
           <div
             className={cn(
-              'mb-1.5 min-w-0 border-l-2 pl-2 text-[11px] leading-snug',
-              isMine ? 'border-white/35 text-text-inverse/75' : 'border-primary/60 text-text-muted',
+              'mb-1.5 min-w-0 border-l-2 py-0.5 pl-2 leading-snug',
+              isMine ? 'border-white/45 text-text-inverse/75' : 'border-primary/70 text-text-muted',
             )}
           >
-            <div className={cn('truncate font-medium', isMine ? 'text-text-inverse/90' : 'text-text')}>
-              {forwardedFromName ? `Forwarded from ${forwardedFromName}` : 'Forwarded message'}
+            <div className={cn('truncate text-[11px] font-medium', isMine ? 'text-text-inverse/90' : 'text-text')}>
+              {forwardedFromName ? `Forwarded from ${forwardedFromName}` : 'Forwarded'}
             </div>
-            {message.forwardedFromCreatedAt ? (
-              <div className="truncate">{formatTime(message.forwardedFromCreatedAt)}</div>
-            ) : null}
             {forwardedPreview ? (
-              <div className="mt-1 line-clamp-2 break-words text-[12px]">{forwardedPreview}</div>
+              <div className="mt-0.5 line-clamp-2 break-words text-[12px] opacity-85">{forwardedPreview}</div>
             ) : null}
           </div>
         ) : null}

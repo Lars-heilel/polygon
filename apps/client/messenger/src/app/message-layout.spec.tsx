@@ -95,11 +95,11 @@ describe('message layout', () => {
     );
 
     expect(screen.getByText('Forwarded from Alice A.')).toBeTruthy();
-    expect(screen.getByText('13.07.2026 12:30')).toBeTruthy();
+    expect(screen.queryByText('13.07.2026 12:30')).toBeNull();
     expect(screen.getByText('original forwarded text')).toBeTruthy();
   });
 
-  it('does not render unknown sender when forwarded sender profile is missing', () => {
+  it('uses a neutral fallback when forwarded sender profile is missing', () => {
     render(
       <MessageBubble
         message={{
@@ -120,7 +120,9 @@ describe('message layout', () => {
     );
 
     expect(screen.queryByText(/Unknown sender/i)).toBeNull();
-    expect(screen.getByText('Forwarded message')).toBeTruthy();
+    expect(screen.queryByText('Forwarded message')).toBeNull();
+    expect(screen.queryByText('Forwarded from user-source')).toBeNull();
+    expect(screen.getByText('Forwarded')).toBeTruthy();
     expect(screen.getByText('original forwarded text')).toBeTruthy();
   });
 });
