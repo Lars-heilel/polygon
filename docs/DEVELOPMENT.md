@@ -271,6 +271,28 @@ libs/client/
 
 Само приложение (`apps/client/messenger`) собирает эти слои воедино: router, providers, layouts уровня приложения и страницы живут там.
 
+### Client UI System
+
+`@org/shared` является владельцем переносимой клиентской дизайн-системы: theme tokens, typography, базовые интерактивные компоненты, модальные оболочки, уведомления, skeleton/loading состояния и общие viewer/surface primitives.
+
+Новый клиентский код в `entities`, `features`, `layouts`, `pages` и `apps` должен сначала использовать публичные primitives из `@org/shared`:
+
+- `Text` и `Heading` — для контентного текста, заголовков, labels, helper/error text и muted/semantic text states.
+- `Button` и `IconButton` — для действий. Ручные `button` с локальными цветами допустимы только для узкого layout/unstyled behavior, когда shared variant не подходит.
+- `Input`, `Textarea`, `Toggle`, `Dropdown`, `Modal`, `Badge`, `Spinner`, `Skeleton`, `FormAlert`, `EmptyState`, `StatusScreen`, `Toast` — вместо повторной локальной реализации тех же UI-паттернов.
+- `cn` — для композиции классов, если компоненту нужен layout или state-specific className.
+
+Локальные Tailwind-классы в feature/page коде должны описывать преимущественно layout и геометрию: `flex`, `grid`, `gap`, `px`, `py`, `min-h-0`, `overflow-*`, responsive breakpoints. Брендовые цвета, semantic text colors, borders, focus rings, disabled states, radius presets, loading states и визуальные варианты действий должны приходить из shared-компонентов или semantic tokens.
+
+`libs/client/shared/src/styles/global.css` не должен быть свалкой component overrides. Он владеет только:
+
+- Tailwind v4 `@source`;
+- semantic design tokens и theme overrides;
+- базовыми стилями документа (`body`, focus-visible, selection, scrollbar);
+- интеграционными overrides для сторонних виджетов, которые нельзя выразить через React props.
+
+Запрещены новые глобальные хаки по селекторам вроде `.bg-primary`, `.bg-green-500`, `button.bg-*`, `aside`, `[role='dialog']`, `.border-b.border-border`. Если визуал нужен многим местам, добавьте или расширьте shared primitive. Если визуал специфичен для одной фичи, держите его рядом с этой фичей и используйте semantic tokens.
+
 ### Внутренняя структура фичи
 
 Каждая фича внутри `libs/client/features/src/lib/` разделена на два сегмента:
