@@ -21,6 +21,10 @@ interface ChatMessageRowProps {
   audioQueueIndexByMessageId: Map<string, number>;
 }
 
+export function getMessageVirtualKey(msg: Pick<Message, 'id' | 'clientId'>): string {
+  return msg.clientId ? `client:${msg.clientId}` : `server:${msg.id}`;
+}
+
 export const ChatMessageRow = memo(({
   msg,
   isMine,
@@ -35,6 +39,7 @@ export const ChatMessageRow = memo(({
       data-testid="message-row"
       data-message-id={msg.id}
       data-message-client-id={msg.clientId ?? undefined}
+      data-message-virtual-key={getMessageVirtualKey(msg)}
       data-message-type={msg.fileCategory ?? msg.type}
     >
       <MessageBubble
@@ -170,7 +175,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
         ref={feedRef}
         mode="reverse"
         items={allMessages}
-        getKey={(msg) => (msg.clientId ? `client:${msg.clientId}` : `server:${msg.id}`)}
+        getKey={getMessageVirtualKey}
         estimateItemHeight={80}
         hasPrevious={hasNextPage}
         isLoadingPrevious={isFetchingNextPage}

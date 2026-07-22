@@ -20,7 +20,7 @@ registerGlobalFrontendErrorHandlers();
 configureAuthedFetch(() => useSessionStore.getState().setAuthenticated(false));
 initSocketMiddleware();
 
-if ('serviceWorker' in navigator) {
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
       const error = err instanceof Error ? err : new Error('Service worker registration failed');

@@ -59,5 +59,6 @@ describe('message layout', () => {
     );
 
     expect(screen.getByTestId('message-row').getAttribute('data-message-client-id')).toBe('client-1');
+    expect(screen.getByTestId('message-row').getAttribute('data-message-virtual-key')).toBe('client:client-1');
   });
 });
