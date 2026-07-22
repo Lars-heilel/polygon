@@ -115,6 +115,32 @@ export class ChatController implements IChatController {
     return this.chatService.forwardMessages(payload);
   }
 
+  @MessagePattern(CHAT_PATTERNS.EDIT_MESSAGE)
+  editMessage(
+    @Payload()
+    payload: {
+      chatId: string;
+      messageId: string;
+      userId: string;
+      text: string;
+    },
+  ): Promise<Message> {
+    return this.chatService.editMessage(payload.chatId, payload.messageId, payload.userId, payload.text);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.DELETE_MESSAGE)
+  deleteMessage(
+    @Payload()
+    payload: {
+      chatId: string;
+      messageId: string;
+      userId: string;
+      mode: 'ME' | 'EVERYONE';
+    },
+  ): Promise<Message | { id: string; chatId: string }> {
+    return this.chatService.deleteMessage(payload.chatId, payload.messageId, payload.userId, payload.mode);
+  }
+
   @MessagePattern(CHAT_PATTERNS.MARK_READ)
   markRead(
     @Payload() payload: { chatId: string; userId: string; messageId?: string | null },

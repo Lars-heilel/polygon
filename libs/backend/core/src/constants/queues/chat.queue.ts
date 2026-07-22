@@ -8,6 +8,8 @@ export const CHAT_PATTERNS = {
   GET_MESSAGES: 'chat.getMessages',
   GET_MEDIA_MESSAGES: 'chat.getMediaMessages',
   SEND_MESSAGE: 'chat.sendMessage',
+  EDIT_MESSAGE: 'chat.editMessage',
+  DELETE_MESSAGE: 'chat.deleteMessage',
   MARK_READ: 'chat.markRead',
   FORWARD_MESSAGES: 'chat.forwardMessages',
   CHECK_MEMBERSHIP: 'chat.checkMembership',

@@ -7,3 +7,5 @@ export { PrismaService } from './database/prisma/prisma.service';
 export * from './dto/create-direct-chat.dto';
 export * from './dto/send-message.dto';
 export * from './dto/mark-chat-read.dto';
+export * from './dto/edit-message.dto';
+export * from './dto/delete-message.dto';

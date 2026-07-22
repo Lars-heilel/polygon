@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpException,
   Inject,
   Logger,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -20,7 +22,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateDirectChatDto, MarkChatReadDto, SendMessageDto } from '@org/chat';
+import { CreateDirectChatDto, DeleteMessageDto, EditMessageDto, MarkChatReadDto, SendMessageDto } from '@org/chat';
 import type { ForwardMessageInput, MessagePage, UserPublic } from '@org/common';
 import { chatMediaQuerySchema } from '@org/common';
 import {
@@ -219,6 +221,70 @@ export class ChatGatewayController {
         messageId: dto.messageId ?? null,
       }),
     );
+  }
+
+  @Patch(':id/messages/:messageId')
+  @ApiOperation({ summary: 'Edit a text-only message' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiParam({ name: 'messageId', description: 'Message UUID' })
+  async editMessage(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') chatId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: EditMessageDto,
+  ) {
+    this.logger.debug({
+      eventType: 'message_edit_requested',
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasUserId: !!user.sub,
+    });
+    const message = await this.send(
+      this.chatClient.send(CHAT_PATTERNS.EDIT_MESSAGE, {
+        chatId,
+        messageId,
+        userId: user.sub,
+        text: dto.text,
+      }),
+    );
+    this.socketGateway.broadcastMessageUpdated(chatId, message);
+    return message;
+  }
+
+  @Delete(':id/messages/:messageId')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Delete a message for current user or everyone' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiParam({ name: 'messageId', description: 'Message UUID' })
+  async deleteMessage(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') chatId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: DeleteMessageDto,
+  ) {
+    this.logger.debug({
+      eventType: 'message_delete_requested',
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasUserId: !!user.sub,
+      mode: dto.mode,
+    });
+    const result = await this.send<{ id: string; chatId: string }>(
+      this.chatClient.send(CHAT_PATTERNS.DELETE_MESSAGE, {
+        chatId,
+        messageId,
+        userId: user.sub,
+        mode: dto.mode,
+      }),
+    );
+
+    if (dto.mode === 'EVERYONE') {
+      this.socketGateway.broadcastMessageDeleted(chatId, messageId);
+    } else {
+      this.socketGateway.emitToUser(user.sub, 'message:hidden', { chatId, messageId });
+    }
+
+    return result;
   }
 
   @Post(':id/forward')

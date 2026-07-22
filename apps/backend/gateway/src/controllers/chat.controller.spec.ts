@@ -10,6 +10,9 @@ describe('ChatGatewayController', () => {
     const userClient = { send: jest.fn(() => of([])) };
     const socketGateway = {
       broadcastMessage: jest.fn(),
+      broadcastMessageUpdated: jest.fn(),
+      broadcastMessageDeleted: jest.fn(),
+      emitToUser: jest.fn(),
       triggerPushForOfflineRecipients: jest.fn(),
     };
     return {
@@ -68,6 +71,63 @@ describe('ChatGatewayController', () => {
       userId: 'user-1',
       messageId: 'message-1',
     });
+  });
+
+  it('patches a message and broadcasts message:updated', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValue(of({ id: 'message-1', chatId: 'chat-1', text: 'after' }));
+
+    await expect(
+      ctx.controller.editMessage({ sub: 'user-1' } as never, 'chat-1', 'message-1', {
+        text: 'after',
+      } as never),
+    ).resolves.toEqual(expect.objectContaining({ id: 'message-1', text: 'after' }));
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.EDIT_MESSAGE, {
+      chatId: 'chat-1',
+      messageId: 'message-1',
+      userId: 'user-1',
+      text: 'after',
+    });
+    expect(ctx.socketGateway.broadcastMessageUpdated).toHaveBeenCalledWith(
+      'chat-1',
+      expect.objectContaining({ id: 'message-1' }),
+    );
+  });
+
+  it('deletes a message for the current user and emits message:hidden to that user', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValue(of({ id: 'message-1', chatId: 'chat-1' }));
+
+    await expect(
+      ctx.controller.deleteMessage({ sub: 'user-1' } as never, 'chat-1', 'message-1', {
+        mode: 'ME',
+      } as never),
+    ).resolves.toEqual({ id: 'message-1', chatId: 'chat-1' });
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DELETE_MESSAGE, {
+      chatId: 'chat-1',
+      messageId: 'message-1',
+      userId: 'user-1',
+      mode: 'ME',
+    });
+    expect(ctx.socketGateway.emitToUser).toHaveBeenCalledWith('user-1', 'message:hidden', {
+      chatId: 'chat-1',
+      messageId: 'message-1',
+    });
+    expect(ctx.socketGateway.broadcastMessageDeleted).not.toHaveBeenCalled();
+  });
+
+  it('deletes a message for everyone and broadcasts message:deleted', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValue(of({ id: 'message-1', chatId: 'chat-1' }));
+
+    await ctx.controller.deleteMessage({ sub: 'user-1' } as never, 'chat-1', 'message-1', {
+      mode: 'EVERYONE',
+    } as never);
+
+    expect(ctx.socketGateway.broadcastMessageDeleted).toHaveBeenCalledWith('chat-1', 'message-1');
+    expect(ctx.socketGateway.emitToUser).not.toHaveBeenCalled();
   });
 
   it('does not write raw HTTP chat request data to diagnostic logs', async () => {

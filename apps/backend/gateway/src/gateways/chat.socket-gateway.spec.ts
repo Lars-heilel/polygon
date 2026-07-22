@@ -31,6 +31,9 @@ describe('ChatSocketGateway ban enforcement', () => {
       senderId: string,
       message: { text?: string | null; [key: string]: unknown },
     ): Promise<void>;
+    broadcastMessageUpdated(chatId: string, message: unknown): void;
+    broadcastMessageDeleted(chatId: string, messageId: string): void;
+    emitToUser(userId: string, event: string, payload: unknown): void;
     handleSendMessage(
       socket: never,
       payload: { chatId: string; text?: string; type?: string; fileName?: string; clientId?: string },
@@ -332,5 +335,48 @@ describe('ChatSocketGateway ban enforcement', () => {
       id: 'server-message-1',
       clientId: '44444444-4444-4444-8444-444444444444',
     }));
+  });
+
+  it('broadcasts updated and deleted message events to a chat room', () => {
+    const emit = jest.fn();
+    const to = jest.fn(() => ({ emit }));
+    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+      sockets: { sockets: new Map() },
+      to,
+    };
+
+    gateway.broadcastMessageUpdated('chat-1', { id: 'message-1' });
+    gateway.broadcastMessageDeleted('chat-1', 'message-1');
+
+    expect(to).toHaveBeenCalledWith('chat:chat-1');
+    expect(emit).toHaveBeenCalledWith('message:updated', { id: 'message-1' });
+    expect(emit).toHaveBeenCalledWith('message:deleted', {
+      chatId: 'chat-1',
+      messageId: 'message-1',
+    });
+  });
+
+  it('emits targeted events to every socket for one user', async () => {
+    const firstSocket = makeSocket();
+    firstSocket.id = 'socket-1';
+    const secondSocket = makeSocket();
+    secondSocket.id = 'socket-2';
+    const emit = jest.fn();
+    const to = jest.fn(() => ({ emit }));
+    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+      sockets: { sockets: new Map() },
+      to,
+    };
+
+    await gateway.handleConnection(firstSocket as never);
+    await gateway.handleConnection(secondSocket as never);
+    gateway.emitToUser('user-1', 'message:hidden', { chatId: 'chat-1', messageId: 'message-1' });
+
+    expect(to).toHaveBeenCalledWith('socket-1');
+    expect(to).toHaveBeenCalledWith('socket-2');
+    expect(emit).toHaveBeenCalledWith('message:hidden', {
+      chatId: 'chat-1',
+      messageId: 'message-1',
+    });
   });
 });

@@ -356,6 +356,23 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   broadcastMessage(chatId: string, message: unknown) {
     this.server.to(`chat:${chatId}`).emit('message:new', message);
   }
+
+  broadcastMessageUpdated(chatId: string, message: unknown): void {
+    this.server.to(`chat:${chatId}`).emit('message:updated', message);
+  }
+
+  broadcastMessageDeleted(chatId: string, messageId: string): void {
+    this.server.to(`chat:${chatId}`).emit('message:deleted', { chatId, messageId });
+  }
+
+  emitToUser(userId: string, event: string, payload: unknown): void {
+    const sockets = this.userSockets.get(userId);
+    if (!sockets) return;
+
+    for (const socketId of sockets) {
+      this.server.to(socketId).emit(event, payload);
+    }
+  }
 }
 
 function getMessagePreview(message: { text?: string | null; fileCategory?: unknown; fileName?: unknown }): string {
