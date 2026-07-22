@@ -1,4 +1,11 @@
-import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Chat, ChatMediaFilter, ChatMember, Message, MessagePage } from '@org/common';
 import { CHAT_PRISMA_REPOSITORY_TOKEN } from '@org/core';
 
@@ -7,6 +14,7 @@ import type {
   ForwardMessagesData,
   IChatRepository,
   IChatService,
+  MessageAttachmentAccessInput,
 } from '../interfaces/chat.interface';
 
 @Injectable()
@@ -70,6 +78,68 @@ export class ChatService implements IChatService {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
     return this.repo.findMediaMessagesByChat(chatId, cursor, take, filter, userId);
+  }
+
+  async getMessageAttachmentForAccess(
+    input: MessageAttachmentAccessInput,
+  ): Promise<{ mediaId: string }> {
+    const logContext = {
+      hasChatId: !!input.chatId,
+      hasMessageId: !!input.messageId,
+      hasAttachmentId: !!input.attachmentId,
+      hasUserId: !!input.userId,
+    };
+    this.logger.debug({ eventType: 'message_attachment_access_requested', ...logContext });
+
+    let member;
+    try {
+      member = await this.repo.findChatMember(input.chatId, input.userId);
+    } catch (error) {
+      this.logger.error({ eventType: 'message_attachment_access_failed', ...logContext, reason: 'membership_lookup_failed' });
+      throw error;
+    }
+
+    if (!member) {
+      this.logger.warn({ eventType: 'message_attachment_access_denied', ...logContext, reason: 'not_chat_member' });
+      throw new ForbiddenException('Not a member of this chat');
+    }
+
+    this.logger.debug({ eventType: 'message_attachment_access_started', ...logContext });
+    const findMessageAttachmentForAccess = this.repo.findMessageAttachmentForAccess;
+    if (!findMessageAttachmentForAccess) {
+      this.logger.error({
+        eventType: 'message_attachment_access_failed',
+        ...logContext,
+        reason: 'attachment_access_repository_unavailable',
+      });
+      throw new InternalServerErrorException('Attachment access is unavailable');
+    }
+
+    try {
+      const attachment = await findMessageAttachmentForAccess.call(this.repo, input);
+      if (!attachment) {
+        this.logger.warn({
+          eventType: 'message_attachment_access_denied',
+          ...logContext,
+          reason: 'attachment_not_in_message_chat',
+        });
+        throw new NotFoundException('Attachment not found');
+      }
+
+      this.logger.log({
+        eventType: 'message_attachment_access_success',
+        ...logContext,
+        hasMediaId: !!attachment.mediaId,
+      });
+      return attachment;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      this.logger.error({ eventType: 'message_attachment_access_failed', ...logContext, reason: 'attachment_lookup_failed' });
+      throw error;
+    }
   }
 
   async sendMessage(

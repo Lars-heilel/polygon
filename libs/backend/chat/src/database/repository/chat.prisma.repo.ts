@@ -16,6 +16,7 @@ import type {
   CreateMessageData,
   CreateMessageWithRelationsData,
   IChatRepository,
+  MessageAttachmentAccessInput,
 } from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -224,6 +225,28 @@ export class ChatPrismaRepository implements IChatRepository {
     return this.prisma.message.findUnique({
       where: { id },
       select: MESSAGE_SELECT_FIELDS,
+    });
+  }
+
+  async findMessageAttachmentForAccess(
+    input: MessageAttachmentAccessInput,
+  ): Promise<{ mediaId: string } | null> {
+    return this.prisma.messageAttachment.findFirst({
+      where: {
+        id: input.attachmentId,
+        messageId: input.messageId,
+        message: {
+          is: {
+            chatId: input.chatId,
+            chat: {
+              is: {
+                members: { some: { userId: input.userId } },
+              },
+            },
+          },
+        },
+      },
+      select: { mediaId: true },
     });
   }
 

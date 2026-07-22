@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  Logger,
   Param,
   Post,
   Query,
@@ -41,6 +42,8 @@ import type { FileCategory, LinkPreview } from '@org/common';
 @Controller()
 @UseGuards(JwtGuard, ActiveAccountGuard)
 export class MediaGatewayController {
+  private readonly logger = new Logger(MediaGatewayController.name);
+
   constructor(
     @Inject(MEDIA_CLIENT_TOKEN) private readonly mediaClient: ClientProxy,
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
@@ -196,13 +199,7 @@ export class MediaGatewayController {
 
   @Get('media/files/:fileId/content')
   async getFileContent(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload, @Req() req: Request, @Res() res: Response) {
-    const fileInfo = await this.send<{ id: string; bucket: string; key: string; mimeType: string; size: number; chatId: string | null } | null>(
-      this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id: fileId }),
-    );
-
-    if (!fileInfo) {
-      throw new HttpException('File not found', HttpStatus.NOT_FOUND);
-    }
+    const fileInfo = await this.getMediaFile(fileId);
 
     if (fileInfo.chatId) {
       const isMember = await this.send<boolean>(
@@ -217,7 +214,90 @@ export class MediaGatewayController {
       }
     }
 
-    const etag = `"${fileId}-${fileInfo.size}"`;
+    return this.streamMediaFile(fileId, req, res, fileInfo);
+  }
+
+  @Get('chats/:chatId/messages/:messageId/attachments/:attachmentId/content')
+  async getChatAttachmentContent(
+    @Param('chatId') chatId: string,
+    @Param('messageId') messageId: string,
+    @Param('attachmentId') attachmentId: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const logContext = {
+      hasChatId: !!chatId,
+      hasMessageId: !!messageId,
+      hasAttachmentId: !!attachmentId,
+      hasUserId: !!user.sub,
+    };
+    this.logger.debug({ eventType: 'message_attachment_content_requested', ...logContext });
+
+    try {
+      const attachment = await this.send<{ mediaId: string }>(
+        this.chatClient.send(CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS, {
+          chatId,
+          messageId,
+          attachmentId,
+          userId: user.sub,
+        }),
+      );
+
+      this.logger.debug({ eventType: 'message_attachment_content_started', ...logContext, hasMediaId: !!attachment.mediaId });
+      await this.streamMediaFile(attachment.mediaId, req, res);
+      this.logger.log({ eventType: 'message_attachment_content_success', ...logContext, status: 'stream_started' });
+    } catch (error) {
+      const status = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+      const eventType = status === HttpStatus.FORBIDDEN
+        ? 'message_attachment_content_denied'
+        : 'message_attachment_content_failed';
+      const logMethod = status === HttpStatus.FORBIDDEN ? this.logger.warn.bind(this.logger) : this.logger.error.bind(this.logger);
+      logMethod({ eventType, ...logContext, status, reason: status === HttpStatus.FORBIDDEN ? 'chat_access_denied' : 'content_unavailable' });
+      throw error;
+    }
+  }
+
+  private async getMediaFile(fileId: string): Promise<{
+    id: string;
+    bucket: string;
+    key: string;
+    mimeType: string;
+    size: number;
+    chatId: string | null;
+  }> {
+    const fileInfo = await this.send<{
+      id: string;
+      bucket: string;
+      key: string;
+      mimeType: string;
+      size: number;
+      chatId: string | null;
+    } | null>(this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id: fileId }));
+
+    if (!fileInfo) {
+      throw new HttpException('File not found', HttpStatus.NOT_FOUND);
+    }
+
+    return fileInfo;
+  }
+
+  private async streamMediaFile(
+    fileId: string,
+    req: Request,
+    res: Response,
+    fileInfo?: {
+      id: string;
+      bucket: string;
+      key: string;
+      mimeType: string;
+      size: number;
+      chatId: string | null;
+    },
+  ): Promise<void> {
+    const mediaFile = fileInfo ?? await this.getMediaFile(fileId);
+
+    const etag = `"${fileId}-${mediaFile.size}"`;
 
     if (req.headers['if-none-match'] === etag) {
       res.status(HttpStatus.NOT_MODIFIED).end();
@@ -231,14 +311,14 @@ export class MediaGatewayController {
       const parsed = rangeHeader.match(/bytes=(\d+)-(\d*)/);
       if (parsed) {
         const start = parseInt(parsed[1], 10);
-        const end = parsed[2] ? parseInt(parsed[2], 10) : fileInfo.size - 1;
-        if (start < fileInfo.size && end < fileInfo.size && start <= end) {
+        const end = parsed[2] ? parseInt(parsed[2], 10) : mediaFile.size - 1;
+        if (start < mediaFile.size && end < mediaFile.size && start <= end) {
           range = { start, end };
         }
       }
     }
 
-    const fileStream = await this.storage.getFileStream(fileInfo.bucket, fileInfo.key, range);
+    const fileStream = await this.storage.getFileStream(mediaFile.bucket, mediaFile.key, range);
 
     if (range) {
       res.status(HttpStatus.PARTIAL_CONTENT);

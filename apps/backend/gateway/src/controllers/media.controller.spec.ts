@@ -1,5 +1,6 @@
 import type { ClientProxy } from '@nestjs/microservices';
-import type { IStorageProvider } from '@org/core';
+import { CHAT_PATTERNS, MEDIA_PATTERNS, type IStorageProvider } from '@org/core';
+import { of } from 'rxjs';
 
 type MediaGatewayControllerConstructor = typeof import('./media.controller').MediaGatewayController;
 
@@ -74,5 +75,118 @@ describe('MediaGatewayController link previews', () => {
       siteName: 'YouTube',
     });
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('MediaGatewayController chat attachment content', () => {
+  let MediaGatewayController: MediaGatewayControllerConstructor;
+
+  beforeAll(() => {
+    ({ MediaGatewayController } = jest.requireActual('./media.controller') as {
+      MediaGatewayController: MediaGatewayControllerConstructor;
+    });
+  });
+
+  function controller() {
+    const mediaClient = { send: jest.fn() };
+    const chatClient = { send: jest.fn() };
+    const storage = {
+      getFileStream: jest.fn().mockResolvedValue({
+        stream: {
+          pipe: jest.fn().mockReturnValue({ on: jest.fn() }),
+        },
+        size: 33000,
+        contentType: 'audio/ogg',
+      }),
+    };
+
+    return {
+      controller: new MediaGatewayController(
+        mediaClient as unknown as ClientProxy,
+        chatClient as unknown as ClientProxy,
+        storage as unknown as IStorageProvider,
+        {} as ClientProxy,
+      ),
+      mediaClient,
+      chatClient,
+      storage,
+    };
+  }
+
+  function reqMock() {
+    return { headers: {} };
+  }
+
+  function resMock() {
+    const res = {
+      headersSent: false,
+      status: jest.fn(),
+      end: jest.fn(),
+      setHeader: jest.fn(),
+    };
+    res.status.mockReturnValue(res);
+    return res;
+  }
+
+  it('serves chat attachment content only after chat-scoped access succeeds', async () => {
+    const ctx = controller();
+    const chatId = '22222222-2222-4222-8222-222222222222';
+    const messageId = '11111111-1111-4111-8111-111111111111';
+    const attachmentId = '44444444-4444-4444-8444-444444444444';
+    const userId = '33333333-3333-4333-8333-333333333333';
+    const mediaId = '55555555-5555-4555-8555-555555555555';
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(ctx.controller, 'logger', { value: logger });
+    ctx.chatClient.send.mockReturnValueOnce(of({ mediaId }));
+    ctx.mediaClient.send.mockReturnValueOnce(of({
+      id: mediaId,
+      bucket: 'chat-media',
+      key: 'voice.ogg',
+      mimeType: 'audio/ogg',
+      size: 33000,
+      chatId,
+    }));
+
+    await (
+      ctx.controller as typeof ctx.controller & {
+        getChatAttachmentContent: (
+          chatId: string,
+          messageId: string,
+          attachmentId: string,
+          user: { sub: string },
+          req: ReturnType<typeof reqMock>,
+          res: ReturnType<typeof resMock>,
+        ) => Promise<void>;
+      }
+    ).getChatAttachmentContent(chatId, messageId, attachmentId, { sub: userId }, reqMock(), resMock());
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(
+      CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS,
+      { chatId, messageId, attachmentId, userId },
+    );
+    expect(ctx.mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.GET_BY_ID, { id: mediaId });
+    expect(ctx.storage.getFileStream).toHaveBeenCalledWith('chat-media', 'voice.ogg', undefined);
+
+    const diagnosticPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.error.mock.calls,
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain(chatId);
+    expect(diagnosticPayload).not.toContain(messageId);
+    expect(diagnosticPayload).not.toContain(attachmentId);
+    expect(diagnosticPayload).not.toContain(userId);
+    expect(diagnosticPayload).not.toContain(mediaId);
+    expect(diagnosticPayload).not.toContain('voice.ogg');
+    expect(logger.debug).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_attachment_content_requested',
+        hasChatId: true,
+        hasMessageId: true,
+        hasAttachmentId: true,
+        hasUserId: true,
+      }),
+    );
   });
 });

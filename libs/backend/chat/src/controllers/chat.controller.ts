@@ -1,4 +1,4 @@
-import { Controller, Inject, Logger } from '@nestjs/common';
+import { Controller, Inject, InternalServerErrorException, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import type { Chat, ChatMember, Message, MessagePage } from '@org/common';
 import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
@@ -8,6 +8,7 @@ import type {
   ForwardMessagesData,
   IChatController,
   IChatService,
+  MessageAttachmentAccessInput,
 } from '../interfaces/chat.interface';
 
 @Controller()
@@ -162,5 +163,16 @@ export class ChatController implements IChatController {
   @MessagePattern(CHAT_PATTERNS.GET_MEMBERS)
   getMembers(@Payload() payload: { chatId: string }): Promise<{ userId: string }[]> {
     return this.chatService.getMembers(payload.chatId);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS)
+  getMessageAttachmentForAccess(
+    @Payload() payload: MessageAttachmentAccessInput,
+  ): Promise<{ mediaId: string }> {
+    const getMessageAttachmentForAccess = this.chatService.getMessageAttachmentForAccess;
+    if (!getMessageAttachmentForAccess) {
+      throw new InternalServerErrorException('Attachment access is unavailable');
+    }
+    return getMessageAttachmentForAccess.call(this.chatService, payload);
   }
 }
