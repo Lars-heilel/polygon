@@ -118,6 +118,43 @@ export function markMessageSendError<
   } as TData;
 }
 
+export function updateMessageInPages<
+  TData extends { pages: TPage[] },
+  TPage extends MessagePageLike<TMessage>,
+  TMessage extends MessageLike,
+>(
+  old: TData | undefined,
+  msg: Partial<TMessage> & Pick<MessageLike, 'id'>,
+): TData | undefined {
+  if (!old) return old;
+
+  return {
+    ...old,
+    pages: old.pages.map((page) => ({
+      ...page,
+      messages: page.messages.map((message) =>
+        message.id === msg.id ? ({ ...message, ...msg } as TMessage) : message,
+      ),
+    })),
+  } as TData;
+}
+
+export function removeMessageFromPages<
+  TData extends { pages: TPage[] },
+  TPage extends MessagePageLike<TMessage>,
+  TMessage extends MessageLike,
+>(old: TData | undefined, messageId: string): TData | undefined {
+  if (!old) return old;
+
+  return {
+    ...old,
+    pages: old.pages.map((page) => ({
+      ...page,
+      messages: page.messages.filter((message) => message.id !== messageId),
+    })),
+  } as TData;
+}
+
 export function updateChatListLastMessage<TChat extends ChatLike, TMessage extends MessageLike>(
   chats: TChat[] | undefined,
   msg: TMessage,

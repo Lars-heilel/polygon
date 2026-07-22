@@ -7,6 +7,8 @@ import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
 import {
   markMessageSendError,
+  removeMessageFromPages,
+  updateMessageInPages,
   upsertMessageIntoPages,
   updateChatListLastMessage,
 } from './chat-cache-updaters';
@@ -42,6 +44,29 @@ function handleMessageSendError(payload: { chatId: string; clientId: string }) {
   );
 }
 
+function handleMessageUpdated(msg: Message) {
+  frontendLog('debug', 'ChatSocket', 'message_updated', {
+    hasChatId: !!msg.chatId,
+    hasMessageId: !!msg.id,
+    type: msg.type,
+  });
+
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
+    updateMessageInPages(old, msg),
+  );
+}
+
+function handleMessageRemoved(payload: { chatId: string; messageId: string }) {
+  frontendLog('debug', 'ChatSocket', 'message_removed', {
+    hasChatId: !!payload.chatId,
+    hasMessageId: !!payload.messageId,
+  });
+
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', payload.chatId], (old) =>
+    removeMessageFromPages(old, payload.messageId),
+  );
+}
+
 function handleUserOnline(payload: { userId: string; chatId: string }) {
   usePresenceStore.getState().setOnline(payload.userId);
 }
@@ -61,6 +86,9 @@ export function initChatSocketManager(): () => void {
   socket.on('user:offline', handleUserOffline);
   socket.on('user:typing', handleUserTyping);
   socket.on('message:send:error', handleMessageSendError);
+  socket.on('message:updated', handleMessageUpdated);
+  socket.on('message:deleted', handleMessageRemoved);
+  socket.on('message:hidden', handleMessageRemoved);
 
   return () => {
     socket.off('message:new', handleNewMessage);
@@ -68,5 +96,8 @@ export function initChatSocketManager(): () => void {
     socket.off('user:offline', handleUserOffline);
     socket.off('user:typing', handleUserTyping);
     socket.off('message:send:error', handleMessageSendError);
+    socket.off('message:updated', handleMessageUpdated);
+    socket.off('message:deleted', handleMessageRemoved);
+    socket.off('message:hidden', handleMessageRemoved);
   };
 }

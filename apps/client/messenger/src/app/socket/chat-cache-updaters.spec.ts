@@ -1,7 +1,9 @@
 import {
   appendMessageToPages,
   markMessageSendError,
+  removeMessageFromPages,
   updateChatListLastMessage,
+  updateMessageInPages,
   upsertMessageIntoPages,
 } from './chat-cache-updaters';
 
@@ -156,5 +158,45 @@ describe('chat socket cache updaters', () => {
     expect(next[0].id).toBe('chat-2');
     expect(next[0].lastMessage).toBe(msg);
     expect(next[0]).not.toHaveProperty('messages');
+  });
+
+  it('updates existing messages from socket edits', () => {
+    const page = {
+      pages: [
+        {
+          messages: [
+            { id: 'message-1', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:00:00.000Z', text: 'before' },
+            { id: 'message-2', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:01:00.000Z', text: 'keep' },
+          ],
+        },
+      ],
+    };
+
+    const next = updateMessageInPages(page, {
+      id: 'message-1',
+      chatId: 'chat-1',
+      createdAt: '2026-07-22T10:00:00.000Z',
+      text: 'edited',
+    });
+
+    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({ text: 'edited' }));
+    expect(next?.pages[0].messages[1]).toEqual(expect.objectContaining({ text: 'keep' }));
+  });
+
+  it('removes deleted and hidden messages from pages', () => {
+    const page = {
+      pages: [
+        {
+          messages: [
+            { id: 'message-1', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:00:00.000Z' },
+            { id: 'message-2', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:01:00.000Z' },
+          ],
+        },
+      ],
+    };
+
+    const next = removeMessageFromPages(page, 'message-1');
+
+    expect(next?.pages[0].messages.map((message) => message.id)).toEqual(['message-2']);
   });
 });
