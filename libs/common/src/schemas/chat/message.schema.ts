@@ -18,6 +18,9 @@ export const messageSchema = z.object({
   fileMime: z.string().nullable(),
   fileCategory: z.string().nullable(),
   forwardedFromId: z.string().uuid().nullable(),
+  editedAt: z.date().nullable(),
+  deletedAt: z.date().nullable(),
+  deletedById: z.string().uuid().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
