@@ -23,6 +23,7 @@ export const MessageBubble = memo(function MessageBubble({
   const forwardedFromName = message.forwardedFromSender?.displayName
     ?? message.forwardedFromSender?.name
     ?? (message.forwardedFromSenderId ? 'Unknown sender' : null);
+  const forwardedPreview = getForwardedPreview(message);
 
   return (
     <div className={`flex min-w-0 items-end gap-2 ${isMine ? 'flex-row-reverse lg:flex-row' : 'flex-row'}`}>
@@ -56,6 +57,9 @@ export const MessageBubble = memo(function MessageBubble({
             {message.forwardedFromCreatedAt ? (
               <div className="truncate">{formatTime(message.forwardedFromCreatedAt)}</div>
             ) : null}
+            {forwardedPreview ? (
+              <div className="mt-1 line-clamp-2 break-words text-[12px]">{forwardedPreview}</div>
+            ) : null}
           </div>
         ) : null}
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">{children}</div>
@@ -73,3 +77,25 @@ export const MessageBubble = memo(function MessageBubble({
     </div>
   );
 });
+
+function getForwardedPreview(message: Message): string | null {
+  const text = message.forwardedFromText?.trim();
+  if (text) return text;
+
+  if (message.forwardedFromFileName) return message.forwardedFromFileName;
+
+  switch (message.forwardedFromType) {
+    case 'IMAGE':
+      return 'Photo';
+    case 'VIDEO':
+      return 'Video';
+    case 'AUDIO':
+      return 'Audio';
+    case 'VOICE':
+      return 'Voice message';
+    case 'FILE':
+      return 'File';
+    default:
+      return null;
+  }
+}

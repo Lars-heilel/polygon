@@ -18,6 +18,9 @@ const baseRaw: RawMessage = {
   forwardedFromId: null,
   forwardedFromSenderId: null,
   forwardedFromCreatedAt: null,
+  forwardedFromType: null,
+  forwardedFromText: null,
+  forwardedFromFileName: null,
   forwardedFromSender: null,
   createdAt: '2026-07-22T07:00:00.000Z',
   updatedAt: '2026-07-22T07:00:00.000Z',
@@ -73,6 +76,9 @@ describe('message normalization', () => {
       forwardedFromId: '55555555-5555-4555-8555-555555555555',
       forwardedFromSenderId: '66666666-6666-4666-8666-666666666666',
       forwardedFromCreatedAt: '2026-07-21T10:15:00.000Z',
+      forwardedFromType: 'TEXT',
+      forwardedFromText: 'source message snapshot',
+      forwardedFromFileName: null,
       forwardedFromSender: {
         id: '66666666-6666-4666-8666-666666666666',
         name: 'Alice',
@@ -84,5 +90,6 @@ describe('message normalization', () => {
 
     expect(message.forwardedFromSender?.displayName).toBe('Alice A.');
     expect(message.forwardedFromCreatedAt).toBe('2026-07-21T10:15:00.000Z');
+    expect(message.forwardedFromText).toBe('source message snapshot');
   });
 });

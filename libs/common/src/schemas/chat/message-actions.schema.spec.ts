@@ -35,6 +35,9 @@ describe('message action schemas', () => {
         forwardedFromId: null,
         forwardedFromSenderId: null,
         forwardedFromCreatedAt: null,
+        forwardedFromType: null,
+        forwardedFromText: null,
+        forwardedFromFileName: null,
         editedAt: null,
         deletedAt: null,
         deletedById: null,
@@ -66,6 +69,9 @@ describe('message action schemas', () => {
         forwardedFromId: '44444444-4444-4444-8444-444444444444',
         forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
         forwardedFromCreatedAt,
+        forwardedFromType: 'TEXT',
+        forwardedFromText: 'source text snapshot',
+        forwardedFromFileName: null,
         editedAt: null,
         deletedAt: null,
         deletedById: null,
@@ -75,6 +81,9 @@ describe('message action schemas', () => {
     ).toMatchObject({
       forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
       forwardedFromCreatedAt,
+      forwardedFromType: 'TEXT',
+      forwardedFromText: 'source text snapshot',
+      forwardedFromFileName: null,
     });
   });
 

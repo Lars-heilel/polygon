@@ -57,6 +57,9 @@ export interface RawMessage {
   forwardedFromId: string | null;
   forwardedFromSenderId: string | null;
   forwardedFromCreatedAt: string | null;
+  forwardedFromType: MessageType | string | null;
+  forwardedFromText: string | null;
+  forwardedFromFileName: string | null;
   forwardedFromSender?: UserPublic | null;
   editedAt: string | null;
   deletedAt: string | null;
@@ -90,6 +93,9 @@ export interface Message {
   forwardedFromId: string | null;
   forwardedFromSenderId: string | null;
   forwardedFromCreatedAt: string | null;
+  forwardedFromType: MessageType | string | null;
+  forwardedFromText: string | null;
+  forwardedFromFileName: string | null;
   forwardedFromSender: UserPublic | null;
   editedAt: string | null;
   deletedAt: string | null;

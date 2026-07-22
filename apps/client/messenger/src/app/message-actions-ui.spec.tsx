@@ -68,6 +68,9 @@ const baseMessage: Message = {
   forwardedFromId: null,
   forwardedFromSenderId: null,
   forwardedFromCreatedAt: null,
+  forwardedFromType: null,
+  forwardedFromText: null,
+  forwardedFromFileName: null,
   forwardedFromSender: null,
 };
 

@@ -23,6 +23,9 @@ const message = {
   forwardedFromId: null,
   forwardedFromSenderId: null,
   forwardedFromCreatedAt: null,
+  forwardedFromType: null,
+  forwardedFromText: null,
+  forwardedFromFileName: null,
   forwardedFromSender: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
@@ -73,6 +76,9 @@ describe('message layout', () => {
           forwardedFromId: 'forward-source',
           forwardedFromSenderId: 'user-source',
           forwardedFromCreatedAt: '2026-07-13T09:30:00.000Z',
+          forwardedFromType: 'TEXT',
+          forwardedFromText: 'original forwarded text',
+          forwardedFromFileName: null,
           forwardedFromSender: {
             id: 'user-source',
             name: 'Alice',
@@ -90,5 +96,6 @@ describe('message layout', () => {
 
     expect(screen.getByText('Forwarded from Alice A.')).toBeTruthy();
     expect(screen.getByText('13.07.2026 12:30')).toBeTruthy();
+    expect(screen.getByText('original forwarded text')).toBeTruthy();
   });
 });

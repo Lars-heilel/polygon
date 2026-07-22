@@ -236,6 +236,9 @@ export class ChatService implements IChatService {
         forwardedFromId: original.forwardedFromId ?? original.id,
         forwardedFromSenderId: original.forwardedFromSenderId ?? original.senderId,
         forwardedFromCreatedAt: original.forwardedFromCreatedAt ?? original.createdAt,
+        forwardedFromType: original.forwardedFromType ?? original.type,
+        forwardedFromText: original.forwardedFromText ?? original.text,
+        forwardedFromFileName: original.forwardedFromFileName ?? original.fileName,
       });
       messages.push(copied);
     }

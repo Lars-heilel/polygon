@@ -31,6 +31,9 @@ export interface CreateMessageData {
   forwardedFromId?: string | null;
   forwardedFromSenderId?: string | null;
   forwardedFromCreatedAt?: Date | null;
+  forwardedFromType?: MessageType | null;
+  forwardedFromText?: string | null;
+  forwardedFromFileName?: string | null;
 }
 
 export interface ForwardMessagesData {

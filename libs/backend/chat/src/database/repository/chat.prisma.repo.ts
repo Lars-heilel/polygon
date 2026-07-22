@@ -241,6 +241,9 @@ export class ChatPrismaRepository implements IChatRepository {
           forwardedFromId: data.forwardedFromId ?? null,
           forwardedFromSenderId: data.forwardedFromSenderId ?? null,
           forwardedFromCreatedAt: data.forwardedFromCreatedAt ?? null,
+          forwardedFromType: data.forwardedFromType ?? null,
+          forwardedFromText: data.forwardedFromText ?? null,
+          forwardedFromFileName: data.forwardedFromFileName ?? null,
         },
         select: MESSAGE_SELECT_FIELDS,
       });
@@ -304,6 +307,9 @@ export class ChatPrismaRepository implements IChatRepository {
           forwardedFromId: d.forwardedFromId ?? null,
           forwardedFromSenderId: d.forwardedFromSenderId ?? null,
           forwardedFromCreatedAt: d.forwardedFromCreatedAt ?? null,
+          forwardedFromType: d.forwardedFromType ?? null,
+          forwardedFromText: d.forwardedFromText ?? null,
+          forwardedFromFileName: d.forwardedFromFileName ?? null,
         })),
       });
       return result.count;
