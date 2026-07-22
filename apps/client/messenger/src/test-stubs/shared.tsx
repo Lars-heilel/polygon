@@ -1,6 +1,7 @@
-import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import { createContext, useContext, type ButtonHTMLAttributes, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
 
+const ModalCloseContext = createContext<(() => void) | null>(null);
 export const queryClient = new QueryClient();
 
 export function Avatar({ name }: { name?: string | null }) {
@@ -9,6 +10,42 @@ export function Avatar({ name }: { name?: string | null }) {
 
 export function Spinner() {
   return <div role="status">Loading</div>;
+}
+
+export function Button({
+  children,
+  loading,
+  disabled,
+  ...props
+}: {
+  children: ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button disabled={disabled || loading} {...props}>{loading ? 'Loading' : children}</button>;
+}
+
+export function IconButton({
+  icon,
+  label,
+  ...props
+}: {
+  icon: ReactNode;
+  label: string;
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button aria-label={label} {...props}>{icon}</button>;
+}
+
+export function Heading({ children }: { children: ReactNode }) {
+  return <h2>{children}</h2>;
+}
+
+export function Badge({ children }: { children: ReactNode }) {
+  return <span>{children}</span>;
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return <div data-testid="skeleton" className={className} />;
 }
 
 export function MediaFrame({
@@ -49,9 +86,45 @@ export function MediaFrame({
   );
 }
 
-export async function authedFetch<T>(): Promise<T> {
-  throw new Error('authedFetch is not implemented in tests');
+export function Modal({
+  isOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  if (!isOpen) return null;
+  return (
+    <ModalCloseContext.Provider value={onClose}>
+      <div role="dialog">{children}</div>
+    </ModalCloseContext.Provider>
+  );
 }
+
+Modal.Header = function ModalHeader({ title }: { title: string }) {
+  const onClose = useContext(ModalCloseContext);
+
+  return (
+    <div>
+      <h2>{title}</h2>
+      <button type="button" aria-label="Close" onClick={() => onClose?.()}>Close</button>
+    </div>
+  );
+};
+
+Modal.Body = function ModalBody({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
+};
+
+Modal.Footer = function ModalFooter({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
+};
+
+export const authedFetch = jest.fn(async <T,>(): Promise<T> => {
+  throw new Error('authedFetch is not implemented in tests');
+});
 
 export function frontendLog() {
   /* no-op */

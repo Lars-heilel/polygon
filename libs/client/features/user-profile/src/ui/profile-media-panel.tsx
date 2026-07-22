@@ -4,8 +4,16 @@ import type { ChatMediaFilter } from '@org/common';
 import { FileMessage, LinkPreviewCard, MessageContent } from '@org/entities-message';
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
-import { MediaViewer, Spinner, type MediaViewerItem, Text, cn, formatTime } from '@org/shared';
-import { Virtuoso } from 'react-virtuoso';
+import {
+  MediaFrame,
+  MediaViewer,
+  Spinner,
+  type MediaViewerItem,
+  Text,
+  VirtualFeed,
+  cn,
+  formatTime,
+} from '@org/shared';
 
 import {
   buildChatMediaEntries,
@@ -14,7 +22,7 @@ import {
   type ChatMediaEntry,
 } from '../api/use-chat-media.js';
 
-interface ProfileMediaPanelProps {
+export interface ProfileMediaPanelProps {
   chatId: string;
 }
 
@@ -80,22 +88,26 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
             <Text size="sm" color="muted">Nothing yet</Text>
           </div>
         ) : (
-          <Virtuoso
-            className="h-full"
-            data={flatItems}
-            endReached={() => {
+          <VirtualFeed
+            mode="forward"
+            items={flatItems}
+            getKey={(item) => item.type === 'header' ? `header:${item.label}` : `entry:${item.entry.id}`}
+            estimateItemHeight={180}
+            hasNext={hasNextPage}
+            isLoadingNext={isFetchingNextPage}
+            loadNext={() => {
               if (hasNextPage && !isFetchingNextPage) {
                 fetchNextPage();
               }
             }}
-            components={{
-              Footer: () => (isFetchingNextPage ? (
+            footer={isFetchingNextPage
+              ? (
                 <div className="flex justify-center py-4">
                   <Spinner size="sm" />
                 </div>
-              ) : null),
-            }}
-            itemContent={(_, item) => {
+              )
+              : null}
+            renderItem={(item) => {
               if (item.type === 'header') {
                 return (
                   <div className="sticky top-0 z-10 bg-background/95 px-1 py-2 text-xs font-medium text-text-muted backdrop-blur">
@@ -217,17 +229,31 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
       className="block w-full overflow-hidden rounded-lg border border-border bg-surface-elevated text-left transition-colors hover:border-primary/60"
     >
       {isImage ? (
-        <img
-          src={src}
-          alt={entry.message.fileName ?? 'Image'}
-          className="h-56 w-full object-cover"
-          loading="lazy"
-        />
+        <MediaFrame
+          data-testid="profile-media-frame"
+          width={entry.message.media?.width ?? null}
+          height={entry.message.media?.height ?? null}
+          maxWidth={560}
+          className="w-full"
+        >
+          <img
+            src={src}
+            alt={entry.message.fileName ?? 'Image'}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </MediaFrame>
       ) : (
-        <div className="relative">
+        <MediaFrame
+          data-testid="profile-media-frame"
+          width={entry.message.media?.width ?? null}
+          height={entry.message.media?.height ?? null}
+          maxWidth={560}
+          className="w-full"
+        >
           <video
             src={src}
-            className="h-56 w-full object-cover"
+            className="h-full w-full object-cover"
             preload="metadata"
           />
           <div className="absolute inset-0 flex items-center justify-center bg-background/30">
@@ -237,7 +263,7 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
               </svg>
             </div>
           </div>
-        </div>
+        </MediaFrame>
       )}
     </button>
   );
