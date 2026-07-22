@@ -10,7 +10,7 @@ import {
 import type { Message } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import type { AudioTrack } from '@org/shared';
-import { Text, socket } from '@org/shared';
+import { Button, Text, socket } from '@org/shared';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 
 const INITIAL_OFFSET = 10_000;
@@ -216,25 +216,22 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
       />
 
       {!isAtBottom && (
-        <button
-          className="absolute bottom-6 right-6 z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-xs shadow-2xl hover:bg-primary/90 transition-all active:scale-95"
+        <Button
+          type="button"
+          size="sm"
+          className="absolute bottom-6 right-6 z-10 rounded-full shadow-[var(--shadow-popover)]"
           onClick={scrollToBottom}
+          leftIcon={
+            <span
+              aria-hidden="true"
+              className="text-base leading-none"
+            >
+              ↓
+            </span>
+          }
         >
-          <svg
-            className="w-4 h-4 rotate-180"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
           New messages
-        </button>
+        </Button>
       )}
     </div>
   );

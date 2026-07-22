@@ -11,8 +11,7 @@ import {
   useSendMessage,
   useVoiceRecorder,
 } from '@org/features-send-message';
-import { Textarea } from '@org/shared';
-import { cn } from '@org/shared';
+import { IconButton, Spinner, Text, Textarea, cn } from '@org/shared';
 
 import { AttachMenu } from './attach-menu';
 
@@ -135,25 +134,44 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
         <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-surface-elevated rounded-lg text-sm">
           {uploading ? (
             <div className="flex items-center gap-2 flex-1">
-              <svg className="w-4 h-4 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              <span className="text-text-muted flex-1">{pendingFile.name}</span>
-              <span className="text-text-muted text-xs">{uploadProgress}%</span>
+              <Spinner
+                size="sm"
+                color="primary"
+              />
+              <Text
+                as="span"
+                size="sm"
+                color="muted"
+                className="flex-1 truncate"
+              >
+                {pendingFile.name}
+              </Text>
+              <Text
+                as="span"
+                size="xs"
+                color="muted"
+              >
+                {uploadProgress}%
+              </Text>
             </div>
           ) : (
-            <span className="text-text flex-1 truncate">{pendingFile.name}</span>
+            <Text
+              as="span"
+              size="sm"
+              className="flex-1 truncate"
+            >
+              {pendingFile.name}
+            </Text>
           )}
           {!uploading && (
-            <button
+            <IconButton
+              type="button"
+              label="Remove attachment"
+              size="xs"
+              variant="ghost"
               onClick={() => setPendingFile(null)}
-              className="p-1 hover:bg-border rounded text-text-muted"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              icon={<CloseIcon />}
+            />
           )}
           {uploading && (
             <div className="w-20 h-1.5 bg-border rounded-full overflow-hidden">
@@ -167,22 +185,46 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
       )}
 
       {voiceRecorder.isRecording && (
-        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg text-sm">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-red-400 font-medium">Recording voice...</span>
-          <span className="text-text-muted ml-auto tabular-nums">
+        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-danger-muted border border-danger/30 rounded-lg text-sm">
+          <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
+          <Text
+            as="span"
+            size="sm"
+            color="danger"
+            weight="medium"
+          >
+            Recording voice...
+          </Text>
+          <Text
+            as="span"
+            size="sm"
+            color="muted"
+            className="ml-auto tabular-nums"
+          >
             {voiceRecorder.formatDuration(voiceRecorder.duration)}
-          </span>
+          </Text>
         </div>
       )}
 
       {circleRecorder.isRecording && (
-        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-purple-500/10 border border-purple-500/30 rounded-lg text-sm">
-          <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-          <span className="text-purple-400 font-medium">Recording circle...</span>
-          <span className="text-text-muted ml-auto tabular-nums">
+        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-info-muted border border-info/30 rounded-lg text-sm">
+          <span className="w-2 h-2 rounded-full bg-info animate-pulse" />
+          <Text
+            as="span"
+            size="sm"
+            color="primary"
+            weight="medium"
+          >
+            Recording circle...
+          </Text>
+          <Text
+            as="span"
+            size="sm"
+            color="muted"
+            className="ml-auto tabular-nums"
+          >
             {circleRecorder.formatDuration(circleRecorder.duration)}
-          </span>
+          </Text>
         </div>
       )}
 
@@ -206,71 +248,129 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
         <EmojiPicker onSelect={handleEmojiSelect} />
 
         {hasText ? (
-          <button
+          <IconButton
+            type="button"
+            label="Send message"
+            size="lg"
+            variant="primary"
             onClick={handleSend}
             disabled={isRecording}
-            className={cn(
-              'p-2.5 rounded-full transition-colors shrink-0',
-              isRecording
-                ? 'opacity-50 pointer-events-none'
-                : 'bg-primary hover:bg-primary/80 text-white',
-            )}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </button>
+            className="rounded-full"
+            icon={<SendIcon />}
+          />
         ) : (
           <div className="flex gap-1">
-            <button
+            <IconButton
+              type="button"
+              label="Voice message"
+              size="lg"
+              variant={voiceRecorder.isRecording ? 'danger' : 'ghost'}
               onClick={handleRecordVoice}
               disabled={isRecording && !voiceRecorder.isRecording}
               className={cn(
-                'p-2.5 rounded-full transition-colors shrink-0',
-                voiceRecorder.isRecording
-                  ? 'bg-red-500 text-white animate-pulse'
-                  : 'hover:bg-surface-elevated text-text-muted',
+                'rounded-full',
+                voiceRecorder.isRecording && 'animate-pulse',
               )}
-              title="Voice message"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-4 0h8m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                />
-              </svg>
-            </button>
-            <button
+              icon={<VoiceIcon />}
+            />
+            <IconButton
+              type="button"
+              label="Circle video"
+              size="lg"
+              variant="ghost"
               onClick={handleRecordCircle}
               disabled={isRecording && !circleRecorder.isRecording}
               className={cn(
-                'p-2.5 rounded-full transition-colors shrink-0',
-                circleRecorder.isRecording
-                  ? 'bg-purple-500 text-white animate-pulse'
-                  : 'hover:bg-surface-elevated text-text-muted',
+                'rounded-full',
+                circleRecorder.isRecording && 'bg-info text-text-inverse hover:opacity-90 animate-pulse',
               )}
-              title="Circle video"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" strokeWidth={2} />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 9l5 3-5 3V9z"
-                />
-              </svg>
-            </button>
+              icon={<CircleVideoIcon />}
+            />
           </div>
         )}
       </div>
     </div>
   );
 });
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+      />
+    </svg>
+  );
+}
+
+function VoiceIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-4 0h8m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+      />
+    </svg>
+  );
+}
+
+function CircleVideoIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        strokeWidth={2}
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M10 9l5 3-5 3V9z"
+      />
+    </svg>
+  );
+}

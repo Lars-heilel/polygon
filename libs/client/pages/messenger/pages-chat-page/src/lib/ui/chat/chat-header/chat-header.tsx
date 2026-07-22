@@ -8,7 +8,7 @@ import {
 } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import { UserProfileModal } from '@org/features-user-profile';
-import { Avatar, Badge, Heading, Text } from '@org/shared';
+import { Avatar, Badge, Heading, IconButton, Text } from '@org/shared';
 import { useNavigate } from 'react-router';
 
 import { ChatHeaderSkeleton } from './chat-header-skeleton';
@@ -38,25 +38,15 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
 
   return (
     <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky shrink-0">
-      <button
+      <IconButton
+        type="button"
+        label="Back"
+        size="md"
+        variant="ghost"
         onClick={() => navigate('/chats')}
-        aria-label="Back"
-        className="p-2 hover:bg-surface-elevated rounded-lg transition-colors md:hidden"
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </button>
+        className="md:hidden"
+        icon={<BackIcon />}
+      />
       {otherUserId && (
         <button
           onClick={() => setProfileUserId(otherUserId)}
@@ -70,7 +60,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             />
             {isOnline && (
               <Badge
-                variant="primary"
+                variant="success"
                 size="sm"
                 dot
                 className="absolute bottom-0 right-0 border-2 border-surface"
@@ -87,14 +77,14 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             {isTyping ? (
               <Text
                 size="xs"
-                className="text-text-muted"
+                color="muted"
               >
                 печатает...
               </Text>
             ) : isOnline ? (
               <Text
                 size="xs"
-                className="text-green-500"
+                color="success"
               >
                 Online
               </Text>
@@ -112,7 +102,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             />
             {isOnline && (
               <Badge
-                variant="primary"
+                variant="success"
                 size="sm"
                 dot
                 className="absolute bottom-0 right-0 border-2 border-surface"
@@ -129,14 +119,14 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             {isTyping ? (
               <Text
                 size="xs"
-                className="text-text-muted"
+                color="muted"
               >
                 печатает...
               </Text>
             ) : isOnline ? (
               <Text
                 size="xs"
-                className="text-green-500"
+                color="success"
               >
                 Online
               </Text>
@@ -174,3 +164,22 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
     </header>
   );
 });
+
+function BackIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 19l-7-7 7-7"
+      />
+    </svg>
+  );
+}
