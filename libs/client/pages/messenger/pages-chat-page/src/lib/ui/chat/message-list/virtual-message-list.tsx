@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useGetChatsSuspenseQuery } from '@org/entities-chat';
+import { getChatDisplayName, useGetChatsSuspenseQuery } from '@org/entities-chat';
 import {
   FileMessage,
   MessageActionsMenu,
@@ -129,11 +129,15 @@ export const VirtualMessageList = memo(function MessageList({
     () => [...infiniteData.pages].reverse().flatMap((p) => p.messages),
     [infiniteData.pages],
   );
+  const currentChat = useMemo(() => chats.find((c) => c.id === chatId), [chats, chatId]);
+  const currentChatTitle = useMemo(
+    () => currentChat ? getChatDisplayName(currentChat, me.id) : undefined,
+    [currentChat, me.id],
+  );
 
   const memberProfileMap = useMemo(() => {
-    const chat = chats.find((c) => c.id === chatId);
-    return new Map((chat?.members ?? []).map((m) => [m.userId, m.profile]));
-  }, [chats, chatId]);
+    return new Map((currentChat?.members ?? []).map((m) => [m.userId, m.profile]));
+  }, [currentChat]);
   const audioQueue = useMemo(
     () => allMessages
       .filter((msg) => msg.fileCategory === 'AUDIO' && msg.fileId)
@@ -244,6 +248,14 @@ export const VirtualMessageList = memo(function MessageList({
         sourceChatId={chatId}
         currentUserId={me.id}
         message={messagePendingForward}
+        senderName={
+          messagePendingForward
+            ? memberProfileMap.get(messagePendingForward.senderId)?.displayName
+              ?? memberProfileMap.get(messagePendingForward.senderId)?.name
+              ?? undefined
+            : undefined
+        }
+        sourceChatTitle={currentChatTitle}
         onClose={() => setMessagePendingForward(null)}
       />
 

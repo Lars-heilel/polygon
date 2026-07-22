@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import {
+  type Chat,
   getChatDisplayName,
   useCreateDirectChatMutation,
   useCreateSelfChatMutation,
@@ -16,6 +17,8 @@ interface ForwardMessageModalProps {
   sourceChatId: string;
   currentUserId: string;
   message: Message | null;
+  senderName?: string;
+  sourceChatTitle?: string;
   onClose: () => void;
 }
 
@@ -24,6 +27,8 @@ export function ForwardMessageModal({
   sourceChatId,
   currentUserId,
   message,
+  senderName,
+  sourceChatTitle,
   onClose,
 }: ForwardMessageModalProps) {
   const [query, setQuery] = useState('');
@@ -33,10 +38,30 @@ export function ForwardMessageModal({
   const createDirectChat = useCreateDirectChatMutation();
   const forwardMessages = useForwardMessagesMutation();
 
-  const chatTargets = useMemo(
-    () => (chats.data ?? []).filter((chat) => chat.id !== sourceChatId),
-    [chats.data, sourceChatId],
-  );
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const chatTargets = useMemo(() => {
+    return (chats.data ?? [])
+      .filter((chat) => chat.id !== sourceChatId)
+      .filter((chat) => {
+        if (!normalizedQuery) return true;
+        return getChatDisplayName(chat, currentUserId)
+          .toLocaleLowerCase()
+          .includes(normalizedQuery);
+      });
+  }, [chats.data, currentUserId, normalizedQuery, sourceChatId]);
+  const existingDirectUserIds = useMemo(() => {
+    return new Set(
+      (chats.data ?? [])
+        .filter((chat) => chat.type === 'DIRECT')
+        .map((chat) => getDirectPeerId(chat, currentUserId))
+        .filter((id): id is string => Boolean(id)),
+    );
+  }, [chats.data, currentUserId]);
+  const userTargets = useMemo(() => {
+    return (users.data ?? []).filter(
+      (user) => user.id !== currentUserId && !existingDirectUserIds.has(user.id),
+    );
+  }, [currentUserId, existingDirectUserIds, users.data]);
 
   if (!message) return null;
 
@@ -64,12 +89,18 @@ export function ForwardMessageModal({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-sm">
       <Modal.Header title="Forward to..." />
       <Modal.Body className="p-0">
-        <div className="border-b border-border p-3">
+        <div className="space-y-3 border-b border-border p-3">
           <Input
             aria-label="Search forward targets"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search"
+          />
+          <ForwardMessagePreview
+            message={message}
+            senderName={senderName}
+            sourceChatTitle={sourceChatTitle}
+            currentUserId={currentUserId}
           />
         </div>
         <div className="max-h-[70vh] overflow-y-auto py-1">
@@ -91,23 +122,63 @@ export function ForwardMessageModal({
               />
             );
           })}
-          {(users.data ?? [])
-            .filter((user) => user.id !== currentUserId)
-            .map((user) => {
-              const title = user.displayName ?? user.name;
-              return (
-                <ForwardTargetRow
-                  key={user.id}
-                  title={title}
-                  subtitle="user"
-                  initials={title.slice(0, 2)}
-                  onClick={() => handleUser(user.id)}
-                />
-              );
-            })}
+          {userTargets.map((user) => {
+            const title = user.displayName ?? user.name;
+            return (
+              <ForwardTargetRow
+                key={user.id}
+                title={title}
+                subtitle="user"
+                initials={title.slice(0, 2)}
+                onClick={() => handleUser(user.id)}
+              />
+            );
+          })}
+          {normalizedQuery && chatTargets.length === 0 && userTargets.length === 0 ? (
+            <Text size="sm" color="muted" className="px-4 py-6 text-center">
+              No chats or users found
+            </Text>
+          ) : null}
         </div>
       </Modal.Body>
     </Modal>
+  );
+}
+
+function getDirectPeerId(chat: Chat, currentUserId: string): string | null {
+  return chat.members.find((member) => member.userId !== currentUserId)?.userId ?? null;
+}
+
+function getMessagePreview(message: Message): string {
+  if (message.text?.trim()) return message.text.trim();
+  if (message.fileName) return message.fileName;
+  if (message.fileCategory) return `${message.fileCategory.toLocaleLowerCase()} message`;
+  return 'Message';
+}
+
+function ForwardMessagePreview({
+  message,
+  senderName,
+  sourceChatTitle,
+  currentUserId,
+}: {
+  message: Message;
+  senderName?: string;
+  sourceChatTitle?: string;
+  currentUserId: string;
+}) {
+  const author = message.senderId === currentUserId ? 'You' : senderName ?? 'Unknown sender';
+  const preview = getMessagePreview(message);
+
+  return (
+    <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+      <Text size="xs" color="muted" className="truncate">
+        Forwarding from {author}{sourceChatTitle ? ` in ${sourceChatTitle}` : ''}
+      </Text>
+      <Text size="sm" className="mt-1 line-clamp-2 break-words">
+        {preview}
+      </Text>
+    </div>
   );
 }
 
