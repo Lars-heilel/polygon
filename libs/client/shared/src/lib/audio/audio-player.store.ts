@@ -28,6 +28,7 @@ interface AudioPlayerState {
   seekTo: (time: number) => void;
   playPrev: () => void;
   playNext: () => void;
+  close: () => void;
   sync: (patch: Partial<Pick<AudioPlayerState, 'currentTime' | 'duration' | 'status'>>) => void;
   clearPendingAutoPlay: () => void;
 }
@@ -120,6 +121,23 @@ export const useAudioPlayerStore = create<AudioPlayerState>((set, get) => ({
     const track = queue[nextIndex];
     if (!track) return;
     get().playTrack(track, queue, nextIndex);
+  },
+  close: () => {
+    const audio = get().audio;
+    audio?.pause();
+    if (audio) {
+      audio.removeAttribute('src');
+      audio.load?.();
+    }
+    set({
+      currentTrack: null,
+      queue: [],
+      currentIndex: -1,
+      currentTime: 0,
+      duration: 0,
+      status: 'idle',
+      pendingAutoPlay: false,
+    });
   },
   sync: (patch) => set(patch),
   clearPendingAutoPlay: () => set({ pendingAutoPlay: false }),

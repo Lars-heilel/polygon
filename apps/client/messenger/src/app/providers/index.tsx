@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 
 import { AuthBootstrap } from '@org/entities-user';
-import { ErrorBoundary, GlobalAudioPlayer, ThemeProvider, Toaster, queryClient } from '@org/shared';
+import { ErrorBoundary, ThemeProvider, Toaster, queryClient } from '@org/shared';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { PushNotificationBootstrapper } from '../push-notification-bootstrapper';
@@ -18,9 +18,6 @@ export function Providers({ children }: ProvidersProps) {
           <AuthBootstrap />
           <PushNotificationBootstrapper />
           {children}
-          <GlobalAudioPlayer
-            mode="floating"
-          />
           <Toaster />
         </ThemeProvider>
       </QueryClientProvider>

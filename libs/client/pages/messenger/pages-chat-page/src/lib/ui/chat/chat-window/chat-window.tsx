@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 
-import { ErrorBoundary } from '@org/shared';
+import { ErrorBoundary, GlobalAudioPlayer } from '@org/shared';
 
 import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
 import { ChatFooter } from './ChatFooter';
@@ -13,6 +13,8 @@ interface ChatWindowProps {
 export function ChatWindow({ chatId }: ChatWindowProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
+      <GlobalAudioPlayer mode="embedded" />
+
       <header className="shrink-0">
         <ErrorBoundary fallback={<ChatHeaderSkeleton />}>
           <Suspense fallback={<ChatHeaderSkeleton />}>
