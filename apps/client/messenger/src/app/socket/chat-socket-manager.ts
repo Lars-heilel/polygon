@@ -5,7 +5,11 @@ import type { Message, MessagePage } from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
-import { appendMessageToPages, updateChatListLastMessage } from './chat-cache-updaters';
+import {
+  markMessageSendError,
+  upsertMessageIntoPages,
+  updateChatListLastMessage,
+} from './chat-cache-updaters';
 
 function handleNewMessage(msg: Message) {
   frontendLog('debug', 'ChatSocket', 'message_received', {
@@ -16,7 +20,7 @@ function handleNewMessage(msg: Message) {
 
   unstable_batchedUpdates(() => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
-      appendMessageToPages(old, msg),
+      upsertMessageIntoPages(old, msg),
     );
 
     queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
@@ -25,6 +29,17 @@ function handleNewMessage(msg: Message) {
   });
 
   useChatStore.getState().setLastReceivedMessage(msg);
+}
+
+function handleMessageSendError(payload: { chatId: string; clientId: string }) {
+  frontendLog('warn', 'ChatSocket', 'message_send_failed', {
+    hasChatId: !!payload.chatId,
+    hasClientId: !!payload.clientId,
+  });
+
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', payload.chatId], (old) =>
+    markMessageSendError(old, payload.clientId),
+  );
 }
 
 function handleUserOnline(payload: { userId: string; chatId: string }) {
@@ -45,11 +60,13 @@ export function initChatSocketManager(): () => void {
   socket.on('user:online', handleUserOnline);
   socket.on('user:offline', handleUserOffline);
   socket.on('user:typing', handleUserTyping);
+  socket.on('message:send:error', handleMessageSendError);
 
   return () => {
     socket.off('message:new', handleNewMessage);
     socket.off('user:online', handleUserOnline);
     socket.off('user:offline', handleUserOffline);
     socket.off('user:typing', handleUserTyping);
+    socket.off('message:send:error', handleMessageSendError);
   };
 }
