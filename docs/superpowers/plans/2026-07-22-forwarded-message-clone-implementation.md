@@ -244,6 +244,7 @@ git commit -m "feat(common): add message forward context contract"
 - Create: `libs/backend/chat/src/database/prisma/migrations/<timestamp>_add_message_forward_context_and_attachments/migration.sql`
 - Modify: `libs/backend/chat/src/database/repository/chat.prisma.repo.ts`
 - Modify: `libs/backend/chat/src/interfaces/chat.interface.ts`
+- Modify: `libs/common/src/schemas/chat/chat-select.ts`
 - Test: `libs/backend/chat/src/database/repository/chat.prisma.repo.spec.ts` or `libs/backend/chat/src/services/chat.service.spec.ts`
 
 **Interfaces:**
