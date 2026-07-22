@@ -57,7 +57,7 @@ export class ChatService implements IChatService {
   ): Promise<MessagePage> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
-    return this.repo.findMessagesByChat(chatId, cursor, take);
+    return this.repo.findMessagesByChat(chatId, cursor, take, userId);
   }
 
   async getMediaMessages(
@@ -69,7 +69,7 @@ export class ChatService implements IChatService {
   ): Promise<MessagePage> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
-    return this.repo.findMediaMessagesByChat(chatId, cursor, take, filter);
+    return this.repo.findMediaMessagesByChat(chatId, cursor, take, filter, userId);
   }
 
   async sendMessage(

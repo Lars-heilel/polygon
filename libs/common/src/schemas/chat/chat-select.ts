@@ -31,6 +31,9 @@ export const MESSAGE_SELECT_FIELDS = {
   fileMime: true,
   fileCategory: true,
   forwardedFromId: true,
+  editedAt: true,
+  deletedAt: true,
+  deletedById: true,
   createdAt: true,
   updatedAt: true,
 } as const;

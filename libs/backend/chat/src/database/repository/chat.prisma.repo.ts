@@ -174,9 +174,10 @@ export class ChatPrismaRepository implements IChatRepository {
     chatId: string,
     cursor: string | undefined,
     take: number,
+    userId: string,
   ): Promise<MessagePage> {
     const messages = await this.prisma.message.findMany({
-      where: { chatId },
+      where: buildVisibleMessagesWhere(chatId, userId),
       orderBy: { createdAt: 'desc' },
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take,
@@ -194,9 +195,14 @@ export class ChatPrismaRepository implements IChatRepository {
     cursor: string | undefined,
     take: number,
     filter: ChatMediaFilter,
+    userId: string,
   ): Promise<MessagePage> {
     const messages = await this.prisma.message.findMany({
-      where: buildMediaMessagesWhere(chatId, filter),
+      where: {
+        ...buildMediaMessagesWhere(chatId, filter),
+        deletedAt: null,
+        deletions: { none: { userId } },
+      },
       orderBy: { createdAt: 'desc' },
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take,
@@ -235,6 +241,42 @@ export class ChatPrismaRepository implements IChatRepository {
           forwardedFromId: data.forwardedFromId ?? null,
         },
         select: MESSAGE_SELECT_FIELDS,
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async updateMessageText(messageId: string, text: string): Promise<Message> {
+    try {
+      return await this.prisma.message.update({
+        where: { id: messageId },
+        data: { text, editedAt: new Date() },
+        select: MESSAGE_SELECT_FIELDS,
+      });
+    } catch (error) {
+      return handlePrismaError(error);
+    }
+  }
+
+  async deleteMessageForEveryone(messageId: string, userId: string): Promise<Message> {
+    try {
+      return await this.prisma.message.update({
+        where: { id: messageId },
+        data: { deletedAt: new Date(), deletedById: userId },
+        select: MESSAGE_SELECT_FIELDS,
+      });
+    } catch (error) {
+      return handlePrismaError(error);
+    }
+  }
+
+  async hideMessageForUser(messageId: string, userId: string): Promise<void> {
+    try {
+      await this.prisma.messageDeletion.upsert({
+        where: { messageId_userId: { messageId, userId } },
+        create: { messageId, userId },
+        update: { deletedAt: new Date() },
       });
     } catch (error) {
       handlePrismaError(error);
@@ -357,6 +399,14 @@ export class ChatPrismaRepository implements IChatRepository {
       return handlePrismaError(error);
     }
   }
+}
+
+function buildVisibleMessagesWhere(chatId: string, userId: string) {
+  return {
+    chatId,
+    deletedAt: null,
+    deletions: { none: { userId } },
+  };
 }
 
 function buildMediaMessagesWhere(chatId: string, filter: ChatMediaFilter) {

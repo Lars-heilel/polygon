@@ -17,13 +17,19 @@ describe('ChatPrismaRepository', () => {
   };
   const message = {
     count: jest.fn(),
+    create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
+  };
+  const messageDeletion = {
+    upsert: jest.fn(),
   };
   type RepositoryPrismaMock = {
     chat: typeof chat;
     chatMember: typeof chatMember;
     message: typeof message;
+    messageDeletion: typeof messageDeletion;
     $transaction: jest.Mock;
   };
   const transaction = jest.fn();
@@ -31,6 +37,7 @@ describe('ChatPrismaRepository', () => {
     chat,
     chatMember,
     message,
+    messageDeletion,
     $transaction: transaction,
   } satisfies RepositoryPrismaMock;
   const repository = new ChatPrismaRepository(repositoryPrisma as unknown as PrismaService);
@@ -235,18 +242,84 @@ describe('ChatPrismaRepository', () => {
     const older = { id: 'message-1' };
     message.findMany.mockResolvedValue([newer, older]);
 
-    await expect(repository.findMessagesByChat('chat-1', 'message-3', 2)).resolves.toEqual({
+    await expect(repository.findMessagesByChat('chat-1', 'message-3', 2, 'user-1')).resolves.toEqual({
       messages: [older, newer],
       nextCursor: 'message-1',
     });
 
     expect(message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { chatId: 'chat-1' },
+        where: {
+          chatId: 'chat-1',
+          deletedAt: null,
+          deletions: { none: { userId: 'user-1' } },
+        },
         cursor: { id: 'message-3' },
         skip: 1,
         take: 2,
         orderBy: { createdAt: 'desc' },
+      }),
+    );
+  });
+
+  it('updates message text and editedAt', async () => {
+    message.update.mockResolvedValue({
+      id: 'message-1',
+      text: 'after',
+      editedAt: new Date('2026-07-22T00:00:00.000Z'),
+    });
+
+    await expect(repository.updateMessageText('message-1', 'after')).resolves.toEqual(
+      expect.objectContaining({ id: 'message-1', text: 'after' }),
+    );
+
+    expect(message.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'message-1' },
+        data: {
+          text: 'after',
+          editedAt: expect.any(Date),
+        },
+      }),
+    );
+  });
+
+  it('marks a message globally deleted with actor metadata', async () => {
+    message.update.mockResolvedValue({
+      id: 'message-1',
+      chatId: 'chat-1',
+      deletedById: 'user-1',
+      deletedAt: new Date('2026-07-22T00:00:00.000Z'),
+    });
+
+    await expect(repository.deleteMessageForEveryone('message-1', 'user-1')).resolves.toEqual(
+      expect.objectContaining({ id: 'message-1', deletedById: 'user-1' }),
+    );
+
+    expect(message.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'message-1' },
+        data: {
+          deletedAt: expect.any(Date),
+          deletedById: 'user-1',
+        },
+      }),
+    );
+  });
+
+  it('stores per-user hidden message state idempotently', async () => {
+    messageDeletion.upsert.mockResolvedValue({
+      messageId: 'message-1',
+      userId: 'user-1',
+    });
+
+    await expect(repository.hideMessageForUser('message-1', 'user-1')).resolves.toBeUndefined();
+
+    expect(messageDeletion.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { messageId_userId: { messageId: 'message-1', userId: 'user-1' } },
+        create: { messageId: 'message-1', userId: 'user-1' },
+        update: { deletedAt: expect.any(Date) },
       }),
     );
   });

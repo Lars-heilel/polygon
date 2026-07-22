@@ -59,15 +59,20 @@ export interface IChatRepository {
     chatId: string,
     cursor: string | undefined,
     take: number,
+    userId: string,
   ): Promise<MessagePage>;
   findMediaMessagesByChat(
     chatId: string,
     cursor: string | undefined,
     take: number,
     filter: ChatMediaFilter,
+    userId: string,
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
+  updateMessageText(messageId: string, text: string): Promise<Message>;
+  deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;
+  hideMessageForUser(messageId: string, userId: string): Promise<void>;
   createMessagesMany(data: CreateMessageData[]): Promise<number>;
   countUnreadMessages(
     chatId: string,

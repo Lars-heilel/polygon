@@ -75,11 +75,28 @@ model Message {
   fileMime        String?     @map("file_mime")
   fileCategory    String?     @map("file_category")
   forwardedFromId String?     @map("forwarded_from_id")
+  editedAt        DateTime?   @map("edited_at")
+  deletedAt       DateTime?   @map("deleted_at")
+  deletedById     String?     @map("deleted_by_id")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
-  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  deletions MessageDeletion[]
 
   @@index([chatId, createdAt])
   @@index([chatId, clientId])
+  @@index([deletedAt])
+}
+
+model MessageDeletion {
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  deletedAt DateTime @default(now()) @map("deleted_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId])
+  @@map("message_deletions")
 }
