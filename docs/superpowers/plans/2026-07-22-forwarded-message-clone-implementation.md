@@ -869,6 +869,7 @@ git commit -m "feat(chat): serve media through message attachments"
 - Modify: `libs/backend/chat/src/controllers/chat.controller.ts`
 - Modify: `libs/backend/chat/src/interfaces/chat.interface.ts`
 - Modify: `libs/backend/chat/src/database/repository/chat.prisma.repo.ts`
+- Modify: `libs/backend/chat/src/lib/chat.module.ts`
 - Modify: `libs/client/features/send-message/src/use-send-message.ts`
 - Modify: `libs/client/entities/message/src/message-normalizer.ts`
 
