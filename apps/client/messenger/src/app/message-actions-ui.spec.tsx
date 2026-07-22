@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 
 import { MessageActionsMenu } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
+import { DeleteMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/delete-message-modal';
 
 const baseMessage: Message = {
   id: 'message-1',
@@ -62,5 +63,37 @@ describe('message actions ui', () => {
     expect(screen.getByRole('menuitem', { name: 'Forward' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Copy' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeTruthy();
+  });
+
+  it('defaults own message delete confirmation to delete for everyone', () => {
+    render(
+      <DeleteMessageModal
+        isOpen
+        message={baseMessage}
+        isMine
+        onClose={jest.fn()}
+        onConfirm={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Delete for everyone' }).checked).toBe(true);
+  });
+
+  it('confirms delete-for-me when the checkbox is cleared', () => {
+    const onConfirm = jest.fn();
+    render(
+      <DeleteMessageModal
+        isOpen
+        message={baseMessage}
+        isMine
+        onClose={jest.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Delete for everyone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(onConfirm).toHaveBeenCalledWith('ME');
   });
 });

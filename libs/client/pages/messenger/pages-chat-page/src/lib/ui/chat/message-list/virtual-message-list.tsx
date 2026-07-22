@@ -3,14 +3,18 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
 import {
   FileMessage,
+  MessageActionsMenu,
   MessageBubble,
   MessageContent,
+  useDeleteMessageMutation,
   useInfiniteMessagesQuery,
 } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import type { AudioTrack, VirtualFeedHandle } from '@org/shared';
 import { Button, Text, VirtualFeed, socket } from '@org/shared';
+
+import { DeleteMessageModal } from './delete-message-modal';
 
 interface ChatMessageRowProps {
   msg: Message;
@@ -19,11 +23,14 @@ interface ChatMessageRowProps {
   senderAvatarUrl?: string;
   audioQueue: AudioTrack[];
   audioQueueIndexByMessageId: Map<string, number>;
+  onEditMessage?: (message: Message) => void;
+  onDeleteMessage?: (message: Message) => void;
 }
 
 interface VirtualMessageListProps {
   chatId: string;
   diagnosticContext?: Record<string, string | number | boolean | null>;
+  onEditMessage?: (message: Message) => void;
 }
 
 export function getMessageVirtualKey(msg: Pick<Message, 'id' | 'clientId'>): string {
@@ -37,6 +44,8 @@ export const ChatMessageRow = memo(({
   senderAvatarUrl,
   audioQueue,
   audioQueueIndexByMessageId,
+  onEditMessage,
+  onDeleteMessage,
 }: ChatMessageRowProps) => {
   return (
     <div
@@ -52,6 +61,15 @@ export const ChatMessageRow = memo(({
         isMine={isMine}
         senderName={senderName}
         senderAvatarUrl={senderAvatarUrl}
+        actionsSlot={
+          <MessageActionsMenu
+            message={msg}
+            isMine={isMine}
+            onEdit={(message) => onEditMessage?.(message)}
+            onForward={() => undefined}
+            onDelete={(message) => onDeleteMessage?.(message)}
+          />
+        }
       >
         {msg.fileId ? (
           <div className="space-y-2">
@@ -87,6 +105,7 @@ const EmptyState = memo(() => (
 export const VirtualMessageList = memo(function MessageList({
   chatId,
   diagnosticContext,
+  onEditMessage,
 }: VirtualMessageListProps) {
   const {
     data: infiniteData,
@@ -97,8 +116,10 @@ export const VirtualMessageList = memo(function MessageList({
   const { data: me } = useMeSuspenseQuery();
   const { data: chats } = useGetChatsSuspenseQuery();
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [messagePendingDelete, setMessagePendingDelete] = useState<Message | null>(null);
   const isAtBottomRef = useRef(true);
   const feedRef = useRef<VirtualFeedHandle>(null);
+  const deleteMessage = useDeleteMessageMutation(chatId);
 
   const allMessages = useMemo(
     () => [...infiniteData.pages].reverse().flatMap((p) => p.messages),
@@ -192,7 +213,23 @@ export const VirtualMessageList = memo(function MessageList({
               senderAvatarUrl={profile?.avatarUrl ?? undefined}
               audioQueue={audioQueue}
               audioQueueIndexByMessageId={audioQueueIndexByMessageId}
+              onEditMessage={onEditMessage}
+              onDeleteMessage={setMessagePendingDelete}
             />
+          );
+        }}
+      />
+
+      <DeleteMessageModal
+        isOpen={messagePendingDelete !== null}
+        message={messagePendingDelete}
+        isMine={messagePendingDelete?.senderId === me.id}
+        onClose={() => setMessagePendingDelete(null)}
+        onConfirm={(mode) => {
+          if (!messagePendingDelete) return;
+          deleteMessage.mutate(
+            { messageId: messagePendingDelete.id, mode },
+            { onSettled: () => setMessagePendingDelete(null) },
           );
         }}
       />

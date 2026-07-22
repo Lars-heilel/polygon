@@ -1,5 +1,7 @@
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
+import type { Message } from '@org/entities-message';
+import { useEditMessageMutation } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import { EmojiPicker } from '@org/features-emoji';
 import {
@@ -18,11 +20,20 @@ import { AttachMenu } from './attach-menu';
 
 interface ChatFooterProps {
   chatId: string;
+  editingMessage?: Message | null;
+  onEditCancel?: () => void;
+  onEditSaved?: () => void;
 }
 
-export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) {
+export const ChatFooter = memo(function ChatFooter({
+  chatId,
+  editingMessage = null,
+  onEditCancel,
+  onEditSaved,
+}: ChatFooterProps) {
   const { data: me } = useMeSuspenseQuery();
   const { messageText, setMessageText, handleSend, setFileAttachment } = useSendMessage(chatId, me.id);
+  const editMessage = useEditMessageMutation(chatId);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{ name: string; size: number } | null>(null);
@@ -39,16 +50,48 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
   const circleRecorder = useCircleRecorder(chatId, sendWithAttachment);
 
   const isRecording = voiceRecorder.isRecording || circleRecorder.isRecording;
+  const isEditing = editingMessage !== null;
+
+  useEffect(() => {
+    if (editingMessage) {
+      setMessageText(editingMessage.text ?? '');
+    }
+  }, [editingMessage, setMessageText]);
+
+  const handleSubmit = useCallback(() => {
+    if (!isEditing || !editingMessage) {
+      handleSend();
+      return;
+    }
+
+    const text = messageText.trim();
+    if (!text) return;
+
+    editMessage.mutate(
+      { messageId: editingMessage.id, text },
+      {
+        onSuccess: () => {
+          setMessageText('');
+          onEditSaved?.();
+        },
+      },
+    );
+  }, [editMessage, editingMessage, handleSend, isEditing, messageText, onEditSaved, setMessageText]);
+
+  const handleCancelEdit = useCallback(() => {
+    setMessageText('');
+    onEditCancel?.();
+  }, [onEditCancel, setMessageText]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (isRecording) return;
-        handleSend();
+        handleSubmit();
       }
     },
-    [handleSend, isRecording],
+    [handleSubmit, isRecording],
   );
 
   const handleEmojiSelect = useCallback(
@@ -132,6 +175,21 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
 
   return (
     <div className="px-4 py-3 border-t border-border sticky shrink-0 bg-background">
+      {isEditing && (
+        <div className="mb-2 flex items-center gap-2 rounded-lg bg-surface-elevated px-2 py-1.5 text-sm">
+          <Text as="span" size="sm" className="flex-1 truncate">
+            Editing message
+          </Text>
+          <IconButton
+            type="button"
+            label="Cancel edit"
+            size="xs"
+            variant="ghost"
+            onClick={handleCancelEdit}
+            icon={<CloseIcon />}
+          />
+        </div>
+      )}
       {hasAttachment && (
         <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-surface-elevated rounded-lg text-sm">
           {uploading ? (
@@ -232,7 +290,7 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
 
       <div className="flex gap-3 items-end">
         <AttachMenu
-          disabled={uploading || isRecording}
+          disabled={uploading || isRecording || isEditing}
           onFileSelected={handleAttachFile}
         />
 
@@ -241,7 +299,7 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isRecording ? 'Recording...' : 'Write a message...'}
+            placeholder={isEditing ? 'Edit message...' : isRecording ? 'Recording...' : 'Write a message...'}
             rows={1}
             className="resize-none"
           />
@@ -252,11 +310,11 @@ export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) 
         {hasText ? (
           <IconButton
             type="button"
-            label="Send message"
+            label={isEditing ? 'Save edit' : 'Send message'}
             size="lg"
             variant="primary"
-            onClick={handleSend}
-            disabled={isRecording}
+            onClick={handleSubmit}
+            disabled={isRecording || editMessage.isPending}
             className="rounded-full"
             icon={<SendIcon />}
           />

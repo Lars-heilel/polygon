@@ -1,5 +1,6 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
+import type { Message } from '@org/entities-message';
 import { ErrorBoundary, GlobalAudioPlayer } from '@org/shared';
 
 import { ChatHeader, ChatHeaderSkeleton } from '../chat-header';
@@ -11,6 +12,8 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ chatId }: ChatWindowProps) {
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       <GlobalAudioPlayer mode="embedded" />
@@ -23,9 +26,14 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
         </ErrorBoundary>
       </header>
 
-      <ChatMain chatId={chatId} />
+      <ChatMain chatId={chatId} onEditMessage={setEditingMessage} />
 
-      <ChatFooter chatId={chatId} />
+      <ChatFooter
+        chatId={chatId}
+        editingMessage={editingMessage}
+        onEditCancel={() => setEditingMessage(null)}
+        onEditSaved={() => setEditingMessage(null)}
+      />
     </div>
   );
 }

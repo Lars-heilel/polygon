@@ -1,6 +1,7 @@
 import { Suspense, memo, useEffect, useMemo } from 'react';
 
 import { MessageListSkeleton } from '@org/entities-message';
+import type { Message } from '@org/entities-message';
 import { useChatSocket } from '@org/features-chat-socket';
 import { ErrorBoundary } from '@org/shared';
 
@@ -9,9 +10,10 @@ import { getChatDiagnosticKey, logChatSelected, logChatViewUnmounted } from './c
 
 interface ChatMainProps {
   chatId: string;
+  onEditMessage?: (message: Message) => void;
 }
 
-export const ChatMain = memo(function ChatMain({ chatId }: ChatMainProps) {
+export const ChatMain = memo(function ChatMain({ chatId, onEditMessage }: ChatMainProps) {
   useChatSocket(chatId);
   const chatDiagnosticKey = getChatDiagnosticKey(chatId);
   const diagnosticContext = useMemo(
@@ -41,6 +43,7 @@ export const ChatMain = memo(function ChatMain({ chatId }: ChatMainProps) {
             key={chatDiagnosticKey}
             chatId={chatId}
             diagnosticContext={diagnosticContext}
+            onEditMessage={onEditMessage}
           />
         </Suspense>
       </ErrorBoundary>
