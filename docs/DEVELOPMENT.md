@@ -200,6 +200,18 @@ libs/backend/<service>/
 
 При создании новой фичи, исправлении бага или рефакторинге существующего поведения разработчик обязан явно оценить observability-контракт: какие события нужны для диагностики, где они должны логироваться, какие данные нельзя раскрывать, и какие тесты/grep-проверки защищают этот стандарт.
 
+Каждое значимое пользовательское или системное действие должно быть прологировано поэтапно, чтобы по логам было понятно, что именно произошло и на каком шаге сломалось. Минимальный lifecycle для нового/измененного flow:
+
+- `*_requested` — действие принято системой: отправка сообщения, редактирование, удаление, пересылка, загрузка файла, подтверждение upload, создание чата и т.д.
+- `*_validated` или `*_validation_failed` — результат бизнес-валидации, если она нетривиальна.
+- `*_denied` — отказ по правам, membership, ownership, лимитам или состоянию сущности.
+- `*_started` — начало внешнего или тяжелого шага: RPC в другой сервис, storage operation, indexing, notification dispatch, media processing.
+- `*_succeeded` / `*_completed` / `*_created` / `*_updated` / `*_deleted` — успешное изменение состояния с counts/status/result.
+- `*_failed` — ошибка ожидаемого шага с безопасной классификацией причины.
+- `*_skipped` — осознанный пропуск шага, например нет получателей, нет attachments, нечего индексировать.
+
+Для каждого flow должны быть видны контекст и прогресс без раскрытия payload: boolean flags (`hasUserId`, `hasChatId`, `hasMessageId`, `hasFileId`), counts (`messageCount`, `attachmentCount`, `recipientCount`), типы (`messageType`, `fileCategory`, `deleteMode`), durations и итоговый status/result. Логи должны отвечать на вопросы "что пользователь попытался сделать", "какие проверки прошли", "где отказали", "что было создано/обновлено/удалено", "какой внешний шаг упал".
+
 Frontend:
 
 - Используйте `useLogger(context)` в React-компонентах/хуках или `frontendLog` в non-hook коде.
@@ -214,14 +226,16 @@ Backend:
 - Используйте Nest `Logger` или общий logger из backend core.
 - Логи должны быть структурированными: `eventType`, boolean flags (`hasUserId`, `hasChatId`), counts, durations, status/result.
 - Не пишите raw ids, message text, tokens, cookies, database URLs, OAuth secrets, MinIO credentials, SMTP credentials, VAPID keys, Redis/RabbitMQ passwords и signed URLs.
-- Для бизнес-фичей добавляйте события на ключевые переходы: request received, validation/authorization denied, external/service call failed, state changed, async event emitted/consumed.
-- Для новых публичных endpoint/RPC/socket flows логирование должно покрывать success и expected failure paths без раскрытия payload secrets.
+- Для бизнес-фичей добавляйте события на каждый ключевой переход lifecycle: request received, validation result, authorization/membership/ownership denied, external/service call started/failed/completed, state changed, async event emitted/consumed, skipped branch.
+- Для новых публичных endpoint/RPC/socket flows логирование должно покрывать success, expected failure paths и skipped paths без раскрытия payload secrets.
+- Если действие меняет состояние в нескольких сервисах, gateway и каждый сервис должны логировать свою часть flow одинаковыми `eventType`-семействами, чтобы цепочка читалась по этапам.
 
 Тестовый минимум для затронутой области:
 
 - frontend grep/test не должен находить прямые `console.*` в production client code;
 - tests должны подтверждать, что prod frontend reporter не отправляет query/hash и raw secrets;
 - backend unit/integration tests для логирования должны проверять event shape/redaction там, где добавляется новый logger behavior.
+- tests для новых endpoint/RPC/socket flows должны проверять наличие lifecycle-событий для success, denied/failed и skipped веток, если такие ветки есть в flow.
 
 ---
 
