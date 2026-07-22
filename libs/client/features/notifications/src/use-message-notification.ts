@@ -41,7 +41,6 @@ export function useMessageNotification() {
   const incrementUnread = useChatStore((s) => s.incrementUnread);
   const processedIdRef = useRef<string | null>(null);
   const { data: chats } = useGetChatsQuery();
-  const activeChatId = useChatStore((s) => s.activeChatId);
 
   useEffect(() => {
     const handleIncomingMessage = (msg: ChatMessage) => {
@@ -103,7 +102,7 @@ export function useMessageNotification() {
     if (!chats?.length) return;
     logger.debug('Joining chat notification rooms', { chatCount: chats.length });
     chats.forEach((chat) => socket.emit('chat:join', { chatId: chat.id }));
-  }, [chats, activeChatId, logger]);
+  }, [chats, logger]);
 
   useEffect(() => {
     if (!lastMsg || lastMsg.id === processedIdRef.current) return;
