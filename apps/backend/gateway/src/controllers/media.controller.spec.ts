@@ -1,6 +1,6 @@
 import type { ClientProxy } from '@nestjs/microservices';
 import { CHAT_PATTERNS, MEDIA_PATTERNS, type IStorageProvider } from '@org/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 type MediaGatewayControllerConstructor = typeof import('./media.controller').MediaGatewayController;
 
@@ -188,5 +188,81 @@ describe('MediaGatewayController chat attachment content', () => {
         hasUserId: true,
       }),
     );
+  });
+
+  it('does not stream media when chat-scoped access is denied', async () => {
+    const ctx = controller();
+    const chatId = '22222222-2222-4222-8222-222222222222';
+    const messageId = '11111111-1111-4111-8111-111111111111';
+    const attachmentId = '44444444-4444-4444-8444-444444444444';
+    const userId = '33333333-3333-4333-8333-333333333333';
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(ctx.controller, 'logger', { value: logger });
+    ctx.chatClient.send.mockReturnValueOnce(throwError(() => ({ statusCode: 403, message: 'Forbidden' } as never)));
+
+    await expect(
+      (
+        ctx.controller as typeof ctx.controller & {
+          getChatAttachmentContent: (
+            chatId: string,
+            messageId: string,
+            attachmentId: string,
+            user: { sub: string },
+            req: ReturnType<typeof reqMock>,
+            res: ReturnType<typeof resMock>,
+          ) => Promise<void>;
+        }
+      ).getChatAttachmentContent(chatId, messageId, attachmentId, { sub: userId }, reqMock(), resMock()),
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(
+      CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS,
+      { chatId, messageId, attachmentId, userId },
+    );
+    expect(ctx.mediaClient.send).not.toHaveBeenCalled();
+    expect(ctx.storage.getFileStream).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_attachment_content_denied',
+        hasChatId: true,
+        hasMessageId: true,
+        hasAttachmentId: true,
+        hasUserId: true,
+        status: 403,
+        reason: 'chat_access_denied',
+      }),
+    );
+  });
+
+  it('still serves the raw file content route through the shared streaming helper', async () => {
+    const ctx = controller();
+    const fileId = '55555555-5555-4555-8555-555555555555';
+    const userId = '33333333-3333-4333-8333-333333333333';
+    ctx.mediaClient.send.mockReturnValueOnce(of({
+      id: fileId,
+      bucket: 'media-bucket',
+      key: 'file.bin',
+      mimeType: 'application/octet-stream',
+      size: 10,
+      chatId: null,
+    }));
+
+    await (
+      ctx.controller as typeof ctx.controller & {
+        getFileContent: (
+          fileId: string,
+          user: { sub: string },
+          req: ReturnType<typeof reqMock>,
+          res: ReturnType<typeof resMock>,
+        ) => Promise<void>;
+      }
+    ).getFileContent(fileId, { sub: userId }, reqMock(), resMock());
+
+    expect(ctx.mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.GET_BY_ID, { id: fileId });
+    expect(ctx.chatClient.send).not.toHaveBeenCalledWith(
+      CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS,
+      expect.anything(),
+    );
+    expect(ctx.storage.getFileStream).toHaveBeenCalledWith('media-bucket', 'file.bin', undefined);
   });
 });

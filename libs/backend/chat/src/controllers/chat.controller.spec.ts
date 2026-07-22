@@ -22,6 +22,7 @@ describe('ChatController', () => {
       getMembers: jest.fn(),
       createSelfChat: jest.fn(),
       markRead: jest.fn(),
+      getMessageAttachmentForAccess: jest.fn(),
     };
     controller = new ChatController(service);
   });
@@ -79,5 +80,23 @@ describe('ChatController', () => {
     expect(logger.debug).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'message_send_requested', hasChatId: true, hasSenderId: true }),
     );
+  });
+
+  it('delegates attachment access to the service', async () => {
+    service.getMessageAttachmentForAccess.mockResolvedValue({ mediaId: 'media-1' } as never);
+
+    await expect(controller.getMessageAttachmentForAccess({
+      chatId: 'chat-1',
+      messageId: 'message-1',
+      attachmentId: 'attachment-1',
+      userId: 'user-1',
+    })).resolves.toEqual({ mediaId: 'media-1' });
+
+    expect(service.getMessageAttachmentForAccess).toHaveBeenCalledWith({
+      chatId: 'chat-1',
+      messageId: 'message-1',
+      attachmentId: 'attachment-1',
+      userId: 'user-1',
+    });
   });
 });

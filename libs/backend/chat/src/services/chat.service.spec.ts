@@ -27,6 +27,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMessagesByChat: jest.fn(),
     findMediaMessagesByChat: jest.fn(),
     findMessageById: jest.fn(),
+    findMessageAttachmentForAccess: jest.fn(),
     createMessage: jest.fn(),
     createMessageWithRelations: jest.fn(),
     updateMessageText: jest.fn(),
@@ -136,6 +137,97 @@ describe('ChatService', () => {
     expect(diagnosticPayload).not.toContain('source-secret-chat');
     expect(diagnosticPayload).not.toContain('target-secret-chat');
     expect(diagnosticPayload).not.toContain('message-secret-id');
+  });
+
+  it('returns attachment media access only for chat members and logs the redacted lifecycle', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-secret-id',
+      userId: 'user-secret-id',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageAttachmentForAccess.mockResolvedValue({ mediaId: 'media-secret-id' });
+    const service = new ChatService(repo);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.getMessageAttachmentForAccess({
+      chatId: 'chat-secret-id',
+      messageId: 'message-secret-id',
+      attachmentId: 'attachment-secret-id',
+      userId: 'user-secret-id',
+    })).resolves.toEqual({ mediaId: 'media-secret-id' });
+
+    expect(repo.findMessageAttachmentForAccess).toHaveBeenCalledWith({
+      chatId: 'chat-secret-id',
+      messageId: 'message-secret-id',
+      attachmentId: 'attachment-secret-id',
+      userId: 'user-secret-id',
+    });
+    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_attachment_access_success',
+      hasChatId: true,
+      hasMessageId: true,
+      hasAttachmentId: true,
+      hasUserId: true,
+      hasMediaId: true,
+    }));
+  });
+
+  it('denies attachment access when the user is not a chat member', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue(null);
+    const service = new ChatService(repo);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.getMessageAttachmentForAccess({
+      chatId: 'chat-secret-id',
+      messageId: 'message-secret-id',
+      attachmentId: 'attachment-secret-id',
+      userId: 'user-secret-id',
+    })).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(repo.findMessageAttachmentForAccess).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_attachment_access_denied',
+      hasChatId: true,
+      hasMessageId: true,
+      hasAttachmentId: true,
+      hasUserId: true,
+      reason: 'not_chat_member',
+    }));
+  });
+
+  it('rejects when the attachment does not belong to the requested chat message', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-secret-id',
+      userId: 'user-secret-id',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.findMessageAttachmentForAccess.mockResolvedValue(null);
+    const service = new ChatService(repo);
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(service, 'logger', { value: logger });
+
+    await expect(service.getMessageAttachmentForAccess({
+      chatId: 'chat-secret-id',
+      messageId: 'message-secret-id',
+      attachmentId: 'attachment-secret-id',
+      userId: 'user-secret-id',
+    })).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: 'message_attachment_access_denied',
+      reason: 'attachment_not_in_message_chat',
+    }));
   });
 
   it('gets chats without creating a self chat as a side effect', async () => {

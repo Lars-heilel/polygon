@@ -2,7 +2,6 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -105,18 +104,8 @@ export class ChatService implements IChatService {
     }
 
     this.logger.debug({ eventType: 'message_attachment_access_started', ...logContext });
-    const findMessageAttachmentForAccess = this.repo.findMessageAttachmentForAccess;
-    if (!findMessageAttachmentForAccess) {
-      this.logger.error({
-        eventType: 'message_attachment_access_failed',
-        ...logContext,
-        reason: 'attachment_access_repository_unavailable',
-      });
-      throw new InternalServerErrorException('Attachment access is unavailable');
-    }
-
     try {
-      const attachment = await findMessageAttachmentForAccess.call(this.repo, input);
+      const attachment = await this.repo.findMessageAttachmentForAccess(input);
       if (!attachment) {
         this.logger.warn({
           eventType: 'message_attachment_access_denied',

@@ -106,7 +106,7 @@ export interface IChatRepository {
     userId: string,
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
-  findMessageAttachmentForAccess?(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
+  findMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
   createMessage(data: CreateMessageData): Promise<Message>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
   updateMessageText(messageId: string, text: string): Promise<Message>;
@@ -166,7 +166,7 @@ export interface IChatService {
   markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
   getMembers(chatId: string): Promise<{ userId: string }[]>;
-  getMessageAttachmentForAccess?(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
+  getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
 }
 
 export interface IChatController {
@@ -204,5 +204,5 @@ export interface IChatController {
   markRead(payload: { chatId: string; userId: string; messageId?: string | null }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
   getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
-  getMessageAttachmentForAccess?(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
+  getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
 }
