@@ -122,11 +122,7 @@ export function UserProfileModal({
                     >
                       {profile.displayName ?? profile.name}
                       {profile.role === 'CREATOR' && (
-                        <Badge
-                          variant="primary"
-                          size="md"
-                          className="bg-gradient-to-r from-yellow-500 to-orange-500 border-0"
-                        >
+                        <Badge variant="warning" size="md">
                           Creator
                         </Badge>
                       )}

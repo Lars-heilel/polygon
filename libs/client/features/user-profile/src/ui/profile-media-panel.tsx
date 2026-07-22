@@ -4,7 +4,7 @@ import type { ChatMediaFilter } from '@org/common';
 import { FileMessage, LinkPreviewCard, MessageContent } from '@org/entities-message';
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
 import { useMeSuspenseQuery } from '@org/entities-user';
-import { MediaViewer, type MediaViewerItem, Text, formatTime } from '@org/shared';
+import { MediaViewer, Spinner, type MediaViewerItem, Text, cn, formatTime } from '@org/shared';
 import { Virtuoso } from 'react-virtuoso';
 
 import {
@@ -52,17 +52,18 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="scrollbar-none flex shrink-0 gap-2 overflow-x-auto border-b border-border pb-3">
+      <div className="scrollbar-none flex shrink-0 gap-1 overflow-x-auto rounded-md border border-border bg-surface-elevated p-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
               activeTab === tab.key
-                ? 'bg-primary text-white'
-                : 'bg-surface-elevated text-text-muted hover:text-text'
-            }`}
+                ? 'bg-surface text-text shadow-sm'
+                : 'text-text-muted hover:bg-surface/70 hover:text-text',
+            )}
           >
             {tab.label}
           </button>
@@ -72,11 +73,11 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
       <div className="min-h-0 flex-1 pt-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <Spinner size="md" />
           </div>
         ) : items.length === 0 ? (
-          <div className="flex items-center justify-center py-16 text-sm text-text-muted">
-            Nothing yet
+          <div className="flex items-center justify-center py-16">
+            <Text size="sm" color="muted">Nothing yet</Text>
           </div>
         ) : (
           <Virtuoso
@@ -90,7 +91,7 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
             components={{
               Footer: () => (isFetchingNextPage ? (
                 <div className="flex justify-center py-4">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <Spinner size="sm" />
                 </div>
               ) : null),
             }}
@@ -166,7 +167,7 @@ const MediaEntryCard = memo(function MediaEntryCard({
     && ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.fileCategory ?? '');
 
   return (
-    <div className="mb-3 rounded-2xl border border-border bg-surface/60 p-3">
+    <div className="mb-3 rounded-lg border border-border bg-surface p-3 shadow-[var(--shadow-surface)]">
       <div className="mb-2 flex items-center justify-between gap-2">
         <Text size="xs" weight="medium">{senderName}</Text>
         <Text size="xs" color="muted">{formatTime(entry.message.createdAt)}</Text>
@@ -180,7 +181,7 @@ const MediaEntryCard = memo(function MediaEntryCard({
             <FileMessage message={entry.message} isMine={isMine} />
           )}
           {entry.message.text ? (
-            <div className="rounded-xl bg-background/70 p-2">
+            <div className="rounded-md border border-border bg-surface-elevated p-2">
               <MessageContent text={entry.message.text} isMine={false} />
             </div>
           ) : null}
@@ -189,7 +190,7 @@ const MediaEntryCard = memo(function MediaEntryCard({
         <div className="space-y-2">
           <LinkPreviewCard url={entry.url} />
           {entry.message.text ? (
-            <div className="rounded-xl bg-background/70 p-2">
+            <div className="rounded-md border border-border bg-surface-elevated p-2">
               <MessageContent text={entry.message.text} isMine={false} />
             </div>
           ) : null}
@@ -213,7 +214,7 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
     <button
       type="button"
       onClick={onOpenViewer}
-      className="block w-full overflow-hidden rounded-2xl bg-background text-left"
+      className="block w-full overflow-hidden rounded-lg border border-border bg-surface-elevated text-left transition-colors hover:border-primary/60"
     >
       {isImage ? (
         <img
@@ -229,8 +230,8 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
             className="h-56 w-full object-cover"
             preload="metadata"
           />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/15">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 text-white">
+          <div className="absolute inset-0 flex items-center justify-center bg-background/30">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface/90 text-text shadow-[var(--shadow-surface)]">
               <svg className="ml-1 h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
