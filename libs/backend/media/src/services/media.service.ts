@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 
@@ -7,11 +7,15 @@ import type { IStorageProvider } from '@org/core';
 import type { FileCategory } from '@org/common';
 import type {
   CreateFileInput,
+  CreateMediaReferenceInput,
+  DeleteFileResult,
+  DeleteMediaReferenceInput,
   FileContentResult,
   FileResponse,
   IMediaRepository,
   IMediaService,
   InitUploadResult,
+  MediaReferenceResponse,
   UploadInput,
 } from '../interfaces/media.interface';
 
@@ -27,6 +31,8 @@ const CATEGORY_PREFIX: Record<FileCategory, string> = {
 
 @Injectable()
 export class MediaService implements IMediaService {
+  private readonly logger = new Logger(MediaService.name);
+
   constructor(
     @Inject(MEDIA_PRISMA_REPOSITORY_TOKEN) private readonly repo: IMediaRepository,
     @Inject(STORAGE_PROVIDER_TOKEN) private readonly storage: IStorageProvider,
@@ -120,12 +126,109 @@ export class MediaService implements IMediaService {
     };
   }
 
-  async delete(id: string): Promise<{ success: boolean }> {
+  async delete(id: string): Promise<DeleteFileResult> {
+    this.logger.log({ eventType: 'media_file_delete_requested', hasFileId: !!id });
     const file = await this.repo.findById(id);
-    if (!file) return { success: false };
-    await this.storage.delete(file.bucket, file.key);
-    await this.repo.delete(id);
+    if (!file) {
+      this.logger.log({ eventType: 'media_file_delete_skipped', hasFileId: !!id, reason: 'FILE_NOT_FOUND' });
+      return { success: false };
+    }
+
+    const referenceCount = await this.repo.countReferences(id);
+    if (referenceCount > 0) {
+      this.logger.log({
+        eventType: 'media_reference_delete_skipped',
+        hasFileId: !!id,
+        referenceCount,
+      });
+      return { success: false, reason: 'REFERENCED' };
+    }
+
+    this.logger.log({ eventType: 'media_file_gc_started', hasFileId: !!id, referenceCount });
+    try {
+      await this.storage.delete(file.bucket, file.key);
+      await this.repo.delete(id);
+    } catch (error) {
+      this.logger.error({ eventType: 'media_file_gc_failed', hasFileId: !!id });
+      throw error;
+    }
+
+    this.logger.log({ eventType: 'media_file_gc_deleted', hasFileId: !!id, referenceCount });
     return { success: true };
+  }
+
+  async createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse> {
+    this.logger.log({
+      eventType: 'media_reference_create_requested',
+      hasFileId: !!input.fileId,
+      ownerType: input.ownerType,
+    });
+    this.logger.log({
+      eventType: 'media_reference_create_started',
+      hasFileId: !!input.fileId,
+      ownerType: input.ownerType,
+    });
+
+    try {
+      const reference = await this.repo.createReference(input);
+      this.logger.log({
+        eventType: 'media_reference_created',
+        hasFileId: !!reference.fileId,
+        ownerType: reference.ownerType,
+      });
+      return reference;
+    } catch (error) {
+      this.logger.error({
+        eventType: 'media_reference_create_failed',
+        hasFileId: !!input.fileId,
+        ownerType: input.ownerType,
+      });
+      throw error;
+    }
+  }
+
+  async deleteReference(
+    input: DeleteMediaReferenceInput,
+  ): Promise<{ deleted: boolean; remainingCount: number }> {
+    this.logger.log({
+      eventType: 'media_reference_delete_requested',
+      hasOwnerId: !!input.ownerId,
+      ownerType: input.ownerType,
+    });
+    this.logger.log({
+      eventType: 'media_reference_delete_started',
+      hasOwnerId: !!input.ownerId,
+      ownerType: input.ownerType,
+    });
+
+    try {
+      const reference = await this.repo.deleteReference(input);
+      if (!reference) {
+        this.logger.log({
+          eventType: 'media_reference_delete_skipped',
+          hasOwnerId: !!input.ownerId,
+          ownerType: input.ownerType,
+          referenceCount: 0,
+        });
+        return { deleted: false, remainingCount: 0 };
+      }
+
+      const remainingCount = await this.repo.countReferences(reference.fileId);
+      this.logger.log({
+        eventType: 'media_reference_deleted',
+        hasFileId: !!reference.fileId,
+        ownerType: reference.ownerType,
+        remainingCount,
+      });
+      return { deleted: true, remainingCount };
+    } catch (error) {
+      this.logger.error({
+        eventType: 'media_reference_delete_failed',
+        hasOwnerId: !!input.ownerId,
+        ownerType: input.ownerType,
+      });
+      throw error;
+    }
   }
 
   async getHistory(uploaderId: string, category?: FileCategory): Promise<FileResponse[]> {

@@ -3,7 +3,12 @@ import { Injectable } from '@nestjs/common';
 import type { File, FileCategory } from '@org/common';
 import { handlePrismaError } from '@org/core';
 
-import type { IMediaRepository } from '../../interfaces/media.interface';
+import type {
+  CreateMediaReferenceInput,
+  DeleteMediaReferenceInput,
+  IMediaRepository,
+  MediaReferenceResponse,
+} from '../../interfaces/media.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -101,6 +106,42 @@ export class MediaPrismaRepository implements IMediaRepository {
   async delete(id: string): Promise<void> {
     try {
       await this.prisma.file.delete({ where: { id } });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse> {
+    try {
+      return await this.prisma.mediaReference.create({ data: input });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async deleteReference(
+    input: DeleteMediaReferenceInput,
+  ): Promise<MediaReferenceResponse | null> {
+    try {
+      const reference = await this.prisma.mediaReference.findUnique({
+        where: {
+          ownerType_ownerId: input,
+        },
+      });
+      if (!reference) return null;
+
+      const { count } = await this.prisma.mediaReference.deleteMany({
+        where: { id: reference.id },
+      });
+      return count === 1 ? reference : null;
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async countReferences(fileId: string): Promise<number> {
+    try {
+      return await this.prisma.mediaReference.count({ where: { fileId } });
     } catch (error) {
       handlePrismaError(error);
     }

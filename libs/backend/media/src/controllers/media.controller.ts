@@ -3,7 +3,14 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { MEDIA_PATTERNS, MEDIA_SERVICE_TOKEN } from '@org/core';
 import type { FileCategory } from '@org/common';
-import type { CreateFileInput, IMediaService } from '../interfaces/media.interface';
+import type {
+  CreateFileInput,
+  CreateMediaReferenceInput,
+  DeleteFileResult,
+  DeleteMediaReferenceInput,
+  IMediaService,
+  MediaReferenceResponse,
+} from '../interfaces/media.interface';
 import { FileResponseDto } from '../dto/file-response.dto';
 
 @Controller()
@@ -45,7 +52,7 @@ export class MediaController {
   }
 
   @MessagePattern('media.delete')
-  async delete(@Payload() { id }: { id: string }): Promise<{ success: boolean }> {
+  async delete(@Payload() { id }: { id: string }): Promise<DeleteFileResult> {
     return this.mediaService.delete(id);
   }
 
@@ -77,5 +84,19 @@ export class MediaController {
   @MessagePattern(MEDIA_PATTERNS.CREATE_FILE)
   async createFile(@Payload() payload: CreateFileInput): Promise<FileResponseDto> {
     return this.mediaService.create(payload);
+  }
+
+  @MessagePattern(MEDIA_PATTERNS.CREATE_REFERENCE)
+  async createReference(
+    @Payload() payload: CreateMediaReferenceInput,
+  ): Promise<MediaReferenceResponse> {
+    return this.mediaService.createReference(payload);
+  }
+
+  @MessagePattern(MEDIA_PATTERNS.DELETE_REFERENCE)
+  async deleteReference(
+    @Payload() payload: DeleteMediaReferenceInput,
+  ): Promise<{ deleted: boolean; remainingCount: number }> {
+    return this.mediaService.deleteReference(payload);
   }
 }

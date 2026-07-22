@@ -1,5 +1,30 @@
 import type { File, FileCategory } from '@org/common';
 
+export type MediaReferenceOwnerType = 'MESSAGE_ATTACHMENT';
+
+export interface CreateMediaReferenceInput {
+  fileId: string;
+  ownerType: MediaReferenceOwnerType;
+  ownerId: string;
+}
+
+export interface DeleteMediaReferenceInput {
+  ownerType: MediaReferenceOwnerType;
+  ownerId: string;
+}
+
+export interface MediaReferenceResponse {
+  id: string;
+  fileId: string;
+  ownerType: MediaReferenceOwnerType;
+  ownerId: string;
+  createdAt: Date;
+}
+
+export type DeleteFileResult =
+  | { success: true }
+  | { success: false; reason?: 'REFERENCED' };
+
 export interface IMediaRepository {
   findById(id: string): Promise<File | null>;
   findByUploaderId(uploaderId: string, category?: FileCategory): Promise<File[]>;
@@ -22,6 +47,9 @@ export interface IMediaRepository {
   }): Promise<File>;
   updateStatus(id: string, status: 'PENDING' | 'READY'): Promise<File>;
   delete(id: string): Promise<void>;
+  createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse>;
+  deleteReference(input: DeleteMediaReferenceInput): Promise<MediaReferenceResponse | null>;
+  countReferences(fileId: string): Promise<number>;
 }
 
 export interface FileContentResult {
@@ -84,7 +112,9 @@ export interface IMediaService {
   confirmUpload(fileId: string): Promise<FileResponse>;
   getById(id: string): Promise<FileResponse | null>;
   getFileContent(id: string): Promise<FileContentResult>;
-  delete(id: string): Promise<{ success: boolean }>;
+  delete(id: string): Promise<DeleteFileResult>;
+  createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse>;
+  deleteReference(input: DeleteMediaReferenceInput): Promise<{ deleted: boolean; remainingCount: number }>;
   getHistory(uploaderId: string, category?: FileCategory): Promise<FileResponse[]>;
   getChatHistory(
     chatId: string,

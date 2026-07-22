@@ -12,4 +12,6 @@ export const MEDIA_PATTERNS = {
   GET_ADMIN_AVATAR_HISTORY: 'media.admin.getAvatarHistory',
   GET_CHAT_HISTORY: 'media.getChatHistory',
   CREATE_FILE: 'media.createFile',
+  CREATE_REFERENCE: 'media.references.create',
+  DELETE_REFERENCE: 'media.references.delete',
 } as const;
