@@ -1,6 +1,6 @@
 import { type ReactNode, memo } from 'react';
 
-import { Avatar, formatTime } from '@org/shared';
+import { Avatar, cn, formatTime } from '@org/shared';
 
 import type { Message } from '../message.api.js';
 
@@ -30,15 +30,20 @@ export const MessageBubble = memo(function MessageBubble({
       )}
       <div
         data-testid="message-bubble"
-        className={`min-w-0 max-w-[min(82vw,32rem)] sm:max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${
+        className={cn(
+          'min-w-0 max-w-[min(82vw,32rem)] px-4 py-2.5 text-sm sm:max-w-[70%]',
+          'rounded-lg border shadow-[var(--shadow-surface)]',
           isMine
-            ? 'bg-primary text-white rounded-br-md lg:rounded-bl-md'
-            : 'bg-surface-elevated text-text rounded-bl-md'
-        }`}
+            ? 'border-primary bg-primary text-text-inverse rounded-br-sm lg:rounded-bl-sm'
+            : 'border-border bg-surface text-text rounded-bl-sm',
+        )}
       >
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">{children}</div>
         <p
-          className={`text-[10px] mt-1 text-right ${isMine ? 'text-white/60' : 'text-text-muted'}`}
+          className={cn(
+            'text-[10px] mt-1 text-right',
+            isMine ? 'text-text-inverse/70' : 'text-text-muted',
+          )}
         >
           {formatTime(message.createdAt)}
         </p>

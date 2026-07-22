@@ -298,7 +298,6 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
 
 const FileAttachmentMessage = memo(function FileAttachmentMessage({
   message,
-  isMine,
 }: FileMessageProps) {
   const fileUrl = `/api/media/files/${message.fileId}/content`;
 
@@ -309,17 +308,15 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
       rel="noopener noreferrer"
       className={cn(
         'flex max-w-full min-w-0 items-center gap-3 rounded-lg border px-3 py-2 transition-colors',
-        isMine
-          ? 'bg-white/10 border-white/20 hover:bg-white/15'
-          : 'bg-surface-elevated border-border hover:bg-surface-elevated/80',
+        'border-border bg-surface text-text hover:bg-surface-elevated',
       )}
     >
       <span className="text-xl">{getFileIcon(message.fileName ?? '')}</span>
       <div className="flex-1 min-w-0">
-        <p className={cn('text-sm font-medium truncate', isMine ? 'text-white' : 'text-text')}>
+        <p className="text-sm font-medium truncate text-text">
           {message.fileName ?? 'Unknown file'}
         </p>
-        <p className={cn('text-xs', isMine ? 'text-white/60' : 'text-text-muted')}>
+        <p className="text-xs text-text-muted">
           {message.fileSize ? formatFileSize(message.fileSize) : ''}
         </p>
       </div>
