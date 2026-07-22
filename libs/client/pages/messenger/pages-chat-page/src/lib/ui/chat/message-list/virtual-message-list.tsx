@@ -9,11 +9,8 @@ import {
 } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
-import type { AudioTrack } from '@org/shared';
-import { Button, Text, socket } from '@org/shared';
-import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-
-const INITIAL_OFFSET = 10_000;
+import type { AudioTrack, VirtualFeedHandle } from '@org/shared';
+import { Button, Text, VirtualFeed, socket } from '@org/shared';
 
 interface ChatMessageRowProps {
   msg: Message;
@@ -24,7 +21,7 @@ interface ChatMessageRowProps {
   audioQueueIndexByMessageId: Map<string, number>;
 }
 
-const ChatMessageRow = memo(({
+export const ChatMessageRow = memo(({
   msg,
   isMine,
   senderName,
@@ -37,6 +34,7 @@ const ChatMessageRow = memo(({
       className="px-4 pb-3"
       data-testid="message-row"
       data-message-id={msg.id}
+      data-message-client-id={msg.clientId ?? undefined}
       data-message-type={msg.fileCategory ?? msg.type}
     >
       <MessageBubble
@@ -87,7 +85,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
   const { data: chats } = useGetChatsSuspenseQuery();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const isAtBottomRef = useRef(true);
-  const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const feedRef = useRef<VirtualFeedHandle>(null);
 
   const allMessages = useMemo(
     () => [...infiniteData.pages].reverse().flatMap((p) => p.messages),
@@ -121,8 +119,6 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
     return map;
   }, [allMessages]);
 
-  const firstItemIndex = Math.max(0, INITIAL_OFFSET - allMessages.length);
-
   const handleStartReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -130,11 +126,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const scrollToBottom = useCallback(() => {
-    virtuosoRef.current?.scrollToIndex({
-      index: 'LAST',
-      behavior: 'smooth',
-      align: 'end',
-    });
+    feedRef.current?.scrollToEnd('smooth');
   }, []);
 
   const handleAtBottomChange = useCallback((bottom: boolean) => {
@@ -149,11 +141,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
     prevChatIdRef.current = chatId;
 
     setTimeout(() => {
-      virtuosoRef.current?.scrollToIndex({
-        index: 'LAST',
-        behavior: 'auto',
-        align: 'end',
-      });
+      feedRef.current?.scrollToEnd('auto');
     }, 0);
   }, [chatId]);
 
@@ -162,11 +150,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
       if (msg.chatId !== chatId || msg.senderId !== me.id) return;
 
       setTimeout(() => {
-        virtuosoRef.current?.scrollToIndex({
-          index: 'LAST',
-          behavior: 'smooth',
-          align: 'end',
-        });
+        feedRef.current?.scrollToEnd('smooth');
       }, 0);
     };
 
@@ -182,25 +166,18 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
 
   return (
     <div className="relative flex-1 h-full w-full">
-      <Virtuoso
-        ref={virtuosoRef}
-        className="h-full"
-        data={allMessages}
-        computeItemKey={(index, msg) => msg.id}
-        firstItemIndex={firstItemIndex}
-        defaultItemHeight={80}
-        increaseViewportBy={{ top: 600, bottom: 400 }}
-        overscan={200}
-        skipAnimationFrameInResizeObserver
-        initialTopMostItemIndex={allMessages.length - 1}
-        atBottomThreshold={24}
-        followOutput={(bottom) => (bottom ? 'smooth' : false)}
-        atBottomStateChange={handleAtBottomChange}
-        startReached={handleStartReached}
-        components={{
-          Footer: () => <div className="h-6" />,
-        }}
-        itemContent={(index, msg) => {
+      <VirtualFeed
+        ref={feedRef}
+        mode="reverse"
+        items={allMessages}
+        getKey={(msg) => (msg.clientId ? `client:${msg.clientId}` : `server:${msg.id}`)}
+        estimateItemHeight={80}
+        hasPrevious={hasNextPage}
+        isLoadingPrevious={isFetchingNextPage}
+        loadPrevious={handleStartReached}
+        onAtBottomChange={handleAtBottomChange}
+        footer={<div className="h-6" />}
+        renderItem={(msg) => {
           const profile = memberProfileMap.get(msg.senderId);
           return (
             <ChatMessageRow

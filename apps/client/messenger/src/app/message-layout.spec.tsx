@@ -1,13 +1,18 @@
 import { render, screen } from '@testing-library/react';
 
 import { MessageBubble, MessageContent } from '@org/entities-message';
+import { ChatMessageRow } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/virtual-message-list';
 
 const message = {
   id: 'message-1',
+  clientId: null,
   chatId: 'chat-1',
   senderId: 'user-1',
+  kind: 'text',
   type: 'TEXT',
   text: null,
+  media: null,
+  linkPreview: null,
   fileId: null,
   fileBucket: null,
   fileKey: null,
@@ -41,5 +46,18 @@ describe('message layout', () => {
     expect(bubble.className).toContain('min-w-0');
     expect(text.className).toContain('break-words');
     expect(text.className).toContain('[overflow-wrap:anywhere]');
+  });
+
+  it('exposes stable optimistic client ids on message rows', () => {
+    render(
+      <ChatMessageRow
+        msg={{ ...message, clientId: 'client-1' }}
+        isMine={false}
+        audioQueue={[]}
+        audioQueueIndexByMessageId={new Map()}
+      />,
+    );
+
+    expect(screen.getByTestId('message-row').getAttribute('data-message-client-id')).toBe('client-1');
   });
 });
