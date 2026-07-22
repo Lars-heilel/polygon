@@ -232,6 +232,16 @@ describe('MediaGatewayController chat attachment content', () => {
         reason: 'chat_access_denied',
       }),
     );
+    const diagnosticPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.error.mock.calls,
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain(chatId);
+    expect(diagnosticPayload).not.toContain(messageId);
+    expect(diagnosticPayload).not.toContain(attachmentId);
+    expect(diagnosticPayload).not.toContain(userId);
   });
 
   it('still serves the raw file content route through the shared streaming helper', async () => {

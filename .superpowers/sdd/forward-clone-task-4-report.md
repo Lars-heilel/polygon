@@ -43,5 +43,5 @@ The legacy `GET /api/media/files/:fileId/content` behavior remains intact and no
 ## Risks / Notes
 
 - `@org/chat` does not declare a `build` target; its configured `typecheck` target passed and provides the TypeScript validation for the new Prisma relation filter.
-- New interface members are optional to preserve existing full Jest mocks outside this task's ownership boundary. Production Chat controller and service guard against a missing implementation and return a sanitized internal error.
+- The attachment access RPC is now a required contract across repository, service, and controller; the task updated the corresponding tests and removed the runtime guard fallback.
 - No send, forward creation, media-reference creation, or client changes were made.
