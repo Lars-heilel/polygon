@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { messageTypeSchema } from './message.schema';
 
 export const sendMessageSchema = z.object({
+  clientId: z.string().uuid().nullable().optional(),
   type: messageTypeSchema.default('TEXT'),
   text: z.string().max(4000).nullable().optional(),
   fileId: z.string().uuid().nullable().optional(),

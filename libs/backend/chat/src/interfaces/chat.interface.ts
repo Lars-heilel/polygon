@@ -17,6 +17,7 @@ export type ChatWithPreview = Chat & {
 
 export interface CreateMessageData {
   chatId: string;
+  clientId?: string | null;
   senderId: string;
   type?: MessageType;
   text?: string | null;
@@ -98,6 +99,7 @@ export interface IChatService {
     chatId: string,
     senderId: string,
     input: {
+      clientId?: string | null;
       type: string;
       text?: string | null;
       fileId?: string | null;
@@ -134,6 +136,7 @@ export interface IChatController {
   }): Promise<MessagePage>;
   sendMessage(payload: {
     chatId: string;
+    clientId?: string | null;
     senderId: string;
     type: string;
     text?: string | null;

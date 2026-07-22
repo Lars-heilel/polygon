@@ -204,6 +204,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     @MessageBody()
     payload: {
       chatId: string;
+      clientId?: string | null;
       text?: string;
       type?: string;
       fileId?: string;
@@ -222,6 +223,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       eventType: 'socket_message_send_requested',
       hasUserId: !!userId,
       hasChatId: !!payload.chatId,
+      hasClientId: !!payload.clientId,
       type: payload.type ?? 'TEXT',
       hasText: !!payload.text,
       hasFile: !!payload.fileId,
@@ -230,6 +232,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     const message = await lastValueFrom(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId: payload.chatId,
+        clientId: payload.clientId ?? null,
         senderId: userId,
         type: payload.type ?? 'TEXT',
         text: payload.text ?? null,
@@ -244,8 +247,16 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     ).catch((err: unknown) => {
       this.logger.error({
         eventType: 'message_send_failed',
+        hasChatId: !!payload.chatId,
+        hasClientId: !!payload.clientId,
         hasError: !!err,
       });
+      if (payload.clientId) {
+        socket.emit('message:send:error', {
+          chatId: payload.chatId,
+          clientId: payload.clientId,
+        });
+      }
       return null;
     });
 

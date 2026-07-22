@@ -5,6 +5,7 @@ export type MessageType = z.infer<typeof messageTypeSchema>;
 
 export const messageSchema = z.object({
   id: z.uuid(),
+  clientId: z.string().uuid().nullable(),
   chatId: z.uuid(),
   senderId: z.uuid(),
   type: messageTypeSchema,

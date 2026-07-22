@@ -76,6 +76,7 @@ export class ChatService implements IChatService {
     chatId: string,
     senderId: string,
     input: {
+      clientId?: string | null;
       type: string;
       text?: string | null;
       fileId?: string | null;
@@ -91,6 +92,7 @@ export class ChatService implements IChatService {
       eventType: 'message_send_requested',
       hasChatId: !!chatId,
       hasSenderId: !!senderId,
+      hasClientId: !!input.clientId,
       type: input.type,
       hasText: !!input.text,
       hasFile: !!input.fileId,
@@ -107,6 +109,7 @@ export class ChatService implements IChatService {
 
     return this.repo.createMessage({
       chatId,
+      clientId: input.clientId ?? null,
       senderId,
       type: input.type as Message['type'],
       text: input.text ?? null,
@@ -136,6 +139,7 @@ export class ChatService implements IChatService {
 
       const copied = await this.repo.createMessage({
         chatId: targetChatId,
+        clientId: null,
         senderId: userId,
         type: original.type,
         text: original.text,

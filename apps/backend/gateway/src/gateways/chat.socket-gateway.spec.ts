@@ -33,7 +33,7 @@ describe('ChatSocketGateway ban enforcement', () => {
     ): Promise<void>;
     handleSendMessage(
       socket: never,
-      payload: { chatId: string; text?: string; type?: string; fileName?: string },
+      payload: { chatId: string; text?: string; type?: string; fileName?: string; clientId?: string },
     ): Promise<void>;
   };
   const tokenService: TokenServiceMock = {
@@ -294,5 +294,43 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(logger.debug).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'socket_message_send_requested', hasChatId: true, hasUserId: true }),
     );
+  });
+
+  it('passes clientId through socket send and broadcasts it with the message', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    const emit = jest.fn();
+    const to = jest.fn(() => ({ emit }));
+    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+      sockets: { sockets: new Map() },
+      to,
+    };
+    const message = {
+      id: 'server-message-1',
+      clientId: '44444444-4444-4444-8444-444444444444',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hello',
+    };
+    chatClient.send.mockReturnValueOnce(of(message));
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      text: 'hello',
+      clientId: '44444444-4444-4444-8444-444444444444',
+    });
+
+    expect(chatClient.send).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      text: 'hello',
+      clientId: '44444444-4444-4444-8444-444444444444',
+    }));
+    expect(to).toHaveBeenCalledWith('chat:chat-1');
+    expect(emit).toHaveBeenCalledWith('message:new', expect.objectContaining({
+      id: 'server-message-1',
+      clientId: '44444444-4444-4444-8444-444444444444',
+    }));
   });
 });

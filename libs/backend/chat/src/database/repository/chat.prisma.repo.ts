@@ -221,6 +221,7 @@ export class ChatPrismaRepository implements IChatRepository {
       return await this.prisma.message.create({
         data: {
           chatId: data.chatId,
+          clientId: data.clientId ?? null,
           senderId: data.senderId,
           type: data.type ?? 'TEXT',
           text: data.text ?? null,
@@ -245,6 +246,7 @@ export class ChatPrismaRepository implements IChatRepository {
       const result = await this.prisma.message.createMany({
         data: data.map((d) => ({
           chatId: d.chatId,
+          clientId: d.clientId ?? null,
           senderId: d.senderId,
           type: d.type ?? 'TEXT',
           text: d.text ?? null,

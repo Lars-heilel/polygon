@@ -62,6 +62,7 @@ model ChatMember {
 
 model Message {
   id              String      @id @default(uuid())
+  clientId        String?     @map("client_id")
   chatId          String      @map("chat_id")
   senderId        String      @map("sender_id")
   type            MessageType @default(TEXT) @map("type")
@@ -80,4 +81,5 @@ model Message {
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@index([chatId, createdAt])
+  @@index([chatId, clientId])
 }

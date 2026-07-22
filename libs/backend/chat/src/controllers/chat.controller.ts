@@ -74,6 +74,7 @@ export class ChatController implements IChatController {
     @Payload()
     payload: {
       chatId: string;
+      clientId?: string | null;
       senderId: string;
       type: string;
       text?: string | null;
@@ -90,11 +91,13 @@ export class ChatController implements IChatController {
       eventType: 'message_send_requested',
       hasChatId: !!payload.chatId,
       hasSenderId: !!payload.senderId,
+      hasClientId: !!payload.clientId,
       type: payload.type,
       hasText: !!payload.text,
       hasFile: !!payload.fileId,
     });
     return this.chatService.sendMessage(payload.chatId, payload.senderId, {
+      clientId: payload.clientId ?? null,
       type: payload.type,
       text: payload.text,
       fileId: payload.fileId,

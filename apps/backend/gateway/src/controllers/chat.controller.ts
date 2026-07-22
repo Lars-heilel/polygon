@@ -171,6 +171,7 @@ export class ChatGatewayController {
       eventType: 'message_send_requested',
       hasChatId: !!chatId,
       hasUserId: !!user.sub,
+      hasClientId: !!dto.clientId,
       type: dto.type ?? 'TEXT',
       hasText: !!dto.text,
       hasFile: !!dto.fileId,
@@ -178,6 +179,7 @@ export class ChatGatewayController {
     const message = await this.send(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId,
+        clientId: dto.clientId ?? null,
         senderId: user.sub,
         type: dto.type ?? 'TEXT',
         text: dto.text ?? null,

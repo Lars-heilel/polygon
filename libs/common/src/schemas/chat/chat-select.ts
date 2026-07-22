@@ -18,6 +18,7 @@ export const CHAT_MEMBER_SELECT_FIELDS = {
 
 export const MESSAGE_SELECT_FIELDS = {
   id: true,
+  clientId: true,
   chatId: true,
   senderId: true,
   type: true,
