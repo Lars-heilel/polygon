@@ -173,6 +173,7 @@ export const VirtualMessageList = memo(function MessageList({ chatId }: { chatId
     <div className="relative flex-1 h-full w-full">
       <VirtualFeed
         ref={feedRef}
+        diagnosticName="chat-message-list"
         mode="reverse"
         items={allMessages}
         getKey={getMessageVirtualKey}

@@ -71,5 +71,8 @@ describe('VirtualFeed', () => {
 
     expect(screen.getByTestId('virtual-feed').getAttribute('data-mode')).toBe('reverse');
     expect(screen.getByTestId('virtual-feed').getAttribute('data-first-item-index')).toBe('98');
+    expect(screen.getByTestId('virtual-feed').getAttribute('data-item-count')).toBe('2');
+    expect(screen.getByTestId('virtual-feed').getAttribute('data-first-key')).toBe('1');
+    expect(screen.getByTestId('virtual-feed').getAttribute('data-last-key')).toBe('2');
   });
 });
