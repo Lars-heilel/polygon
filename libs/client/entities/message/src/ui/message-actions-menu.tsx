@@ -81,7 +81,7 @@ export const MessageActionsMenu = memo(function MessageActionsMenu({
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<CSSProperties>({});
   const triggerRef = useRef<HTMLSpanElement>(null);
-  const canEdit = isMine && message.type === 'TEXT' && !message.fileId;
+  const canEdit = isMine && message.type === 'TEXT' && !message.media;
   const canCopy = Boolean(message.text);
 
   const closeMenu = useCallback(() => setIsOpen(false), []);

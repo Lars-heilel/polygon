@@ -1,11 +1,12 @@
-import type { Message as MessageBase } from '@org/common';
-
-type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
-  createdAt: string;
-  updatedAt: string;
+type MessagePreviewLike = {
+  text: string | null;
+  media: {
+    category: string;
+    fileName: string | null;
+  } | null;
 };
 
-export function getMessagePreview(message: Message | null | undefined): string {
+export function getMessagePreview(message: MessagePreviewLike | null | undefined): string {
   if (!message) {
     return 'Нет новых сообщений';
   }
@@ -15,7 +16,7 @@ export function getMessagePreview(message: Message | null | undefined): string {
     return text.length > 80 ? `${text.slice(0, 80)}…` : text;
   }
 
-  switch (message.fileCategory) {
+  switch (message.media?.category) {
     case 'IMAGE':
       return '🖼 Фото';
     case 'VIDEO':
@@ -27,7 +28,7 @@ export function getMessagePreview(message: Message | null | undefined): string {
     case 'AUDIO':
       return '🎵 Аудиофайл';
     case 'FILE':
-      return `📄 ${message.fileName ?? 'Файл'}`;
+      return `📄 ${message.media.fileName ?? 'Файл'}`;
     default:
       return '📎 Вложение';
   }

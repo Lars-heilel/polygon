@@ -1,13 +1,10 @@
 import { API_ROUTES } from '@org/common';
 import type { Chat as ChatBase, ChatMember as ChatMemberBase } from '@org/common';
-import type { Message as MessageBase } from '@org/common';
+import type { Message as MessageDisplay } from '@org/entities-message';
 import { authedFetch } from '@org/shared';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
-export type Message = Omit<MessageBase, 'createdAt' | 'updatedAt'> & {
-  createdAt: string;
-  updatedAt: string;
-};
+export type Message = MessageDisplay;
 
 export type MemberProfile = {
   id: string;

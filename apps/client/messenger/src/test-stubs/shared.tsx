@@ -1,5 +1,6 @@
 import { createContext, useContext, type ButtonHTMLAttributes, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
+import { jest } from '@jest/globals';
 
 const ModalCloseContext = createContext<(() => void) | null>(null);
 export const queryClient = new QueryClient();

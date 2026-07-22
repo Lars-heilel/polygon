@@ -13,7 +13,6 @@ import { handlePrismaError } from '@org/core';
 
 import type {
   ChatWithPreview,
-  CreateMessageData,
   CreateMessageWithRelationsData,
   IChatRepository,
   MessageAttachmentAccessInput,
@@ -266,36 +265,6 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
-  async createMessage(data: CreateMessageData): Promise<Message> {
-    try {
-      return await this.prisma.message.create({
-        data: {
-          chatId: data.chatId,
-          clientId: data.clientId ?? null,
-          senderId: data.senderId,
-          type: data.type ?? 'TEXT',
-          text: data.text ?? null,
-          fileId: data.fileId ?? null,
-          fileBucket: data.fileBucket ?? null,
-          fileKey: data.fileKey ?? null,
-          fileName: data.fileName ?? null,
-          fileSize: data.fileSize ?? null,
-          fileMime: data.fileMime ?? null,
-          fileCategory: data.fileCategory ?? null,
-          forwardedFromId: data.forwardedFromId ?? null,
-          forwardedFromSenderId: data.forwardedFromSenderId ?? null,
-          forwardedFromCreatedAt: data.forwardedFromCreatedAt ?? null,
-          forwardedFromType: data.forwardedFromType ?? null,
-          forwardedFromText: data.forwardedFromText ?? null,
-          forwardedFromFileName: data.forwardedFromFileName ?? null,
-        },
-        select: MESSAGE_SELECT_FIELDS,
-      });
-    } catch (error) {
-      handlePrismaError(error);
-    }
-  }
-
   async createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message> {
     try {
       return await this.prisma.message.create({
@@ -305,19 +274,6 @@ export class ChatPrismaRepository implements IChatRepository {
           senderId: data.senderId,
           type: data.type ?? 'TEXT',
           text: data.text ?? null,
-          fileId: data.fileId ?? null,
-          fileBucket: data.fileBucket ?? null,
-          fileKey: data.fileKey ?? null,
-          fileName: data.fileName ?? null,
-          fileSize: data.fileSize ?? null,
-          fileMime: data.fileMime ?? null,
-          fileCategory: data.fileCategory ?? null,
-          forwardedFromId: data.forwardedFromId ?? null,
-          forwardedFromSenderId: data.forwardedFromSenderId ?? null,
-          forwardedFromCreatedAt: data.forwardedFromCreatedAt ?? null,
-          forwardedFromType: data.forwardedFromType ?? null,
-          forwardedFromText: data.forwardedFromText ?? null,
-          forwardedFromFileName: data.forwardedFromFileName ?? null,
           attachments: data.attachments
             ? {
                 create: data.attachments.map((attachment) => ({
@@ -394,36 +350,6 @@ export class ChatPrismaRepository implements IChatRepository {
       });
     } catch (error) {
       handlePrismaError(error);
-    }
-  }
-
-  async createMessagesMany(data: CreateMessageData[]): Promise<number> {
-    try {
-      const result = await this.prisma.message.createMany({
-        data: data.map((d) => ({
-          chatId: d.chatId,
-          clientId: d.clientId ?? null,
-          senderId: d.senderId,
-          type: d.type ?? 'TEXT',
-          text: d.text ?? null,
-          fileId: d.fileId ?? null,
-          fileBucket: d.fileBucket ?? null,
-          fileKey: d.fileKey ?? null,
-          fileName: d.fileName ?? null,
-          fileSize: d.fileSize ?? null,
-          fileMime: d.fileMime ?? null,
-          fileCategory: d.fileCategory ?? null,
-          forwardedFromId: d.forwardedFromId ?? null,
-          forwardedFromSenderId: d.forwardedFromSenderId ?? null,
-          forwardedFromCreatedAt: d.forwardedFromCreatedAt ?? null,
-          forwardedFromType: d.forwardedFromType ?? null,
-          forwardedFromText: d.forwardedFromText ?? null,
-          forwardedFromFileName: d.forwardedFromFileName ?? null,
-        })),
-      });
-      return result.count;
-    } catch (error) {
-      return handlePrismaError(error);
     }
   }
 
@@ -543,25 +469,25 @@ function buildMediaMessagesWhere(chatId: string, filter: ChatMediaFilter) {
   }
 
   if (filter === 'IMAGE') {
-    return { chatId, fileId: { not: null }, fileCategory: 'IMAGE' };
+    return { chatId, attachments: { some: { category: 'IMAGE' } } };
   }
 
   if (filter === 'VIDEO') {
-    return { chatId, fileId: { not: null }, fileCategory: { in: ['VIDEO', 'CIRCLE'] } };
+    return { chatId, attachments: { some: { category: { in: ['VIDEO', 'CIRCLE'] } } } };
   }
 
   if (filter === 'AUDIO') {
-    return { chatId, fileId: { not: null }, fileCategory: 'AUDIO' };
+    return { chatId, attachments: { some: { category: 'AUDIO' } } };
   }
 
   if (filter === 'FILE') {
-    return { chatId, fileId: { not: null }, fileCategory: 'FILE' };
+    return { chatId, attachments: { some: { category: 'FILE' } } };
   }
 
   return {
     chatId,
     OR: [
-      { fileId: { not: null }, fileCategory: { not: 'VOICE' } },
+      { attachments: { some: { category: { not: 'VOICE' } } } },
       ...linkWhere,
     ],
   };

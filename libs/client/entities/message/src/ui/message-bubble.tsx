@@ -20,9 +20,11 @@ export const MessageBubble = memo(function MessageBubble({
   actionsSlot,
   children,
 }: MessageBubbleProps & { children: React.ReactNode }) {
-  const forwardedFromName = message.forwardedFromSender?.displayName
-    ?? message.forwardedFromSender?.name
+  const hasForwardContext = !!message.forwardContext;
+  const forwardContextName = message.forwardContext?.originalAuthor.displayNameSnapshot
+    ?? message.forwardContext?.originalAuthor.nameSnapshot
     ?? null;
+  const originalAuthorName = forwardContextName;
   const forwardedPreview = getForwardedPreview(message);
 
   return (
@@ -44,7 +46,7 @@ export const MessageBubble = memo(function MessageBubble({
             : 'border-border bg-surface text-text rounded-bl-sm',
         )}
       >
-        {message.forwardedFromId ? (
+        {hasForwardContext ? (
           <div
             className={cn(
               'mb-1.5 min-w-0 border-l-2 py-0.5 pl-2 leading-snug',
@@ -52,7 +54,7 @@ export const MessageBubble = memo(function MessageBubble({
             )}
           >
             <div className={cn('truncate text-[11px] font-medium', isMine ? 'text-text-inverse/90' : 'text-text')}>
-              {forwardedFromName ? `Forwarded from ${forwardedFromName}` : 'Forwarded'}
+              {originalAuthorName}
             </div>
             {forwardedPreview ? (
               <div className="mt-0.5 line-clamp-2 break-words text-[12px] opacity-85">{forwardedPreview}</div>
@@ -76,12 +78,12 @@ export const MessageBubble = memo(function MessageBubble({
 });
 
 function getForwardedPreview(message: Message): string | null {
-  const text = message.forwardedFromText?.trim();
-  if (text) return text;
+  const contextText = message.forwardContext?.preview.text?.trim();
+  if (contextText) return contextText;
 
-  if (message.forwardedFromFileName) return message.forwardedFromFileName;
+  if (message.forwardContext?.preview.fileName) return message.forwardContext.preview.fileName;
 
-  switch (message.forwardedFromType) {
+  switch (message.forwardContext?.originalMessageType) {
     case 'IMAGE':
       return 'Photo';
     case 'VIDEO':
@@ -92,7 +94,6 @@ function getForwardedPreview(message: Message): string | null {
       return 'Voice message';
     case 'FILE':
       return 'File';
-    default:
-      return null;
   }
+  return null;
 }

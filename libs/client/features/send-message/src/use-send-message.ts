@@ -84,7 +84,7 @@ function createOptimisticMessage(input: {
     media: file
       ? {
           fileId: file.fileId,
-          contentUrl: `/api/media/files/${file.fileId}/content`,
+          contentUrl: '',
           thumbUrl: null,
           fileName: file.fileName,
           mime: file.fileMime,
@@ -97,21 +97,22 @@ function createOptimisticMessage(input: {
         }
       : null,
     linkPreview: null,
+    attachments: file
+      ? [
+          {
+            id: `client:${input.clientId}:attachment`,
+            messageId: `client:${input.clientId}`,
+            mediaId: file.fileId,
+            fileNameSnapshot: file.fileName,
+            fileSizeSnapshot: file.fileSize,
+            mimeSnapshot: file.fileMime,
+            category: file.fileCategory as MessageMediaCategory,
+            createdAt: now,
+          },
+        ]
+      : [],
+    forwardContext: null,
     localStatus: 'sending',
-    fileId: file?.fileId ?? null,
-    fileBucket: file?.fileBucket ?? null,
-    fileKey: file?.fileKey ?? null,
-    fileName: file?.fileName ?? null,
-    fileSize: file?.fileSize ?? null,
-    fileMime: file?.fileMime ?? null,
-    fileCategory: file?.fileCategory ?? null,
-    forwardedFromId: null,
-    forwardedFromSenderId: null,
-    forwardedFromCreatedAt: null,
-    forwardedFromType: null,
-    forwardedFromText: null,
-    forwardedFromFileName: null,
-    forwardedFromSender: null,
     editedAt: null,
     deletedAt: null,
     deletedById: null,
@@ -206,13 +207,6 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
         clientId,
         type: getMessageTypeFromCategory(file.fileCategory),
         attachments: [attachment],
-        fileId: file.fileId,
-        fileBucket: file.fileBucket,
-        fileKey: file.fileKey,
-        fileName: file.fileName,
-        fileSize: file.fileSize,
-        fileMime: file.fileMime,
-        fileCategory: file.fileCategory,
       });
       stopTyping();
       return;

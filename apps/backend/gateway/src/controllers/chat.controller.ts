@@ -194,7 +194,7 @@ export class ChatGatewayController {
       hasClientId: !!dto.clientId,
       type: dto.type ?? 'TEXT',
       hasText: !!dto.text,
-      hasFile: !!dto.fileId,
+      hasFile: !!dto.fileId || !!dto.attachments?.length,
     });
     const message = await this.send(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
@@ -210,6 +210,7 @@ export class ChatGatewayController {
         fileSize: dto.fileSize ?? null,
         fileMime: dto.fileMime ?? null,
         fileCategory: dto.fileCategory ?? null,
+        attachments: dto.attachments ?? [],
       }),
     );
 
@@ -425,6 +426,38 @@ export class ChatGatewayController {
         message.forwardContext?.originalAuthorId ?? message.senderId,
       )?.displayName ?? null,
     }));
+  }
+
+  private async enrichForwardedMessages(messages: Message[]): Promise<Message[]> {
+    const originalAuthorIds = [...new Set(
+      messages
+        .map((message) => message.forwardContext?.originalAuthorId)
+        .filter((id): id is string => Boolean(id)),
+    )];
+
+    if (originalAuthorIds.length === 0) return messages;
+
+    const profiles = await this.send<UserPublic[]>(
+      this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: originalAuthorIds }),
+    );
+    const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+
+    return messages.map((message) => {
+      const context = message.forwardContext;
+      if (!context) return message;
+
+      const profile = profileMap.get(context.originalAuthorId);
+      if (!profile) return message;
+
+      return {
+        ...message,
+        forwardContext: {
+          ...context,
+          originalAuthorNameSnapshot: profile.name,
+          originalAuthorDisplayNameSnapshot: profile.displayName,
+        },
+      };
+    });
   }
 
   private async send<T>(observable: Observable<T>): Promise<T> {

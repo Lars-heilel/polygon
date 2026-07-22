@@ -36,7 +36,20 @@ describe('ChatSocketGateway ban enforcement', () => {
     emitToUser(userId: string, event: string, payload: unknown): void;
     handleSendMessage(
       socket: never,
-      payload: { chatId: string; text?: string; type?: string; fileName?: string; clientId?: string },
+      payload: {
+        chatId: string;
+        text?: string;
+        type?: string;
+        fileName?: string;
+        clientId?: string;
+        attachments?: {
+          mediaId: string;
+          fileNameSnapshot: string | null;
+          fileSizeSnapshot: number | null;
+          mimeSnapshot: string | null;
+          category: string;
+        }[];
+      },
     ): Promise<void>;
   };
   const tokenService: TokenServiceMock = {
@@ -334,6 +347,40 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(emit).toHaveBeenCalledWith('message:new', expect.objectContaining({
       id: 'server-message-1',
       clientId: '44444444-4444-4444-8444-444444444444',
+    }));
+  });
+
+  it('passes attachment payloads through socket media sends', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    const attachments = [
+      {
+        mediaId: '55555555-5555-4555-8555-555555555555',
+        fileNameSnapshot: 'image.png',
+        fileSizeSnapshot: 4096,
+        mimeSnapshot: 'image/png',
+        category: 'IMAGE',
+      },
+    ];
+    chatClient.send.mockReturnValueOnce(of({
+      id: 'message-1',
+      chatId: 'chat-1',
+      type: 'IMAGE',
+      attachments,
+    }));
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      clientId: '44444444-4444-4444-8444-444444444444',
+      type: 'IMAGE',
+      attachments,
+    });
+
+    expect(chatClient.send).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'IMAGE',
+      attachments,
     }));
   });
 

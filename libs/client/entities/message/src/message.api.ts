@@ -129,7 +129,7 @@ export function useEditMessageMutation(chatId: string) {
       messageApi.editMessage(chatId, messageId, text),
     onSuccess: (message) => {
       queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
-        updateMessageInPages(old, message),
+        updateMessageInPages<InfiniteData<MessagePage>, Message>(old, message),
       );
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },

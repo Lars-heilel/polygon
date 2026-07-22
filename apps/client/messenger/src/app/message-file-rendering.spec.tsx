@@ -10,27 +10,56 @@ const baseMessage = {
   kind: 'file',
   type: 'FILE',
   text: null,
-  media: null,
+  media: {
+    fileId: 'file-1',
+    contentUrl: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
+    thumbUrl: null,
+    fileName: 'file.bin',
+    mime: 'application/octet-stream',
+    size: 2048,
+    category: 'FILE',
+    width: null,
+    height: null,
+    durationMs: null,
+    waveform: null,
+  },
   linkPreview: null,
-  fileId: 'file-1',
-  fileBucket: 'media',
-  fileKey: 'chat/file.bin',
-  fileName: 'file.bin',
-  fileSize: 2048,
-  fileMime: 'application/octet-stream',
-  fileCategory: 'FILE',
-  forwardedFromId: null,
-  forwardedFromSenderId: null,
-  forwardedFromCreatedAt: null,
-  forwardedFromType: null,
-  forwardedFromText: null,
-  forwardedFromFileName: null,
-  forwardedFromSender: null,
+  attachments: [],
+  forwardContext: null,
+  editedAt: null,
+  deletedAt: null,
+  deletedById: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
 } as const;
 
 describe('message file rendering', () => {
+  it('renders pending media without an unstable file URL or empty media src', () => {
+    render(
+      <FileMessage
+        message={{
+          ...baseMessage,
+          kind: 'image',
+          type: 'IMAGE',
+          localStatus: 'sending',
+          media: {
+            ...baseMessage.media,
+            fileId: 'pending-file',
+            contentUrl: '',
+            fileName: 'pending.png',
+            mime: 'image/png',
+            category: 'IMAGE',
+          },
+        }}
+        isMine={false}
+      />,
+    );
+
+    expect(screen.getByTestId('pending-file-message')).toBeTruthy();
+    expect(screen.queryByTestId('image-message-media')).toBeNull();
+    expect(screen.queryByTestId('file-message')).toBeNull();
+  });
+
   it.each([
     {
       name: 'image',
@@ -38,13 +67,9 @@ describe('message file rendering', () => {
         ...baseMessage,
         kind: 'image',
         type: 'IMAGE',
-        fileId: 'image-file',
-        fileName: 'photo.png',
-        fileMime: 'image/png',
-        fileCategory: 'IMAGE',
         media: {
           fileId: 'image-file',
-          contentUrl: '/api/media/files/image-file/content',
+          contentUrl: '/api/chats/chat-1/messages/message-1/attachments/image-attachment/content',
           thumbUrl: null,
           fileName: 'photo.png',
           mime: 'image/png',
@@ -59,7 +84,7 @@ describe('message file rendering', () => {
       rootTestId: 'image-message',
       mediaTestId: 'image-message-media',
       accessibleName: /photo\.png/i,
-      expectedSrc: '/api/media/files/image-file/content',
+      expectedSrc: '/api/chats/chat-1/messages/message-1/attachments/image-attachment/content',
     },
     {
       name: 'video',
@@ -67,13 +92,9 @@ describe('message file rendering', () => {
         ...baseMessage,
         kind: 'video',
         type: 'VIDEO',
-        fileId: 'video-file',
-        fileName: 'clip.mp4',
-        fileMime: 'video/mp4',
-        fileCategory: 'VIDEO',
         media: {
           fileId: 'video-file',
-          contentUrl: '/api/media/files/video-file/content',
+          contentUrl: '/api/chats/chat-1/messages/message-1/attachments/video-attachment/content',
           thumbUrl: null,
           fileName: 'clip.mp4',
           mime: 'video/mp4',
@@ -88,7 +109,7 @@ describe('message file rendering', () => {
       rootTestId: 'video-message',
       mediaTestId: 'video-message-media',
       accessibleName: /play video clip\.mp4/i,
-      expectedSrc: '/api/media/files/video-file/content',
+      expectedSrc: '/api/chats/chat-1/messages/message-1/attachments/video-attachment/content',
     },
     {
       name: 'circle',
@@ -96,13 +117,9 @@ describe('message file rendering', () => {
         ...baseMessage,
         kind: 'circle',
         type: 'VIDEO',
-        fileId: 'circle-file',
-        fileName: 'circle.mp4',
-        fileMime: 'video/mp4',
-        fileCategory: 'CIRCLE',
         media: {
           fileId: 'circle-file',
-          contentUrl: '/api/media/files/circle-file/content',
+          contentUrl: '/api/chats/chat-1/messages/message-1/attachments/circle-attachment/content',
           thumbUrl: null,
           fileName: 'circle.mp4',
           mime: 'video/mp4',
@@ -117,7 +134,7 @@ describe('message file rendering', () => {
       rootTestId: 'circle-message',
       mediaTestId: 'circle-message-media',
       accessibleName: /open circle video circle\.mp4/i,
-      expectedSrc: '/api/media/files/circle-file/content',
+      expectedSrc: '/api/chats/chat-1/messages/message-1/attachments/circle-attachment/content',
     },
   ])('renders $name messages with a stable media contract', ({
     message,
@@ -126,7 +143,7 @@ describe('message file rendering', () => {
     accessibleName,
     expectedSrc,
   }) => {
-    render(<FileMessage message={message} isMine={false} />);
+    render(<FileMessage message={message as Parameters<typeof FileMessage>[0]['message']} isMine={false} />);
 
     expect(screen.getByTestId(rootTestId)).toBeTruthy();
     expect(screen.getByRole('button', { name: accessibleName })).toBeTruthy();
@@ -140,13 +157,9 @@ describe('message file rendering', () => {
           ...baseMessage,
           kind: 'image',
           type: 'IMAGE',
-          fileId: 'image-file',
-          fileName: 'photo.png',
-          fileMime: 'image/png',
-          fileCategory: 'IMAGE',
           media: {
             fileId: 'image-file',
-            contentUrl: '/api/media/files/image-file/content',
+            contentUrl: '/api/chats/chat-1/messages/message-1/attachments/image-attachment/content',
             thumbUrl: null,
             fileName: 'photo.png',
             mime: 'image/png',
@@ -157,7 +170,7 @@ describe('message file rendering', () => {
             durationMs: null,
             waveform: null,
           },
-        }}
+        } as const}
         isMine={false}
       />,
     );
@@ -172,11 +185,20 @@ describe('message file rendering', () => {
           ...baseMessage,
           kind: 'circle',
           type: 'VIDEO',
-          fileId: 'circle-file',
-          fileName: 'circle.mp4',
-          fileMime: 'video/mp4',
-          fileCategory: 'CIRCLE',
-        }}
+          media: {
+            fileId: 'circle-file',
+            contentUrl: '/api/chats/chat-1/messages/message-1/attachments/circle-attachment/content',
+            thumbUrl: null,
+            fileName: 'circle.mp4',
+            mime: 'video/mp4',
+            size: 2048,
+            category: 'CIRCLE',
+            width: null,
+            height: null,
+            durationMs: null,
+            waveform: null,
+          },
+        } as const}
         isMine={false}
       />,
     );
@@ -188,14 +210,54 @@ describe('message file rendering', () => {
   });
 
   it('renders generic file attachments with a stable download contract', () => {
-    render(<FileMessage message={{ ...baseMessage, fileName: 'report.pdf', fileMime: 'application/pdf' }} isMine={false} />);
+    render(
+      <FileMessage
+        message={{
+          ...baseMessage,
+          media: {
+            ...baseMessage.media,
+            fileName: 'report.pdf',
+            mime: 'application/pdf',
+          },
+        }}
+        isMine={false}
+      />,
+    );
 
     const link = screen.getByTestId('file-message');
 
     expect(link).toBeTruthy();
     expect(screen.getByRole('link', { name: /report\.pdf/i })).toBeTruthy();
-    expect(link.getAttribute('href')).toBe('/api/media/files/file-1/content');
+    expect(link.getAttribute('href')).toBe('/api/chats/chat-1/messages/message-1/attachments/attachment-1/content');
     expect(screen.getByText('2.0 KB')).toBeTruthy();
+  });
+
+  it('uses normalized media content urls for rendered file content', () => {
+    render(
+      <FileMessage
+        message={{
+          ...baseMessage,
+          media: {
+            fileId: 'file-1',
+            contentUrl: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
+            thumbUrl: null,
+            fileName: 'report.pdf',
+            mime: 'application/pdf',
+            size: 2048,
+            category: 'FILE',
+            width: null,
+            height: null,
+            durationMs: null,
+            waveform: null,
+          },
+        }}
+        isMine={false}
+      />,
+    );
+
+    expect(screen.getByTestId('file-message').getAttribute('href')).toBe(
+      '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
+    );
   });
 
   it('lets circle video messages toggle muted playback through an accessible control', () => {
@@ -204,10 +266,19 @@ describe('message file rendering', () => {
         message={{
           ...baseMessage,
           type: 'VIDEO',
-          fileId: 'circle-file',
-          fileName: 'circle.mp4',
-          fileMime: 'video/mp4',
-          fileCategory: 'CIRCLE',
+          media: {
+            fileId: 'circle-file',
+            contentUrl: '/api/chats/chat-1/messages/message-1/attachments/circle-attachment/content',
+            thumbUrl: null,
+            fileName: 'circle.mp4',
+            mime: 'video/mp4',
+            size: 2048,
+            category: 'CIRCLE',
+            width: null,
+            height: null,
+            durationMs: null,
+            waveform: null,
+          },
         }}
         isMine={false}
       />,

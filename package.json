@@ -16,9 +16,9 @@
     "observability:down": "docker compose stop grafana prometheus loki tempo alloy node-exporter cadvisor postgres-exporter redis-exporter",
     "observability:logs": "docker compose logs -f grafana prometheus loki tempo alloy",
     "dev:start": "npm run dev:all:skip-cache",
-    "dev:all": "npm exec nx -- run-many --target serve --projects='@org/gateway,@org/messenger,@org/admin,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
+    "dev:all": "NX_ISOLATE_PLUGINS=false npm exec nx -- run-many --target serve --projects='@org/gateway,@org/messenger,@org/admin,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
     "clean:dist": "rm -rf apps/backend/*/dist libs/backend/*/dist libs/common/dist 2>/dev/null; echo 'Cleaned all dist dirs'",
-    "dev:all:skip-cache": "npm run clean:dist && npm exec nx -- run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/admin,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
+    "dev:all:skip-cache": "npm run clean:dist && NX_ISOLATE_PLUGINS=false npm exec nx -- run-many --target serve --skip-nx-cache --projects='@org/gateway,@org/messenger,@org/admin,@org/auth-service,@org/user-service,@org/chat-service,@org/search-service,@org/notification-service,@org/media-service' --parallel",
     "nx:show-projects": "nx show projects",
     "format:write": "nx format:write",
     "format:check": "nx format:check"

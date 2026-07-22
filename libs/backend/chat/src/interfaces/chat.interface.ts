@@ -21,19 +21,6 @@ export interface CreateMessageData {
   senderId: string;
   type?: MessageType;
   text?: string | null;
-  fileId?: string | null;
-  fileBucket?: string | null;
-  fileKey?: string | null;
-  fileName?: string | null;
-  fileSize?: number | null;
-  fileMime?: string | null;
-  fileCategory?: string | null;
-  forwardedFromId?: string | null;
-  forwardedFromSenderId?: string | null;
-  forwardedFromCreatedAt?: Date | null;
-  forwardedFromType?: MessageType | null;
-  forwardedFromText?: string | null;
-  forwardedFromFileName?: string | null;
 }
 
 export interface CreateMessageAttachmentData {
@@ -149,13 +136,11 @@ export interface IChatRepository {
     userId: string,
   ): Promise<Message[]>;
   findMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
-  createMessage(data: CreateMessageData): Promise<Message>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
   deleteCreatedMessage(messageId: string): Promise<void>;
   updateMessageText(messageId: string, text: string): Promise<Message>;
   deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;
   hideMessageForUser(messageId: string, userId: string): Promise<void>;
-  createMessagesMany(data: CreateMessageData[]): Promise<number>;
   countUnreadMessages(
     chatId: string,
     userId: string,

@@ -3,11 +3,11 @@ import { useEffect, useRef } from 'react';
 import {
   getMessagePreview,
   selectLastReceivedMessage,
-  type ChatMessage,
   useChatStore,
   useGetChatsQuery,
 } from '@org/entities-chat';
 import type { Chat } from '@org/entities-chat';
+import type { Message as ChatMessage } from '@org/entities-message';
 import { queryClient, socket, toast, useLogger } from '@org/shared';
 
 import { useNotificationStore } from './notification.store';

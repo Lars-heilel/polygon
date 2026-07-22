@@ -49,13 +49,24 @@ function getMediaDimensions(message: Message): { width: number | null; height: n
   };
 }
 
+function getMessageMediaUrl(message: Message): string {
+  return message.media?.contentUrl ?? '';
+}
+
 export const FileMessage = memo(function FileMessage({
   message,
   isMine,
   audioQueue,
   audioQueueIndex,
 }: FileMessageProps) {
-  if (message.fileCategory === 'VOICE') {
+  const category = message.media?.category ?? null;
+  const mime = message.media?.mime ?? null;
+
+  if (!getMessageMediaUrl(message)) {
+    return <PendingFileMessage message={message} />;
+  }
+
+  if (category === 'VOICE') {
     return (
       <VoiceMessage
         message={message}
@@ -64,7 +75,7 @@ export const FileMessage = memo(function FileMessage({
     );
   }
 
-  if (message.fileCategory === 'CIRCLE') {
+  if (category === 'CIRCLE') {
     return (
       <CircleMessage
         message={message}
@@ -73,7 +84,7 @@ export const FileMessage = memo(function FileMessage({
     );
   }
 
-  if (message.type === 'IMAGE' && message.fileMime?.startsWith('image/')) {
+  if (message.type === 'IMAGE' && mime?.startsWith('image/')) {
     return (
       <ImageMessage
         message={message}
@@ -82,7 +93,7 @@ export const FileMessage = memo(function FileMessage({
     );
   }
 
-  if (message.fileCategory === 'VIDEO' && message.fileMime?.startsWith('video/')) {
+  if (category === 'VIDEO' && mime?.startsWith('video/')) {
     return (
       <VideoMessage
         message={message}
@@ -91,7 +102,7 @@ export const FileMessage = memo(function FileMessage({
     );
   }
 
-  if (message.fileCategory === 'AUDIO' && message.fileMime?.startsWith('audio/')) {
+  if (category === 'AUDIO' && mime?.startsWith('audio/')) {
     return (
       <AudioFileMessage
         message={message}
@@ -110,15 +121,40 @@ export const FileMessage = memo(function FileMessage({
   );
 });
 
+const PendingFileMessage = memo(function PendingFileMessage({ message }: Pick<FileMessageProps, 'message'>) {
+  const fileName = message.media?.fileName ?? null;
+  const fileSize = message.media?.size ?? null;
+
+  return (
+    <div
+      data-testid="pending-file-message"
+      className={cn(
+        'flex max-w-full min-w-0 items-center gap-3 rounded-lg border px-3 py-2',
+        'border-border bg-surface text-text opacity-80',
+      )}
+    >
+      <span className="text-xl">{getFileIcon(fileName ?? '')}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate text-text">
+          {fileName ?? 'File'}
+        </p>
+        <p className="text-xs text-text-muted">
+          {message.localStatus === 'error' ? 'Failed to send' : fileSize ? formatFileSize(fileSize) : ''}
+        </p>
+      </div>
+    </div>
+  );
+});
+
 const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const imageUrl = `/api/media/files/${message.fileId}/content`;
+  const imageUrl = getMessageMediaUrl(message);
   const viewerItems: MediaViewerItem[] = [{
     id: message.id,
     type: 'image',
     src: imageUrl,
-    alt: message.fileName ?? 'Image',
-    label: message.fileName ?? 'Image',
+    alt: message.media?.fileName ?? 'Image',
+    label: message.media?.fileName ?? 'Image',
   }];
 
   const mediaDimensions = getMediaDimensions(message);
@@ -127,7 +163,7 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
     <>
       <button
         data-testid="image-message"
-        aria-label={`Open image ${message.fileName ?? 'Image'}`}
+        aria-label={`Open image ${message.media?.fileName ?? 'Image'}`}
         onClick={() => setLightboxOpen(true)}
         className="block w-full max-w-[280px] transition-opacity hover:opacity-90 focus:outline-none"
       >
@@ -140,7 +176,7 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
           <img
             data-testid="image-message-media"
             src={imageUrl}
-            alt={message.fileName ?? 'Image'}
+            alt={message.media?.fileName ?? 'Image'}
             className="h-full w-full object-cover"
             loading="lazy"
           />
@@ -161,8 +197,8 @@ const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessage
   return (
     <WaveformAudioMessage
       variant="voice"
-      title={message.fileName ?? 'Voice message'}
-      url={`/api/media/files/${message.fileId}/content`}
+      title={message.media?.fileName ?? 'Voice message'}
+      url={getMessageMediaUrl(message)}
       isMine={isMine}
     />
   );
@@ -172,13 +208,13 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(true);
-  const videoUrl = `/api/media/files/${message.fileId}/content`;
+  const videoUrl = getMessageMediaUrl(message);
   const viewerItems: MediaViewerItem[] = [{
     id: message.id,
     type: 'video',
     src: videoUrl,
-    alt: message.fileName ?? 'Circle video',
-    label: message.fileName ?? 'Circle video',
+    alt: message.media?.fileName ?? 'Circle video',
+    label: message.media?.fileName ?? 'Circle video',
   }];
 
   const toggleMute = () => {
@@ -201,7 +237,7 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
         >
           <button
             type="button"
-            aria-label={`Open circle video ${message.fileName ?? 'Circle video'}`}
+            aria-label={`Open circle video ${message.media?.fileName ?? 'Circle video'}`}
             onClick={() => setLightboxOpen(true)}
             className="block h-full w-full focus:outline-none"
           >
@@ -275,21 +311,21 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
 
 const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const videoUrl = `/api/media/files/${message.fileId}/content`;
+  const videoUrl = getMessageMediaUrl(message);
   const mediaDimensions = getMediaDimensions(message);
   const viewerItems: MediaViewerItem[] = [{
     id: message.id,
     type: 'video',
     src: videoUrl,
-    alt: message.fileName ?? 'Video',
-    label: message.fileName ?? 'Video',
+    alt: message.media?.fileName ?? 'Video',
+    label: message.media?.fileName ?? 'Video',
   }];
 
   return (
     <>
       <button
         data-testid="video-message"
-        aria-label={`Play video ${message.fileName ?? 'Video'}`}
+        aria-label={`Play video ${message.media?.fileName ?? 'Video'}`}
         onClick={() => setLightboxOpen(true)}
         className="block w-full max-w-[280px] transition-opacity hover:opacity-90 focus:outline-none"
       >
@@ -334,7 +370,9 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
 const FileAttachmentMessage = memo(function FileAttachmentMessage({
   message,
 }: FileMessageProps) {
-  const fileUrl = `/api/media/files/${message.fileId}/content`;
+  const fileUrl = getMessageMediaUrl(message);
+  const fileName = message.media?.fileName ?? null;
+  const fileSize = message.media?.size ?? null;
 
   return (
     <a
@@ -347,13 +385,13 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
         'border-border bg-surface text-text hover:bg-surface-elevated',
       )}
     >
-      <span className="text-xl">{getFileIcon(message.fileName ?? '')}</span>
+      <span className="text-xl">{getFileIcon(fileName ?? '')}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate text-text">
-          {message.fileName ?? 'Unknown file'}
+          {fileName ?? 'Unknown file'}
         </p>
         <p className="text-xs text-text-muted">
-          {message.fileSize ? formatFileSize(message.fileSize) : ''}
+          {fileSize ? formatFileSize(fileSize) : ''}
         </p>
       </div>
       <svg
@@ -380,9 +418,9 @@ const AudioFileMessage = memo(function AudioFileMessage({
 }: FileMessageProps) {
   const track = {
     id: `audio-${message.id}`,
-    title: message.fileName ?? 'Audio',
+    title: message.media?.fileName ?? 'Audio',
     subtitle: 'Audio file',
-    url: `/api/media/files/${message.fileId}/content`,
+    url: getMessageMediaUrl(message),
   };
   const player = useAudioTrack(track, {
     queue: audioQueue,
@@ -420,7 +458,7 @@ const AudioFileMessage = memo(function AudioFileMessage({
         <p className="mt-1 truncate text-xs text-text-muted">
           {player.duration > 0
             ? `${formatAudioTime(player.currentTime)} / ${formatAudioTime(player.duration)}`
-            : message.fileSize ? formatFileSize(message.fileSize) : 'Audio file'}
+            : message.media?.size ? formatFileSize(message.media.size) : 'Audio file'}
         </p>
       </div>
     </div>

@@ -26,8 +26,8 @@ export function buildChatMediaEntries(messages: Message[]): ChatMediaEntry[] {
   const items: ChatMediaEntry[] = [];
 
   for (const message of messages) {
-    if (message.fileId) {
-      if (message.fileCategory === 'VOICE') {
+    if (message.media) {
+      if (message.media.category === 'VOICE') {
         continue;
       }
 

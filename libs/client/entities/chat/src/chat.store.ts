@@ -1,4 +1,4 @@
-import type { Message as MessageBase } from '@org/common';
+import type { Message as MessageBase } from '@org/entities-message';
 import { create } from 'zustand';
 import { createJSONStorage, persist, subscribeWithSelector } from 'zustand/middleware';
 

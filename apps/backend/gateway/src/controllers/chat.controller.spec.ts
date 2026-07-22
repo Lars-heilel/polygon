@@ -1,13 +1,13 @@
 import type { ClientProxy } from '@nestjs/microservices';
-import { CHAT_PATTERNS } from '@org/core';
-import { of } from 'rxjs';
+import { CHAT_PATTERNS, USER_PATTERNS } from '@org/core';
+import { of, type Observable } from 'rxjs';
 
 import { ChatGatewayController } from './chat.controller';
 
 describe('ChatGatewayController', () => {
   function controller() {
-    const chatClient = { send: jest.fn(() => of({ id: 'message-1' })) };
-    const userClient = { send: jest.fn(() => of([])) };
+    const chatClient = { send: jest.fn<Observable<unknown>, [string, unknown?]>(() => of({ id: 'message-1' })) };
+    const userClient = { send: jest.fn<Observable<unknown>, [string, unknown?]>(() => of([])) };
     const socketGateway = {
       broadcastMessage: jest.fn(),
       broadcastMessageUpdated: jest.fn(),
@@ -71,6 +71,57 @@ describe('ChatGatewayController', () => {
       chatId: 'chat-1',
       userId: 'user-1',
       messageId: 'message-1',
+    });
+  });
+
+  it('loads messages and enriches forwarded author snapshots for display', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValue(of({
+      messages: [{
+        id: 'message-1',
+        chatId: 'chat-1',
+        senderId: 'sender-1',
+        type: 'TEXT',
+        text: 'forwarded text',
+        attachments: [],
+        forwardContext: {
+          originalAuthorId: 'author-1',
+          originalAuthorNameSnapshot: 'author-1',
+          originalAuthorDisplayNameSnapshot: null,
+        },
+      }],
+      nextCursor: null,
+    }));
+    ctx.userClient.send.mockReturnValue(of([{
+      id: 'author-1',
+      name: 'Alice',
+      displayName: 'Alice A.',
+      avatarUrl: null,
+      bio: null,
+    }]));
+
+    await expect(
+      ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1'),
+    ).resolves.toEqual({
+      messages: [expect.objectContaining({
+        id: 'message-1',
+        forwardContext: expect.objectContaining({
+          originalAuthorId: 'author-1',
+          originalAuthorNameSnapshot: 'Alice',
+          originalAuthorDisplayNameSnapshot: 'Alice A.',
+        }),
+      })],
+      nextCursor: null,
+    });
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.GET_MESSAGES, {
+      chatId: 'chat-1',
+      userId: 'user-1',
+      cursor: undefined,
+      take: undefined,
+    });
+    expect(ctx.userClient.send).toHaveBeenCalledWith(USER_PATTERNS.GET_MANY_BY_IDS, {
+      ids: ['author-1'],
     });
   });
 

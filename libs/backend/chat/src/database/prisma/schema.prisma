@@ -67,19 +67,6 @@ model Message {
   senderId        String      @map("sender_id")
   type            MessageType @default(TEXT) @map("type")
   text            String?     @map("text")
-  fileId          String?     @map("file_id")
-  fileBucket      String?     @map("file_bucket")
-  fileKey         String?     @map("file_key")
-  fileName        String?     @map("file_name")
-  fileSize        Int?        @map("file_size")
-  fileMime        String?     @map("file_mime")
-  fileCategory    String?     @map("file_category")
-  forwardedFromId String?     @map("forwarded_from_id")
-  forwardedFromSenderId String?   @map("forwarded_from_sender_id")
-  forwardedFromCreatedAt DateTime? @map("forwarded_from_created_at")
-  forwardedFromType MessageType? @map("forwarded_from_type")
-  forwardedFromText String?     @map("forwarded_from_text")
-  forwardedFromFileName String? @map("forwarded_from_file_name")
   editedAt        DateTime?   @map("edited_at")
   deletedAt       DateTime?   @map("deleted_at")
   deletedById     String?     @map("deleted_by_id")
@@ -94,7 +81,6 @@ model Message {
   @@index([chatId, createdAt])
   @@index([chatId, clientId])
   @@index([deletedAt])
-  @@index([forwardedFromSenderId])
 }
 
 model MessageAttachment {

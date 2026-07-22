@@ -25,19 +25,8 @@ describe('message action schemas', () => {
         senderId: '33333333-3333-4333-8333-333333333333',
         type: 'TEXT',
         text: 'hello',
-        fileId: null,
-        fileBucket: null,
-        fileKey: null,
-        fileName: null,
-        fileSize: null,
-        fileMime: null,
-        fileCategory: null,
-        forwardedFromId: null,
-        forwardedFromSenderId: null,
-        forwardedFromCreatedAt: null,
-        forwardedFromType: null,
-        forwardedFromText: null,
-        forwardedFromFileName: null,
+        attachments: [],
+        forwardContext: null,
         editedAt: null,
         deletedAt: null,
         deletedById: null,
@@ -47,9 +36,9 @@ describe('message action schemas', () => {
     ).toMatchObject({ editedAt: null, deletedAt: null, deletedById: null });
   });
 
-  it('includes forwarded source metadata on messages', () => {
+  it('includes forwarded source context on messages', () => {
     const createdAt = new Date('2026-07-22T00:00:00.000Z');
-    const forwardedFromCreatedAt = new Date('2026-07-21T10:15:00.000Z');
+    const originalMessageCreatedAt = new Date('2026-07-21T10:15:00.000Z');
 
     expect(
       messageSchema.parse({
@@ -59,19 +48,21 @@ describe('message action schemas', () => {
         senderId: '33333333-3333-4333-8333-333333333333',
         type: 'TEXT',
         text: 'forwarded text',
-        fileId: null,
-        fileBucket: null,
-        fileKey: null,
-        fileName: null,
-        fileSize: null,
-        fileMime: null,
-        fileCategory: null,
-        forwardedFromId: '44444444-4444-4444-8444-444444444444',
-        forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
-        forwardedFromCreatedAt,
-        forwardedFromType: 'TEXT',
-        forwardedFromText: 'source text snapshot',
-        forwardedFromFileName: null,
+        attachments: [],
+        forwardContext: {
+          messageId: '11111111-1111-4111-8111-111111111111',
+          originalMessageId: '44444444-4444-4444-8444-444444444444',
+          originalChatId: '66666666-6666-4666-8666-666666666666',
+          originalAuthorId: '55555555-5555-4555-8555-555555555555',
+          originalAuthorNameSnapshot: 'alice',
+          originalAuthorDisplayNameSnapshot: 'Alice A.',
+          originalMessageCreatedAt,
+          originalMessageType: 'TEXT',
+          originalTextPreview: 'source text snapshot',
+          originalFileNamePreview: null,
+          snapshotVersion: 1,
+          createdAt,
+        },
         editedAt: null,
         deletedAt: null,
         deletedById: null,
@@ -79,11 +70,13 @@ describe('message action schemas', () => {
         updatedAt: createdAt,
       }),
     ).toMatchObject({
-      forwardedFromSenderId: '55555555-5555-4555-8555-555555555555',
-      forwardedFromCreatedAt,
-      forwardedFromType: 'TEXT',
-      forwardedFromText: 'source text snapshot',
-      forwardedFromFileName: null,
+      forwardContext: expect.objectContaining({
+        originalAuthorId: '55555555-5555-4555-8555-555555555555',
+        originalMessageCreatedAt,
+        originalMessageType: 'TEXT',
+        originalTextPreview: 'source text snapshot',
+        originalFileNamePreview: null,
+      }),
     });
   });
 
@@ -123,19 +116,6 @@ describe('message action schemas', () => {
         snapshotVersion: 1,
         createdAt,
       },
-      fileId: null,
-      fileBucket: null,
-      fileKey: null,
-      fileName: null,
-      fileSize: null,
-      fileMime: null,
-      fileCategory: null,
-      forwardedFromId: null,
-      forwardedFromSenderId: null,
-      forwardedFromCreatedAt: null,
-      forwardedFromType: null,
-      forwardedFromText: null,
-      forwardedFromFileName: null,
       editedAt: null,
       deletedAt: null,
       deletedById: null,
@@ -145,6 +125,15 @@ describe('message action schemas', () => {
 
     expect(parsed.forwardContext?.originalAuthorDisplayNameSnapshot).toBe('Тамилка:3');
     expect(parsed.attachments[0].category).toBe('VOICE');
+  });
+
+  it('does not expose legacy flattened forward or file fields on messages', () => {
+    const keys = Object.keys(messageSchema.shape);
+
+    expect(keys).not.toContain('forwardedFromId');
+    expect(keys).not.toContain('forwardedFromSenderId');
+    expect(keys).not.toContain('fileId');
+    expect(keys).not.toContain('fileKey');
   });
 
   it('builds message action routes', () => {

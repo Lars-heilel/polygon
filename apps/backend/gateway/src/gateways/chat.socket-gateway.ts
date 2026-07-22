@@ -22,6 +22,14 @@ import {
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 
+interface SocketMessageAttachmentPayload {
+  mediaId: string;
+  fileNameSnapshot?: string | null;
+  fileSizeSnapshot?: number | null;
+  mimeSnapshot?: string | null;
+  category: string;
+}
+
 @WebSocketGateway({
   cors: {
     origin: process.env['CLIENT_URL'] ?? 'http://localhost:4200',
@@ -214,6 +222,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       fileSize?: number;
       fileMime?: string;
       fileCategory?: string;
+      attachments?: SocketMessageAttachmentPayload[];
     },
   ) {
     const userId = socket.data['userId'] as string | undefined;
@@ -226,7 +235,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       hasClientId: !!payload.clientId,
       type: payload.type ?? 'TEXT',
       hasText: !!payload.text,
-      hasFile: !!payload.fileId,
+      hasFile: !!payload.fileId || !!payload.attachments?.length,
     });
 
     const message = await lastValueFrom(
@@ -243,6 +252,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         fileSize: payload.fileSize ?? null,
         fileMime: payload.fileMime ?? null,
         fileCategory: payload.fileCategory ?? null,
+        attachments: payload.attachments ?? [],
       }),
     ).catch((err: unknown) => {
       this.logger.error({

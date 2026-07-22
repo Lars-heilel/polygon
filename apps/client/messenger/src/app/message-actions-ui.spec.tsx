@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import type { Chat } from '@org/entities-chat';
-import { MessageActionsMenu } from '@org/entities-message';
+import { MessageActionsMenu, useDeleteMessageMutation, useEditMessageMutation } from '@org/entities-message';
 import type { Message } from '@org/entities-message';
 import { authedFetch, queryClient } from '@org/shared';
 import { ChatFooter } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/chat-window/ChatFooter';
@@ -58,20 +58,8 @@ const baseMessage: Message = {
   deletedById: null,
   media: null,
   linkPreview: null,
-  fileId: null,
-  fileBucket: null,
-  fileKey: null,
-  fileName: null,
-  fileSize: null,
-  fileMime: null,
-  fileCategory: null,
-  forwardedFromId: null,
-  forwardedFromSenderId: null,
-  forwardedFromCreatedAt: null,
-  forwardedFromType: null,
-  forwardedFromText: null,
-  forwardedFromFileName: null,
-  forwardedFromSender: null,
+  attachments: [],
+  forwardContext: null,
 };
 
 describe('message actions ui', () => {
@@ -113,7 +101,22 @@ describe('message actions ui', () => {
   it('hides edit for file messages and keeps forward copy delete', () => {
     render(
       <MessageActionsMenu
-        message={{ ...baseMessage, fileId: 'file-1' }}
+        message={{
+          ...baseMessage,
+          media: {
+            fileId: 'file-1',
+            contentUrl: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
+            thumbUrl: null,
+            fileName: 'file.bin',
+            mime: 'application/octet-stream',
+            size: 2048,
+            category: 'FILE',
+            width: null,
+            height: null,
+            durationMs: null,
+            waveform: null,
+          },
+        }}
         isMine
         onEdit={jest.fn()}
         onForward={jest.fn()}
@@ -153,6 +156,53 @@ describe('message actions ui', () => {
     expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Delete for everyone' }).checked).toBe(true);
   });
 
+  it('saves edited text through the message mutation and updates message cache', async () => {
+    queryClient.setQueryData(['messages', 'chat-1'], {
+      pageParams: [undefined],
+      pages: [{ messages: [baseMessage], nextCursor: null }],
+    });
+    (authedFetch as jest.Mock).mockResolvedValueOnce({
+      ...baseMessage,
+      text: 'updated text',
+      editedAt: '2026-07-22T00:10:00.000Z',
+    });
+
+    function EditHarness() {
+      const editMessage = useEditMessageMutation('chat-1');
+
+      return (
+        <button
+          type="button"
+          onClick={() => editMessage.mutate({ messageId: baseMessage.id, text: 'updated text' })}
+        >
+          Save edit
+        </button>
+      );
+    }
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <EditHarness />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save edit' }));
+
+    await waitFor(() => {
+      expect(authedFetch).toHaveBeenCalledWith('chats/chat-1/messages/message-1', expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ text: 'updated text' }),
+      }));
+    });
+
+    expect(queryClient.getQueryData<{ pages: Array<{ messages: Message[] }> }>(['messages', 'chat-1'])
+      ?.pages[0].messages[0]).toEqual(expect.objectContaining({
+      id: 'message-1',
+      text: 'updated text',
+      editedAt: '2026-07-22T00:10:00.000Z',
+    }));
+  });
+
   it('confirms delete-for-me when the checkbox is cleared', () => {
     const onConfirm = jest.fn();
     render(
@@ -169,6 +219,46 @@ describe('message actions ui', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(onConfirm).toHaveBeenCalledWith('ME');
+  });
+
+  it('deletes a message through the mutation and removes it from message cache', async () => {
+    queryClient.setQueryData(['messages', 'chat-1'], {
+      pageParams: [undefined],
+      pages: [{ messages: [baseMessage], nextCursor: null }],
+    });
+    (authedFetch as jest.Mock).mockResolvedValueOnce({ id: 'message-1', chatId: 'chat-1' });
+
+    function DeleteHarness() {
+      const deleteMessage = useDeleteMessageMutation('chat-1');
+
+      return (
+        <DeleteMessageModal
+          isOpen
+          message={baseMessage}
+          isMine
+          onClose={jest.fn()}
+          onConfirm={(mode) => deleteMessage.mutate({ messageId: baseMessage.id, mode })}
+        />
+      );
+    }
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DeleteHarness />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => {
+      expect(authedFetch).toHaveBeenCalledWith('chats/chat-1/messages/message-1', expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ mode: 'EVERYONE' }),
+      }));
+    });
+
+    expect(queryClient.getQueryData<{ pages: Array<{ messages: Message[] }> }>(['messages', 'chat-1'])
+      ?.pages[0].messages).toEqual([]);
   });
 
   it('opens a Forward to modal with Saved Messages first', () => {

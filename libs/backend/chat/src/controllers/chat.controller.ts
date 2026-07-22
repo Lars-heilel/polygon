@@ -99,7 +99,7 @@ export class ChatController implements IChatController {
       hasClientId: !!payload.clientId,
       type: payload.type,
       hasText: !!payload.text,
-      hasFile: !!payload.fileId,
+      hasFile: !!payload.fileId || !!payload.attachments?.length,
     });
     return this.chatService.sendMessage(payload.chatId, payload.senderId, {
       clientId: payload.clientId ?? null,

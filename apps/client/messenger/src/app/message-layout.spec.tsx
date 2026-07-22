@@ -13,20 +13,11 @@ const message = {
   text: null,
   media: null,
   linkPreview: null,
-  fileId: null,
-  fileBucket: null,
-  fileKey: null,
-  fileName: null,
-  fileSize: null,
-  fileMime: null,
-  fileCategory: null,
-  forwardedFromId: null,
-  forwardedFromSenderId: null,
-  forwardedFromCreatedAt: null,
-  forwardedFromType: null,
-  forwardedFromText: null,
-  forwardedFromFileName: null,
-  forwardedFromSender: null,
+  attachments: [],
+  forwardContext: null,
+  editedAt: null,
+  deletedAt: null,
+  deletedById: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
 } as const;
@@ -68,23 +59,23 @@ describe('message layout', () => {
     expect(screen.getByTestId('message-row').getAttribute('data-message-virtual-key')).toBe('client:client-1');
   });
 
-  it('shows forwarded source author and original timestamp above forwarded content', () => {
+  it('shows forwarded source author above forwarded content', () => {
     render(
       <MessageBubble
         message={{
           ...message,
-          forwardedFromId: 'forward-source',
-          forwardedFromSenderId: 'user-source',
-          forwardedFromCreatedAt: '2026-07-13T09:30:00.000Z',
-          forwardedFromType: 'TEXT',
-          forwardedFromText: 'original forwarded text',
-          forwardedFromFileName: null,
-          forwardedFromSender: {
-            id: 'user-source',
-            name: 'Alice',
-            displayName: 'Alice A.',
-            avatarUrl: null,
-            bio: null,
+          forwardContext: {
+            originalAuthor: {
+              id: 'user-source',
+              nameSnapshot: 'Alice',
+              displayNameSnapshot: 'Alice A.',
+            },
+            originalMessageCreatedAt: '2026-07-13T09:30:00.000Z',
+            originalMessageType: 'TEXT',
+            preview: {
+              text: 'original forwarded text',
+              fileName: null,
+            },
           },
         }}
         isMine={false}
@@ -94,23 +85,29 @@ describe('message layout', () => {
       </MessageBubble>,
     );
 
-    expect(screen.getByText('Forwarded from Alice A.')).toBeTruthy();
+    expect(screen.getByText('Alice A.')).toBeTruthy();
     expect(screen.queryByText('13.07.2026 12:30')).toBeNull();
     expect(screen.getByText('original forwarded text')).toBeTruthy();
   });
 
-  it('uses a neutral fallback when forwarded sender profile is missing', () => {
+  it('uses the original name snapshot when forwarded display name is missing', () => {
     render(
       <MessageBubble
         message={{
           ...message,
-          forwardedFromId: 'forward-source',
-          forwardedFromSenderId: 'user-source',
-          forwardedFromCreatedAt: '2026-07-13T09:30:00.000Z',
-          forwardedFromType: 'TEXT',
-          forwardedFromText: 'original forwarded text',
-          forwardedFromFileName: null,
-          forwardedFromSender: null,
+          forwardContext: {
+            originalAuthor: {
+              id: 'user-source',
+              nameSnapshot: 'Alice',
+              displayNameSnapshot: null,
+            },
+            originalMessageCreatedAt: '2026-07-13T09:30:00.000Z',
+            originalMessageType: 'TEXT',
+            preview: {
+              text: 'original forwarded text',
+              fileName: null,
+            },
+          },
         }}
         isMine={false}
         senderName="Forwarder"
@@ -122,7 +119,39 @@ describe('message layout', () => {
     expect(screen.queryByText(/Unknown sender/i)).toBeNull();
     expect(screen.queryByText('Forwarded message')).toBeNull();
     expect(screen.queryByText('Forwarded from user-source')).toBeNull();
-    expect(screen.getByText('Forwarded')).toBeTruthy();
+    expect(screen.getByText('Alice')).toBeTruthy();
     expect(screen.getByText('original forwarded text')).toBeTruthy();
+  });
+
+  it('renders forwarded header from original author snapshot', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          forwardContext: {
+            originalAuthor: {
+              id: 'author-1',
+              nameSnapshot: 'tamilka',
+              displayNameSnapshot: 'Тамилка:3',
+            },
+            originalMessageCreatedAt: '2026-07-22T10:00:00.000Z',
+            originalMessageType: 'VOICE',
+            preview: {
+              text: null,
+              fileName: 'voice.ogg',
+            },
+          },
+        }}
+        isMine={false}
+        senderName="Forwarder"
+      >
+        <MessageContent text="" isMine={false} />
+      </MessageBubble>,
+    );
+
+    expect(screen.getByText('Тамилка:3')).toBeTruthy();
+    expect(screen.getByText('voice.ogg')).toBeTruthy();
+    expect(screen.queryByText(/Unknown sender/i)).toBeNull();
+    expect(screen.queryByText('22.07.2026 13:00')).toBeNull();
   });
 });

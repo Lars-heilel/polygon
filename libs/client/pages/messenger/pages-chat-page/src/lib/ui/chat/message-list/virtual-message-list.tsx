@@ -57,7 +57,7 @@ export const ChatMessageRow = memo(({
       data-message-id={msg.id}
       data-message-client-id={msg.clientId ?? undefined}
       data-message-virtual-key={getMessageVirtualKey(msg)}
-      data-message-type={msg.fileCategory ?? msg.type}
+      data-message-type={msg.media?.category ?? msg.type}
     >
       <MessageBubble
         message={msg}
@@ -74,7 +74,7 @@ export const ChatMessageRow = memo(({
           />
         }
       >
-        {msg.fileId ? (
+        {msg.media ? (
           <div className="space-y-2">
             <FileMessage
               message={msg}
@@ -140,11 +140,11 @@ export const VirtualMessageList = memo(function MessageList({
   }, [currentChat]);
   const audioQueue = useMemo(
     () => allMessages
-      .filter((msg) => msg.fileCategory === 'AUDIO' && msg.fileId)
+      .filter((msg) => msg.media?.category === 'AUDIO')
       .map((msg) => ({
         id: `audio-${msg.id}`,
-        url: `/api/media/files/${msg.fileId}/content`,
-        title: msg.fileName ?? 'Audio',
+        url: msg.media?.contentUrl ?? '',
+        title: msg.media?.fileName ?? 'Audio',
         subtitle: 'Audio file',
       })),
     [allMessages],
@@ -153,7 +153,7 @@ export const VirtualMessageList = memo(function MessageList({
     const map = new Map<string, number>();
     let queueIndex = 0;
     for (const msg of allMessages) {
-      if (msg.fileCategory === 'AUDIO' && msg.fileId) {
+      if (msg.media?.category === 'AUDIO') {
         map.set(msg.id, queueIndex);
         queueIndex += 1;
       }

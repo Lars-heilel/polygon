@@ -1,9 +1,12 @@
 import type {
   Message,
+  MessageAttachment,
+  MessageForwardContext,
   MessageKind,
   MessageMedia,
   MessageMediaCategory,
   MessagePage,
+  RawMessageAttachment,
   RawMessage,
   RawMessagePage,
 } from './message.types.js';
@@ -11,23 +14,20 @@ import type {
 const mediaCategories = new Set(['IMAGE', 'VIDEO', 'CIRCLE', 'AUDIO', 'VOICE', 'FILE']);
 
 export function normalizeMessage(raw: RawMessage): Message {
-  const normalizedRaw = normalizeAttachmentFields(raw);
-  const media = normalizedRaw.media ?? buildLegacyMedia(normalizedRaw);
+  const attachments = normalizeAttachments(raw.attachments ?? []);
+  const forwardContext = normalizeForwardContext(raw.forwardContext ?? null);
+  const media = raw.media ?? buildAttachmentMedia(raw, attachments[0]);
   return {
-    ...normalizedRaw,
-    clientId: normalizedRaw.clientId ?? null,
-    editedAt: normalizedRaw.editedAt ?? null,
-    deletedAt: normalizedRaw.deletedAt ?? null,
-    deletedById: normalizedRaw.deletedById ?? null,
-    forwardedFromSenderId: normalizedRaw.forwardedFromSenderId ?? null,
-    forwardedFromCreatedAt: normalizedRaw.forwardedFromCreatedAt ?? null,
-    forwardedFromType: normalizedRaw.forwardedFromType ?? null,
-    forwardedFromText: normalizedRaw.forwardedFromText ?? null,
-    forwardedFromFileName: normalizedRaw.forwardedFromFileName ?? null,
-    forwardedFromSender: normalizedRaw.forwardedFromSender ?? null,
-    kind: resolveKind(normalizedRaw, media),
+    ...raw,
+    clientId: raw.clientId ?? null,
+    editedAt: raw.editedAt ?? null,
+    deletedAt: raw.deletedAt ?? null,
+    deletedById: raw.deletedById ?? null,
+    attachments,
+    forwardContext,
+    kind: resolveKind(raw, media),
     media,
-    linkPreview: normalizedRaw.linkPreview ?? null,
+    linkPreview: raw.linkPreview ?? null,
   };
 }
 
@@ -38,20 +38,20 @@ export function normalizeMessagePage(raw: RawMessagePage): MessagePage {
   };
 }
 
-function buildLegacyMedia(raw: RawMessage): MessageMedia | null {
-  if (!raw.fileId) return null;
-
-  const category = normalizeCategory(raw.fileCategory);
-  if (!category) return null;
+function buildAttachmentMedia(
+  raw: RawMessage,
+  attachment: MessageAttachment | undefined,
+): MessageMedia | null {
+  if (!attachment) return null;
 
   return {
-    fileId: raw.fileId,
-    contentUrl: `/api/media/files/${raw.fileId}/content`,
+    fileId: attachment.mediaId,
+    contentUrl: `/api/chats/${raw.chatId}/messages/${raw.id}/attachments/${attachment.id}/content`,
     thumbUrl: null,
-    fileName: raw.fileName,
-    mime: raw.fileMime,
-    size: raw.fileSize,
-    category,
+    fileName: attachment.fileNameSnapshot,
+    mime: attachment.mimeSnapshot,
+    size: attachment.fileSizeSnapshot,
+    category: attachment.category,
     width: null,
     height: null,
     durationMs: null,
@@ -59,29 +59,35 @@ function buildLegacyMedia(raw: RawMessage): MessageMedia | null {
   };
 }
 
-type RawMessageAttachment = {
-  mediaId: string;
-  fileNameSnapshot: string | null;
-  fileSizeSnapshot: number | null;
-  mimeSnapshot: string | null;
-  category: string;
-};
+function normalizeAttachments(attachments: RawMessageAttachment[]): MessageAttachment[] {
+  return attachments.flatMap((attachment) => {
+    const category = normalizeCategory(attachment.category);
+    if (!category) return [];
 
-type RawMessageWithAttachments = RawMessage & {
-  attachments?: RawMessageAttachment[];
-};
+    return [{
+      ...attachment,
+      category,
+    }];
+  });
+}
 
-function normalizeAttachmentFields(raw: RawMessage): RawMessage {
-  const attachment = (raw as RawMessageWithAttachments).attachments?.[0];
-  if (!attachment) return raw;
+function normalizeForwardContext(
+  forwardContext: RawMessage['forwardContext'] | null,
+): MessageForwardContext | null {
+  if (!forwardContext) return null;
 
   return {
-    ...raw,
-    fileId: attachment.mediaId,
-    fileName: attachment.fileNameSnapshot,
-    fileSize: attachment.fileSizeSnapshot,
-    fileMime: attachment.mimeSnapshot,
-    fileCategory: attachment.category,
+    originalAuthor: {
+      id: forwardContext.originalAuthorId,
+      nameSnapshot: forwardContext.originalAuthorNameSnapshot,
+      displayNameSnapshot: forwardContext.originalAuthorDisplayNameSnapshot,
+    },
+    originalMessageCreatedAt: forwardContext.originalMessageCreatedAt,
+    originalMessageType: forwardContext.originalMessageType,
+    preview: {
+      text: forwardContext.originalTextPreview,
+      fileName: forwardContext.originalFileNamePreview,
+    },
   };
 }
 

@@ -176,7 +176,7 @@ const MediaEntryCard = memo(function MediaEntryCard({
   onOpenViewer: () => void;
 }) {
   const isVisualFile = entry.kind === 'file'
-    && ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.fileCategory ?? '');
+    && ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.media?.category ?? '');
 
   return (
     <div className="mb-3 rounded-lg border border-border bg-surface p-3 shadow-[var(--shadow-surface)]">
@@ -219,8 +219,8 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
   entry: Extract<ChatMediaEntry, { kind: 'file' }>;
   onOpenViewer: () => void;
 }) {
-  const src = `/api/media/files/${entry.message.fileId}/content`;
-  const isImage = entry.message.fileCategory === 'IMAGE';
+  const src = entry.message.media?.contentUrl ?? '';
+  const isImage = entry.message.media?.category === 'IMAGE';
 
   return (
     <button
@@ -238,7 +238,7 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
         >
           <img
             src={src}
-            alt={entry.message.fileName ?? 'Image'}
+            alt={entry.message.media?.fileName ?? 'Image'}
             className="h-full w-full object-cover"
             loading="lazy"
           />
@@ -275,7 +275,7 @@ function buildVisualViewerItems(items: ChatMediaEntry[]): MediaViewerItem[] {
       return [];
     }
 
-    const category = item.message.fileCategory;
+    const category = item.message.media?.category;
     if (!category || !['IMAGE', 'VIDEO', 'CIRCLE'].includes(category)) {
       return [];
     }
@@ -283,9 +283,9 @@ function buildVisualViewerItems(items: ChatMediaEntry[]): MediaViewerItem[] {
     return [{
       id: item.id,
       type: category === 'IMAGE' ? 'image' : 'video',
-      src: `/api/media/files/${item.message.fileId}/content`,
-      alt: item.message.fileName ?? 'Media',
-      label: item.message.fileName ?? 'Media',
+      src: item.message.media?.contentUrl ?? '',
+      alt: item.message.media?.fileName ?? 'Media',
+      label: item.message.media?.fileName ?? 'Media',
     }];
   });
 }

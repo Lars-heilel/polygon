@@ -167,8 +167,8 @@ function getDirectPeerId(chat: Chat, currentUserId: string): string | null {
 
 function getMessagePreview(message: Message): string {
   if (message.text?.trim()) return message.text.trim();
-  if (message.fileName) return message.fileName;
-  if (message.fileCategory) return `${message.fileCategory.toLocaleLowerCase()} message`;
+  if (message.media?.fileName) return message.media.fileName;
+  if (message.media?.category) return `${message.media.category.toLocaleLowerCase()} message`;
   return 'Message';
 }
 

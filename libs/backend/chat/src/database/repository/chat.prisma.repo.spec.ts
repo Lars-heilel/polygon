@@ -262,6 +262,55 @@ describe('ChatPrismaRepository', () => {
     );
   });
 
+  it('returns persisted media messages with attachments from chat history', async () => {
+    const createdAt = new Date('2026-07-22T10:00:00.000Z');
+    const mediaMessage = {
+      id: 'message-media',
+      clientId: '44444444-4444-4444-8444-444444444444',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'IMAGE',
+      text: null,
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-media',
+          mediaId: '55555555-5555-4555-8555-555555555555',
+          fileNameSnapshot: 'image.png',
+          fileSizeSnapshot: 4096,
+          mimeSnapshot: 'image/png',
+          category: 'IMAGE',
+          createdAt,
+        },
+      ],
+      forwardContext: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt,
+      updatedAt: createdAt,
+    };
+    message.findMany.mockResolvedValue([mediaMessage]);
+
+    await expect(repository.findMessagesByChat('chat-1', undefined, 50, 'user-1')).resolves.toEqual({
+      messages: [mediaMessage],
+      nextCursor: null,
+    });
+
+    expect(message.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          chatId: 'chat-1',
+          deletedAt: null,
+          deletions: { none: { userId: 'user-1' } },
+        },
+        select: expect.objectContaining({
+          attachments: expect.any(Object),
+        }),
+      }),
+    );
+  });
+
   it('creates a message with attachments and forward context in one repository call', async () => {
     const createdAt = new Date('2026-07-22T10:00:00.000Z');
     const originalMessageCreatedAt = new Date('2026-07-22T09:00:00.000Z');

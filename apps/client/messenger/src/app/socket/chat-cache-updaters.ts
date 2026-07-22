@@ -1,3 +1,5 @@
+import { normalizeMessage, type RawMessage } from '@org/entities-message';
+
 type MessageLike = {
   id: string;
   clientId?: string | null;
@@ -6,8 +8,7 @@ type MessageLike = {
   senderId?: string | null;
   type?: string | null;
   text?: string | null;
-  fileId?: string | null;
-  fileCategory?: string | null;
+  media?: { fileId: string } | null;
   localStatus?: 'sending' | 'sent' | 'error';
 };
 
@@ -18,7 +19,7 @@ type MessagePageLike<TMessage extends MessageLike> = {
 type ChatLike = {
   id: string;
   updatedAt: string;
-  lastMessage: unknown;
+  lastMessage: { createdAt: string } | null;
 };
 
 export function upsertMessageIntoPages<
@@ -31,21 +32,22 @@ export function upsertMessageIntoPages<
 ): TData | undefined {
   if (!old) return old;
 
+  const normalizedMsg = normalizeSocketMessage(msg);
   let replaced = false;
   const pages = old.pages.map((page) => ({
     ...page,
     messages: page.messages.map((message) => {
-      const sameServerId = message.id === msg.id;
-      const sameClientId = Boolean(message.clientId) && message.clientId === msg.clientId;
-      const samePendingMessage = isMatchingPendingEcho(message, msg);
+      const sameServerId = message.id === normalizedMsg.id;
+      const sameClientId = Boolean(message.clientId) && message.clientId === normalizedMsg.clientId;
+      const samePendingMessage = isMatchingPendingEcho(message, normalizedMsg);
 
       if (!sameServerId && !sameClientId && !samePendingMessage) return message;
 
       replaced = true;
       return {
         ...message,
-        ...msg,
-        clientId: msg.clientId ?? message.clientId ?? null,
+        ...normalizedMsg,
+        clientId: normalizedMsg.clientId ?? message.clientId ?? null,
         localStatus: 'sent' as const,
       };
     }),
@@ -55,11 +57,11 @@ export function upsertMessageIntoPages<
     return { ...old, pages } as TData;
   }
 
-  if (pages.some((page) => page.messages.some((message) => message.id === msg.id))) {
+  if (pages.some((page) => page.messages.some((message) => message.id === normalizedMsg.id))) {
     return old;
   }
 
-  return appendMessageToPages({ ...old, pages } as TData, msg);
+  return appendMessageToPages({ ...old, pages } as TData, normalizedMsg);
 }
 
 function isMatchingPendingEcho<TMessage extends MessageLike>(message: TMessage, msg: TMessage): boolean {
@@ -69,8 +71,8 @@ function isMatchingPendingEcho<TMessage extends MessageLike>(message: TMessage, 
   if (message.senderId && msg.senderId && message.senderId !== msg.senderId) return false;
   if (message.type && msg.type && message.type !== msg.type) return false;
 
-  if (message.fileId || msg.fileId) {
-    return Boolean(message.fileId) && message.fileId === msg.fileId;
+  if (message.media?.fileId || msg.media?.fileId) {
+    return Boolean(message.media?.fileId) && message.media?.fileId === msg.media?.fileId;
   }
 
   return Boolean(message.text) && message.text === msg.text;
@@ -85,12 +87,13 @@ export function appendMessageToPages<
   msg: TMessage,
 ): TData | undefined {
   if (!old) return old;
-  if (old.pages.some((page) => page.messages.some((message) => message.id === msg.id))) return old;
+  const normalizedMsg = normalizeSocketMessage(msg);
+  if (old.pages.some((page) => page.messages.some((message) => message.id === normalizedMsg.id))) return old;
 
   return {
     ...old,
     pages: old.pages.map((page, index) =>
-      index === 0 ? { ...page, messages: [...page.messages, msg] } : page,
+      index === 0 ? { ...page, messages: [...page.messages, normalizedMsg] } : page,
     ),
   } as TData;
 }
@@ -127,13 +130,14 @@ export function updateMessageInPages<
   msg: Partial<TMessage> & Pick<MessageLike, 'id'>,
 ): TData | undefined {
   if (!old) return old;
+  const normalizedMsg = normalizeSocketMessage(msg);
 
   return {
     ...old,
     pages: old.pages.map((page) => ({
       ...page,
       messages: page.messages.map((message) =>
-        message.id === msg.id ? ({ ...message, ...msg } as TMessage) : message,
+        message.id === normalizedMsg.id ? ({ ...message, ...normalizedMsg } as TMessage) : message,
       ),
     })),
   } as TData;
@@ -159,8 +163,9 @@ export function updateChatListLastMessage<TChat extends ChatLike, TMessage exten
   chats: TChat[] | undefined,
   msg: TMessage,
 ): TChat[] {
+  const normalizedMsg = normalizeSocketMessage(msg);
   const next = (chats ?? []).map((chat) =>
-    chat.id === msg.chatId ? { ...chat, lastMessage: msg } as TChat : chat,
+    chat.id === normalizedMsg.chatId ? { ...chat, lastMessage: normalizedMsg } as TChat : chat,
   );
 
   next.sort((left, right) => {
@@ -170,4 +175,34 @@ export function updateChatListLastMessage<TChat extends ChatLike, TMessage exten
   });
 
   return next;
+}
+
+function normalizeSocketMessage<TMessage extends Partial<MessageLike> & Pick<MessageLike, 'id'>>(msg: TMessage): TMessage {
+  if (!isRawSocketMessage(msg)) return msg;
+  return normalizeMessage(msg) as TMessage;
+}
+
+function isRawSocketMessage(msg: Partial<MessageLike> & Pick<MessageLike, 'id'>): msg is RawMessage & MessageLike {
+  if (
+    typeof msg.chatId !== 'string'
+    || typeof msg.senderId !== 'string'
+    || typeof msg.type !== 'string'
+    || !('updatedAt' in msg)
+    || !('editedAt' in msg)
+    || !('deletedAt' in msg)
+    || !('deletedById' in msg)
+  ) {
+    return false;
+  }
+
+  const forwardContext = (msg as { forwardContext?: unknown }).forwardContext;
+  if (
+    forwardContext
+    && typeof forwardContext === 'object'
+    && 'originalAuthorNameSnapshot' in forwardContext
+  ) {
+    return true;
+  }
+
+  return Array.isArray((msg as { attachments?: unknown }).attachments) && !('kind' in msg);
 }

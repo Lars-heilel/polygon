@@ -1,5 +1,4 @@
 import type { MessageType } from '@org/common';
-import type { UserPublic } from '@org/common';
 
 export type MessageKind =
   | 'text'
@@ -31,6 +30,57 @@ export interface MessageMedia {
   waveform: number[] | null;
 }
 
+export interface MessageAttachment {
+  id: string;
+  messageId: string;
+  mediaId: string;
+  fileNameSnapshot: string | null;
+  fileSizeSnapshot: number | null;
+  mimeSnapshot: string | null;
+  category: MessageMediaCategory;
+  createdAt: string;
+}
+
+export interface RawMessageAttachment {
+  id: string;
+  messageId: string;
+  mediaId: string;
+  fileNameSnapshot: string | null;
+  fileSizeSnapshot: number | null;
+  mimeSnapshot: string | null;
+  category: string;
+  createdAt: string;
+}
+
+export interface RawMessageForwardContext {
+  messageId: string;
+  originalMessageId: string | null;
+  originalChatId: string | null;
+  originalAuthorId: string;
+  originalAuthorNameSnapshot: string;
+  originalAuthorDisplayNameSnapshot: string | null;
+  originalMessageCreatedAt: string;
+  originalMessageType: MessageType | string;
+  originalTextPreview: string | null;
+  originalFileNamePreview: string | null;
+  snapshotVersion: number;
+  createdAt: string;
+}
+
+export interface MessageForwardContext {
+  originalAuthor: {
+    id: string;
+    nameSnapshot: string;
+    displayNameSnapshot: string | null;
+  };
+  originalMessageCreatedAt: string;
+  originalMessageType: MessageType | string;
+  preview: {
+    text: string | null;
+    fileName: string | null;
+  };
+}
+
 export interface LinkPreview {
   url: string;
   canonicalUrl: string | null;
@@ -47,25 +97,13 @@ export interface RawMessage {
   senderId: string;
   type: MessageType | string;
   text: string | null;
-  fileId: string | null;
-  fileBucket: string | null;
-  fileKey: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  fileMime: string | null;
-  fileCategory: string | null;
-  forwardedFromId: string | null;
-  forwardedFromSenderId: string | null;
-  forwardedFromCreatedAt: string | null;
-  forwardedFromType: MessageType | string | null;
-  forwardedFromText: string | null;
-  forwardedFromFileName: string | null;
-  forwardedFromSender?: UserPublic | null;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;
   createdAt: string;
   updatedAt: string;
+  attachments?: RawMessageAttachment[];
+  forwardContext?: RawMessageForwardContext | null;
   media?: MessageMedia | null;
   linkPreview?: LinkPreview | null;
 }
@@ -82,21 +120,9 @@ export interface Message {
   updatedAt: string;
   media: MessageMedia | null;
   linkPreview: LinkPreview | null;
+  attachments: MessageAttachment[];
+  forwardContext: MessageForwardContext | null;
   localStatus?: LocalMessageStatus;
-  fileId: string | null;
-  fileBucket: string | null;
-  fileKey: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  fileMime: string | null;
-  fileCategory: string | null;
-  forwardedFromId: string | null;
-  forwardedFromSenderId: string | null;
-  forwardedFromCreatedAt: string | null;
-  forwardedFromType: MessageType | string | null;
-  forwardedFromText: string | null;
-  forwardedFromFileName: string | null;
-  forwardedFromSender: UserPublic | null;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;

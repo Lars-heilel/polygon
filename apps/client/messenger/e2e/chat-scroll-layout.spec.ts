@@ -25,29 +25,57 @@ function iso(index: number) {
 }
 
 function message(index: number, overrides: Record<string, unknown> = {}) {
-  return {
+  const result = {
     id: `message-${index}`,
     chatId: 'chat-1',
     senderId: index % 2 === 0 ? me.id : other.id,
     type: 'TEXT',
     text: `Text message ${index}`,
-    fileId: null,
-    fileBucket: null,
-    fileKey: null,
-    fileName: null,
-    fileSize: null,
-    fileMime: null,
-    fileCategory: null,
-    forwardedFromId: null,
-    forwardedFromSenderId: null,
-    forwardedFromCreatedAt: null,
-    forwardedFromType: null,
-    forwardedFromText: null,
-    forwardedFromFileName: null,
-    forwardedFromSender: null,
+    attachments: [],
+    forwardContext: null,
     createdAt: iso(index),
     updatedAt: iso(index),
     ...overrides,
+  };
+
+  if (Array.isArray(result.attachments)) {
+    result.attachments = result.attachments.map((item) => ({ ...item, messageId: result.id }));
+  }
+
+  return result;
+}
+
+function attachment(
+  messageId: string,
+  mediaId: string,
+  fileName: string,
+  size: number,
+  mime: string,
+  category: string,
+) {
+  return {
+    id: `attachment-${mediaId}`,
+    messageId,
+    mediaId,
+    fileNameSnapshot: fileName,
+    fileSizeSnapshot: size,
+    mimeSnapshot: mime,
+    category,
+    createdAt: iso(1),
+  };
+}
+
+function mediaMessageFields(
+  index: number,
+  mediaId: string,
+  fileName: string,
+  size: number,
+  mime: string,
+  category: string,
+) {
+  return {
+    text: null,
+    attachments: [attachment(`message-${index}`, mediaId, fileName, size, mime, category)],
   };
 }
 
@@ -60,57 +88,27 @@ const mixedMessages = [
   }),
   message(74, {
     type: 'IMAGE',
-    text: null,
-    fileId: 'file-image',
-    fileName: 'wide-image.png',
-    fileSize: 1024,
-    fileMime: 'image/png',
-    fileCategory: 'IMAGE',
+    ...mediaMessageFields(74, 'file-image', 'wide-image.png', 1024, 'image/png', 'IMAGE'),
   }),
   message(75, {
     type: 'AUDIO',
-    text: null,
-    fileId: 'file-audio',
-    fileName: 'audio.mp3',
-    fileSize: 4096,
-    fileMime: 'audio/mpeg',
-    fileCategory: 'AUDIO',
+    ...mediaMessageFields(75, 'file-audio', 'audio.mp3', 4096, 'audio/mpeg', 'AUDIO'),
   }),
   message(76, {
     type: 'VOICE',
-    text: null,
-    fileId: 'file-voice',
-    fileName: 'voice.webm',
-    fileSize: 4096,
-    fileMime: 'audio/webm',
-    fileCategory: 'VOICE',
+    ...mediaMessageFields(76, 'file-voice', 'voice.webm', 4096, 'audio/webm', 'VOICE'),
   }),
   message(77, {
     type: 'VIDEO',
-    text: null,
-    fileId: 'file-video',
-    fileName: 'video.mp4',
-    fileSize: 8192,
-    fileMime: 'video/mp4',
-    fileCategory: 'VIDEO',
+    ...mediaMessageFields(77, 'file-video', 'video.mp4', 8192, 'video/mp4', 'VIDEO'),
   }),
   message(78, {
     type: 'VIDEO',
-    text: null,
-    fileId: 'file-circle',
-    fileName: 'circle.mp4',
-    fileSize: 8192,
-    fileMime: 'video/mp4',
-    fileCategory: 'CIRCLE',
+    ...mediaMessageFields(78, 'file-circle', 'circle.mp4', 8192, 'video/mp4', 'CIRCLE'),
   }),
   message(79, {
     type: 'FILE',
-    text: null,
-    fileId: 'file-doc',
-    fileName: 'document.pdf',
-    fileSize: 8192,
-    fileMime: 'application/pdf',
-    fileCategory: 'FILE',
+    ...mediaMessageFields(79, 'file-doc', 'document.pdf', 8192, 'application/pdf', 'FILE'),
   }),
   message(80, {
     text: 'Latest message 080',
@@ -209,7 +207,7 @@ async function mockChatApis(page: Page, chatMessages = mixedMessages) {
       }),
     }),
   );
-  await page.route('**/api/media/files/**/content', (route) => {
+  await page.route('**/api/chats/**/messages/**/attachments/**/content', (route) => {
     const url = route.request().url();
     if (url.includes('audio') || url.includes('voice')) {
       return route.fulfill({
@@ -325,7 +323,7 @@ test('chat message list opens at latest messages and does not overflow horizonta
 test('chat message list keeps reader position when user is reading older messages', async ({ page }) => {
   await mockChatApis(page);
   await page.goto('/chats/chat-1');
-  await expect(page.getByText('Latest message 080')).toBeVisible();
+  await expect(page.locator('[data-testid="message-row"][data-message-id="message-80"]')).toBeVisible();
 
   await page.mouse.wheel(0, -2400);
   await page.waitForTimeout(250);
@@ -358,12 +356,7 @@ const latestMessageCases = [
     latest: message(90, {
       id: 'latest-image',
       type: 'IMAGE',
-      text: null,
-      fileId: 'latest-image-file',
-      fileName: 'latest-image.png',
-      fileSize: 1024,
-      fileMime: 'image/png',
-      fileCategory: 'IMAGE',
+      ...mediaMessageFields(90, 'latest-image-file', 'latest-image.png', 1024, 'image/png', 'IMAGE'),
     }),
   },
   {
@@ -371,12 +364,7 @@ const latestMessageCases = [
     latest: message(90, {
       id: 'latest-audio',
       type: 'AUDIO',
-      text: null,
-      fileId: 'latest-audio-file',
-      fileName: 'latest-audio.mp3',
-      fileSize: 4096,
-      fileMime: 'audio/mpeg',
-      fileCategory: 'AUDIO',
+      ...mediaMessageFields(90, 'latest-audio-file', 'latest-audio.mp3', 4096, 'audio/mpeg', 'AUDIO'),
     }),
   },
   {
@@ -384,12 +372,7 @@ const latestMessageCases = [
     latest: message(90, {
       id: 'latest-voice',
       type: 'VOICE',
-      text: null,
-      fileId: 'latest-voice-file',
-      fileName: 'latest-voice.webm',
-      fileSize: 4096,
-      fileMime: 'audio/webm',
-      fileCategory: 'VOICE',
+      ...mediaMessageFields(90, 'latest-voice-file', 'latest-voice.webm', 4096, 'audio/webm', 'VOICE'),
     }),
   },
   {
@@ -397,12 +380,7 @@ const latestMessageCases = [
     latest: message(90, {
       id: 'latest-video',
       type: 'VIDEO',
-      text: null,
-      fileId: 'latest-video-file',
-      fileName: 'latest-video.mp4',
-      fileSize: 8192,
-      fileMime: 'video/mp4',
-      fileCategory: 'VIDEO',
+      ...mediaMessageFields(90, 'latest-video-file', 'latest-video.mp4', 8192, 'video/mp4', 'VIDEO'),
     }),
   },
   {
@@ -410,12 +388,7 @@ const latestMessageCases = [
     latest: message(90, {
       id: 'latest-circle',
       type: 'VIDEO',
-      text: null,
-      fileId: 'latest-circle-file',
-      fileName: 'latest-circle.mp4',
-      fileSize: 8192,
-      fileMime: 'video/mp4',
-      fileCategory: 'CIRCLE',
+      ...mediaMessageFields(90, 'latest-circle-file', 'latest-circle.mp4', 8192, 'video/mp4', 'CIRCLE'),
     }),
   },
   {
@@ -423,12 +396,7 @@ const latestMessageCases = [
     latest: message(90, {
       id: 'latest-file',
       type: 'FILE',
-      text: null,
-      fileId: 'latest-file-doc',
-      fileName: 'latest-document.pdf',
-      fileSize: 8192,
-      fileMime: 'application/pdf',
-      fileCategory: 'FILE',
+      ...mediaMessageFields(90, 'latest-file-doc', 'latest-document.pdf', 8192, 'application/pdf', 'FILE'),
     }),
   },
 ] as const;
@@ -453,12 +421,7 @@ test('uploaded audio file exposes waveform controls and responds to mobile tap',
       message(90, {
         id: 'latest-audio-mobile',
         type: 'AUDIO',
-        text: null,
-        fileId: 'latest-audio-mobile-file',
-        fileName: 'latest-audio-mobile.wav',
-        fileSize: 2048,
-        fileMime: 'audio/wav',
-        fileCategory: 'AUDIO',
+        ...mediaMessageFields(90, 'latest-audio-mobile-file', 'latest-audio-mobile.wav', 2048, 'audio/wav', 'AUDIO'),
       }),
     ),
   );
@@ -466,13 +429,12 @@ test('uploaded audio file exposes waveform controls and responds to mobile tap',
 
   const row = page.locator('[data-testid="message-row"][data-message-id="latest-audio-mobile"]');
   await expect(row).toBeVisible();
-  await expect(row.getByTestId('audio-waveform-message')).toBeVisible();
-  await expect(row.getByTestId('audio-waveform')).toBeVisible();
+  await expect(row.getByTestId('audio-file-message')).toBeVisible();
 
   const playButton = row.getByRole('button', { name: /play audio/i });
   await expect(playButton).toBeVisible();
   await playButton.tap();
 
-  await expect(page.getByTestId('floating-audio-player')).toBeVisible();
-  await expect(page.getByTestId('floating-audio-player').getByText('latest-audio-mobile.wav')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Close audio player' })).toBeVisible();
+  await expect(page.getByText('latest-audio-mobile.wav')).toHaveCount(2);
 });

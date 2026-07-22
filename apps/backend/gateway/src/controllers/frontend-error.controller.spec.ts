@@ -1,4 +1,6 @@
 import { Logger } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { ROLES_KEY, ActiveAccountGuard, JwtGuard, RolesGuard } from '@org/core';
 
 import { FrontendErrorController } from './frontend-error.controller';
 
@@ -52,5 +54,14 @@ describe('FrontendErrorController', () => {
       }),
     ).toThrow();
     expect(loggerError).not.toHaveBeenCalled();
+  });
+
+  it('requires an active admin account', () => {
+    expect(Reflect.getMetadata(GUARDS_METADATA, FrontendErrorController)).toEqual([
+      JwtGuard,
+      ActiveAccountGuard,
+      RolesGuard,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, FrontendErrorController)).toEqual(['CREATOR', 'ADMIN']);
   });
 });

@@ -8,9 +8,9 @@ import { unstable_batchedUpdates } from 'react-dom';
 import {
   markMessageSendError,
   removeMessageFromPages,
-  updateMessageInPages,
   upsertMessageIntoPages,
   updateChatListLastMessage,
+  updateMessageInPages,
 } from './chat-cache-updaters';
 
 function handleNewMessage(msg: Message) {
@@ -28,6 +28,10 @@ function handleNewMessage(msg: Message) {
     queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
       updateChatListLastMessage(old, msg),
     );
+
+    if (hasMessageMedia(msg)) {
+      queryClient.invalidateQueries({ queryKey: ['chat-media-messages', msg.chatId] });
+    }
   });
 
   useChatStore.getState().setLastReceivedMessage(msg);
@@ -65,6 +69,7 @@ function handleMessageRemoved(payload: { chatId: string; messageId: string }) {
   queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', payload.chatId], (old) =>
     removeMessageFromPages(old, payload.messageId),
   );
+  queryClient.invalidateQueries({ queryKey: ['chat-media-messages', payload.chatId] });
 }
 
 function handleUserOnline(payload: { userId: string; chatId: string }) {
@@ -100,4 +105,8 @@ export function initChatSocketManager(): () => void {
     socket.off('message:deleted', handleMessageRemoved);
     socket.off('message:hidden', handleMessageRemoved);
   };
+}
+
+function hasMessageMedia(msg: Message): boolean {
+  return Boolean(msg.media) || (Array.isArray(msg.attachments) && msg.attachments.length > 0);
 }

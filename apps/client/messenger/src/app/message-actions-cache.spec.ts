@@ -27,7 +27,6 @@ describe('message action cache helpers', () => {
   it('updates a message in infinite pages', () => {
     const next = updateMessageInPages(old, {
       id: 'message-1',
-      chatId: 'chat-1',
       text: 'after',
       updatedAt: '2026-07-22T00:01:00.000Z',
     });

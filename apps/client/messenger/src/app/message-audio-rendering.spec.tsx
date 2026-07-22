@@ -25,22 +25,25 @@ const baseMessage = {
   kind: 'audio',
   type: 'FILE',
   text: null,
-  media: null,
+  media: {
+    fileId: 'file-1',
+    contentUrl: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
+    thumbUrl: null,
+    fileName: 'audio.webm',
+    mime: 'audio/webm',
+    size: 1024,
+    category: 'AUDIO',
+    width: null,
+    height: null,
+    durationMs: null,
+    waveform: null,
+  },
   linkPreview: null,
-  fileId: 'file-1',
-  fileBucket: 'media',
-  fileKey: 'chat/audio.webm',
-  fileName: 'audio.webm',
-  fileSize: 1024,
-  fileMime: 'audio/webm',
-  fileCategory: 'AUDIO',
-  forwardedFromId: null,
-  forwardedFromSenderId: null,
-  forwardedFromCreatedAt: null,
-  forwardedFromType: null,
-  forwardedFromText: null,
-  forwardedFromFileName: null,
-  forwardedFromSender: null,
+  attachments: [],
+  forwardContext: null,
+  editedAt: null,
+  deletedAt: null,
+  deletedById: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
 } as const;
@@ -56,7 +59,7 @@ describe('message audio rendering', () => {
         id: 'audio-message-1',
         title: 'audio.webm',
         subtitle: 'Audio file',
-        url: '/api/media/files/file-1/content',
+        url: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
       },
     ];
 
@@ -86,7 +89,7 @@ describe('message audio rendering', () => {
   it('keeps uploaded audio files readable inside own message bubbles', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, fileName: 'Vända.flac', fileMime: 'audio/flac' }}
+        message={{ ...baseMessage, media: { ...baseMessage.media, fileName: 'Vända.flac', mime: 'audio/flac' } }}
         isMine
       />,
     );
@@ -102,7 +105,7 @@ describe('message audio rendering', () => {
   it('keeps voice messages on the waveform player contract', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, fileCategory: 'VOICE', fileName: 'voice.webm' }}
+        message={{ ...baseMessage, media: { ...baseMessage.media, category: 'VOICE', fileName: 'voice.webm' } }}
         isMine={false}
       />,
     );
@@ -131,7 +134,7 @@ describe('message audio rendering', () => {
   it('keeps voice messages on a stable waveform frame', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, kind: 'voice', fileCategory: 'VOICE', fileName: 'voice.webm' }}
+        message={{ ...baseMessage, kind: 'voice', media: { ...baseMessage.media, category: 'VOICE', fileName: 'voice.webm' } }}
         isMine={false}
       />,
     );
@@ -143,7 +146,7 @@ describe('message audio rendering', () => {
   it('falls back to a generic file attachment when audio metadata is inconsistent', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, fileMime: 'application/octet-stream', fileName: 'audio.bin' }}
+        message={{ ...baseMessage, media: { ...baseMessage.media, mime: 'application/octet-stream', fileName: 'audio.bin' } }}
         isMine={false}
       />,
     );

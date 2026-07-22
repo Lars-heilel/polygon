@@ -167,7 +167,7 @@ export class ChatService implements IChatService {
       hasClientId: !!input.clientId,
       type: input.type,
       hasText: !!input.text,
-      hasFile: !!input.fileId,
+      hasFile: !!input.fileId || !!input.attachments?.length,
     });
     const member = await this.repo.findChatMember(chatId, senderId);
     if (!member) {
@@ -186,13 +186,6 @@ export class ChatService implements IChatService {
       senderId,
       type: input.type as Message['type'],
       text: input.text ?? null,
-      fileId: input.fileId ?? null,
-      fileBucket: input.fileBucket ?? null,
-      fileKey: input.fileKey ?? null,
-      fileName: input.fileName ?? null,
-      fileSize: input.fileSize ?? null,
-      fileMime: input.fileMime ?? null,
-      fileCategory: input.fileCategory ?? null,
       attachments,
     });
 
@@ -322,7 +315,7 @@ export class ChatService implements IChatService {
     await this.requireMember(chatId, userId);
     const message = await this.requireMessageInChat(chatId, messageId);
 
-    if (message.senderId !== userId || message.type !== 'TEXT' || message.fileId || message.deletedAt) {
+    if (message.senderId !== userId || message.type !== 'TEXT' || message.attachments.length > 0 || message.deletedAt) {
       this.logger.warn({
         eventType: 'message_edit_rejected',
         hasChatId: !!chatId,
@@ -434,25 +427,43 @@ export class ChatService implements IChatService {
         continue;
       }
 
-      const copied = await this.repo.createMessage({
+      const copied = await this.repo.createMessageWithRelations({
         chatId: targetChatId,
         clientId: null,
         senderId: userId,
         type: original.type,
         text: original.text,
-        fileId: original.fileId,
-        fileBucket: original.fileBucket,
-        fileKey: original.fileKey,
-        fileName: original.fileName,
-        fileSize: original.fileSize,
-        fileMime: original.fileMime,
-        fileCategory: original.fileCategory ?? null,
-        forwardedFromId: original.forwardedFromId ?? original.id,
-        forwardedFromSenderId: original.forwardedFromSenderId ?? original.senderId,
-        forwardedFromCreatedAt: original.forwardedFromCreatedAt ?? original.createdAt,
-        forwardedFromType: original.forwardedFromType ?? original.type,
-        forwardedFromText: original.forwardedFromText ?? original.text,
-        forwardedFromFileName: original.forwardedFromFileName ?? original.fileName,
+        attachments: original.attachments.map((attachment) => ({
+          mediaId: attachment.mediaId,
+          fileNameSnapshot: attachment.fileNameSnapshot,
+          fileSizeSnapshot: attachment.fileSizeSnapshot,
+          mimeSnapshot: attachment.mimeSnapshot,
+          category: attachment.category,
+        })),
+        forwardContext: original.forwardContext
+          ? {
+              originalMessageId: original.forwardContext.originalMessageId,
+              originalChatId: original.forwardContext.originalChatId,
+              originalAuthorId: original.forwardContext.originalAuthorId,
+              originalAuthorNameSnapshot: original.forwardContext.originalAuthorNameSnapshot,
+              originalAuthorDisplayNameSnapshot:
+                original.forwardContext.originalAuthorDisplayNameSnapshot,
+              originalMessageCreatedAt: original.forwardContext.originalMessageCreatedAt,
+              originalMessageType: original.forwardContext.originalMessageType,
+              originalTextPreview: original.forwardContext.originalTextPreview,
+              originalFileNamePreview: original.forwardContext.originalFileNamePreview,
+            }
+          : {
+              originalMessageId: original.id,
+              originalChatId: original.chatId,
+              originalAuthorId: original.senderId,
+              originalAuthorNameSnapshot: 'Deleted user',
+              originalAuthorDisplayNameSnapshot: null,
+              originalMessageCreatedAt: original.createdAt,
+              originalMessageType: original.type,
+              originalTextPreview: original.text,
+              originalFileNamePreview: original.attachments[0]?.fileNameSnapshot ?? null,
+            },
       });
       messages.push(copied);
     }

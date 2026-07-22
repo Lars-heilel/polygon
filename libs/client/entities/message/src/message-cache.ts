@@ -1,14 +1,14 @@
-type MessageLike = {
-  id: string;
+type MessagePageLike<TMessage extends { id: string }> = {
+  nextCursor: string | null;
+  messages: TMessage[];
 };
 
-type MessagePageLike = {
-  messages: MessageLike[];
-};
-
-export function updateMessageInPages<TData extends { pages: MessagePageLike[] }>(
+export function updateMessageInPages<
+  TData extends { pages: MessagePageLike<TMessage>[]; pageParams: unknown[] },
+  TMessage extends { id: string },
+>(
   old: TData | undefined,
-  message: Partial<MessageLike> & { id: string },
+  message: Partial<TMessage> & { id: string },
 ): TData | undefined {
   if (!old) return old;
 
@@ -23,7 +23,10 @@ export function updateMessageInPages<TData extends { pages: MessagePageLike[] }>
   } as TData;
 }
 
-export function removeMessageFromPages<TData extends { pages: MessagePageLike[] }>(
+export function removeMessageFromPages<
+  TData extends { pages: MessagePageLike<TMessage>[]; pageParams: unknown[] },
+  TMessage extends { id: string },
+>(
   old: TData | undefined,
   messageId: string,
 ): TData | undefined {
