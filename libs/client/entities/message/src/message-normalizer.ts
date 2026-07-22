@@ -11,22 +11,23 @@ import type {
 const mediaCategories = new Set(['IMAGE', 'VIDEO', 'CIRCLE', 'AUDIO', 'VOICE', 'FILE']);
 
 export function normalizeMessage(raw: RawMessage): Message {
-  const media = raw.media ?? buildLegacyMedia(raw);
+  const normalizedRaw = normalizeAttachmentFields(raw);
+  const media = normalizedRaw.media ?? buildLegacyMedia(normalizedRaw);
   return {
-    ...raw,
-    clientId: raw.clientId ?? null,
-    editedAt: raw.editedAt ?? null,
-    deletedAt: raw.deletedAt ?? null,
-    deletedById: raw.deletedById ?? null,
-    forwardedFromSenderId: raw.forwardedFromSenderId ?? null,
-    forwardedFromCreatedAt: raw.forwardedFromCreatedAt ?? null,
-    forwardedFromType: raw.forwardedFromType ?? null,
-    forwardedFromText: raw.forwardedFromText ?? null,
-    forwardedFromFileName: raw.forwardedFromFileName ?? null,
-    forwardedFromSender: raw.forwardedFromSender ?? null,
-    kind: resolveKind(raw, media),
+    ...normalizedRaw,
+    clientId: normalizedRaw.clientId ?? null,
+    editedAt: normalizedRaw.editedAt ?? null,
+    deletedAt: normalizedRaw.deletedAt ?? null,
+    deletedById: normalizedRaw.deletedById ?? null,
+    forwardedFromSenderId: normalizedRaw.forwardedFromSenderId ?? null,
+    forwardedFromCreatedAt: normalizedRaw.forwardedFromCreatedAt ?? null,
+    forwardedFromType: normalizedRaw.forwardedFromType ?? null,
+    forwardedFromText: normalizedRaw.forwardedFromText ?? null,
+    forwardedFromFileName: normalizedRaw.forwardedFromFileName ?? null,
+    forwardedFromSender: normalizedRaw.forwardedFromSender ?? null,
+    kind: resolveKind(normalizedRaw, media),
     media,
-    linkPreview: raw.linkPreview ?? null,
+    linkPreview: normalizedRaw.linkPreview ?? null,
   };
 }
 
@@ -55,6 +56,32 @@ function buildLegacyMedia(raw: RawMessage): MessageMedia | null {
     height: null,
     durationMs: null,
     waveform: null,
+  };
+}
+
+type RawMessageAttachment = {
+  mediaId: string;
+  fileNameSnapshot: string | null;
+  fileSizeSnapshot: number | null;
+  mimeSnapshot: string | null;
+  category: string;
+};
+
+type RawMessageWithAttachments = RawMessage & {
+  attachments?: RawMessageAttachment[];
+};
+
+function normalizeAttachmentFields(raw: RawMessage): RawMessage {
+  const attachment = (raw as RawMessageWithAttachments).attachments?.[0];
+  if (!attachment) return raw;
+
+  return {
+    ...raw,
+    fileId: attachment.mediaId,
+    fileName: attachment.fileNameSnapshot,
+    fileSize: attachment.fileSizeSnapshot,
+    fileMime: attachment.mimeSnapshot,
+    fileCategory: attachment.category,
   };
 }
 

@@ -15,6 +15,14 @@ export interface FileAttachment {
   fileCategory: string;
 }
 
+interface MessageAttachmentPayload {
+  mediaId: string;
+  fileNameSnapshot: string | null;
+  fileSizeSnapshot: number | null;
+  mimeSnapshot: string | null;
+  category: string;
+}
+
 export function getMessageTypeFromCategory(category: string): string {
   switch (category) {
     case 'IMAGE': return 'IMAGE';
@@ -41,6 +49,16 @@ function getKindFromCategory(category: string): Message['kind'] {
     default:
       return 'file';
   }
+}
+
+function createAttachmentPayload(file: FileAttachment): MessageAttachmentPayload {
+  return {
+    mediaId: file.fileId,
+    fileNameSnapshot: file.fileName,
+    fileSizeSnapshot: file.fileSize,
+    mimeSnapshot: file.fileMime,
+    category: file.fileCategory,
+  };
 }
 
 function createOptimisticMessage(input: {
@@ -164,6 +182,7 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
 
     if (file) {
       const clientId = crypto.randomUUID();
+      const attachment = createAttachmentPayload(file);
       const optimistic = createOptimisticMessage({
         clientId,
         chatId: chatIdRef.current,
@@ -186,6 +205,7 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
         chatId: chatIdRef.current,
         clientId,
         type: getMessageTypeFromCategory(file.fileCategory),
+        attachments: [attachment],
         fileId: file.fileId,
         fileBucket: file.fileBucket,
         fileKey: file.fileKey,
