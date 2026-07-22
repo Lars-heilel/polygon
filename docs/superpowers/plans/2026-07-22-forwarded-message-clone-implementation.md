@@ -497,6 +497,7 @@ git commit -m "feat(chat): add message attachments and forward context"
 - Modify: `libs/backend/media/src/database/repository/media.prisma.repo.ts`
 - Modify: `libs/backend/media/src/services/media.service.ts`
 - Modify: `libs/backend/media/src/controllers/media.controller.ts`
+- Modify: `libs/backend/core/src/constants/queues/media.queue.ts`
 - Test: `libs/backend/media/src/services/media.service.spec.ts`
 
 **Interfaces:**
