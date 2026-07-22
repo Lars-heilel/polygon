@@ -17,6 +17,32 @@ export const CHAT_MEMBER_SELECT_FIELDS = {
   lastReadAt: true,
 } as const;
 
+export const MESSAGE_ATTACHMENT_SELECT_FIELDS = {
+  id: true,
+  messageId: true,
+  mediaId: true,
+  fileNameSnapshot: true,
+  fileSizeSnapshot: true,
+  mimeSnapshot: true,
+  category: true,
+  createdAt: true,
+} as const;
+
+export const MESSAGE_FORWARD_CONTEXT_SELECT_FIELDS = {
+  messageId: true,
+  originalMessageId: true,
+  originalChatId: true,
+  originalAuthorId: true,
+  originalAuthorNameSnapshot: true,
+  originalAuthorDisplayNameSnapshot: true,
+  originalMessageCreatedAt: true,
+  originalMessageType: true,
+  originalTextPreview: true,
+  originalFileNamePreview: true,
+  snapshotVersion: true,
+  createdAt: true,
+} as const;
+
 export const MESSAGE_SELECT_FIELDS = {
   id: true,
   clientId: true,
