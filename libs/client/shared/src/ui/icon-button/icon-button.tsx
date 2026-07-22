@@ -6,20 +6,24 @@ import { cn } from '../../lib/utils/cn';
 import { Spinner } from '../spinner/spinner';
 
 const iconButtonVariants = cva(
-  'inline-flex items-center justify-center rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0',
+  [
+    'inline-flex shrink-0 items-center justify-center rounded-md',
+    'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+    'disabled:pointer-events-none disabled:opacity-50',
+  ].join(' '),
   {
     variants: {
       variant: {
-        primary: 'bg-primary hover:bg-primary-hover text-white',
-        secondary: 'bg-surface-elevated hover:bg-border text-text border border-border',
-        ghost: 'text-text-muted hover:text-text hover:bg-surface-elevated',
-        danger: 'bg-danger text-white hover:opacity-90',
+        primary: 'bg-primary text-text-inverse hover:bg-primary-hover shadow-[var(--shadow-surface)]',
+        secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
+        ghost: 'text-text-muted hover:bg-surface-elevated hover:text-text',
+        danger: 'bg-danger text-text-inverse hover:opacity-90',
       },
       size: {
-        xs: 'w-6  h-6  text-xs',
-        sm: 'w-7  h-7  text-sm',
-        md: 'w-9  h-9  text-base',
-        lg: 'w-10 h-10 text-lg',
+        xs: 'h-6 w-6 text-xs',
+        sm: 'h-8 w-8 text-sm',
+        md: 'h-9 w-9 text-base',
+        lg: 'h-10 w-10 text-lg',
       },
     },
     defaultVariants: {

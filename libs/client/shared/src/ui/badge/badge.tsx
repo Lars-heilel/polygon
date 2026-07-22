@@ -9,10 +9,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-white',
-        surface: 'bg-surface-elevated text-text border border-border',
-        danger: 'bg-danger text-white',
-        muted: 'bg-border text-text-muted',
+        primary: 'bg-primary text-text-inverse',
+        surface: 'border border-border bg-surface text-text',
+        danger: 'bg-danger-muted text-danger',
+        muted: 'bg-surface-muted text-text-muted',
+        success: 'bg-success-muted text-success',
+        warning: 'bg-warning-muted text-warning',
+        info: 'bg-info-muted text-info',
       },
       size: {
         sm: 'text-[10px] px-1.5 py-0.5 min-w-[1.125rem]',

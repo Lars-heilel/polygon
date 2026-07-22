@@ -5,17 +5,22 @@ import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '../../lib/utils/cn';
 
 const textareaVariants = cva(
-  'w-full bg-surface-elevated border rounded-md font-sans text-text placeholder:text-text-muted transition-colors outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed resize-none',
+  [
+    'w-full resize-none rounded-md border bg-surface text-text placeholder:text-text-muted',
+    'font-sans transition-colors outline-none',
+    'focus:border-primary focus:ring-2 focus:ring-primary/30',
+    'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-70',
+  ].join(' '),
   {
     variants: {
       size: {
-        sm: 'text-xs px-3 py-1.5',
-        md: 'text-sm px-3 py-2',
-        lg: 'text-base px-4 py-2.5',
+        sm: 'px-3 py-1.5 text-xs',
+        md: 'px-3 py-2 text-sm',
+        lg: 'px-4 py-2.5 text-base',
       },
       state: {
         default: 'border-border',
-        error: 'border-danger focus:ring-danger/40 focus:border-danger',
+        error: 'border-danger focus:border-danger focus:ring-danger/30',
       },
     },
     defaultVariants: {

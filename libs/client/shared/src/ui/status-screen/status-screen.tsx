@@ -6,8 +6,8 @@ import { Text } from '../typography/text';
 
 const variants = {
   error: { icon: '✕', color: 'text-danger' },
-  success: { icon: '✓', color: 'text-green-500' },
-  info: { icon: 'ℹ', color: 'text-primary' },
+  success: { icon: '✓', color: 'text-success' },
+  info: { icon: 'ℹ', color: 'text-info' },
 } as const;
 
 interface StatusScreenProps {
