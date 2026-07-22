@@ -137,9 +137,10 @@ export class MediaPrismaRepository implements IMediaRepository {
     input: DeleteMediaReferenceInput,
   ): Promise<MediaReferenceResponse | null> {
     try {
+      const { ownerType, ownerId } = input;
       const reference = await this.prisma.mediaReference.findUnique({
         where: {
-          ownerType_ownerId: input,
+          ownerType_ownerId: { ownerType, ownerId },
         },
       });
       if (!reference) return null;
