@@ -196,6 +196,33 @@ libs/backend/<service>/
   dto/
 ```
 
+### Логирование И Observability
+
+При создании новой фичи, исправлении бага или рефакторинге существующего поведения разработчик обязан явно оценить observability-контракт: какие события нужны для диагностики, где они должны логироваться, какие данные нельзя раскрывать, и какие тесты/grep-проверки защищают этот стандарт.
+
+Frontend:
+
+- Используйте `useLogger(context)` в React-компонентах/хуках или `frontendLog` в non-hook коде.
+- Прямые `console.*` запрещены вне реализации shared logger/reporter.
+- Dev может логировать подробные diagnostic events через logger.
+- Prod/demo browser console должна оставаться чистой.
+- Ошибки в prod отправляйте только через sanitized reporter в backend observability endpoint.
+- Не логируйте raw tokens, cookies, full URL with query/hash, message text, file names, presigned URLs, raw user ids, raw chat ids и другие PII/secrets без явного redaction.
+
+Backend:
+
+- Используйте Nest `Logger` или общий logger из backend core.
+- Логи должны быть структурированными: `eventType`, boolean flags (`hasUserId`, `hasChatId`), counts, durations, status/result.
+- Не пишите raw ids, message text, tokens, cookies, database URLs, OAuth secrets, MinIO credentials, SMTP credentials, VAPID keys, Redis/RabbitMQ passwords и signed URLs.
+- Для бизнес-фичей добавляйте события на ключевые переходы: request received, validation/authorization denied, external/service call failed, state changed, async event emitted/consumed.
+- Для новых публичных endpoint/RPC/socket flows логирование должно покрывать success и expected failure paths без раскрытия payload secrets.
+
+Тестовый минимум для затронутой области:
+
+- frontend grep/test не должен находить прямые `console.*` в production client code;
+- tests должны подтверждать, что prod frontend reporter не отправляет query/hash и raw secrets;
+- backend unit/integration tests для логирования должны проверять event shape/redaction там, где добавляется новый logger behavior.
+
 ---
 
 ## Общая логика (`@org/common`)
