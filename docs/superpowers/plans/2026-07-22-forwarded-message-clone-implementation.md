@@ -215,12 +215,7 @@ export const MESSAGE_FORWARD_CONTEXT_SELECT_FIELDS = {
 } as const;
 ```
 
-Add to `MESSAGE_SELECT_FIELDS`:
-
-```ts
-attachments: { select: MESSAGE_ATTACHMENT_SELECT_FIELDS },
-forwardContext: { select: MESSAGE_FORWARD_CONTEXT_SELECT_FIELDS },
-```
+Do not add these relations to `MESSAGE_SELECT_FIELDS` in this task. The Prisma relations do not exist until Task 2, so Task 1 only exports the reusable nested select constants. Task 2 wires them into the main message select after the database schema is extended.
 
 - [ ] **Step 5: Run GREEN**
 
@@ -252,11 +247,18 @@ git commit -m "feat(common): add message forward context contract"
 - Test: `libs/backend/chat/src/database/repository/chat.prisma.repo.spec.ts` or `libs/backend/chat/src/services/chat.service.spec.ts`
 
 **Interfaces:**
-- Consumes: Task 1 `MESSAGE_SELECT_FIELDS`.
+- Consumes: Task 1 `MESSAGE_ATTACHMENT_SELECT_FIELDS` and `MESSAGE_FORWARD_CONTEXT_SELECT_FIELDS`.
 - Produces:
   - Prisma `MessageAttachment`
   - Prisma `MessageForwardContext`
   - repository method `createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>`
+
+Wire the new relations into `MESSAGE_SELECT_FIELDS` only after Prisma `MessageAttachment` and `MessageForwardContext` are added:
+
+```ts
+attachments: { select: MESSAGE_ATTACHMENT_SELECT_FIELDS },
+forwardContext: { select: MESSAGE_FORWARD_CONTEXT_SELECT_FIELDS },
+```
 
 - [ ] **Step 1: Write failing repository/service test**
 
