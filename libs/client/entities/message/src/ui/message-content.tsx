@@ -16,12 +16,19 @@ export const MessageContent = memo(function MessageContent({
 }: MessageContentProps) {
   const parts = splitTextByLinks(text);
   const links = extractLinks(text);
+  const hasLinks = links.length > 0;
 
   return (
-    <div>
+    <div
+      data-testid="message-content"
+      className={cn('min-w-0', hasLinks && 'w-full max-w-80')}
+    >
       <span
         data-testid="message-text"
-        className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+        className={cn(
+          'whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
+          hasLinks && 'block',
+        )}
       >
         {parts.map((part, index) =>
           part.type === 'link' ? (

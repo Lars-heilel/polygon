@@ -31,7 +31,7 @@ export const LinkPreviewCard = memo(function LinkPreviewCard({
       target="_blank"
       rel="noreferrer"
       className={cn(
-        'mt-2 block w-[min(100%,320px)] max-h-[236px] overflow-hidden rounded-lg border transition-colors',
+        'mt-2 block w-full max-w-80 max-h-[236px] overflow-hidden rounded-lg border transition-colors',
         isMine
           ? 'border-white/20 bg-white/10 hover:bg-white/15'
           : 'border-border bg-surface hover:bg-surface-elevated',
