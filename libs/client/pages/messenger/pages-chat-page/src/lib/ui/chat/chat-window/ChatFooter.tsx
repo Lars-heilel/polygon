@@ -1,5 +1,6 @@
 import { memo, useCallback, useState } from 'react';
 
+import { useMeSuspenseQuery } from '@org/entities-user';
 import { EmojiPicker } from '@org/features-emoji';
 import {
   type FileAttachment,
@@ -20,7 +21,8 @@ interface ChatFooterProps {
 }
 
 export const ChatFooter = memo(function ChatFooter({ chatId }: ChatFooterProps) {
-  const { messageText, setMessageText, handleSend, setFileAttachment } = useSendMessage(chatId);
+  const { data: me } = useMeSuspenseQuery();
+  const { messageText, setMessageText, handleSend, setFileAttachment } = useSendMessage(chatId, me.id);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{ name: string; size: number } | null>(null);

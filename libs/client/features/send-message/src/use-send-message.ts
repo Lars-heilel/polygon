@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { frontendLog, socket } from '@org/shared';
+import type { InfiniteData } from '@tanstack/react-query';
+import type { Message, MessageMediaCategory, MessagePage } from '@org/entities-message';
+import { frontendLog, queryClient, socket } from '@org/shared';
 import { debounce } from 'es-toolkit';
 
 export interface FileAttachment {
@@ -24,7 +26,85 @@ export function getMessageTypeFromCategory(category: string): string {
   }
 }
 
-export function useSendMessage(chatId: string | null) {
+function getKindFromCategory(category: string): Message['kind'] {
+  switch (category) {
+    case 'IMAGE':
+      return 'image';
+    case 'VIDEO':
+      return 'video';
+    case 'CIRCLE':
+      return 'circle';
+    case 'AUDIO':
+      return 'audio';
+    case 'VOICE':
+      return 'voice';
+    default:
+      return 'file';
+  }
+}
+
+function createOptimisticMessage(input: {
+  clientId: string;
+  chatId: string;
+  senderId: string;
+  text: string | null;
+  file?: FileAttachment | null;
+}): Message {
+  const now = new Date().toISOString();
+  const file = input.file ?? null;
+
+  return {
+    id: `client:${input.clientId}`,
+    clientId: input.clientId,
+    chatId: input.chatId,
+    senderId: input.senderId,
+    kind: file ? getKindFromCategory(file.fileCategory) : 'text',
+    type: file ? getMessageTypeFromCategory(file.fileCategory) : 'TEXT',
+    text: input.text,
+    createdAt: now,
+    updatedAt: now,
+    media: file
+      ? {
+          fileId: file.fileId,
+          contentUrl: `/api/media/files/${file.fileId}/content`,
+          thumbUrl: null,
+          fileName: file.fileName,
+          mime: file.fileMime,
+          size: file.fileSize,
+          category: file.fileCategory as MessageMediaCategory,
+          width: null,
+          height: null,
+          durationMs: null,
+          waveform: null,
+        }
+      : null,
+    linkPreview: null,
+    localStatus: 'sending',
+    fileId: file?.fileId ?? null,
+    fileBucket: file?.fileBucket ?? null,
+    fileKey: file?.fileKey ?? null,
+    fileName: file?.fileName ?? null,
+    fileSize: file?.fileSize ?? null,
+    fileMime: file?.fileMime ?? null,
+    fileCategory: file?.fileCategory ?? null,
+    forwardedFromId: null,
+  };
+}
+
+function insertOptimisticMessage(chatId: string, message: Message) {
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) => {
+    if (!old) return old;
+
+    return {
+      ...old,
+      pages: old.pages.map((page, index) =>
+        index === 0 ? { ...page, messages: [...page.messages, message] } : page,
+      ),
+    };
+  });
+}
+
+export function useSendMessage(chatId: string | null, senderId: string | null = null) {
   const [messageText, setMessageText] = useState('');
   const isTypingRef = useRef(false);
   const pendingFileRef = useRef<FileAttachment | null>(null);
@@ -69,21 +149,33 @@ export function useSendMessage(chatId: string | null) {
   }, []);
 
   const handleSend = useCallback(() => {
-    if (!chatIdRef.current) return;
+    if (!chatIdRef.current || !senderId) return;
 
     const file = pendingFileRef.current;
 
     if (file) {
+      const clientId = crypto.randomUUID();
+      const optimistic = createOptimisticMessage({
+        clientId,
+        chatId: chatIdRef.current,
+        senderId,
+        text: null,
+        file,
+      });
+
       pendingFileRef.current = null;
       setMessageText('');
+      insertOptimisticMessage(chatIdRef.current, optimistic);
       frontendLog('debug', 'SendMessage', 'message_send_requested', {
         hasChatId: !!chatIdRef.current,
+        hasClientId: !!clientId,
         hasFile: true,
         hasText: false,
         type: getMessageTypeFromCategory(file.fileCategory),
       });
       socket.emit('message:send', {
         chatId: chatIdRef.current,
+        clientId,
         type: getMessageTypeFromCategory(file.fileCategory),
         fileId: file.fileId,
         fileBucket: file.fileBucket,
@@ -99,16 +191,26 @@ export function useSendMessage(chatId: string | null) {
 
     const trimmed = messageText.trim();
     if (!trimmed) return;
+    const clientId = crypto.randomUUID();
+    const optimistic = createOptimisticMessage({
+      clientId,
+      chatId: chatIdRef.current,
+      senderId,
+      text: trimmed,
+    });
+
     setMessageText('');
+    insertOptimisticMessage(chatIdRef.current, optimistic);
     frontendLog('debug', 'SendMessage', 'message_send_requested', {
       hasChatId: !!chatIdRef.current,
+      hasClientId: !!clientId,
       hasFile: false,
       hasText: true,
       type: 'TEXT',
     });
-    socket.emit('message:send', { chatId: chatIdRef.current, text: trimmed });
+    socket.emit('message:send', { chatId: chatIdRef.current, text: trimmed, clientId });
     stopTyping();
-  }, [messageText, stopTyping]);
+  }, [messageText, senderId, stopTyping]);
 
   return {
     messageText,

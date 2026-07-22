@@ -35,6 +35,9 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
+      "path": "../../../libs/client/features/send-message/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/client/pages/system/pages-not-found/tsconfig.lib.json"
     },
     {

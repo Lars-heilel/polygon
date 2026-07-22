@@ -19,6 +19,7 @@
   "sideEffects": false,
   "dependencies": {
     "@org/common": "*",
+    "@org/entities-message": "*",
     "@org/shared": "*"
   }
 }
