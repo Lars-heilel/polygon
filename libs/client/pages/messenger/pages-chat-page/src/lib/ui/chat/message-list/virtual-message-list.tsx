@@ -147,17 +147,6 @@ export const VirtualMessageList = memo(function MessageList({
     isAtBottomRef.current = bottom;
   }, []);
 
-  const prevChatIdRef = useRef(chatId);
-
-  useEffect(() => {
-    if (prevChatIdRef.current === chatId) return;
-    prevChatIdRef.current = chatId;
-
-    setTimeout(() => {
-      feedRef.current?.scrollToEnd('auto');
-    }, 0);
-  }, [chatId]);
-
   useEffect(() => {
     const handler = (msg: Message) => {
       if (msg.chatId !== chatId || msg.senderId !== me.id) return;

@@ -48,6 +48,10 @@ export function Skeleton({ className }: { className?: string }) {
   return <div data-testid="skeleton" className={className} />;
 }
 
+export function ErrorBoundary({ children }: { children: ReactNode }) {
+  return children;
+}
+
 export function MediaFrame({
   children,
   width,

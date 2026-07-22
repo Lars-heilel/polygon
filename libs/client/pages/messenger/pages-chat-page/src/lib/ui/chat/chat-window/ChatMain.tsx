@@ -38,6 +38,7 @@ export const ChatMain = memo(function ChatMain({ chatId }: ChatMainProps) {
       >
         <Suspense fallback={<MessageListSkeleton />}>
           <VirtualMessageList
+            key={chatDiagnosticKey}
             chatId={chatId}
             diagnosticContext={diagnosticContext}
           />
