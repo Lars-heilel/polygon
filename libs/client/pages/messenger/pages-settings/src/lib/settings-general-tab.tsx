@@ -23,6 +23,7 @@ export function SettingsGeneralTab() {
           </Text>
         </div>
         <Toggle
+          aria-label="Toggle notifications"
           checked={!isMuted}
           onChange={(v) => setMuted(!v)}
         />
@@ -43,6 +44,7 @@ export function SettingsGeneralTab() {
           </Text>
         </div>
         <Toggle
+          aria-label="Toggle message sound"
           checked={!isMuted}
           onChange={(v) => setMuted(!v)}
         />
@@ -63,6 +65,7 @@ export function SettingsGeneralTab() {
           </Text>
         </div>
         <Toggle
+          aria-label="Toggle dark mode"
           checked={theme === 'dark'}
           onChange={toggleTheme}
         />
