@@ -6,28 +6,28 @@ Polygon is a full-stack messenger built as an Nx monorepo. It combines a React m
 
 ## Tech Stack
 
-| Area | Stack |
-| --- | --- |
-| Monorepo | Nx, npm workspaces |
-| Client | React, Vite, TypeScript, Feature-Sliced Design, TanStack Query, Zustand, Tailwind CSS |
-| Gateway and services | NestJS, RabbitMQ `ClientProxy`, Socket.IO, Zod DTO validation |
-| Data | PostgreSQL per service, Prisma, Redis, MinIO, Meilisearch |
-| Auth and sessions | HttpOnly cookies, JWT access/refresh tokens, Redis-backed session revocation |
-| Observability | Pino/Nest logging, OpenTelemetry, Prometheus, Grafana, Loki, Tempo, Alloy |
-| Testing | Jest, Testing Library, Supertest, MSW, Playwright, Nx task orchestration |
+| Area                 | Stack                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| Monorepo             | Nx, npm workspaces                                                                    |
+| Client               | React, Vite, TypeScript, Feature-Sliced Design, TanStack Query, Zustand, Tailwind CSS |
+| Gateway and services | NestJS, RabbitMQ `ClientProxy`, Socket.IO, Zod DTO validation                         |
+| Data                 | PostgreSQL per service, Prisma, Redis, MinIO, Meilisearch                             |
+| Auth and sessions    | HttpOnly cookies, JWT access/refresh tokens, Redis-backed session revocation          |
+| Observability        | Pino/Nest logging, OpenTelemetry, Prometheus, Grafana, Loki, Tempo, Alloy             |
+| Testing              | Jest, Testing Library, Supertest, MSW, Playwright, Nx task orchestration              |
 
 ## Documentation Routing
 
 Start with the product specification for current behavior, then use the engineering references for implementation and maintenance work.
 
-| Document | Use it for |
-| --- | --- |
-| [Product Specification](./docs/specs/SPEC.md) | Product scope, implemented capabilities, exclusions, and links to every subsystem spec |
-| [Architecture](./docs/ARCHITECTURE.md) | Runtime model, service ownership, security boundaries, realtime flow, and shared contracts |
-| [Development Guide](./docs/DEVELOPMENT.md) | Nx workflow, coding conventions, FSD boundaries, logging rules, and testing strategy |
-| [Setup Guide](./docs/SETUP.md) | Local environment, Docker infrastructure, Prisma notes, startup commands, and remote device testing |
+| Document                                       | Use it for                                                                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [Product Specification](./docs/specs/SPEC.md)  | Product scope, implemented capabilities, exclusions, and links to every subsystem spec                       |
+| [Architecture](./docs/ARCHITECTURE.md)         | Runtime model, service ownership, security boundaries, realtime flow, and shared contracts                   |
+| [Development Guide](./docs/DEVELOPMENT.md)     | Nx workflow, coding conventions, FSD boundaries, logging rules, and testing strategy                         |
+| [Setup Guide](./docs/SETUP.md)                 | Local environment, Docker infrastructure, Prisma notes, startup commands, and remote device testing          |
 | [Monorepo Gotchas](./docs/MONOREPO_GOTCHAS.md) | Tailwind v4 source paths, Vite proxy, Prisma env lookup, MSW setup, Gateway Supertest, and Nx cache behavior |
-| [Observability](./docs/OBSERVABILITY.md) | Logging, metrics, tracing, dashboards, redaction rules, and diagnostic runbooks |
+| [Observability](./docs/OBSERVABILITY.md)       | Logging, metrics, tracing, dashboards, redaction rules, and diagnostic runbooks                              |
 
 ## Implemented System
 
@@ -45,12 +45,3 @@ Start with the product specification for current behavior, then use the engineer
 The React/Vite messenger client communicates through the NestJS API Gateway. The gateway exposes HTTP and WebSocket entry points and routes work to the Auth, User, Chat, Media, Notification, and Search services through RabbitMQ. Each data-owning service has its own PostgreSQL database; Redis stores session state and supports cache and real-time coordination. MinIO stores uploaded media.
 
 The client is organized into sliced Feature-Sliced Design packages under `libs/client`. Shared schemas and utilities live in common libraries, while Nx manages project boundaries, dependency graphs, caching, and builds.
-
-## Verification
-
-```bash
-npm exec nx test @org/gateway
-npm exec nx test @org/messenger
-npm exec nx build @org/gateway
-npm exec nx build @org/messenger
-```
