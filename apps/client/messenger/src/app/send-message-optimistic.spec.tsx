@@ -44,6 +44,24 @@ describe('useSendMessage optimistic socket send', () => {
     }));
   });
 
+  it('keeps the text setter stable while typing in edit mode', () => {
+    const { result } = renderHook(() => useSendMessage('chat-1', 'user-1'));
+    const setMessageText = result.current.setMessageText;
+
+    act(() => {
+      result.current.setMessageText('old text');
+    });
+
+    expect(result.current.setMessageText).toBe(setMessageText);
+
+    act(() => {
+      result.current.setMessageText('new text');
+    });
+
+    expect(result.current.messageText).toBe('new text');
+    expect(result.current.setMessageText).toBe(setMessageText);
+  });
+
   it('inserts optimistic media without a stable content URL and emits attachment payload', () => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1'], {
       pages: [{ messages: [], nextCursor: null }],

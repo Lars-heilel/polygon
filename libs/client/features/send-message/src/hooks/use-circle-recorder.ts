@@ -12,14 +12,23 @@ const MAX_DURATION = 60;
 export function useCircleRecorder(chatId: string, onReady: (attachment: FileAttachment) => void) {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+  const [cameraFacing, setCameraFacing] = useState<'front' | 'back' | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const start = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: { facingMode: 'user' },
+      });
       chunksRef.current = [];
+      const videoTrack = stream.getVideoTracks()[0];
+      const facingMode = videoTrack?.getSettings().facingMode;
+      setPreviewStream(stream);
+      setCameraFacing(facingMode === 'environment' ? 'back' : 'front');
 
       const mimeType = MediaRecorder.isTypeSupported('video/mp4')
         ? 'video/mp4'
@@ -33,6 +42,8 @@ export function useCircleRecorder(chatId: string, onReady: (attachment: FileAtta
 
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        setPreviewStream(null);
+        setCameraFacing(null);
         clearInterval(timerRef.current);
         setDuration(0);
 
@@ -55,6 +66,8 @@ export function useCircleRecorder(chatId: string, onReady: (attachment: FileAtta
         });
       }, 1000);
     } catch {
+      setPreviewStream(null);
+      setCameraFacing(null);
       setIsRecording(false);
     }
   }, [chatId, onReady]);
@@ -94,5 +107,5 @@ export function useCircleRecorder(chatId: string, onReady: (attachment: FileAtta
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  return { isRecording, duration, formatDuration, start, stop };
+  return { isRecording, duration, previewStream, cameraFacing, formatDuration, start, stop };
 }

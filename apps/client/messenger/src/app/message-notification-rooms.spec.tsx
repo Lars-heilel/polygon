@@ -1,5 +1,7 @@
 import { renderHook } from '@testing-library/react';
 
+import { socket } from '@org/shared';
+
 import { useMessageNotification } from '../../../../../libs/client/features/notifications/src/use-message-notification';
 
 const mockSocketEmit = jest.fn();
@@ -65,5 +67,11 @@ describe('useMessageNotification room joins', () => {
     rerender();
 
     expect(mockSocketEmit).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not attach its own message:new listener', () => {
+    renderHook(() => useMessageNotification());
+
+    expect(socket.on).not.toHaveBeenCalledWith('message:new', expect.any(Function));
   });
 });

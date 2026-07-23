@@ -107,17 +107,23 @@ export const useAudioPlayerStore = create<AudioPlayerState>((set, get) => ({
     set({ currentTime: time });
   },
   playPrev: () => {
-    const { queue, currentIndex } = get();
-    if (currentIndex <= 0 || queue.length === 0) return;
-    const nextIndex = currentIndex - 1;
+    const { currentTrack, queue, currentIndex } = get();
+    const resolvedIndex = currentIndex >= 0
+      ? currentIndex
+      : currentTrack ? queue.findIndex((track) => track.id === currentTrack.id) : -1;
+    if (resolvedIndex <= 0 || queue.length === 0) return;
+    const nextIndex = resolvedIndex - 1;
     const track = queue[nextIndex];
     if (!track) return;
     get().playTrack(track, queue, nextIndex);
   },
   playNext: () => {
-    const { queue, currentIndex } = get();
-    if (currentIndex < 0 || currentIndex >= queue.length - 1) return;
-    const nextIndex = currentIndex + 1;
+    const { currentTrack, queue, currentIndex } = get();
+    const resolvedIndex = currentIndex >= 0
+      ? currentIndex
+      : currentTrack ? queue.findIndex((track) => track.id === currentTrack.id) : -1;
+    if (resolvedIndex < 0 || resolvedIndex >= queue.length - 1) return;
+    const nextIndex = resolvedIndex + 1;
     const track = queue[nextIndex];
     if (!track) return;
     get().playTrack(track, queue, nextIndex);

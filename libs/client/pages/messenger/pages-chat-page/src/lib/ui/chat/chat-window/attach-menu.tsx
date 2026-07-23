@@ -48,7 +48,7 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
   );
 
   return (
-    <div className="relative">
+    <div className="relative z-[70] shrink-0">
       <input
         ref={inputRef}
         type="file"
@@ -85,11 +85,11 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
       {open && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[65]"
             onClick={() => setOpen(false)}
           />
 
-          <div className="absolute bottom-full left-0 mb-2 z-50 p-1 bg-surface-elevated border border-border rounded-xl shadow-2xl overflow-hidden min-w-44 backdrop-blur-md animate-fade-up">
+          <div className="absolute bottom-full left-0 mb-2 z-[70] p-1 bg-surface-elevated border border-border rounded-xl shadow-2xl overflow-hidden min-w-44 backdrop-blur-md animate-fade-up">
             {categories.map((cat) => (
               <button
                 key={cat.label}

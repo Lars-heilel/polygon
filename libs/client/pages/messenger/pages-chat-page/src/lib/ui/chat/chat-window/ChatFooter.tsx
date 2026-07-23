@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Message } from '@org/entities-message';
 import { useEditMessageMutation } from '@org/entities-message';
@@ -37,6 +37,7 @@ export const ChatFooter = memo(function ChatFooter({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{ name: string; size: number } | null>(null);
+  const circlePreviewRef = useRef<HTMLVideoElement | null>(null);
 
   const sendWithAttachment = useCallback(
     (attachment: FileAttachment) => {
@@ -51,6 +52,11 @@ export const ChatFooter = memo(function ChatFooter({
 
   const isRecording = voiceRecorder.isRecording || circleRecorder.isRecording;
   const isEditing = editingMessage !== null;
+
+  useEffect(() => {
+    if (!circlePreviewRef.current) return;
+    circlePreviewRef.current.srcObject = circleRecorder.previewStream ?? null;
+  }, [circleRecorder.previewStream]);
 
   useEffect(() => {
     if (editingMessage) {
@@ -174,7 +180,7 @@ export const ChatFooter = memo(function ChatFooter({
   const hasAttachment = pendingFile !== null;
 
   return (
-    <div className="px-4 py-3 border-t border-border sticky shrink-0 bg-background">
+    <div className="relative z-[60] px-2 py-3 border-t border-border sticky shrink-0 bg-background sm:px-4">
       {isEditing && (
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-surface-elevated px-2 py-1.5 text-sm">
           <Text as="span" size="sm" className="flex-1 truncate">
@@ -267,34 +273,54 @@ export const ChatFooter = memo(function ChatFooter({
       )}
 
       {circleRecorder.isRecording && (
-        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-info-muted border border-info/30 rounded-lg text-sm">
-          <span className="w-2 h-2 rounded-full bg-info animate-pulse" />
-          <Text
-            as="span"
-            size="sm"
-            color="primary"
-            weight="medium"
-          >
-            Recording circle...
-          </Text>
-          <Text
-            as="span"
-            size="sm"
-            color="muted"
-            className="ml-auto tabular-nums"
-          >
-            {circleRecorder.formatDuration(circleRecorder.duration)}
-          </Text>
+        <div className="mb-2 overflow-hidden rounded-xl border border-info/30 bg-info-muted">
+          {circleRecorder.previewStream ? (
+            <video
+              ref={circlePreviewRef}
+              data-testid="circle-recording-preview"
+              className="aspect-square max-h-48 w-full object-cover sm:max-h-56"
+              muted
+              playsInline
+              autoPlay
+            />
+          ) : null}
+          <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
+            <span className="w-2 h-2 rounded-full bg-info animate-pulse" />
+            <Text
+              as="span"
+              size="sm"
+              color="primary"
+              weight="medium"
+            >
+              Recording circle...
+            </Text>
+            <Text
+              as="span"
+              size="xs"
+              color="muted"
+              className="rounded-full bg-background/50 px-2 py-0.5"
+            >
+              {circleRecorder.cameraFacing === 'back' ? 'Back camera' : 'Front camera'}
+            </Text>
+            <Text
+              as="span"
+              size="sm"
+              color="muted"
+              className="ml-auto tabular-nums"
+            >
+              {circleRecorder.formatDuration(circleRecorder.duration)}
+            </Text>
+          </div>
         </div>
       )}
 
-      <div className="flex gap-3 items-end">
+      <div className="flex items-end gap-2 sm:gap-3">
         <AttachMenu
           disabled={uploading || isRecording || isEditing}
           onFileSelected={handleAttachFile}
         />
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Textarea
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
@@ -315,11 +341,11 @@ export const ChatFooter = memo(function ChatFooter({
             variant="primary"
             onClick={handleSubmit}
             disabled={isRecording || editMessage.isPending}
-            className="rounded-full"
+            className="rounded-full touch-manipulation"
             icon={<SendIcon />}
           />
         ) : (
-          <div className="flex gap-1">
+          <div className="flex shrink-0 gap-1">
             <IconButton
               type="button"
               label="Voice message"
@@ -328,7 +354,7 @@ export const ChatFooter = memo(function ChatFooter({
               onClick={handleRecordVoice}
               disabled={isRecording && !voiceRecorder.isRecording}
               className={cn(
-                'rounded-full',
+                'rounded-full touch-manipulation',
                 voiceRecorder.isRecording && 'animate-pulse',
               )}
               icon={<VoiceIcon />}
@@ -341,7 +367,7 @@ export const ChatFooter = memo(function ChatFooter({
               onClick={handleRecordCircle}
               disabled={isRecording && !circleRecorder.isRecording}
               className={cn(
-                'rounded-full lg:hidden',
+                'rounded-full touch-manipulation lg:hidden',
                 circleRecorder.isRecording && 'bg-info text-text-inverse hover:opacity-90 animate-pulse',
               )}
               icon={<CircleVideoIcon />}

@@ -28,9 +28,6 @@
       "path": "../../shared/tsconfig.lib.json"
     },
     {
-      "path": "../../entities/message/tsconfig.lib.json"
-    },
-    {
       "path": "../../entities/chat/tsconfig.lib.json"
     }
   ]

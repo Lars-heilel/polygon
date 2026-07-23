@@ -7,7 +7,6 @@ import {
   useGetChatsQuery,
 } from '@org/entities-chat';
 import type { Chat } from '@org/entities-chat';
-import type { Message as ChatMessage } from '@org/entities-message';
 import { queryClient, socket, toast, useLogger } from '@org/shared';
 
 import { useNotificationStore } from './notification.store';
@@ -38,48 +37,8 @@ export function useMessageNotification() {
   const logger = useLogger('MessageNotify');
   const isMuted = useNotificationStore((s) => s.isMuted);
   const lastMsg = useChatStore(selectLastReceivedMessage);
-  const incrementUnread = useChatStore((s) => s.incrementUnread);
   const processedIdRef = useRef<string | null>(null);
   const { data: chats } = useGetChatsQuery();
-
-  useEffect(() => {
-    const handleIncomingMessage = (msg: ChatMessage) => {
-      const me = queryClient.getQueryData<{ id: string }>(['me']);
-      if (msg.senderId === me?.id) return;
-
-      useChatStore.getState().setLastReceivedMessage(msg);
-
-      queryClient.setQueryData<Chat[]>(['chats'], (old) => {
-        if (!old) return old;
-
-        const next = old.map((chat) => (
-          chat.id === msg.chatId
-            ? { ...chat, lastMessage: msg }
-            : chat
-        ));
-
-        next.sort((left, right) => {
-          const leftTime = left.lastMessage?.createdAt ?? left.updatedAt;
-          const rightTime = right.lastMessage?.createdAt ?? right.updatedAt;
-          return new Date(rightTime).getTime() - new Date(leftTime).getTime();
-        });
-
-        return next;
-      });
-
-      const currentActiveChatId = useChatStore.getState().activeChatId;
-      const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
-
-      if (msg.chatId !== currentActiveChatId || !tabVisible) {
-        incrementUnread(msg.chatId);
-      }
-    };
-
-    socket.on('message:new', handleIncomingMessage);
-    return () => {
-      socket.off('message:new', handleIncomingMessage);
-    };
-  }, [incrementUnread]);
 
   useEffect(() => {
     const unlock = () => {

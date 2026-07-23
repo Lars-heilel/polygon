@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
 
 import { MessageBubble, MessageContent } from '@org/entities-message';
+import type { Message } from '@org/entities-message';
 import { ChatMessageRow } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/virtual-message-list';
 
-const message = {
+const message: Message = {
   id: 'message-1',
   clientId: null,
   chatId: 'chat-1',
@@ -20,7 +21,7 @@ const message = {
   deletedById: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
-} as const;
+};
 
 describe('message layout', () => {
   it('uses responsive bubble width and aggressive text wrapping to avoid horizontal scroll', () => {
@@ -64,6 +65,7 @@ describe('message layout', () => {
       <MessageBubble
         message={{
           ...message,
+          text: 'original forwarded text',
           forwardContext: {
             originalAuthor: {
               id: 'user-source',
@@ -81,13 +83,62 @@ describe('message layout', () => {
         isMine={false}
         senderName="Forwarder"
       >
-        <MessageContent text="forwarded text" isMine={false} />
+        <MessageContent text="original forwarded text" isMine={false} />
       </MessageBubble>,
     );
 
     expect(screen.getByText('Alice A.')).toBeTruthy();
-    expect(screen.queryByText('13.07.2026 12:30')).toBeNull();
-    expect(screen.getByText('original forwarded text')).toBeTruthy();
+    expect(screen.getByTestId('forwarded-source').className).toContain('text-primary');
+    expect(screen.getByText('13.07.2026 12:30')).toBeTruthy();
+    expect(screen.getAllByText('original forwarded text')).toHaveLength(1);
+    expect(screen.queryByText('14.07.2026 13:00')).toBeNull();
+  });
+
+  it('keeps forwarded media messages close to the reference without duplicating the media filename', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          kind: 'image',
+          type: 'IMAGE',
+          media: {
+            fileId: 'image-1',
+            contentUrl: '/image.png',
+            thumbUrl: null,
+            fileName: 'forwarded-image.png',
+            mime: 'image/png',
+            size: 1024,
+            category: 'IMAGE',
+            width: 320,
+            height: 320,
+            durationMs: null,
+            waveform: null,
+          },
+          forwardContext: {
+            originalAuthor: {
+              id: 'author-1',
+              nameSnapshot: 'Anastasia',
+              displayNameSnapshot: 'Anastasia',
+            },
+            originalMessageCreatedAt: '2026-07-22T10:00:00.000Z',
+            originalMessageType: 'IMAGE',
+            preview: {
+              text: null,
+              fileName: 'forwarded-image.png',
+            },
+          },
+        }}
+        isMine={false}
+        senderName="Forwarder"
+      >
+        <img src="/image.png" alt="Forwarded" />
+        <MessageContent text="За 50к продали ))" isMine={false} />
+      </MessageBubble>,
+    );
+
+    expect(screen.getByTestId('forwarded-source').textContent).toBe('Anastasia');
+    expect(screen.queryByTestId('forwarded-preview')).toBeNull();
+    expect(screen.getByText('За 50к продали ))')).toBeTruthy();
   });
 
   it('uses the original name snapshot when forwarded display name is missing', () => {
@@ -152,6 +203,7 @@ describe('message layout', () => {
     expect(screen.getByText('Тамилка:3')).toBeTruthy();
     expect(screen.getByText('voice.ogg')).toBeTruthy();
     expect(screen.queryByText(/Unknown sender/i)).toBeNull();
-    expect(screen.queryByText('22.07.2026 13:00')).toBeNull();
+    expect(screen.getByText('22.07.2026 13:00')).toBeTruthy();
+    expect(screen.queryByText('14.07.2026 13:00')).toBeNull();
   });
 });

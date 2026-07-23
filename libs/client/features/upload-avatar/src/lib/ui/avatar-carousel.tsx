@@ -112,7 +112,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
       onClick={onClose}
     >
       <div
-        className="relative flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-zinc-950 mx-4"
+        className="relative mx-4 flex h-auto max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 sm:max-w-3xl sm:rounded-3xl lg:max-w-5xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
@@ -134,7 +134,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
           </div>
         ) : (
           <>
-            <div className="relative flex-1 px-16 py-8">
+            <div className="relative shrink-0 px-12 py-6 sm:px-16 sm:py-8">
               <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
                   {files.map((file) => (
@@ -142,7 +142,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
                       <img
                         src={file.url}
                         alt={file.originalName}
-                        className="max-h-[64vh] max-w-full rounded-[2rem] object-contain shadow-2xl"
+                        className="max-h-[min(44dvh,360px)] max-w-full rounded-3xl object-contain shadow-2xl sm:max-h-[64vh] sm:rounded-[2rem]"
                         onClick={() => emblaApi?.scrollTo(selectedIndex)}
                       />
                     </div>
@@ -152,7 +152,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
 
               <button
                 onClick={scrollPrev}
-                className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
+                className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70 sm:left-4 sm:h-11 sm:w-11"
                 aria-label="Previous"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,7 +161,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
               </button>
               <button
                 onClick={scrollNext}
-                className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
+                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70 sm:right-4 sm:h-11 sm:w-11"
                 aria-label="Next"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

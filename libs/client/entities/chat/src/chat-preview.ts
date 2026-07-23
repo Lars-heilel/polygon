@@ -4,6 +4,10 @@ type MessagePreviewLike = {
     category: string;
     fileName: string | null;
   } | null;
+  attachments?: Array<{
+    category: string;
+    fileNameSnapshot: string | null;
+  }> | null;
 };
 
 export function getMessagePreview(message: MessagePreviewLike | null | undefined): string {
@@ -16,7 +20,11 @@ export function getMessagePreview(message: MessagePreviewLike | null | undefined
     return text.length > 80 ? `${text.slice(0, 80)}…` : text;
   }
 
-  switch (message.media?.category) {
+  const attachment = message.attachments?.[0] ?? null;
+  const category = message.media?.category ?? attachment?.category;
+  const fileName = message.media?.fileName ?? attachment?.fileNameSnapshot ?? null;
+
+  switch (category) {
     case 'IMAGE':
       return '🖼 Фото';
     case 'VIDEO':
@@ -28,7 +36,7 @@ export function getMessagePreview(message: MessagePreviewLike | null | undefined
     case 'AUDIO':
       return '🎵 Аудиофайл';
     case 'FILE':
-      return `📄 ${message.media.fileName ?? 'Файл'}`;
+      return `📄 ${fileName ?? 'Файл'}`;
     default:
       return '📎 Вложение';
   }

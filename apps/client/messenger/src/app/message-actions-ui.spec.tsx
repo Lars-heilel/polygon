@@ -22,12 +22,15 @@ jest.mock('@org/features-send-message', () => {
   const recorder = {
     isRecording: false,
     duration: 0,
+    previewStream: null,
+    cameraFacing: null,
     start: jest.fn(),
     stop: jest.fn(),
     formatDuration: () => '0:00',
   };
 
   return {
+    __recorder: recorder,
     confirmChatFileUpload: jest.fn(),
     getCategoryFromMime: jest.fn(() => 'FILE'),
     initChatFileUpload: jest.fn(),
@@ -42,6 +45,18 @@ jest.mock('@org/features-send-message', () => {
     useVoiceRecorder: () => recorder,
   };
 });
+
+const sendMessageMocks = jest.requireMock('@org/features-send-message') as {
+  __recorder: {
+    isRecording: boolean;
+    duration: number;
+    previewStream: MediaStream | null;
+    cameraFacing: 'front' | 'back' | null;
+    start: jest.Mock;
+    stop: jest.Mock;
+    formatDuration: () => string;
+  };
+};
 
 const baseMessage: Message = {
   id: 'message-1',
@@ -70,6 +85,10 @@ describe('message actions ui', () => {
     });
     queryClient.clear();
     jest.clearAllMocks();
+    sendMessageMocks.__recorder.isRecording = false;
+    sendMessageMocks.__recorder.duration = 0;
+    sendMessageMocks.__recorder.previewStream = null;
+    sendMessageMocks.__recorder.cameraFacing = null;
   });
 
   it('shows edit only for own text messages without files', () => {
@@ -140,6 +159,47 @@ describe('message actions ui', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Circle video' }).className).toContain('lg:hidden');
+  });
+
+  it('keeps mobile recorder buttons tappable', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChatFooter chatId="chat-1" />
+      </QueryClientProvider>,
+    );
+
+    const voiceButton = screen.getByRole('button', { name: 'Voice message' });
+    const circleButton = screen.getByRole('button', { name: 'Circle video' });
+
+    expect(voiceButton).not.toHaveProperty('disabled', true);
+    expect(circleButton).not.toHaveProperty('disabled', true);
+    expect(voiceButton.className).toContain('touch-manipulation');
+    expect(circleButton.className).toContain('touch-manipulation');
+
+    fireEvent.click(voiceButton);
+    fireEvent.click(circleButton);
+
+    expect(sendMessageMocks.__recorder.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows a live preview and camera direction while recording a circle video', () => {
+    sendMessageMocks.__recorder.isRecording = true;
+    sendMessageMocks.__recorder.previewStream = {} as MediaStream;
+    sendMessageMocks.__recorder.cameraFacing = 'front';
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChatFooter chatId="chat-1" />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId('circle-recording-preview')).toBeTruthy();
+    expect(screen.getByText('Front camera')).toBeTruthy();
   });
 
   it('defaults own message delete confirmation to delete for everyone', () => {

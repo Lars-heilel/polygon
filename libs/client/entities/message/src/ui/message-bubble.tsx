@@ -26,6 +26,7 @@ export const MessageBubble = memo(function MessageBubble({
     ?? null;
   const originalAuthorName = forwardContextName;
   const forwardedPreview = getForwardedPreview(message);
+  const displayCreatedAt = message.forwardContext?.originalMessageCreatedAt ?? message.createdAt;
 
   return (
     <div className={`flex min-w-0 items-end gap-2 ${isMine ? 'flex-row-reverse lg:flex-row' : 'flex-row'}`}>
@@ -49,15 +50,23 @@ export const MessageBubble = memo(function MessageBubble({
         {hasForwardContext ? (
           <div
             className={cn(
-              'mb-1.5 min-w-0 border-l-2 py-0.5 pl-2 leading-snug',
-              isMine ? 'border-white/45 text-text-inverse/75' : 'border-primary/70 text-text-muted',
+              'mb-1.5 min-w-0 leading-snug',
+              isMine ? 'text-text-inverse/90' : 'text-text',
             )}
           >
-            <div className={cn('truncate text-[11px] font-medium', isMine ? 'text-text-inverse/90' : 'text-text')}>
+            <div
+              data-testid="forwarded-source"
+              className={cn(
+                'truncate text-[12px] font-semibold',
+                isMine ? 'text-text-inverse' : 'text-primary',
+              )}
+            >
               {originalAuthorName}
             </div>
             {forwardedPreview ? (
-              <div className="mt-0.5 line-clamp-2 break-words text-[12px] opacity-85">{forwardedPreview}</div>
+              <div data-testid="forwarded-preview" className="mt-0.5 line-clamp-2 break-words text-[12px] opacity-85">
+                {forwardedPreview}
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -69,7 +78,7 @@ export const MessageBubble = memo(function MessageBubble({
           )}
         >
           {message.editedAt ? <span>edited</span> : null}
-          <span>{formatTime(message.createdAt)}</span>
+          <span>{formatTime(displayCreatedAt)}</span>
           {actionsSlot}
         </div>
       </div>
@@ -79,7 +88,11 @@ export const MessageBubble = memo(function MessageBubble({
 
 function getForwardedPreview(message: Message): string | null {
   const contextText = message.forwardContext?.preview.text?.trim();
+  const messageText = message.text?.trim();
+  if (contextText && messageText && contextText === messageText) return null;
   if (contextText) return contextText;
+
+  if (message.media) return null;
 
   if (message.forwardContext?.preview.fileName) return message.forwardContext.preview.fileName;
 

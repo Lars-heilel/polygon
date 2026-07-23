@@ -197,7 +197,7 @@ const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessage
   return (
     <WaveformAudioMessage
       variant="voice"
-      title={message.media?.fileName ?? 'Voice message'}
+      title="Voice message"
       url={getMessageMediaUrl(message)}
       isMine={isMine}
     />
@@ -562,7 +562,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     <div
       data-testid={`${variant}-waveform-message`}
       className={cn(
-        'flex min-h-[88px] w-[min(100%,320px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        'flex min-h-[88px] w-[clamp(220px,64vw,360px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
         variant === 'audio'
           ? 'border-border bg-surface'
           : isMine ? 'border-white/20 bg-white/10' : 'border-border bg-surface',

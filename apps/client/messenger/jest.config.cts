@@ -12,6 +12,7 @@ module.exports = {
     '^@org/entities-chat$': '<rootDir>/../../../libs/client/entities/chat/src/index.ts',
     '^@org/entities-message$': '<rootDir>/../../../libs/client/entities/message/src/index.ts',
     '^@org/entities-user$': '<rootDir>/../../../libs/client/entities/user/src/index.ts',
+    '^@org/features-upload-avatar$': '<rootDir>/../../../libs/client/features/upload-avatar/src/index.ts',
     '^@org/features-user-profile/ui/profile-media-panel$': '<rootDir>/../../../libs/client/features/user-profile/src/ui/profile-media-panel.tsx',
     '^@org/shared$': '<rootDir>/src/test-stubs/shared.tsx',
   },

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 
 import { FileMessage } from '@org/entities-message';
+import type { Message, MessageMedia } from '@org/entities-message';
 import { __getAudioTrackCalls, __resetAudioTrackStub } from '../test-stubs/shared';
 
 jest.mock('wavesurfer.js', () => ({
@@ -17,7 +18,21 @@ jest.mock('wavesurfer.js', () => ({
   },
 }));
 
-const baseMessage = {
+const baseMedia: MessageMedia = {
+  fileId: 'file-1',
+  contentUrl: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
+  thumbUrl: null,
+  fileName: 'audio.webm',
+  mime: 'audio/webm',
+  size: 1024,
+  category: 'AUDIO',
+  width: null,
+  height: null,
+  durationMs: null,
+  waveform: null,
+};
+
+const baseMessage: Message = {
   id: 'message-1',
   clientId: null,
   chatId: 'chat-1',
@@ -25,19 +40,7 @@ const baseMessage = {
   kind: 'audio',
   type: 'FILE',
   text: null,
-  media: {
-    fileId: 'file-1',
-    contentUrl: '/api/chats/chat-1/messages/message-1/attachments/attachment-1/content',
-    thumbUrl: null,
-    fileName: 'audio.webm',
-    mime: 'audio/webm',
-    size: 1024,
-    category: 'AUDIO',
-    width: null,
-    height: null,
-    durationMs: null,
-    waveform: null,
-  },
+  media: baseMedia,
   linkPreview: null,
   attachments: [],
   forwardContext: null,
@@ -46,7 +49,7 @@ const baseMessage = {
   deletedById: null,
   createdAt: '2026-07-14T10:00:00.000Z',
   updatedAt: '2026-07-14T10:00:00.000Z',
-} as const;
+};
 
 describe('message audio rendering', () => {
   beforeEach(() => {
@@ -89,7 +92,7 @@ describe('message audio rendering', () => {
   it('keeps uploaded audio files readable inside own message bubbles', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, media: { ...baseMessage.media, fileName: 'Vända.flac', mime: 'audio/flac' } }}
+        message={{ ...baseMessage, media: { ...baseMedia, fileName: 'Vända.flac', mime: 'audio/flac' } }}
         isMine
       />,
     );
@@ -105,7 +108,7 @@ describe('message audio rendering', () => {
   it('keeps voice messages on the waveform player contract', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, media: { ...baseMessage.media, category: 'VOICE', fileName: 'voice.webm' } }}
+        message={{ ...baseMessage, media: { ...baseMedia, category: 'VOICE', fileName: 'voice.webm' } }}
         isMine={false}
       />,
     );
@@ -116,6 +119,18 @@ describe('message audio rendering', () => {
     expect(screen.getByTestId('audio-waveform')).toBeTruthy();
     expect(screen.getByRole('button', { name: /play voice/i })).toBeTruthy();
     expect(screen.getByLabelText(/seek voice/i)).toBeTruthy();
+  });
+
+  it('hides the stored file name for voice messages', () => {
+    render(
+      <FileMessage
+        message={{ ...baseMessage, media: { ...baseMedia, category: 'VOICE', fileName: 'voice-secret.webm' } }}
+        isMine={false}
+      />,
+    );
+
+    expect(screen.getByText('Voice message')).toBeTruthy();
+    expect(screen.queryByText('voice-secret.webm')).toBeNull();
   });
 
   it('keeps audio files compact while voice messages keep waveform geometry', () => {
@@ -134,19 +149,19 @@ describe('message audio rendering', () => {
   it('keeps voice messages on a stable waveform frame', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, kind: 'voice', media: { ...baseMessage.media, category: 'VOICE', fileName: 'voice.webm' } }}
+        message={{ ...baseMessage, kind: 'voice', media: { ...baseMedia, category: 'VOICE', fileName: 'voice.webm' } }}
         isMine={false}
       />,
     );
 
     expect(screen.getByTestId('voice-waveform-message').className).toContain('min-h-[88px]');
-    expect(screen.getByTestId('voice-waveform-message').className).toContain('w-[min(100%,320px)]');
+    expect(screen.getByTestId('voice-waveform-message').className).toContain('w-[clamp(220px,64vw,360px)]');
   });
 
   it('falls back to a generic file attachment when audio metadata is inconsistent', () => {
     render(
       <FileMessage
-        message={{ ...baseMessage, media: { ...baseMessage.media, mime: 'application/octet-stream', fileName: 'audio.bin' } }}
+        message={{ ...baseMessage, media: { ...baseMedia, mime: 'application/octet-stream', fileName: 'audio.bin' } }}
         isMine={false}
       />,
     );

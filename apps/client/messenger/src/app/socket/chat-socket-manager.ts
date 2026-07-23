@@ -20,6 +20,9 @@ function handleNewMessage(msg: Message) {
     type: msg.type,
   });
 
+  const chatStore = useChatStore.getState();
+  const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
+
   unstable_batchedUpdates(() => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
       upsertMessageIntoPages(old, msg),
@@ -32,9 +35,13 @@ function handleNewMessage(msg: Message) {
     if (hasMessageMedia(msg)) {
       queryClient.invalidateQueries({ queryKey: ['chat-media-messages', msg.chatId] });
     }
-  });
 
-  useChatStore.getState().setLastReceivedMessage(msg);
+    if (msg.chatId !== chatStore.activeChatId || !tabVisible) {
+      chatStore.incrementUnread(msg.chatId);
+    }
+
+    chatStore.setLastReceivedMessage(msg);
+  });
 }
 
 function handleMessageSendError(payload: { chatId: string; clientId: string }) {

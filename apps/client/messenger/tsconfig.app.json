@@ -83,9 +83,6 @@
       "path": "../../../libs/client/pages/messenger/pages-profile/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/pages/messenger/pages-chat-page/tsconfig.lib.json"
-    },
-    {
       "path": "../../../libs/client/pages/messenger/pages-messenger-main/tsconfig.lib.json"
     },
     {
@@ -95,19 +92,25 @@
       "path": "../../../libs/client/features/notifications/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/entities/message/tsconfig.lib.json"
-    },
-    {
       "path": "../../../libs/client/entities/user/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/shared/tsconfig.lib.json"
+      "path": "../../../libs/client/entities/message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/pages/messenger/pages-chat-page/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/features/chat-socket/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/entities/chat/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/shared/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/features/upload-avatar/tsconfig.lib.json"
     }
   ]
 }

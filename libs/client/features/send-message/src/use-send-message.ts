@@ -157,19 +157,21 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
 
   const handleChange = useCallback(
     (value: string | ((prev: string) => string)) => {
-      const resolved = typeof value === 'function' ? value(messageText) : value;
-      setMessageText(resolved);
+      setMessageText((prev) => {
+        const resolved = typeof value === 'function' ? value(prev) : value;
 
-      if (!chatIdRef.current) return;
+        if (!chatIdRef.current) return resolved;
 
-      if (!isTypingRef.current && resolved.trim()) {
-        isTypingRef.current = true;
-        socket.emit('typing:start', { chatId: chatIdRef.current });
-      }
+        if (!isTypingRef.current && resolved.trim()) {
+          isTypingRef.current = true;
+          socket.emit('typing:start', { chatId: chatIdRef.current });
+        }
 
-      debouncedStopTyping();
+        debouncedStopTyping();
+        return resolved;
+      });
     },
-    [debouncedStopTyping, messageText],
+    [debouncedStopTyping],
   );
 
   const setFileAttachment = useCallback((file: FileAttachment | null) => {

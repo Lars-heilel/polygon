@@ -34,7 +34,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
 
   const otherMember = chat?.members.find((m) => m.userId !== me.id) ?? chat?.members[0];
   const otherUserId = otherMember?.userId ?? me.id;
-  const otherAvatarUrl = otherMember?.profile?.avatarUrl ?? me.avatarUrl;
+  const otherAvatarUrl = otherMember?.profile?.avatarUrl ?? chat?.avatarUrl ?? null;
   const isOnline = otherUserId ? (onlineUsers[otherUserId] ?? false) : false;
   const isTyping = otherUserId ? (typingUsers[otherUserId] ?? false) : false;
 
@@ -56,7 +56,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
         >
           <div className="relative ">
             <Avatar
-              src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}
+              src={otherAvatarUrl ?? undefined}
               name={displayName}
               size="md"
             />
@@ -98,7 +98,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
         <>
           <div className="relative ">
             <Avatar
-              src={otherAvatarUrl ?? chat?.avatarUrl ?? undefined}
+              src={otherAvatarUrl ?? undefined}
               name={displayName}
               size="md"
             />
