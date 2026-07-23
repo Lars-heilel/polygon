@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 
+import { SessionGuard } from '@org/auth';
 import { API_ROUTES } from '@org/common';
 import type { JwtPayload } from '@org/core';
 
@@ -84,18 +85,19 @@ describe('AdminController', () => {
   let searchClient: MockClient;
   let mediaClient: MockClient;
   let tokenService: { verifyAccessToken: jest.Mock };
+  let sessionCache: { exists: jest.Mock };
   let chatGateway: { disconnectUser: jest.Mock };
   let AdminController: typeof import('./admin.controller').AdminController;
   let AUTH_CLIENT_TOKEN: typeof import('@org/core').AUTH_CLIENT_TOKEN;
   let AUTH_PATTERNS: typeof import('@org/core').AUTH_PATTERNS;
   let ActiveAccountGuard: typeof import('@org/core').ActiveAccountGuard;
   let BanMarkerRepository: typeof import('@org/core').BanMarkerRepository;
-  let JwtGuard: typeof import('@org/core').JwtGuard;
   let MEDIA_CLIENT_TOKEN: typeof import('@org/core').MEDIA_CLIENT_TOKEN;
   let MEDIA_PATTERNS: typeof import('@org/core').MEDIA_PATTERNS;
   let RolesGuard: typeof import('@org/core').RolesGuard;
   let SEARCH_CLIENT_TOKEN: typeof import('@org/core').SEARCH_CLIENT_TOKEN;
   let SEARCH_PATTERNS: typeof import('@org/core').SEARCH_PATTERNS;
+  let SESSION_CACHE_REPOSITORY_TOKEN: typeof import('@org/core').SESSION_CACHE_REPOSITORY_TOKEN;
   let TokenService: typeof import('@org/core').TokenService;
   let USER_CLIENT_TOKEN: typeof import('@org/core').USER_CLIENT_TOKEN;
   let USER_PATTERNS: typeof import('@org/core').USER_PATTERNS;
@@ -149,12 +151,12 @@ describe('AdminController', () => {
       AUTH_PATTERNS,
       ActiveAccountGuard,
       BanMarkerRepository,
-      JwtGuard,
       MEDIA_CLIENT_TOKEN,
       MEDIA_PATTERNS,
       RolesGuard,
       SEARCH_CLIENT_TOKEN,
       SEARCH_PATTERNS,
+      SESSION_CACHE_REPOSITORY_TOKEN,
       TokenService,
       USER_CLIENT_TOKEN,
       USER_PATTERNS,
@@ -169,12 +171,13 @@ describe('AdminController', () => {
     searchClient = { send: jest.fn() };
     mediaClient = { send: jest.fn() };
     tokenService = { verifyAccessToken: jest.fn(() => adminJwt) };
+    sessionCache = { exists: jest.fn().mockResolvedValue(true) };
     chatGateway = { disconnectUser: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       controllers: [AdminController],
       providers: [
-        JwtGuard,
+        SessionGuard,
         RolesGuard,
         Reflector,
         { provide: ActiveAccountGuard, useValue: { canActivate: jest.fn(() => true) } },
@@ -185,7 +188,7 @@ describe('AdminController', () => {
         { provide: MEDIA_CLIENT_TOKEN, useValue: mediaClient },
         { provide: ChatSocketGateway, useValue: chatGateway },
         { provide: TokenService, useValue: tokenService },
-        { provide: JwtGuard, useFactory: () => new JwtGuard(tokenService as never) },
+        { provide: SESSION_CACHE_REPOSITORY_TOKEN, useValue: sessionCache },
       ],
     }).compile();
 

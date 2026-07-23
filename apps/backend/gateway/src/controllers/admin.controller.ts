@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SessionGuard } from '@org/auth';
 import {
   type AdminBanRequest,
   type AdminSessionsResponse,
@@ -28,7 +29,6 @@ import {
   AUTH_PATTERNS,
   ActiveAccountGuard,
   CurrentUser,
-  JwtGuard,
   type JwtPayload,
   MEDIA_CLIENT_TOKEN,
   MEDIA_PATTERNS,
@@ -46,7 +46,7 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 @ApiTags('admin')
 @ApiCookieAuth('access_token')
 @Controller('admin')
-@UseGuards(JwtGuard, ActiveAccountGuard, RolesGuard)
+@UseGuards(SessionGuard, ActiveAccountGuard, RolesGuard)
 @Roles('CREATOR', 'ADMIN')
 export class AdminController {
   constructor(

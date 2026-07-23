@@ -23,12 +23,12 @@ import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import { lastValueFrom, Observable } from 'rxjs';
 
+import { SessionGuard } from '@org/auth';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
   ActiveAccountGuard,
   CurrentUser,
-  JwtGuard,
   type JwtPayload,
   MEDIA_CLIENT_TOKEN,
   MEDIA_PATTERNS,
@@ -40,7 +40,7 @@ import type { IStorageProvider } from '@org/core';
 import type { FileCategory, LinkPreview } from '@org/common';
 
 @Controller()
-@UseGuards(JwtGuard, ActiveAccountGuard)
+@UseGuards(SessionGuard, ActiveAccountGuard)
 export class MediaGatewayController {
   private readonly logger = new Logger(MediaGatewayController.name);
 

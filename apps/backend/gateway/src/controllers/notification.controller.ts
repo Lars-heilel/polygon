@@ -2,12 +2,13 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Logger, Po
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { ActiveAccountGuard, CurrentUser, JwtGuard, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
+import { SessionGuard } from '@org/auth';
+import { ActiveAccountGuard, CurrentUser, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
 
 @ApiTags('notifications')
 @ApiCookieAuth('access_token')
 @Controller('notifications/push')
-@UseGuards(JwtGuard, ActiveAccountGuard)
+@UseGuards(SessionGuard, ActiveAccountGuard)
 export class NotificationGatewayController {
   private readonly logger = new Logger(NotificationGatewayController.name);
 

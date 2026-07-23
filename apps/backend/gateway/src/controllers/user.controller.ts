@@ -12,11 +12,13 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  SessionGuard,
+} from '@org/auth';
+import {
   AUTH_CLIENT_TOKEN,
   AUTH_PATTERNS,
   ActiveAccountGuard,
   CurrentUser,
-  JwtGuard,
   type JwtPayload,
   SEARCH_CLIENT_TOKEN,
   SEARCH_PATTERNS,
@@ -30,7 +32,7 @@ import { Observable, lastValueFrom } from 'rxjs';
 @ApiTags('users')
 @ApiCookieAuth('access_token')
 @Controller('users')
-@UseGuards(JwtGuard, ActiveAccountGuard)
+@UseGuards(SessionGuard, ActiveAccountGuard)
 export class UserGatewayController {
   private readonly logger = new Logger(UserGatewayController.name);
 

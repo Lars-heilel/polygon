@@ -1,9 +1,10 @@
 import { BadRequestException, Body, Controller, HttpCode, HttpStatus, Logger, Post, UseGuards } from '@nestjs/common';
+import { SessionGuard } from '@org/auth';
 import { frontendErrorSchema, type FrontendErrorPayload } from '@org/common';
-import { ActiveAccountGuard, JwtGuard, Roles, RolesGuard } from '@org/core';
+import { ActiveAccountGuard, Roles, RolesGuard } from '@org/core';
 
 @Controller('observability/frontend-errors')
-@UseGuards(JwtGuard, ActiveAccountGuard, RolesGuard)
+@UseGuards(SessionGuard, ActiveAccountGuard, RolesGuard)
 @Roles('CREATOR', 'ADMIN')
 export class FrontendErrorController {
   private readonly logger = new Logger(FrontendErrorController.name);

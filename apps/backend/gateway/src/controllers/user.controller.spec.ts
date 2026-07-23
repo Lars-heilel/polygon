@@ -1,8 +1,22 @@
 import { HttpException } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
-import { throwError } from 'rxjs';
+import { Test } from '@nestjs/testing';
+import cookieParser from 'cookie-parser';
+import request from 'supertest';
+import { of, throwError } from 'rxjs';
 
-import { SEARCH_PATTERNS } from '@org/core';
+import { SessionGuard } from '@org/auth';
+import {
+  AUTH_CLIENT_TOKEN,
+  ActiveAccountGuard,
+  BanMarkerRepository,
+  SEARCH_CLIENT_TOKEN,
+  SEARCH_PATTERNS,
+  SESSION_CACHE_REPOSITORY_TOKEN,
+  TokenService,
+  USER_CLIENT_TOKEN,
+} from '@org/core';
 
 import { UserGatewayController } from './user.controller';
 
@@ -57,5 +71,53 @@ describe('UserGatewayController', () => {
     expect(diagnosticPayload).not.toContain('user@example.com');
     expect(diagnosticPayload).not.toContain('secret-token');
     expect(diagnosticPayload).not.toContain('Sensitive User Agent');
+  });
+
+  it('rejects a normal private endpoint when the Redis session was revoked', async () => {
+    const authClient = { send: jest.fn(() => of(null)) };
+    const userClient = { send: jest.fn(() => of({ id: 'user-1' })) };
+    const searchClient = { send: jest.fn(() => of(null)), emit: jest.fn() };
+    const tokenService = {
+      verifyAccessToken: jest.fn(() => ({
+        sub: 'user-1',
+        sessionId: 'revoked-session',
+        role: 'USER',
+        isVerified: true,
+      })),
+    };
+    const sessionCache = { exists: jest.fn().mockResolvedValue(false) };
+    const banMarkers = { findActiveMarker: jest.fn().mockResolvedValue(null) };
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [UserGatewayController],
+      providers: [
+        SessionGuard,
+        ActiveAccountGuard,
+        { provide: AUTH_CLIENT_TOKEN, useValue: authClient },
+        { provide: USER_CLIENT_TOKEN, useValue: userClient },
+        { provide: SEARCH_CLIENT_TOKEN, useValue: searchClient },
+        { provide: TokenService, useValue: tokenService },
+        { provide: SESSION_CACHE_REPOSITORY_TOKEN, useValue: sessionCache },
+        { provide: BanMarkerRepository, useValue: banMarkers },
+      ],
+    }).compile();
+
+    const app: INestApplication = moduleRef.createNestApplication();
+    app.use(cookieParser());
+    await app.init();
+
+    try {
+      await request(app.getHttpServer())
+        .get('/users/me')
+        .set('Cookie', ['access_token=access-token'])
+        .expect(401);
+
+      expect(tokenService.verifyAccessToken).toHaveBeenCalledWith('access-token');
+      expect(sessionCache.exists).toHaveBeenCalledWith('revoked-session');
+      expect(banMarkers.findActiveMarker).not.toHaveBeenCalled();
+      expect(userClient.send).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
   });
 });

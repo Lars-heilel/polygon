@@ -31,6 +31,7 @@ import {
   type CloneForwardMessageInput,
   type PreparedForwardMessage,
 } from '@org/chat';
+import { SessionGuard } from '@org/auth';
 import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
 import { chatMediaQuerySchema } from '@org/common';
 import {
@@ -38,7 +39,6 @@ import {
   CHAT_PATTERNS,
   ActiveAccountGuard,
   CurrentUser,
-  JwtGuard,
   type JwtPayload,
   USER_CLIENT_TOKEN,
   USER_PATTERNS,
@@ -51,7 +51,7 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 @ApiTags('chats')
 @ApiCookieAuth('access_token')
 @Controller('chats')
-@UseGuards(JwtGuard, ActiveAccountGuard)
+@UseGuards(SessionGuard, ActiveAccountGuard)
 export class ChatGatewayController {
   private readonly logger = new Logger(ChatGatewayController.name);
 
