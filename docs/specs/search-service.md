@@ -1,97 +1,27 @@
-# Search Service — Техническое задание
+# Search Service Specification
 
-> **Статус:** 🔴 В разработке  
-> **Назначение:** Поиск пользователей и сообщений
+## Purpose
 
----
+The Search Service indexes user profiles in Meilisearch and returns user results for direct-chat creation and administrative lookup.
 
-## 1. Бизнес-функции
+## Implemented Capabilities
 
-- Индексация пользователей при регистрации / изменении профиля
-- Поиск пользователей по имени и displayName
-- Индексация сообщений при отправке / редактировании
-- Поиск по тексту сообщений в чате (с фильтром по чату)
-- Переиндексация всех пользователей / сообщений
+- Indexes user data from the implemented user-related RabbitMQ events.
+- Searches users by the indexed profile fields.
+- Reindexes user data through the authorized gateway surface.
+- Returns profile results that the Messenger SPA can use to open a profile or direct chat.
 
-## 2. Ключевые бизнес-сценарии
+## Runtime Contracts
 
-### Поиск пользователей
-```
-1. Пользователь вводит имя в строку поиска
-2. После 2-х символов — результаты поиска
-3. В результатах — аватар, имя, displayName
-4. Клик → открыть профиль / начать чат
-```
+- Meilisearch is the search backend for this service.
+- Gateway search and reindex operations require a valid active session; administrative operations use the administrative guard surface.
+- Search results are profile data and do not include session secrets.
 
-### Поиск по сообщениям
-```
-1. В окне чата — строка поиска
-2. Поиск по тексту сообщений (только в текущем чате)
-3. Результаты с подсветкой совпадений
-4. Клик → переход к найденному сообщению
-```
+## Acceptance Criteria
 
----
+- **SEARCH-1:** User search returns profiles suitable for direct-chat creation and administrative lookup.
+- **SEARCH-2:** User indexing follows the implemented RabbitMQ user events and can be re-run through the authorized reindex route.
 
-## 3. Acceptance Criteria / Expected Behavior
+## Exclusions
 
-### TC-SEARCH-1: Поиск пользователей
-
-**Preconditions:**
-- Пользователь A авторизован, хочет найти пользователя B с именем "john_doe"
-
-**Flow:**
-1. A нажимает 🔍 "Новый чат" (или в строке поиска в списке чатов)
-   → Поисковая строка, результаты пусты
-2. A начинает вводить "jo"
-   → Через 300ms после ввода (debounce): появляются результаты
-   → На каждый результат: аватар (или инициалы), имя, displayName
-3. A продолжает вводить "john_doe"
-   → Результаты уточняются
-4. A нажимает на B
-   → Открывается профиль B (или direct чат)
-5. **Ничего не найдено:** EmptyState "Пользователь не найден"
-
----
-
-### TC-SEARCH-2: Поиск по сообщениям
-
-**Preconditions:**
-- Чат содержит 500+ сообщений, среди которых "Встреча в пятницу в 15:00"
-
-**Flow:**
-1. Пользователь A в окне чата нажимает 🔍 (иконка поиска)
-   → Поисковая строка в шапке чата
-2. A вводит "пятница 15:00"
-   → Через 300ms: результаты поиска (только в этом чате)
-   → Каждый результат: отправитель + текст (с подсветкой совпадений) + дата
-3. A нажимает на результат
-   → Чат скроллится к этому сообщению
-   → Сообщение подсвечивается жёлтым (2 сек)
-4. A очищает поиск
-   → Возврат к обычному чату, на последнее сообщение
-
-**Ошибки:**
-- **< 2 символов:** не ищется
-- **Пустой запрос:** показывать недавние (последние сообщения)
-
----
-
-## 4. Важные нюансы
-
-- **Внешний поисковый движок** — используется Meilisearch (не PostgreSQL). Это обеспечивает быстрый полнотекстовый поиск.
-- **Асинхронная индексация** — при отправке сообщения Chat Service публикует событие → Search Service обновляет индекс. Это не влияет на скорость отправки.
-- **Аватар в поиске** — при индексации пользователя avatarUrl должен сохраняться в индексе (сейчас не сохраняется — надо исправить).
-- **Фильтр по чату** — при поиске сообщений обязателен параметр chatId.
-
-## 4. Статус реализации
-
-| Фича | Статус |
-|------|--------|
-| Индексация пользователей | ✅ Готово |
-| Поиск пользователей | ✅ Готово |
-| Reindex пользователей | ✅ Готово |
-| avatarUrl в результатах | 📝 Надо (баг) |
-| Индексация сообщений | 📝 Надо |
-| Поиск по сообщениям | 📝 Надо |
-| Reindex сообщений | 📝 Надо |
+Message search, message indexing, chat-scoped full-text search, and result highlighting are not current product behavior.

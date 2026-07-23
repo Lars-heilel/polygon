@@ -1,113 +1,28 @@
-# Notification Service — Техническое задание
+# Notification Service Specification
 
-> **Статус:** 🔴 В разработке  
-> **Назначение:** Отправка email и push-уведомлений
+## Purpose
 
----
+The Notification Service provides verification/reset email dispatch and the stored push-subscription surface used by the application.
 
-## 1. Бизнес-функции
+## Implemented Capabilities
 
-- Отправка письма для верификации email
-- Отправка письма для сброса пароля
-- Push-уведомления через Web Push API (Service Worker)
-- Push при новом сообщении в чате
-- Push при входящем звонке
-- История отправленных уведомлений (NotificationLog)
+- Sends verification-email and password-reset email requests received from Auth Service events.
+- Stores, retrieves, and removes Web Push subscription records.
+- Exposes gateway endpoints for the VAPID public key and push subscription/unsubscription.
+- Provides the browser subscription bootstrap surface where browser push APIs are available.
 
-## 2. Ключевые бизнес-сценарии
+## Runtime Contracts
 
-### Email уведомления
-```
-1. При регистрации — пользователю приходит письмо со ссылкой для верификации (24ч)
-2. При запросе сброса пароля — письмо с одноразовой ссылкой (1ч)
-3. Письма оформлены в современном стиле (react-email), с поддержкой темной темы
-```
+- Email dispatch is invoked through RabbitMQ service communication.
+- A push subscription contains an endpoint and browser-provided keys and is owned by one user.
+- Notification settings and browser capability checks belong to the client bootstrap flow; this service contract is limited to email dispatch and push-subscription storage.
 
-### Push уведомления
-```
-1. Пользователь не в чате, кто-то пишет сообщение → push "Имя: текст"
-2. Входящий звонок → push "Имя вызывает вас..."
-3. Push приходит через Service Worker, даже если приложение закрыто
-4. Клик на push → открытие соответствующего чата
-```
+## Acceptance Criteria
 
----
+- **NOTIFICATION-1:** Auth flows can request verification and password-reset email dispatch through the notification service.
+- **NOTIFICATION-2:** An authenticated client can obtain the VAPID key and create or remove its own push subscription.
+- **NOTIFICATION-3:** The client can bootstrap browser push subscription only when browser APIs and user settings allow it.
 
-## 3. Acceptance Criteria / Expected Behavior
+## Exclusions
 
-### TC-NOTIF-1: Email верификации
-
-**Preconditions:**
-- Пользователь только что зарегистрировался
-
-**Flow:**
-1. Через 1-10 секунд после регистрации на почту приходит письмо
-   → От кого: `Polygon Messenger <noreply@...>`
-   → Тема: "Подтвердите ваш email"
-   → Дизайн: современный HTML (react-email), логотип, кнопка "Подтвердить"
-   → Если клиент поддерживает dark mode: письмо отображается корректно
-2. Пользователь нажимает кнопку → верификация выполнена
-3. Пользователь открывает письмо на мобильном: адаптивная вёрстка
-
----
-
-### TC-NOTIF-2: Push-уведомление нового сообщения
-
-**Preconditions:**
-- Пользователь B авторизован
-- Приложение открыто в фоне или закрыто
-- Пользователь A пишет сообщение в чат с B
-
-**Flow:**
-1. A отправляет сообщение "Привет!" в direct чат с B
-2. B не активен в приложении (вкладка не в фокусе / закрыта)
-   → Service Worker получает push-событие
-   → Показывается системное уведомление:
-     - Заголовок: "A"
-     - Текст: "Привет!"
-     - Иконка: аватар A (или инициалы)
-3. B кликает на уведомление
-   → Приложение открывается (или фокусируется)
-   → Открывается чат с A
-4. B активен в приложении → push НЕ приходит (сообщение доставляется через WS)
-
-**Ошибка:**
-- **Подписка устарела (410 Gone):** удаляется из БД, при следующем входе — новая подписка
-- **Нет разрешения на уведомления:** ничего не показывается, приложение работает как обычно
-
----
-
-### TC-NOTIF-3: Push при звонке
-
-**Preconditions:**
-- A звонит B
-- B не в приложении
-
-**Flow:**
-1. A начинает звонок B
-2. B получает push: "A вызывает вас..." + кнопки быстрых действий (Accept / Decline)
-3. B кликает Accept → приложение открывается, звонок начинается
-4. B кликает Decline → звонок отклонён, A видит "B не ответил(а)"
-
----
-
-## 4. Важные нюансы
-
-- **Email** — отправляется через SMTP (Nodemailer), асинхронно через RabbitMQ. Auth Service шлёт событие → Notification Service отправляет.
-- **Push** — подписка хранится в БД (endpoint + ключи). При отправке — Web Push API через Service Worker.
-- **NotificationLog** — логируются все отправки (успех/ошибка). Если push endpoint не работает (410 Gone) — подписка удаляется.
-- **Дизайн писем** — react-email компоненты, Tailwind-совместимые. Современные HTML-шаблоны с поддержкой dark mode.
-- **Cooldown** — повторная отправка писем — не чаще 1 раза в 60s (на уровне Auth Service).
-
-## 4. Статус реализации
-
-| Фича | Статус |
-|------|--------|
-| Send verification email | ✅ Готово |
-| Send password reset | ✅ Готово |
-| Email templates (react-email) ★ | 📝 Надо |
-| Push subscriptions | 📝 Надо |
-| Push при новом сообщении | 📝 Надо |
-| Push при звонке | 📝 Надо |
-| NotificationLog | 📝 Надо |
-| Очистка мёртвых подписок | 📝 Надо |
+Push support is documented only as a subscription and integration surface. The current product does not promise service-worker offline behavior, reliable end-to-end push delivery, notification logs, delivery receipts, calls, or call notifications.

@@ -1,142 +1,34 @@
-# Media Service — Техническое задание
+# Media Service Specification
 
-> **Статус:** 🟡 Почти готово  
-> **Назначение:** Загрузка, хранение, обработка файлов
+## Purpose
 
----
+The Media Service owns MinIO-backed upload authorization, file metadata, protected content delivery, media histories, avatar media, and reference-aware deletion.
 
-## 1. Бизнес-функции
+## Implemented Capabilities
 
-- Загрузка файлов (presigned URL — клиент загружает напрямую в S3)
-- Подтверждение загрузки
-- Получение ссылки на файл
-- Удаление файла (из хранилища и БД)
-- История загрузок пользователя (с фильтром по категории)
-- История файлов чата (внутричатовая галерея)
-- История аватаров пользователя
-- Асинхронная обработка: thumbnail для изображений, waveform для аудио, превью для видео
+- Initializes uploads with storage data for direct client upload.
+- Confirms an upload and changes its metadata state from `PENDING` to `READY`.
+- Streams content through protected media endpoints.
+- Restricts chat attachment access to chat members.
+- Returns user, chat, and avatar media histories.
+- Supports avatar upload, assignment, history, and deletion flows.
+- Deletes a file only after atomic reference checks confirm it is not still required by messages or other protected references.
 
-## 2. Категории файлов
+## Runtime Contracts
 
-| Категория | Примеры | Макс. размер | Обработка |
-|-----------|---------|-------------|-----------|
-| AVATAR | Аватар профиля | 5 MB | Thumbnail |
-| IMAGE | Фото в чате | 20 MB | Thumbnail |
-| AUDIO | Музыка | 50 MB | Waveform |
-| VIDEO | Видео | 500 MB | Превью |
-| FILE | Документы, архивы | 100 MB | — |
-| VOICE | Голосовые сообщения | 10 MB | Waveform |
-| CIRCLE | Видеокружки (до 60с) | 30 MB | Превью + обрезка |
+- The client uploads media directly to MinIO using the initialized storage data; the gateway does not proxy the file body.
+- A confirmed file has `READY` metadata before it can be used by message and profile surfaces.
+- Media content and history endpoints enforce their corresponding user or chat authorization.
+- The client categorizes ready media as image, video, audio, voice, circle, or document for rendering.
 
-## 3. Ключевые бизнес-сценарии
+## Acceptance Criteria
 
-### Загрузка файла
-```
-1. Клиент запрашивает инициализацию загрузки
-2. Получает временный URL для загрузки
-3. Загружает файл напрямую в S3 (с прогрессом)
-4. Подтверждает загрузку
-5. Файл становится доступен (=== async обработка: thumbnail/waveform)
-6. После обработки — файл готов к отображению
-```
+- **MEDIA-1:** Upload initialization returns storage data that a client can use to upload and then confirm media.
+- **MEDIA-2:** Authorized confirmed media is rendered by category: image, video, audio, voice, circle, or document.
+- **MEDIA-3:** Voice messages hide raw filenames and use a stable waveform layout in the Messenger SPA.
+- **MEDIA-4:** A file with active references is not deleted through a history or content-management surface.
+- **MEDIA-5:** Avatar and chat-media history responses contain only media authorized for the requesting user.
 
-### Файлы в чате
-```
-1. Файлы привязаны к чату + категории
-2. В галерее чата — фильтрация по категориям
-3. Для файлов чата — проверка членства в чате
-```
+## Exclusions
 
----
-
-## 3. Acceptance Criteria / Expected Behavior
-
-### TC-MEDIA-1: Загрузка файла в чат
-
-**Preconditions:**
-- Пользователь A открыл чат с B
-
-**Flow:**
-1. A нажимает 📎 в поле ввода → выбирает файл (изображение 3MB)
-   → Превью файла отображается в поле ввода (миниатюра + имя + размер)
-   → Прогресс-бар загрузки (0% → 100%)
-2. Файл загружен
-   → Превью остаётся, кнопка "Отправить" активна
-3. A нажимает "Отправить"
-   → Сообщение появляется в чате с превью файла и статусом PENDING (обрабатывается)
-   → Через 1-5 секунд: статус READY (thumbnail сформирован)
-   → Изображение отображается в чате (не иконка файла)
-4. A нажимает на изображение
-   → Полноэкранный просмотр (lightbox)
-
-**Ошибки:**
-- **Файл превышает лимит категории:** "Файл слишком большой. Максимум {N}MB"
-- **Неподдерживаемый формат:** "Формат не поддерживается"
-- **Ошибка загрузки в S3:** "Не удалось загрузить файл. Попробуйте снова"
-
----
-
-### TC-MEDIA-2: Voice сообщение
-
-**Preconditions:**
-- Пользователь A в чате, есть доступ к микрофону
-
-**Flow:**
-1. A зажимает 🎤 в поле ввода
-   → Начинается запись (красная точка, таймер)
-2. A отпускает кнопку (или проводит вверх — "отменить")
-   → Если проведено вверх: запись отменяется
-   → Если отпущено: запись фиксируется, отображается waveform + длительность
-3. A нажимает "Отправить"
-   → Сообщение с VOICE в чате
-   → Получатель видит compact плеер с waveform
-   → Можно прослушать
-
----
-
-### TC-MEDIA-3: Аватар пользователя
-
-**Preconditions:**
-- Пользователь A на странице редактирования профиля
-
-**Flow:**
-1. A загружает новый аватар
-   → Init → PUT → Confirm → thumbnail (PROCESSING → READY)
-   → Аватар обновляется во всём приложении сразу
-2. A открывает историю аватаров
-   → Показываются все предыдущие аватары
-3. A нажимает "Удалить" на активном аватаре
-   → Ошибка: "Нельзя удалить активный аватар" (только если не установить другой)
-4. A нажимает "Удалить" на старом аватаре
-   → Файл удаляется из MinIO + история
-
----
-
-## 4. Важные нюансы
-
-- **Прямая загрузка в S3** — сервер не проксирует файлы, клиент получает presigned URL и загружает напрямую. Это снижает нагрузку на бэкенд.
-- **Асинхронная обработка** — после загрузки файл ставится в очередь RabbitMQ. Отдельный worker генерирует thumbnail / waveform / превью. Клиент получает уведомление через WebSocket после готовности.
-- **Thumbnail на лету** — для изображений генерируется уменьшенная копия, для видео — кадр-превью.
-- **Waveform** — для аудио генерируется массив амплитуд для визуализации в плеере.
-- **Проблема удаления аватара** — при удалении активного аватара пользователя, `avatarUrl` в профиле должен сбрасываться.
-- **Orphan cleanup** — файлы в статусе PENDING, не подтверждённые в течение 30 минут, удаляются автоматически.
-
-## 5. Статус реализации
-
-| Фича | Статус |
-|------|--------|
-| Init upload (presigned URL) | ✅ Готово |
-| Confirm upload | ✅ Готово |
-| Получение URL файла | ✅ Готово |
-| Удаление файла | ✅ Готово |
-| История пользователя | ✅ Готово |
-| История чата | ✅ Готово |
-| История аватаров | ✅ Готово |
-| MIME + size validation | ✅ Готово |
-| Async processing pipeline | 📝 Надо |
-| Thumbnails (изображения) | 📝 Надо |
-| Waveform (аудио) | 📝 Надо |
-| Preview (видео) | 📝 Надо |
-| Cascade delete с сообщением | 📝 Надо |
-| Orphan cleanup | 📝 Надо |
-| Сброс avatarUrl при удалении | 📝 Надо |
+The current backend does not provide asynchronous thumbnail, waveform, or video-preview generation, orphan cleanup, or automatic cascade deletion of media after message deletion. Waveforms and media viewers described here are client rendering behavior.

@@ -1,87 +1,117 @@
-# Настройка
+# Setup Guide
 
-## Необходимые компоненты
+## Prerequisites
 
-- Docker и Docker Compose
+- Docker with Docker Compose
 - Node.js 20.x
 - npm
 
----
+## 1. Configure The Environment
 
-## 1. Переменные окружения
+Create the local environment file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Все сервисы используют единый файл `.env` в корне репозитория. Настройте его для вашего локального окружения — все переменные и описания находятся в `.env.example`.
+The repository uses root environment files. Read `.env.example` and supply local values for PostgreSQL, Redis, RabbitMQ, MinIO, Meilisearch, JWT/cookie secrets, OAuth, mail, and optional observability settings. Do not commit `.env` or paste its values into diagnostics.
 
----
+Vite reads the root through `envDir`; browser-exposed values must use the `VITE_` prefix. Prisma configuration selects `.env`, `.env.test`, or `.env.production` from `NODE_ENV` and resolves it from the repository root.
 
-## 2. Начальная настройка
+## 2. Bootstrap Local Infrastructure
 
-Выполнить один раз после клонирования:
+After cloning, install workspace dependencies and run the bootstrap script:
 
 ```bash
+npm install
 ./scripts/bootstrap.sh
 ```
 
-Что делает скрипт:
+The script verifies Docker/Compose, starts local infrastructure, creates service databases when absent, and generates Prisma clients/applies migrations for the service schemas it manages. It is designed for initial local setup. Do not treat it as a disposable reset command: database initialization helpers can remove local data.
 
-1. Проверяет доступность Docker и Docker Compose
-2. Запускает контейнеры (PostgreSQL, Redis, RabbitMQ, MinIO, Meilisearch)
-3. Создаёт базу данных для каждого сервиса
-4. Генерирует Prisma клиенты для всех бэкенд-сервисов
-5. Применяет Prisma миграции
-
-> ⚠️ Запускайте только один раз после клонирования. Повторный запуск `init-db.sh` удалит все данные в базах.
-
-### Инфраструктура
-
-| Сервис      | Порт(ы)       | Назначение                                    |
-| ----------- | ------------- | --------------------------------------------- |
-| PostgreSQL  | 5432          | Основная база данных                          |
-| Redis       | 6379          | Кеш                                           |
-| RabbitMQ    | 5672 / 15672  | Брокер сообщений — UI на http://localhost:15672 |
-| MinIO       | 9000 / 9001   | S3-совместимое хранилище (порты API / Console) |
-| Meilisearch | 7700          | Поисковый движок                              |
-
----
-
-## 3. Запуск dev-серверов
+The underlying development infrastructure can also be controlled directly:
 
 ```bash
-# Терминал 1 — API Gateway (порт 3000)
-npx nx serve @org/gateway
-
-# Терминал 2 — React SPA (порт 4200)
-npx nx serve @org/messenger
+npm run dev:docker:up
+npm run dev:docker:down
+docker compose logs -f
 ```
 
-Приложение доступно по адресу **http://localhost:4200**.
+| Service | Port(s) | Local role |
+| --- | --- | --- |
+| PostgreSQL | `5432` | Service-owned databases |
+| Redis | `6379` | Sessions, rate limits, realtime coordination |
+| RabbitMQ | `5672`, `15672` | Service broker and management UI |
+| MinIO | `9000`, `9001` | S3-compatible media storage and console |
+| Meilisearch | `7700` | User search index |
 
-> Vite dev-сервер проксирует запросы `/api` и `/socket.io` на gateway по адресу `localhost:3000` — нужно открывать или туннелировать только порт 4200.
+## 3. Run The Application
 
----
-
-## 4. Удалённое тестирование (ngrok)
-
-Чтобы протестировать на других устройствах (телефон, планшет, другой компьютер) через интернет:
-
-**Необходимые компоненты:** установленный и аутентифицированный [ngrok](https://ngrok.com).
+Start the gateway and messenger in separate terminals:
 
 ```bash
-ngrok config add-authtoken <ваш-токен>
+npm exec nx serve @org/gateway
+npm exec nx serve @org/messenger
 ```
 
-**Запуск туннеля** (пока dev-серверы уже запущены):
+Open `http://localhost:4200`. The Vite server proxies `/api` and `/socket.io` to the gateway on port `3000`, so local browser traffic uses the Vite port. See [MONOREPO_GOTCHAS.md](./MONOREPO_GOTCHAS.md) before changing that proxy.
+
+The workspace also exposes a convenience command for the full local development set:
 
 ```bash
+npm run dev:all
+```
+
+Use it only when the required service environment values and local infrastructure are ready. `dev:all:skip-cache` first removes generated `dist` directories, so it is unsuitable when those outputs must be preserved for another local task.
+
+## 4. Prisma And Database Maintenance
+
+Run Prisma-related work through the owning Nx project where such a target exists. Before invoking an unfamiliar migration or generate target, inspect it:
+
+```bash
+npm exec nx show project @org/<service> --json
+```
+
+Avoid invoking Prisma from an arbitrary subdirectory. Its environment lookup and schema paths are service-specific; the Prisma configuration's explicit root environment path is the supported execution model. Back up local data before any command that initializes, drops, or reapplies databases.
+
+## 5. Verify The Workspace
+
+Run focused checks for the changed application area through Nx:
+
+```bash
+npm exec nx test @org/gateway
+npm exec nx test @org/messenger
+npm exec nx build @org/gateway
+npm exec nx build @org/messenger
+```
+
+For a broader maintenance pass, run the relevant lint/typecheck targets or a change-aware task:
+
+```bash
+npm exec nx affected -t test
+npm exec nx lint @org/<project>
+npm exec nx typecheck @org/<project>
+```
+
+## 6. Remote Device Testing
+
+With the dev servers running, `./scripts/tunnel.sh` can expose the Vite server through ngrok after ngrok is installed and authenticated:
+
+```bash
+ngrok config add-authtoken <token>
 ./scripts/tunnel.sh
 ```
 
-ngrok выведет публичный HTTPS URL вида `https://xxxx-xx-xx.ngrok-free.app` — откройте его на любом устройстве.
+Because Vite proxies HTTP and Socket.IO, tunnel the Vite address rather than exposing every backend port. Treat the generated public URL as temporary and avoid using a public tunnel with real secrets or production data.
 
-Vite dev-прокси обрабатывает весь API и WebSocket трафик внутри себя, поэтому дополнительная конфигурация не требуется.
+## 7. Optional Observability Stack
 
-> Публичный URL меняется при каждом перезапуске ngrok (бесплатный тариф). Платный тариф предоставляет фиксированный домен.
+The local single-host Grafana, Prometheus, Loki, Tempo, Alloy, and exporter stack is optional for ordinary feature development:
+
+```bash
+npm run observability:up
+npm run observability:logs
+npm run observability:down
+```
+
+Grafana is available at `http://localhost:3009`; Prometheus targets are at `http://localhost:9090/targets`. Configure `OTEL_ENABLED=true` and a reachable OTLP endpoint before expecting backend traces. Keep monitoring ports private outside a trusted local network. Full operational details are in [OBSERVABILITY.md](./OBSERVABILITY.md).

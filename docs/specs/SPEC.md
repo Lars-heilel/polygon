@@ -1,61 +1,35 @@
-# Polygon Messenger — Техническое задание
+# Polygon Messenger Product Specification
 
-> **Статус:** 🚧 В разработке  
-> **Версия:** 1.0.0
+## Purpose
 
----
+Polygon is a full-stack messenger implemented as an Nx monorepo. This document is the as-built product contract: it describes behavior available in the current application.
 
-## 1. О продукте
+## Implemented Capabilities
 
-Polygon Messenger — масштабируемый мессенджер с архитектурой микросервисов.
+- **API Gateway:** HTTP entry point, cookie/session guards, OAuth redirects, Socket.IO, and service RPC bridge.
+- **Auth Service:** Credentials, OAuth, email verification, password reset, refresh rotation, sessions, and administrative bans.
+- **User Service:** Public and current-user profiles, profile changes, and avatar state.
+- **Chat Service:** Direct and self chats, messages, attachments, read markers, edits, deletes, forwarding, and link previews.
+- **Media Service:** Direct uploads, confirmed media metadata, protected content access, histories, and reference-aware deletion.
+- **Notification Service:** Verification/reset email dispatch and push subscription endpoints.
+- **Search Service:** User indexing, user search, and user reindexing through Meilisearch.
+- **Messenger SPA:** Authentication, chats, media playback/viewing, profile/settings, session devices, themes, and notification settings.
 
-**Ключевые возможности:**
-- Регистрация и аутентификация (email/password + OAuth GitHub/Google)
-- Обмен текстовыми сообщениями, файлами, медиа
-- Групповые чаты
-- Аудио/видео звонки
-- Real-time доставка сообщений
-- Внутричатовая медиа-галерея
-- Поиск по пользователям и сообщениям
-- Push-уведомления
-- PWA (Progressive Web App)
+## Runtime Contracts
 
----
+- Authentication uses HttpOnly access and refresh cookies. Redis-backed session state is checked for protected gateway routes.
+- Direct conversations and one-user saved-message chats are the chat types exposed by the current application.
+- PostgreSQL databases are owned per service. RabbitMQ carries service events, MinIO stores media, Meilisearch serves user search, and Socket.IO carries real-time chat state.
+- Media rendering in the Messenger SPA supports images, videos, audio, voice messages, circle videos, and documents.
 
-## 2. Карта систем
+## Acceptance Criteria
 
-| Система | Описание | Статус |
-|---------|----------|--------|
-| [API Gateway](./gateway-service.md) | Единая точка входа: HTTP-роутинг, WebSocket, JWT-аутентификация | 🟡 |
-| [Auth Service](./auth-service.md) | Аутентификация, OAuth, сессии, верификация | 🟢 |
-| [User Service](./user-service.md) | Профили, статусы, блокировки | 🟡 |
-| [Chat Service](./chat-service.md) | Чаты, сообщения, пересылка, файлы, звонки | 🔴 |
-| [Media Service](./media-service.md) | Файлы, MinIO, превью, waveform | 🟡 |
-| [Notification Service](./notification-service.md) | Email, Push-уведомления | 🔴 |
-| [Search Service](./search-service.md) | Поиск пользователей и сообщений | 🔴 |
-| [Client Messenger](./client-messenger.md) | React SPA, PWA, Socket.IO | 🔴 |
-| [Infrastructure](./infrastructure.md) | Docker, мониторинг | 🟡 |
+- **SYSTEM-1:** A valid active session gives a user access to protected Messenger and gateway operations; a revoked session is denied.
+- **SYSTEM-2:** A user can find another user, open a direct conversation or saved-message chat, and exchange text or media messages.
+- **SYSTEM-3:** The application synchronizes message, edit, delete, read, presence, and typing updates through Socket.IO.
+- **SYSTEM-4:** Message history is paginated and media content is served only through its authorized surface.
+- **SYSTEM-5:** Profile, avatar, session-device, theme, and notification-setting surfaces use the service APIs described by the subsystem specifications.
 
----
+## Exclusions
 
-## 3. Архитектура
-
-Микросервисная архитектура:
-- Каждый сервис имеет свою БД
-- Межсервисное взаимодействие — асинхронное через RabbitMQ
-- Клиент → Gateway (HTTP/WS) → RabbitMQ → сервисы
-- Единые схемы валидации для клиента и бэкенда
-
-Подробная архитектура: [docs/ARCHITECTURE.md](../ARCHITECTURE.md)
-Соглашения и подходы: [docs/DEVELOPMENT.md](../DEVELOPMENT.md)
-
----
-
-## 4. Статусная карта
-
-```
-🟢 Готово       — реализовано и работает
-🟡 Почти готово — работает, но требует доработок
-🔴 В разработке  — требуется реализация
-❌ Отложено      — запланировано на будущее
-```
+Calls, group chats and group calls, offline/PWA install or caching behavior, internationalization, message search/indexing, last-seen and custom statuses, user blocking, server-side thumbnail/waveform/video-preview pipelines, orphan cleanup, and notification delivery guarantees are not provided as current product behavior.

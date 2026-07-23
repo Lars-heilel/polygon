@@ -1,123 +1,30 @@
-# User Service — Техническое задание
+# User Service Specification
 
-> **Статус:** 🟡 Почти готово  
-> **Назначение:** Управление профилями пользователей, статусами, блокировками
+## Purpose
 
----
+The User Service owns account profile data used by profile views, user search results, chat headers, and message presentation.
 
-## 1. Бизнес-функции
+## Implemented Capabilities
 
-- Создание профиля при регистрации
-- Просмотр своего профиля
-- Просмотр чужого профиля
-- Редактирование профиля (displayName, bio, avatar)
-- Статус пользователя (online, away, do not disturb, invisible)
-- Last seen — отображение времени последней активности
-- Блокировка пользователей — сообщения заблокированного скрываются
-- Placeholder аватар (инициалы по имени)
+- Creates a profile for a registered account.
+- Returns the authenticated user's profile and public profile data for other users.
+- Updates profile fields and avatar state.
+- Provides profile information for direct-chat creation, chat presentation, and administrative account detail.
+- Exposes avatar state used by avatar-history and media surfaces.
 
-## 2. Ключевые бизнес-сценарии
+## Runtime Contracts
 
-### Профиль
-```
-1. При регистрации — создаётся профиль с username
-2. Пользователь может изменить displayName, bio, загрузить аватар
-3. При отсутствии аватара — показываются инициалы
-4. Чужой профиль — только публичная информация
-```
+- Current-user operations are available only through a valid active gateway session.
+- Public-profile responses contain the data needed to display a person in profile and chat contexts without exposing session data.
+- Avatar references are user-owned media; changing or removing an avatar updates the profile state used by the client.
 
-### Статус и присутствие
-```
-1. При входе — статус online
-2. При закрытии вкладки / потери соединения — статус away + last seen обновляется
-3. Пользователь может установить: dnd (не беспокоить), invisible (невидимка)
-4. В статусе invisible — пользователь выглядит офлайн для всех
-```
+## Acceptance Criteria
 
-### Блокировки
-```
-1. Пользователь может заблокировать другого пользователя
-2. Сообщения от заблокированного скрываются во всех чатах
-3. Заблокированный не виден в поиске
-4. Возможна разблокировка
-```
+- **USER-1:** The current user profile is returned only through a valid active session.
+- **USER-2:** Public profile data is available for chat and profile display.
+- **USER-3:** Profile updates are reflected in the client profile and chat presentation.
+- **USER-4:** Avatar state used by a profile or chat header belongs to that displayed user and does not fall back to the current user's avatar.
 
----
+## Exclusions
 
-## 3. Acceptance Criteria / Expected Behavior
-
-### TC-USER-1: Редактирование профиля
-
-**Preconditions:**
-- Пользователь авторизован
-
-**Flow:**
-1. Пользователь открывает `/chats/profile` → нажимает "Редактировать"
-   → Форма: displayName (предзаполнен username), bio (пусто), avatar
-2. Меняет displayName на "Джон Доу", bio = "Разработчик", загружает аватар
-   → Аватар: превью загружаемого изображения, progress bar
-3. Нажимает "Сохранить"
-   → Кнопка disabled + спиннер → успех → "Профиль обновлён" (toast)
-   → displayName и аватар обновились сразу во всём интерфейсе (шапка, список чатов)
-
-**Ошибки:**
-- **displayName < 2 символов:** ошибка валидации
-- **bio > 500 символов:** "Максимум 500 символов"
-- **Аватар > 5MB:** "Файл слишком большой"
-- **Неверный формат изображения:** "Поддерживаются только JPEG, PNG, WebP"
-
----
-
-### TC-USER-2: Статус пользователя / Presence
-
-**Preconditions:**
-- Пользователь авторизован, открыт чат
-
-**Flow:**
-1. Пользователь входит в приложение
-   → В списке чатов: зелёная точка у пользователя
-   → В шапке чата: "В сети"
-2. Пользователь закрывает вкладку
-   → Через 1-2 минуты: статус "Был(а) 2 мин. назад"
-3. Пользователь заходит снова
-   → Статус = "В сети"
-4. Пользователь → Настройки → Статус → выбирает "Не беспокоить" (DND)
-   → В списке чатов: красная точка
-   → Push-уведомления не приходят
-5. Пользователь меняет на "Невидимка"
-   → Для всех пользователей: "Был(а) давно" (как будто офлайн)
-   → Сам пользователь: видит всех как обычно
-
----
-
-### TC-USER-3: Блокировка пользователя
-
-**Preconditions:**
-- Пользователь A и B в direct чате
-
-**Flow:**
-1. A открывает профиль B → кнопка "Заблокировать"
-   → Диалог подтверждения: "Заблокировать B? Сообщения будут скрыты"
-2. A подтверждает
-   → Чат с B скрыт из списка (или помечен "Пользователь заблокирован")
-   → Сообщения от B не видны
-   → B не отображается в поиске
-3. A → Настройки → Заблокированные → B в списке
-4. A нажимает "Разблокировать"
-   → Чат восстанавливается, все сообщения снова видны
-
----
-
-## 4. Статус реализации
-
-| Фича | Статус |
-|------|--------|
-| Создание профиля при регистрации | ✅ Готово |
-| Просмотр /me | ✅ Готово |
-| Просмотр по ID | ✅ Готово |
-| Редактирование профиля | ✅ Готово |
-| Placeholder аватар (initials) | 📝 Надо |
-| Статус (online/away/dnd/invisible) | 📝 Надо |
-| Last seen | 📝 Надо |
-| Блокировка пользователя | 📝 Надо |
-| Список заблокированных | 📝 Надо |
+The current product provides basic Socket.IO online/offline presence, but it does not provide last-seen values, custom availability statuses, user blocking, or a guaranteed initials-avatar fallback.

@@ -1,381 +1,126 @@
-# Руководство по разработке
-
----
+# Development Guide
 
 ## Nx Workspace
 
-Nx — это система сборки и запуска задач для данного монорепозитория. Ключевые концепции:
-
-- **Project graph (граф проектов)** — Nx отслеживает зависимости между всеми проектами. Выполните `npx nx graph` для визуализации.
-- **Кэширование** — результаты задач (сборка, тесты, линтинг) кэшируются. Повторный запуск для неизменённого проекта происходит мгновенно.
-- **Affected (затронутые)** — `npx nx affected -t test` запускает тесты только для проектов, изменённых относительно базовой ветки.
-
-Все проекты идентифицируются по имени пакета `@org/<name>`.
-
-### Часто используемые команды
+Nx owns project discovery, dependency analysis, task caching, and module-boundary enforcement. Projects are named `@org/<name>`. Run Nx through the repository package manager so the installed version and plugins are used consistently.
 
 ```bash
-# Serve (запуск в режиме разработки)
-npx nx serve @org/gateway
-npx nx serve @org/messenger
+# Development servers
+npm exec nx serve @org/gateway
+npm exec nx serve @org/messenger
 
-# Build / test / lint / typecheck
-npx nx build @org/<project>
-npx nx test @org/<project>
-npx nx lint @org/<project>
-npx nx typecheck @org/<project>
+# Per-project verification
+npm exec nx build @org/<project>
+npm exec nx test @org/<project>
+npm exec nx lint @org/<project>
+npm exec nx typecheck @org/<project>
 
-# Запуск нескольких целей
-npx nx run-many -t build test lint typecheck
-npx nx affected -t test
+# Workspace and change-aware tasks
+npm exec nx run-many -t build test lint typecheck
+npm exec nx affected -t test
+npm exec nx graph
 
-# Просмотр конфигурации проекта и доступных целей
-npx nx show project @org/<project> --json
-npx nx show project @org/<project> --json | jq '.targets | keys'
-
-# Исправление рассинхронизации workspace / очистка устаревшего кэша
-npx nx sync
-npx nx reset
+# Inspect targets and repair generated Nx state/cache
+npm exec nx show project @org/<project> --json
+npm exec nx sync
+npm exec nx reset
 ```
 
----
+Use `npm exec nx` rather than a global `nx` or direct underlying tool. Inspect `npm exec nx show project <project> --json` before relying on an unfamiliar target or flag. The affected command depends on a meaningful base revision; state that revision explicitly in CI when necessary.
 
-## Структура проекта
+## Repository Layout
 
-```
-polygon/
-├── apps/
-│   ├── backend/
-│   │   ├── gateway/              # API Gateway — единая точка входа (порт 3000)
-│   │   ├── auth-service/         # Аутентификация (порт 3002)
-│   │   ├── user-service/         # Профили пользователей (порт 3001)
-│   │   ├── chat-service/         # Чаты и сообщения (порт 3003)
-│   │   ├── media-service/        # Работа с файлами (порт 3004)
-│   │   ├── notification-service/ # Уведомления (порт 3005)
-│   │   └── search-service/       # Поиск (порт 3006)
-│   └── client/
-│       └── messenger/            # React 19 + Vite SPA
-│
-├── libs/
-│   ├── backend/
-│   │   ├── auth/                 # Бизнес-логика аутентификации + Prisma schema
-│   │   ├── user/                 # Бизнес-логика пользователей + Prisma schema
-│   │   ├── chat/                 # Бизнес-логика чатов + Prisma schema
-│   │   ├── media/
-│   │   ├── notification/
-│   │   ├── search/               # Логика поиска (Meilisearch)
-│   │   └── core/                 # Общая NestJS инфраструктура (логирование, guards, токены, redis...)
-│   ├── client/                   # Feature-Sliced Design — разбит на мини-пакеты
-│   │   ├── shared/               # @org/shared — UI kit, API client, socket, theme
-│   │   ├── entities/
-│   │   │   ├── user/             # @org/entities-user
-│   │   │   ├── chat/             # @org/entities-chat
-│   │   │   └── message/          # @org/entities-message
-│   │   ├── features/
-│   │   │   ├── auth/             # @org/features-auth
-│   │   │   ├── create-chat/      # @org/features-create-chat
-│   │   │   ├── send-message/     # @org/features-send-message
-│   │   │   ├── chat-socket/      # @org/features-chat-socket
-│   │   │   ├── notifications/    # @org/features-notifications
-│   │   │   ├── upload-avatar/    # @org/features-upload-avatar
-│   │   │   ├── emoji/            # @org/features-emoji
-│   │   │   ├── theme/            # @org/features-theme
-│   │   │   ├── infinite-scroll/  # @org/features-infinite-scroll
-│   │   │   └── search/           # @org/features-search (заглушка)
-│   │   ├── layouts/
-│   │   │   ├── auth/             # @org/layouts-auth
-│   │   │   ├── sidebar/          # @org/layouts-sidebar
-│   │   │   └── mobile/           # @org/layouts-mobile
-│   │   └── pages/
-│   │       ├── auth/             # @org/pages-login, @org/pages-register, ...
-│   │       ├── messenger/        # @org/pages-chat-page, @org/pages-settings, ...
-│   │       └── system/           # @org/pages-not-found, @org/pages-design-system
-│   └── common/                   # @org/common — Zod-схемы + константы
-│
-├── scripts/                      # bootstrap.sh, init-db.sh
-├── infra/                        # Docker-конфиги
-└── docs/
+```text
+apps/backend/     Gateway and service applications
+apps/client/      Vite React applications
+libs/backend/     Service domain modules and backend core
+libs/client/      FSD mini-packages
+libs/common/      Framework-agnostic Zod schemas and constants
+infra/            Docker and observability configuration
+scripts/          Bootstrap and database helpers
 ```
 
-### Установка зависимостей
+External dependencies belong in the root `package.json`. Individual Nx libraries resolve them through the workspace dependency graph and package hoisting. Do not add competing dependency versions to nested package manifests.
 
-Все внешние пакеты устанавливаются только в **корне репозитория**:
+## Module Boundaries
 
-```bash
-npm install <package>   # всегда в корне репозитория
+Nx enforces `@nx/enforce-module-boundaries` using `nx.tags` in `package.json`.
+
+| Tag | Meaning |
+| --- | --- |
+| `scope:client` / `scope:backend` | Client and backend code must not import each other |
+| `scope:shared` | Framework-agnostic code that either side may consume |
+| `layer:shared`, `layer:entities`, `layer:features`, `layer:layouts`, `layer:pages` | Client FSD layer |
+| `type:business`, `type:core`, `type:framework-agnostic` | Backend/common role |
+
+Client imports must follow the FSD direction:
+
+```text
+pages -> layouts -> widgets -> features -> entities -> shared
 ```
 
-Файлы `package.json` отдельных библиотек не перечисляют внешние пакеты — Nx разрешает всё из корня через hoisting. Это обеспечивает единую политику версий во всём монорепозитории.
-
----
-
-## Границы модулей
-
-Nx обеспечивает правила зависимостей с помощью ESLint-правила `@nx/enforce-module-boundaries`. Проекты объявляют свою принадлежность через теги в `package.json`:
+There is currently no widget slice to treat as a general dumping ground. A page may use a feature, but a feature must not import a page. Validate boundary changes with `npm exec nx lint @org/<project>`.
 
-```json
-{
-  "nx": {
-    "tags": ["layer:features", "scope:client"]
-  }
-}
-```
-
-### Используемые теги
-
-| Тег                        | Проекты                              |
-| -------------------------- | ------------------------------------ |
-| `scope:client`             | Все `libs/client/*`                  |
-| `scope:backend`            | Все `libs/backend/*`                 |
-| `scope:shared`             | `libs/common`                        |
-| `layer:shared`             | `@org/shared`                        |
-| `layer:entities`           | `@org/entities-*` (каждый слайс)     |
-| `layer:features`           | `@org/features-*` (каждый слайс)     |
-| `layer:layouts`            | `@org/layouts-*` (каждый слайс)      |
-| `layer:pages`              | `@org/pages-*` (каждый слайс)        |
-| `type:business`            | Библиотеки сервисов бэкенда          |
-| `type:core`                | `@org/core`                          |
-| `type:framework-agnostic`  | `@org/common`                        |
-
-### Правила границ
-
-Настроены в корневом `.eslintrc.json` в секции `@nx/enforce-module-boundaries`:
+Every library exposes a public API from its root `index.ts`. Import `@org/features-auth`, not `@org/features-auth/src/...`; the latter bypasses the contract and breaks internal refactors.
 
-```
-Порядок слоёв FSD (можно импортировать только из слоёв ниже):
-  pages → layouts → widgets → features → entities → shared
+## TypeScript And Backend Conventions
 
-Правила scope (области видимости):
-  scope:client  — не может импортировать scope:backend
-  scope:backend — не может импортировать scope:client
-  scope:shared  — может импортироваться кем угодно
-```
+- Keep TypeScript strict. Do not introduce `any`; use `unknown` and narrow it.
+- Use `kebab-case` file names, `PascalCase` types/classes, `camelCase` values/functions, and `UPPER_SNAKE_CASE` constants.
+- Public functions and methods have explicit return types. Do not leave unused values or parameters.
+- NestJS uses constructor injection only. Do not add property injection.
+- Use the repository pattern for Prisma access. Controllers and domain services do not call Prisma directly.
+- A service library normally keeps its module, services, controllers, DTOs, Prisma schema/service, and repository together under `libs/backend/<service>/src`.
+- Share validation through `@org/common` Zod schemas and turn schemas into DTOs with `createZodDto`; `ZodValidationPipe` applies the DTO contract at service boundaries.
 
-Проверка нарушений:
+The gateway may adapt HTTP to RPC, but it must not duplicate service-owned business rules. A service must never query another service's database; use RabbitMQ contracts.
 
-```bash
-npx nx lint @org/<project>
-npx nx run-many -t lint
-```
+## Client Conventions
 
----
+Client code is arranged as FSD mini-packages rather than one package per layer. This preserves code splitting: a lazy page imports only the entity/feature/layout packages it needs.
 
-## Соглашения по коду
+`@org/shared` owns semantic tokens, reusable UI components, common viewers, forms, feedback states, the API client, Socket.IO setup, and browser observability helpers. New code should use its `Text`, `Heading`, `Button`, `IconButton`, `Input`, `Textarea`, `Toggle`, `Dropdown`, `Modal`, `Badge`, `Spinner`, `Skeleton`, `FormAlert`, `EmptyState`, `StatusScreen`, and `Toast` primitives where applicable.
 
-### Именование
+Feature and page Tailwind classes should primarily describe layout and geometry. Put colors, typography variants, borders, focus rings, disabled states, loading states, and reusable action variants in shared primitives or semantic tokens. `libs/client/shared/src/styles/global.css` owns Tailwind v4 sources, theme tokens, base document styles, and unavoidable third-party integration overrides; do not add broad selector hacks there.
 
-| Объект                | Соглашение        | Пример                                 |
-| --------------------- | ----------------- | -------------------------------------- |
-| Файлы                 | kebab-case        | `user.service.ts`, `create-user.dto.ts` |
-| Классы / Интерфейсы   | PascalCase        | `UserService`, `CreateUserDto`         |
-| Переменные / Функции  | camelCase         | `getUserById`                          |
-| Константы             | UPPER_SNAKE_CASE  | `MAX_RETRY_COUNT`                      |
-
-### TypeScript
+Keep a feature focused on one user capability. Expose its UI and model through the feature's public entry point, and split an unfocused directory before it becomes a miscellaneous component collection.
 
-- `strict: true` — без исключений
-- Запрещён `any` — используйте `unknown` с явным сужением типа
-- Явные возвращаемые типы у публичных функций и методов
-- Запрещены неиспользуемые локальные переменные и параметры
+## Logging And Observability Contract
 
-### NestJS
+Any feature, bug fix, or refactor must assess its observability contract: what needs diagnosis, where it is logged, which data is unsafe, and what tests protect that behavior.
 
-- Только constructor-based DI — без внедрения через свойства
-- Repository pattern для всех обращений к базе данных — контроллеры и сервисы никогда не работают с Prisma напрямую
-- Каждая библиотека бэкенда следует единой внутренней структуре:
+Use safe lifecycle event names for meaningful state transitions:
 
-```
-libs/backend/<service>/
-  lib/<service>.module.ts
-  services/<service>.service.ts
-  controllers/<service>.controller.ts
-  database/
-    prisma/schema.prisma
-    prisma/prisma.service.ts
-    repository/<service>.prisma.repo.ts
-  dto/
-```
+- `*_requested` when an action reaches the system;
+- `*_validated` or `*_validation_failed` for non-trivial validation;
+- `*_denied` for authorization, membership, ownership, limit, or state rejection;
+- `*_started` before an external or expensive operation;
+- `*_succeeded`, `*_completed`, `*_created`, `*_updated`, or `*_deleted` after a durable change;
+- `*_failed` for a classified expected failure;
+- `*_skipped` for an intentional no-op branch.
 
-### Логирование И Observability
+Log context as booleans (`hasUserId`), categories, counts, durations, and result/status values. Do not log raw user/chat/file IDs, message text, request payloads, cookies, tokens, signed URLs, database URLs, OAuth credentials, MinIO credentials, SMTP credentials, VAPID keys, or Redis/RabbitMQ secrets.
 
-При создании новой фичи, исправлении бага или рефакторинге существующего поведения разработчик обязан явно оценить observability-контракт: какие события нужны для диагностики, где они должны логироваться, какие данные нельзя раскрывать, и какие тесты/grep-проверки защищают этот стандарт.
+Use Nest `Logger` or backend-core logging on the backend. Use `useLogger(context)` in React hooks/components and `frontendLog` in non-hook client code. Direct `console.*` is permitted only inside the shared logger/reporter implementation. Development logging may be detailed through those helpers; the production/demo browser console must remain clean. Report production browser failures only through the designated error reporter and never add URL query/hash or raw request data.
 
-Каждое значимое пользовательское или системное действие должно быть прологировано поэтапно, чтобы по логам было понятно, что именно произошло и на каком шаге сломалось. Минимальный lifecycle для нового/измененного flow:
+When a flow crosses services, the gateway and each owning service log their own stage with compatible event families. Extend tests to cover safe event shape/redaction and success, denied/failed, and skipped paths where the flow has them. See [OBSERVABILITY.md](./OBSERVABILITY.md) for the stack and runbook.
 
-- `*_requested` — действие принято системой: отправка сообщения, редактирование, удаление, пересылка, загрузка файла, подтверждение upload, создание чата и т.д.
-- `*_validated` или `*_validation_failed` — результат бизнес-валидации, если она нетривиальна.
-- `*_denied` — отказ по правам, membership, ownership, лимитам или состоянию сущности.
-- `*_started` — начало внешнего или тяжелого шага: RPC в другой сервис, storage operation, indexing, notification dispatch, media processing.
-- `*_succeeded` / `*_completed` / `*_created` / `*_updated` / `*_deleted` — успешное изменение состояния с counts/status/result.
-- `*_failed` — ошибка ожидаемого шага с безопасной классификацией причины.
-- `*_skipped` — осознанный пропуск шага, например нет получателей, нет attachments, нечего индексировать.
-
-Для каждого flow должны быть видны контекст и прогресс без раскрытия payload: boolean flags (`hasUserId`, `hasChatId`, `hasMessageId`, `hasFileId`), counts (`messageCount`, `attachmentCount`, `recipientCount`), типы (`messageType`, `fileCategory`, `deleteMode`), durations и итоговый status/result. Логи должны отвечать на вопросы "что пользователь попытался сделать", "какие проверки прошли", "где отказали", "что было создано/обновлено/удалено", "какой внешний шаг упал".
-
-Frontend:
+## Testing Strategy
 
-- Используйте `useLogger(context)` в React-компонентах/хуках или `frontendLog` в non-hook коде.
-- Прямые `console.*` запрещены вне реализации shared logger/reporter.
-- Dev может логировать подробные diagnostic events через logger.
-- Prod/demo browser console должна оставаться чистой.
-- Ошибки в prod отправляйте только через sanitized reporter в backend observability endpoint.
-- Не логируйте raw tokens, cookies, full URL with query/hash, message text, file names, presigned URLs, raw user ids, raw chat ids и другие PII/secrets без явного redaction.
+Choose the narrowest test that proves the changed contract, then broaden it when a shared boundary changes.
 
-Backend:
+- Service tests cover business rules, repositories, and event behavior in the owning library.
+- Gateway controller tests use Nest `TestingModule` and Supertest with mocked RabbitMQ `ClientProxy` instances; they exercise HTTP status mapping, DTO validation, cookies, guards, and adapter behavior without requiring RabbitMQ or service databases.
+- Socket tests cover authentication, membership, room behavior, and emitted events.
+- Client tests cover hooks/components with MSW and test utilities; browser e2e covers high-value user workflows.
+- Add regression coverage for session revocation whenever private-route or Socket.IO guard behavior changes.
 
-- Используйте Nest `Logger` или общий logger из backend core.
-- Логи должны быть структурированными: `eventType`, boolean flags (`hasUserId`, `hasChatId`), counts, durations, status/result.
-- Не пишите raw ids, message text, tokens, cookies, database URLs, OAuth secrets, MinIO credentials, SMTP credentials, VAPID keys, Redis/RabbitMQ passwords и signed URLs.
-- Для бизнес-фичей добавляйте события на каждый ключевой переход lifecycle: request received, validation result, authorization/membership/ownership denied, external/service call started/failed/completed, state changed, async event emitted/consumed, skipped branch.
-- Для новых публичных endpoint/RPC/socket flows логирование должно покрывать success, expected failure paths и skipped paths без раскрытия payload secrets.
-- Если действие меняет состояние в нескольких сервисах, gateway и каждый сервис должны логировать свою часть flow одинаковыми `eventType`-семействами, чтобы цепочка читалась по этапам.
+For gateway POST tests, expect Nest's default `201` unless the controller explicitly sets `@HttpCode(200)`. Do not mistake a controller integration test for a full microservice/database integration test.
 
-Тестовый минимум для затронутой области:
+## Before Submitting A Change
 
-- frontend grep/test не должен находить прямые `console.*` в production client code;
-- tests должны подтверждать, что prod frontend reporter не отправляет query/hash и raw secrets;
-- backend unit/integration tests для логирования должны проверять event shape/redaction там, где добавляется новый logger behavior.
-- tests для новых endpoint/RPC/socket flows должны проверять наличие lifecycle-событий для success, denied/failed и skipped веток, если такие ветки есть в flow.
-
----
-
-## Общая логика (`@org/common`)
-
-`libs/common` — единый источник истины для схем валидации и констант. Он не зависит от фреймворка и может импортироваться как клиентом, так и бэкендом.
-
-### Zod-схемы
-
-Определяйте схемы один раз, используйте везде:
-
-```typescript
-// libs/common/src/schemas/auth.ts
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-```
-
-**Фронтенд** — расширение для специфических нужд форм:
-
-```typescript
-// libs/client/features/src/lib/auth/ui/register-form.tsx
-import { registerSchema } from '@org/common';
-
-const registerFormSchema = registerSchema
-  .extend({
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
-```
-
-**Бэкенд** — создание NestJS DTO через `createZodDto`:
-
-```typescript
-// libs/backend/auth/src/dto/login.dto.ts
-import { loginSchema } from '@org/common';
-import { createZodDto } from 'nestjs-zod';
-
-export class LoginDto extends createZodDto(loginSchema) {}
-```
-
-`ZodValidationPipe` (применён глобально в каждом сервисе) автоматически валидирует входящие запросы по схеме DTO и возвращает `400 Bad Request` при ошибке.
-
----
-
-## Архитектура клиента — FSD с разбивкой на пакеты
-
-Клиент использует **Feature-Sliced Design (FSD)**. Каждый слайс внутри каждого слоя является отдельным Nx-пакетом в `libs/client/`:
-
-```
-libs/client/
-  shared/                        ← @org/shared
-  entities/user/                 ← @org/entities-user
-  entities/chat/                 ← @org/entities-chat
-  entities/message/              ← @org/entities-message
-  features/auth/                 ← @org/features-auth
-  features/create-chat/          ← @org/features-create-chat
-  features/send-message/         ← @org/features-send-message
-  features/chat-socket/          ← @org/features-chat-socket
-  features/notifications/        ← @org/features-notifications
-  features/search/               ← @org/features-search
-  layouts/auth/                  ← @org/layouts-auth
-  layouts/sidebar/               ← @org/layouts-sidebar
-  pages/auth/                    ← @org/pages-login
-  pages/register/                ← @org/pages-register
-  pages/chat-page/               ← @org/pages-chat-page
-```
-
-**Зачем разбивать?** Хранение целого слоя в одном пакете ломает code splitting. Например, если `@org/pages` (`layer:pages`) — один большой пакет, то при ленивой загрузке страницы подтянутся компоненты всех остальных страниц. Разбивка на `@org/pages-login`, `@org/pages-chat-page` и т.д. позволяет каждому бандлу оставаться минимальным.
-
-Само приложение (`apps/client/messenger`) собирает эти слои воедино: router, providers, layouts уровня приложения и страницы живут там.
-
-### Client UI System
-
-`@org/shared` является владельцем переносимой клиентской дизайн-системы: theme tokens, typography, базовые интерактивные компоненты, модальные оболочки, уведомления, skeleton/loading состояния и общие viewer/surface primitives.
-
-Новый клиентский код в `entities`, `features`, `layouts`, `pages` и `apps` должен сначала использовать публичные primitives из `@org/shared`:
-
-- `Text` и `Heading` — для контентного текста, заголовков, labels, helper/error text и muted/semantic text states.
-- `Button` и `IconButton` — для действий. Ручные `button` с локальными цветами допустимы только для узкого layout/unstyled behavior, когда shared variant не подходит.
-- `Input`, `Textarea`, `Toggle`, `Dropdown`, `Modal`, `Badge`, `Spinner`, `Skeleton`, `FormAlert`, `EmptyState`, `StatusScreen`, `Toast` — вместо повторной локальной реализации тех же UI-паттернов.
-- `cn` — для композиции классов, если компоненту нужен layout или state-specific className.
-
-Локальные Tailwind-классы в feature/page коде должны описывать преимущественно layout и геометрию: `flex`, `grid`, `gap`, `px`, `py`, `min-h-0`, `overflow-*`, responsive breakpoints. Брендовые цвета, semantic text colors, borders, focus rings, disabled states, radius presets, loading states и визуальные варианты действий должны приходить из shared-компонентов или semantic tokens.
-
-`libs/client/shared/src/styles/global.css` не должен быть свалкой component overrides. Он владеет только:
-
-- Tailwind v4 `@source`;
-- semantic design tokens и theme overrides;
-- базовыми стилями документа (`body`, focus-visible, selection, scrollbar);
-- интеграционными overrides для сторонних виджетов, которые нельзя выразить через React props.
-
-Запрещены новые глобальные хаки по селекторам вроде `.bg-primary`, `.bg-green-500`, `button.bg-*`, `aside`, `[role='dialog']`, `.border-b.border-border`. Если визуал нужен многим местам, добавьте или расширьте shared primitive. Если визуал специфичен для одной фичи, держите его рядом с этой фичей и используйте semantic tokens.
-
-### Внутренняя структура фичи
-
-Каждая фича внутри `libs/client/features/src/lib/` разделена на два сегмента:
-
-```
-lib/auth/
-  ui/             # React-компоненты, используемые страницами
-  model/          # Хуки и логика состояния, используемые ui/ или страницами
-  index.ts        # Публичное API этой фичи
-```
-
-Следите, чтобы `ui/` и `model/` были сосредоточены **только на одной фиче**. Открыв `auth/ui/`, вы должны сразу понимать, что делает каждый файл — потому что всё там относится к аутентификации. Папка с 20 компонентами разного назначения — сигнал к тому, что пора разбить на отдельные фичи.
-
-### Публичное API
-
-Каждая библиотека и каждая фича предоставляет публичное API через `index.ts`. Этот файл является **контрактом** — он явно объявляет, что разрешено использовать внешнему миру. Всё, что не перечислено там, — детали реализации.
-
-```typescript
-// libs/client/features/src/lib/auth/index.ts
-export { LoginForm } from './ui/login-form';
-export { RegisterForm } from './ui/register-form';
-export { useLogin } from './model/use-login';
-export { useRegister } from './model/use-register';
-// ForgotPasswordForm намеренно не экспортируется — используется только внутри фичи
-```
-
-`src/index.ts` на уровне библиотеки реэкспортирует из `index.ts` каждой фичи:
-
-```typescript
-// libs/client/features/auth/src/index.ts
-export { LoginForm } from './ui/login-form';
-export { useLogin } from './model/use-login';
-```
-
-Для разбитых на слайсы пакетов нет агрегированного реэкспорта — потребители импортируют напрямую из пакета слайса:
-
-```typescript
-// ✅ правильно — импорт из конкретного пакета слайса
-import { LoginForm, useLogin } from '@org/features-auth';
-
-// ❌ неправильно — обход контракта, сломается при любом внутреннем рефакторинге
-import { LoginForm } from '@org/features-auth/src/ui/login-form';
-```
-
-Это означает, что можно свободно перестраивать внутренности (переименовывать файлы, разделять сегменты, перемещать код) без необходимости трогать потребителей — пока `index.ts` остаётся неизменным.
+1. Run the relevant Nx lint, test, typecheck, and build targets.
+2. Check module boundaries and public package imports.
+3. Review new logging for raw payloads, identifiers, credentials, query strings, and browser `console.*` calls.
+4. For private endpoints, confirm `SessionGuard`, `ActiveAccountGuard`, and any role checks match adjacent routes.
+5. Update maintenance documentation when the runtime contract, setup procedure, or a known gotcha changes.
