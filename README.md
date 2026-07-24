@@ -18,11 +18,10 @@ Polygon is a full-stack messenger built as an Nx monorepo. It combines a React m
 
 ## Documentation Routing
 
-Start with the product specification for current behavior, then use the engineering references for implementation and maintenance work.
+Use the engineering references for implementation and maintenance work.
 
 | Document                                       | Use it for                                                                                                   |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Product Specification](./docs/specs/SPEC.md)  | Product scope, implemented capabilities, exclusions, and links to every subsystem spec                       |
 | [Architecture](./docs/ARCHITECTURE.md)         | Runtime model, service ownership, security boundaries, realtime flow, and shared contracts                   |
 | [Development Guide](./docs/DEVELOPMENT.md)     | Nx workflow, coding conventions, FSD boundaries, logging rules, and testing strategy                         |
 | [Setup Guide](./docs/SETUP.md)                 | Local environment, Docker infrastructure, Prisma notes, startup commands, and remote device testing          |
