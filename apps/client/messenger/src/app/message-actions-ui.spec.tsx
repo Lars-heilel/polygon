@@ -6,6 +6,7 @@ import { MessageActionsMenu, useDeleteMessageMutation, useEditMessageMutation } 
 import type { Message } from '@org/entities-message';
 import { authedFetch, queryClient } from '@org/shared';
 import { ChatFooter } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/chat-window/ChatFooter';
+import { AttachMenu } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/chat-window/attach-menu';
 import { DeleteMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/delete-message-modal';
 import { ForwardMessageModal } from '../../../../../libs/client/pages/messenger/pages-chat-page/src/lib/ui/chat/message-list/forward-message-modal';
 
@@ -26,6 +27,7 @@ jest.mock('@org/features-send-message', () => {
     cameraFacing: null,
     start: jest.fn(),
     stop: jest.fn(),
+    switchCamera: jest.fn(),
     formatDuration: () => '0:00',
   };
 
@@ -54,6 +56,7 @@ const sendMessageMocks = jest.requireMock('@org/features-send-message') as {
     cameraFacing: 'front' | 'back' | null;
     start: jest.Mock;
     stop: jest.Mock;
+    switchCamera: jest.Mock;
     formatDuration: () => string;
   };
 };
@@ -91,21 +94,39 @@ describe('message actions ui', () => {
     sendMessageMocks.__recorder.cameraFacing = null;
   });
 
-  it('shows edit only for own text messages without files', () => {
+  it('shows edit only for own text messages without files and keeps the mobile menu above the composer', () => {
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,
       value: 390,
     });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 800,
+    });
 
     render(
-      <MessageActionsMenu
-        message={baseMessage}
-        isMine
-        onEdit={jest.fn()}
-        onForward={jest.fn()}
-        onDelete={jest.fn()}
-      />,
+      <>
+        <textarea placeholder="Write a message..." />
+        <MessageActionsMenu
+          message={baseMessage}
+          isMine
+          onEdit={jest.fn()}
+          onForward={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      </>,
     );
+    jest.spyOn(screen.getByPlaceholderText('Write a message...'), 'getBoundingClientRect').mockReturnValue({
+      bottom: 768,
+      height: 48,
+      left: 0,
+      right: 390,
+      top: 720,
+      width: 390,
+      x: 0,
+      y: 720,
+      toJSON: () => ({}),
+    });
 
     fireEvent.click(screen.getByLabelText('Message actions'));
 
@@ -114,7 +135,27 @@ describe('message actions ui', () => {
     expect(screen.getByRole('button', { name: 'Message actions' }).className).toContain('h-8');
     expect(screen.getByRole('button', { name: 'Message actions' }).className).not.toContain('shadow-[');
     expect(screen.getByRole('menuitem', { name: 'Edit' }).className).toContain('h-9');
-    expect(screen.getByRole('menu').getAttribute('style')).toContain('bottom: 12px');
+    expect(screen.getByRole('menu').getAttribute('style')).toContain('bottom: 92px');
+  });
+
+  it('sets photo and video attachment filters', async () => {
+    const { container } = render(<AttachMenu onFileSelected={jest.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Attach files' }));
+    fireEvent.click(screen.getByRole('button', { name: /photo/i }));
+
+    await waitFor(() => {
+      const input = container.querySelector('input[type="file"]');
+      expect(input?.getAttribute('accept')).toBe('image/*');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Attach files' }));
+    fireEvent.click(screen.getByRole('button', { name: /video/i }));
+
+    await waitFor(() => {
+      const input = container.querySelector('input[type="file"]');
+      expect(input?.getAttribute('accept')).toBe('video/*');
+    });
   });
 
   it('hides edit for file messages and keeps forward copy delete', () => {
@@ -200,6 +241,24 @@ describe('message actions ui', () => {
 
     expect(screen.getByTestId('circle-recording-preview')).toBeTruthy();
     expect(screen.getByText('Front camera')).toBeTruthy();
+  });
+
+  it('exposes an explicit camera switch while recording a circle video', () => {
+    sendMessageMocks.__recorder.isRecording = true;
+    sendMessageMocks.__recorder.previewStream = {} as MediaStream;
+    sendMessageMocks.__recorder.cameraFacing = 'front';
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChatFooter chatId="chat-1" />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to back camera' }));
+
+    expect(sendMessageMocks.__recorder.switchCamera).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Switch to back camera' }).className).toContain('h-12');
+    expect(screen.getByRole('button', { name: 'Switch to back camera' }).className).toContain('w-12');
   });
 
   it('defaults own message delete confirmation to delete for everyone', () => {

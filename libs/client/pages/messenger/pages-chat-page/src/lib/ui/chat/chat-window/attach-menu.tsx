@@ -56,6 +56,8 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
         onChange={handleFileChange}
       />
       <button
+        type="button"
+        aria-label="Attach files"
         onClick={handleClick}
         disabled={disabled}
         className={cn(
@@ -93,6 +95,7 @@ export const AttachMenu = memo(function AttachMenu({ disabled, onFileSelected }:
             {categories.map((cat) => (
               <button
                 key={cat.label}
+                type="button"
                 onClick={() => handleCategorySelect(cat.accept)}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-sm transition-all group duration-150 text-left"
               >

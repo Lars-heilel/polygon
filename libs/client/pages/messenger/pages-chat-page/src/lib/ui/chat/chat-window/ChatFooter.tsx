@@ -274,16 +274,27 @@ export const ChatFooter = memo(function ChatFooter({
 
       {circleRecorder.isRecording && (
         <div className="mb-2 overflow-hidden rounded-xl border border-info/30 bg-info-muted">
-          {circleRecorder.previewStream ? (
-            <video
-              ref={circlePreviewRef}
-              data-testid="circle-recording-preview"
-              className="aspect-square max-h-48 w-full object-cover sm:max-h-56"
-              muted
-              playsInline
-              autoPlay
+          <div className="relative">
+            {circleRecorder.previewStream ? (
+              <video
+                ref={circlePreviewRef}
+                data-testid="circle-recording-preview"
+                className="aspect-square max-h-48 w-full object-cover sm:max-h-56"
+                muted
+                playsInline
+                autoPlay
+              />
+            ) : null}
+            <IconButton
+              type="button"
+              label={circleRecorder.cameraFacing === 'back' ? 'Switch to front camera' : 'Switch to back camera'}
+              size="lg"
+              variant="ghost"
+              onClick={() => void circleRecorder.switchCamera()}
+              className="absolute right-3 top-3 h-12 w-12 rounded-full bg-background/80 text-text shadow-[var(--shadow-popover)] backdrop-blur touch-manipulation"
+              icon={<SwitchCameraIcon />}
             />
-          ) : null}
+          </div>
           <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
             <span className="w-2 h-2 rounded-full bg-info animate-pulse" />
             <Text
@@ -383,7 +394,7 @@ function CloseIcon() {
   return (
     <svg
       aria-hidden="true"
-      className="h-4 w-4"
+      className="h-6 w-6"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -456,6 +467,31 @@ function CircleVideoIcon() {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M10 9l5 3-5 3V9z"
+      />
+    </svg>
+  );
+}
+
+function SwitchCameraIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 7h3l2-2h6l2 2h3v11H4V7z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 13a3 3 0 015.2-2M15 11h-2V9M15 15a3 3 0 01-5.2 2M9 17h2v2"
       />
     </svg>
   );

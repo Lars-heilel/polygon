@@ -16,6 +16,11 @@ interface MessageActionsMenuProps {
 const MENU_WIDTH = 176;
 const MENU_MARGIN = 8;
 const MOBILE_MENU_MARGIN = 12;
+const COMPOSER_SELECTOR = [
+  'textarea[placeholder="Write a message..."]',
+  'textarea[placeholder="Edit message..."]',
+  'textarea[placeholder="Recording..."]',
+].join(',');
 
 function getMenuPosition(trigger: HTMLElement | null): CSSProperties {
   if (typeof window === 'undefined' || !trigger) {
@@ -23,8 +28,14 @@ function getMenuPosition(trigger: HTMLElement | null): CSSProperties {
   }
 
   if (window.innerWidth < 640) {
+    const composer = document.querySelector<HTMLElement>(COMPOSER_SELECTOR);
+    const composerTop = composer?.getBoundingClientRect().top;
+    const bottom = typeof composerTop === 'number' && composerTop > 0
+      ? Math.max(MOBILE_MENU_MARGIN, window.innerHeight - composerTop + MOBILE_MENU_MARGIN)
+      : MOBILE_MENU_MARGIN;
+
     return {
-      bottom: MOBILE_MENU_MARGIN,
+      bottom,
       left: MOBILE_MENU_MARGIN,
       right: MOBILE_MENU_MARGIN,
     };
@@ -175,7 +186,7 @@ export const MessageActionsMenu = memo(function MessageActionsMenu({
             aria-label="Message actions"
             style={menuPosition}
             className={cn(
-              'fixed z-50 overflow-hidden border border-border bg-surface-elevated shadow-[var(--shadow-surface)]',
+              'fixed z-[80] overflow-hidden border border-border bg-surface-elevated shadow-[var(--shadow-surface)]',
               'max-sm:rounded-md max-sm:p-1',
               'sm:w-44 sm:rounded-md sm:py-1',
             )}

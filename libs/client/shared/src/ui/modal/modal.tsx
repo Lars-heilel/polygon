@@ -125,7 +125,7 @@ function ModalRoot({ isOpen, onClose, children, className, overlayClassName }: M
     <ModalContext.Provider value={{ onClose }}>
       <div
         className={cn(
-          'fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4',
+          'fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4',
           overlayClassName,
         )}
         onClick={handleOverlayClick}
