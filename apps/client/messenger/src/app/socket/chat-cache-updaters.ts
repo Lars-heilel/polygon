@@ -12,8 +12,8 @@ type MessageLike = {
   localStatus?: 'sending' | 'sent' | 'error';
 };
 
-type MessagePageLike<TMessage extends MessageLike> = {
-  messages: TMessage[];
+type MessagePageLike = {
+  messages: MessageLike[];
 };
 
 type ChatLike = {
@@ -22,13 +22,17 @@ type ChatLike = {
   lastMessage: { createdAt: string } | null;
 };
 
+type ChatWithUnreadLike = ChatLike & {
+  unreadCount?: number;
+};
+
+type MessagePatchLike = Partial<MessageLike> & Pick<MessageLike, 'id'>;
+
 export function upsertMessageIntoPages<
-  TData extends { pages: TPage[] },
-  TPage extends MessagePageLike<TMessage>,
-  TMessage extends MessageLike,
+  TData extends { pages: MessagePageLike[] },
 >(
   old: TData | undefined,
-  msg: TMessage,
+  msg: MessageLike,
 ): TData | undefined {
   if (!old) return old;
 
@@ -64,7 +68,7 @@ export function upsertMessageIntoPages<
   return appendMessageToPages({ ...old, pages } as TData, normalizedMsg);
 }
 
-function isMatchingPendingEcho<TMessage extends MessageLike>(message: TMessage, msg: TMessage): boolean {
+function isMatchingPendingEcho(message: MessageLike, msg: MessageLike): boolean {
   if (message.localStatus !== 'sending') return false;
   if (msg.localStatus === 'sending') return false;
   if (message.chatId !== msg.chatId) return false;
@@ -79,12 +83,10 @@ function isMatchingPendingEcho<TMessage extends MessageLike>(message: TMessage, 
 }
 
 export function appendMessageToPages<
-  TData extends { pages: TPage[] },
-  TPage extends MessagePageLike<TMessage>,
-  TMessage extends MessageLike,
+  TData extends { pages: MessagePageLike[] },
 >(
   old: TData | undefined,
-  msg: TMessage,
+  msg: MessageLike,
 ): TData | undefined {
   if (!old) return old;
   const normalizedMsg = normalizeSocketMessage(msg);
@@ -99,9 +101,7 @@ export function appendMessageToPages<
 }
 
 export function markMessageSendError<
-  TData extends { pages: TPage[] },
-  TPage extends MessagePageLike<TMessage>,
-  TMessage extends MessageLike,
+  TData extends { pages: MessagePageLike[] },
 >(
   old: TData | undefined,
   clientId: string,
@@ -122,12 +122,11 @@ export function markMessageSendError<
 }
 
 export function updateMessageInPages<
-  TData extends { pages: TPage[] },
-  TPage extends MessagePageLike<TMessage>,
-  TMessage extends MessageLike,
+  TData extends { pages: MessagePageLike[] },
+  TMessage extends MessagePatchLike,
 >(
   old: TData | undefined,
-  msg: Partial<TMessage> & Pick<MessageLike, 'id'>,
+  msg: TMessage,
 ): TData | undefined {
   if (!old) return old;
   const normalizedMsg = normalizeSocketMessage(msg);
@@ -137,16 +136,14 @@ export function updateMessageInPages<
     pages: old.pages.map((page) => ({
       ...page,
       messages: page.messages.map((message) =>
-        message.id === normalizedMsg.id ? ({ ...message, ...normalizedMsg } as TMessage) : message,
+        message.id === normalizedMsg.id ? { ...message, ...normalizedMsg } : message,
       ),
     })),
   } as TData;
 }
 
 export function removeMessageFromPages<
-  TData extends { pages: TPage[] },
-  TPage extends MessagePageLike<TMessage>,
-  TMessage extends MessageLike,
+  TData extends { pages: MessagePageLike[] },
 >(old: TData | undefined, messageId: string): TData | undefined {
   if (!old) return old;
 
@@ -177,9 +174,19 @@ export function updateChatListLastMessage<TChat extends ChatLike, TMessage exten
   return next;
 }
 
-function normalizeSocketMessage<TMessage extends Partial<MessageLike> & Pick<MessageLike, 'id'>>(msg: TMessage): TMessage {
+export function updateChatListUnreadCount<TChat extends ChatWithUnreadLike>(
+  chats: TChat[] | undefined,
+  chatId: string,
+  delta: number,
+): TChat[] {
+  return (chats ?? []).map((chat) =>
+    chat.id === chatId ? { ...chat, unreadCount: (chat.unreadCount ?? 0) + delta } : chat,
+  );
+}
+
+function normalizeSocketMessage<TMessage extends MessagePatchLike>(msg: TMessage): TMessage {
   if (!isRawSocketMessage(msg)) return msg;
-  return normalizeMessage(msg) as TMessage;
+  return normalizeMessage(msg) as unknown as TMessage;
 }
 
 function isRawSocketMessage(msg: Partial<MessageLike> & Pick<MessageLike, 'id'>): msg is RawMessage & MessageLike {

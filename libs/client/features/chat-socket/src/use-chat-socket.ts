@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { chatApi, useChatStore } from '@org/entities-chat';
-import { frontendLog, socket } from '@org/shared';
+import { chatApi, type Chat, useChatStore } from '@org/entities-chat';
+import { frontendLog, queryClient, socket } from '@org/shared';
 
 export function useChatSocket(chatId: string) {
   const setActiveChat = useChatStore((s) => s.setActiveChat);
@@ -12,6 +12,9 @@ export function useChatSocket(chatId: string) {
     frontendLog('debug', 'ChatSocket', 'chat_join_requested', { hasChatId: !!chatId });
     void chatApi.markRead(chatId).catch(() => undefined);
     markChatRead(chatId);
+    queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
+      old.map((chat) => (chat.id === chatId ? { ...chat, unreadCount: 0 } : chat)),
+    );
     socket.emit('chat:join', { chatId });
 
     return () => {

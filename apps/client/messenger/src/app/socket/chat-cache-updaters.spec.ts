@@ -3,11 +3,19 @@ import {
   markMessageSendError,
   removeMessageFromPages,
   updateChatListLastMessage,
+  updateChatListUnreadCount,
   updateMessageInPages,
   upsertMessageIntoPages,
 } from './chat-cache-updaters';
 
 describe('chat socket cache updaters', () => {
+  type ChatCacheItem = {
+    id: string;
+    updatedAt: string;
+    lastMessage: { createdAt: string } | null;
+    unreadCount: number;
+  };
+
   const msg = {
     id: 'message-2',
     clientId: null,
@@ -201,6 +209,28 @@ describe('chat socket cache updaters', () => {
     expect(next[0].id).toBe('chat-2');
     expect(next[0].lastMessage).toBe(msg);
     expect(next[0]).not.toHaveProperty('messages');
+  });
+
+  it('optimistically increments unread count for the changed chat', () => {
+    const chats: ChatCacheItem[] = [
+      {
+        id: 'chat-1',
+        updatedAt: '2026-07-14T09:30:00.000Z',
+        lastMessage: null,
+        unreadCount: 2,
+      },
+      {
+        id: 'chat-2',
+        updatedAt: '2026-07-14T09:00:00.000Z',
+        lastMessage: null,
+        unreadCount: 0,
+      },
+    ];
+
+    const next = updateChatListUnreadCount(chats, 'chat-1', 1);
+
+    expect(next.find((chat) => chat.id === 'chat-1')?.unreadCount).toBe(3);
+    expect(next.find((chat) => chat.id === 'chat-2')?.unreadCount).toBe(0);
   });
 
   it('updates existing messages from socket edits', () => {

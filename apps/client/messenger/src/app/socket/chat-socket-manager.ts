@@ -8,6 +8,7 @@ import { unstable_batchedUpdates } from 'react-dom';
 import {
   markMessageSendError,
   removeMessageFromPages,
+  updateChatListUnreadCount,
   upsertMessageIntoPages,
   updateChatListLastMessage,
   updateMessageInPages,
@@ -22,6 +23,7 @@ function handleNewMessage(msg: Message) {
 
   const chatStore = useChatStore.getState();
   const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
+  const shouldIncrementUnread = msg.chatId !== chatStore.activeChatId || !tabVisible;
 
   unstable_batchedUpdates(() => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
@@ -36,7 +38,10 @@ function handleNewMessage(msg: Message) {
       queryClient.invalidateQueries({ queryKey: ['chat-media-messages', msg.chatId] });
     }
 
-    if (msg.chatId !== chatStore.activeChatId || !tabVisible) {
+    if (shouldIncrementUnread) {
+      queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
+        updateChatListUnreadCount(old, msg.chatId, 1),
+      );
       chatStore.incrementUnread(msg.chatId);
     }
 

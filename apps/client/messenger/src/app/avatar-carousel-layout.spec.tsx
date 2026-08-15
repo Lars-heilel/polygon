@@ -58,4 +58,21 @@ describe('AvatarCarousel layout', () => {
     expect(carouselArea?.className).toContain('shrink-0');
     expect(carouselArea?.className).not.toContain('flex-1');
   });
+
+  it('renders above shared modal overlays when opened from a profile modal', async () => {
+    render(
+      <AvatarCarousel
+        isOpen
+        onClose={jest.fn()}
+        userId="user-1"
+        readOnly
+      />,
+    );
+
+    await screen.findByAltText('avatar-1.png');
+
+    const overlay = screen.getByText('Avatar History').parentElement?.parentElement?.parentElement;
+
+    expect(overlay?.className).toContain('z-[110]');
+  });
 });
