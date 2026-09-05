@@ -143,6 +143,20 @@
   "targetDefaults": {
     "test": {
       "dependsOn": ["^build"]
+    },
+    "build": {
+      "dependsOn": ["^build", "^prisma-generate"]
+    },
+    "prisma-generate": {
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/prisma.config.ts",
+        "{projectRoot}/src/database/prisma/schema.prisma"
+      ],
+      "outputs": [
+        "{projectRoot}/src/database/generated",
+        "{projectRoot}/src/database/prisma/generated"
+      ]
     }
   },
   "generators": {

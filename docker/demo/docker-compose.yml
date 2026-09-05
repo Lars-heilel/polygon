@@ -142,6 +142,8 @@ services:
         limits:
           memory: 2G
 
+
+
   minio:
     image: quay.io/minio/minio
     container_name: polygon-demo-minio
@@ -151,7 +153,6 @@ services:
       - minio_data:/data
     networks:
       - polygon-demo-network
-
 volumes:
   postgres_data:
   redis_data:
