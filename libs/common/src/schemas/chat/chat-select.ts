@@ -4,6 +4,8 @@ export const CHAT_SELECT_FIELDS = {
   name: true,
   avatarUrl: true,
   selfOwnerId: true,
+  lastMessageId: true,
+  lastMessageAt: true,
   createdAt: true,
   updatedAt: true,
 } as const;

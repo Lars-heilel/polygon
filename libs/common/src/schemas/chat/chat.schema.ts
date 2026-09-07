@@ -12,6 +12,8 @@ export const chatSchema = z.object({
   name: z.string().nullable(),
   avatarUrl: z.url().nullable(),
   selfOwnerId: z.uuid().nullable(),
+  lastMessageId: z.uuid().nullable(),
+  lastMessageAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

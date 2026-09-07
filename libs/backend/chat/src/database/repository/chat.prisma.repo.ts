@@ -227,6 +227,13 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
+  async findMessageByClientId(chatId: string, clientId: string): Promise<Message | null> {
+    return this.prisma.message.findFirst({
+      where: { chatId, clientId },
+      select: MESSAGE_SELECT_FIELDS,
+    });
+  }
+
   async findVisibleMessagesByIds(
     chatId: string,
     messageIds: string[],

@@ -130,6 +130,7 @@ export interface IChatRepository {
     userId: string,
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
+  findMessageByClientId(chatId: string, clientId: string): Promise<Message | null>;
   findVisibleMessagesByIds(
     chatId: string,
     messageIds: string[],

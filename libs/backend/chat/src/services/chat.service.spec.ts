@@ -29,6 +29,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMessagesByChat: jest.fn(),
     findMediaMessagesByChat: jest.fn(),
     findMessageById: jest.fn(),
+    findMessageByClientId: jest.fn(),
     findVisibleMessagesByIds: jest.fn(),
     findMessageAttachmentForAccess: jest.fn(),
     createMessageWithRelations: jest.fn(),
@@ -704,6 +705,8 @@ describe('ChatService', () => {
       name: 'Личное',
       avatarUrl: null,
       selfOwnerId: 'user-1',
+      lastMessageId: null,
+      lastMessageAt: null,
       createdAt: new Date('2026-07-14T10:00:00.000Z'),
       updatedAt: new Date('2026-07-14T10:00:00.000Z'),
     } as const;

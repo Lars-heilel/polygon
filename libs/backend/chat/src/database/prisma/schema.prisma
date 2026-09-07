@@ -36,6 +36,8 @@ model Chat {
   name        String?  @map("name")
   avatarUrl   String?  @map("avatar_url")
   selfOwnerId String?  @unique @map("self_owner_id")
+  lastMessageId String?   @map("last_message_id")
+  lastMessageAt DateTime? @map("last_message_at")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -43,6 +45,7 @@ model Chat {
   messages Message[]
 
   @@index([type])
+  @@index([lastMessageAt])
 }
 
 model ChatMember {
@@ -78,8 +81,8 @@ model Message {
   attachments    MessageAttachment[]
   forwardContext MessageForwardContext?
 
-  @@index([chatId, createdAt])
-  @@index([chatId, clientId])
+  @@index([chatId, createdAt, id])
+  @@unique([chatId, clientId])
   @@index([deletedAt])
 }
 

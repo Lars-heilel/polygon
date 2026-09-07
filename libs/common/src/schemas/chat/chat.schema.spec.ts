@@ -9,6 +9,8 @@ describe('chat schema', () => {
       name: 'Личное',
       avatarUrl: null,
       selfOwnerId: '00000000-0000-4000-8000-000000000002',
+      lastMessageId: null,
+      lastMessageAt: null,
       createdAt: new Date('2026-07-22T00:00:00.000Z'),
       updatedAt: new Date('2026-07-22T00:00:00.000Z'),
     });

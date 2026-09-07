@@ -18,6 +18,7 @@ describe('ChatPrismaRepository', () => {
   const message = {
     count: jest.fn(),
     create: jest.fn(),
+    findFirst: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
@@ -459,8 +460,7 @@ describe('ChatPrismaRepository', () => {
     );
   });
 
-  it('stores per-user hidden message state idempotently', async () => {
-    messageDeletion.upsert.mockResolvedValue({
+  it('stores per-user hidden message state idempotently', async () => {    messageDeletion.upsert.mockResolvedValue({
       messageId: 'message-1',
       userId: 'user-1',
     });
@@ -473,6 +473,17 @@ describe('ChatPrismaRepository', () => {
         create: { messageId: 'message-1', userId: 'user-1' },
         update: { deletedAt: expect.any(Date) },
       }),
+    );
+  });
+
+  it('findMessageByClientId returns message by scoped clientId', async () => {
+    message.findFirst.mockResolvedValue({ id: 'msg-1' });
+
+    const found = await repository.findMessageByClientId('chat-1', 'c-1');
+
+    expect(found?.id).toBe('msg-1');
+    expect(message.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { chatId: 'chat-1', clientId: 'c-1' } }),
     );
   });
 });
