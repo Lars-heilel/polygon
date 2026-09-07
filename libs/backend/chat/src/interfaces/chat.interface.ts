@@ -138,6 +138,8 @@ export interface IChatRepository {
   ): Promise<Message[]>;
   findMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
+  createMessageWithTouch(data: CreateMessageWithRelationsData): Promise<Message>;
+  touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void>;
   deleteCreatedMessage(messageId: string): Promise<void>;
   updateMessageText(messageId: string, text: string): Promise<Message>;
   deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;

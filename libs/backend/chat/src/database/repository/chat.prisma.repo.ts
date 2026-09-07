@@ -183,7 +183,7 @@ export class ChatPrismaRepository implements IChatRepository {
   ): Promise<MessagePage> {
     const messages = await this.prisma.message.findMany({
       where: buildVisibleMessagesWhere(chatId, userId),
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take,
       select: MESSAGE_SELECT_FIELDS,
@@ -316,6 +316,52 @@ export class ChatPrismaRepository implements IChatRepository {
     }
   }
 
+  async createMessageWithTouch(data: CreateMessageWithRelationsData): Promise<Message> {
+    return this.prisma.$transaction(async (tx) => {
+      const message = await tx.message.create({
+        data: {
+          chatId: data.chatId,
+          clientId: data.clientId ?? null,
+          senderId: data.senderId,
+          type: data.type ?? 'TEXT',
+          text: data.text ?? null,
+          attachments: data.attachments?.length
+            ? {
+                create: data.attachments.map((attachment) => ({
+                  mediaId: attachment.mediaId,
+                  fileNameSnapshot: attachment.fileNameSnapshot ?? null,
+                  fileSizeSnapshot: attachment.fileSizeSnapshot ?? null,
+                  mimeSnapshot: attachment.mimeSnapshot ?? null,
+                  category: attachment.category,
+                })),
+              }
+            : undefined,
+        },
+        select: MESSAGE_SELECT_FIELDS,
+      });
+      await tx.chat.update({
+        where: { id: data.chatId },
+        data: {
+          lastMessageId: message.id,
+          lastMessageAt: message.createdAt,
+          updatedAt: message.createdAt,
+        },
+      });
+      await tx.chatMember.updateMany({
+        where: { chatId: data.chatId, userId: data.senderId },
+        data: { lastReadMessageId: message.id, lastReadAt: message.createdAt },
+      });
+      return message;
+    });
+  }
+
+  async touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void> {
+    await this.prisma.chat.update({
+      where: { id: chatId },
+      data: { lastMessageId: messageId, lastMessageAt: at, updatedAt: at },
+    });
+  }
+
   async deleteCreatedMessage(messageId: string): Promise<void> {
     try {
       await this.prisma.message.delete({ where: { id: messageId } });
@@ -370,6 +416,8 @@ export class ChatPrismaRepository implements IChatRepository {
       where: {
         chatId,
         senderId: { not: userId },
+        deletedAt: null,
+        deletions: { none: { userId } },
         ...(lastReadAt
           ? {
               OR: [

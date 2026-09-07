@@ -33,6 +33,8 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findVisibleMessagesByIds: jest.fn(),
     findMessageAttachmentForAccess: jest.fn(),
     createMessageWithRelations: jest.fn(),
+    createMessageWithTouch: jest.fn(),
+    touchChatLastMessage: jest.fn(),
     deleteCreatedMessage: jest.fn(),
     updateMessageText: jest.fn(),
     deleteMessageForEveryone: jest.fn(),
@@ -70,7 +72,7 @@ describe('ChatService', () => {
     } as Message;
     const mediaClient = { send: jest.fn(() => of({ id: 'reference-1' })) };
     repo.findChatMember.mockResolvedValue(member);
-    repo.createMessageWithRelations.mockResolvedValue(messageWithAttachment);
+    repo.createMessageWithTouch.mockResolvedValue(messageWithAttachment);
     const service = new ChatService(repo, mediaClient as never);
 
     await service.sendMessage('chat-1', 'user-1', {
@@ -82,7 +84,7 @@ describe('ChatService', () => {
       fileCategory: 'VOICE',
     });
 
-    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(expect.objectContaining({
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(expect.objectContaining({
       attachments: [expect.objectContaining({
         mediaId: '55555555-5555-4555-8555-555555555555',
         fileNameSnapshot: 'voice.ogg',
@@ -102,7 +104,7 @@ describe('ChatService', () => {
       lastReadMessageId: null,
       lastReadAt: null,
     });
-    repo.createMessageWithRelations.mockResolvedValue({
+    repo.createMessageWithTouch.mockResolvedValue({
       id: 'message-1',
       attachments: [{
         id: 'attachment-1',
@@ -145,7 +147,7 @@ describe('ChatService', () => {
       lastReadMessageId: null,
       lastReadAt: null,
     });
-    repo.createMessageWithRelations.mockResolvedValue({
+    repo.createMessageWithTouch.mockResolvedValue({
       id: 'message-1',
       clientId: '44444444-4444-4444-8444-444444444444',
       chatId: 'chat-1',
@@ -181,7 +183,7 @@ describe('ChatService', () => {
       attachments: [expect.objectContaining({ id: 'attachment-1' })],
     }));
 
-    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(expect.objectContaining({
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(expect.objectContaining({
       clientId: '44444444-4444-4444-8444-444444444444',
       attachments: [expect.objectContaining({
         mediaId: '55555555-5555-4555-8555-555555555555',
@@ -208,7 +210,7 @@ describe('ChatService', () => {
       lastReadMessageId: null,
       lastReadAt: null,
     });
-    repo.createMessageWithRelations.mockResolvedValue({
+    repo.createMessageWithTouch.mockResolvedValue({
       id: 'message-1',
       attachments: [{
         id: 'attachment-1',
@@ -249,6 +251,121 @@ describe('ChatService', () => {
       hasMessageId: true,
     }));
   });
+
+  it('returns same message on retry with same clientId without duplicate', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    const created = {
+      id: 'message-1',
+      clientId: 'c-1',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hi',
+      attachments: [],
+      forwardContext: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    } as Message;
+    repo.findMessageByClientId.mockResolvedValueOnce(null).mockResolvedValueOnce(created);
+    repo.createMessageWithTouch.mockResolvedValue(created);
+
+    const first = await service_send(repo, 'c-1', 'hi');
+    const second = await service_send(repo, 'c-1', 'hi');
+
+    expect(second.id).toBe(first.id);
+    expect(repo.createMessageWithTouch).toHaveBeenCalledTimes(1);
+  });
+
+  it('touches chat lastMessage and sender lastRead in same flow', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    const createdAt = new Date('2026-07-22T00:00:00.000Z');
+    const created = {
+      id: 'message-2',
+      clientId: 'c-2',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'yo',
+      attachments: [],
+      forwardContext: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt,
+      updatedAt: createdAt,
+    } as Message;
+    repo.findMessageByClientId.mockResolvedValue(null);
+    repo.createMessageWithTouch.mockResolvedValue(created);
+    const service = new ChatService(repo);
+
+    const msg = await service.sendMessage('chat-1', 'user-1', { clientId: 'c-2', type: 'TEXT', text: 'yo' });
+
+    expect(msg.id).toBeDefined();
+    expect(repo.touchChatLastMessage).toHaveBeenCalledWith('chat-1', msg.id, expect.any(Date));
+  });
+
+  it('returns winner on P2002 race without duplicate', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    const winner = {
+      id: 'message-winner',
+      clientId: 'c-race',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hi',
+      attachments: [],
+      forwardContext: null,
+      editedAt: null,
+      deletedAt: null,
+      deletedById: null,
+      createdAt: new Date('2026-07-22T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T00:00:00.000Z'),
+    } as Message;
+    repo.findMessageByClientId.mockResolvedValueOnce(null).mockResolvedValueOnce(winner);
+    repo.createMessageWithTouch.mockRejectedValue({ code: 'P2002' });
+    const service = new ChatService(repo);
+
+    await expect(
+      service.sendMessage('chat-1', 'user-1', { clientId: 'c-race', type: 'TEXT', text: 'hi' }),
+    ).resolves.toEqual(winner);
+    expect(repo.touchChatLastMessage).not.toHaveBeenCalled();
+  });
+
+  function service_send(
+    repo: jest.Mocked<IChatRepository>,
+    clientId: string,
+    text: string,
+  ): Promise<Message> {
+    const service = new ChatService(repo);
+    return service.sendMessage('chat-1', 'user-1', { clientId, type: 'TEXT', text });
+  }
 
   it('does not write raw chat request data to diagnostic logs', async () => {
     const repo = repoMock();

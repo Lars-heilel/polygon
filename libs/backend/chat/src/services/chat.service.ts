@@ -37,6 +37,15 @@ function buildAttachmentInput(input: SendMessageData): CreateMessageAttachmentDa
   }];
 }
 
+function isPrismaUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
+}
+
 @Injectable()
 export class ChatService implements IChatService {
   private readonly logger = new Logger(ChatService.name);
@@ -180,14 +189,52 @@ export class ChatService implements IChatService {
     }
 
     const attachments = buildAttachmentInput(input);
-    const message = await this.repo.createMessageWithRelations({
+    if (input.clientId) {
+      const existing = await this.repo.findMessageByClientId(chatId, input.clientId);
+      if (existing) {
+        this.logger.log({
+          eventType: 'message_send_skipped',
+          hasChatId: !!chatId,
+          hasSenderId: !!senderId,
+          hasClientId: !!input.clientId,
+          reason: 'duplicate_client_id',
+        });
+        return existing;
+      }
+    }
+
+    let message: Message;
+    try {
+      message = await this.repo.createMessageWithTouch({
+        chatId,
+        clientId: input.clientId ?? null,
+        senderId,
+        type: input.type as Message['type'],
+        text: input.text ?? null,
+        attachments,
+      });
+    } catch (error) {
+      if (input.clientId && isPrismaUniqueViolation(error)) {
+        const winner = await this.repo.findMessageByClientId(chatId, input.clientId);
+        if (winner) {
+          this.logger.log({
+            eventType: 'message_send_skipped',
+            hasChatId: !!chatId,
+            hasSenderId: !!senderId,
+            hasClientId: !!input.clientId,
+            reason: 'duplicate_client_id',
+          });
+          return winner;
+        }
+      }
+      throw error;
+    }
+
+    await this.repo.touchChatLastMessage(
       chatId,
-      clientId: input.clientId ?? null,
-      senderId,
-      type: input.type as Message['type'],
-      text: input.text ?? null,
-      attachments,
-    });
+      message.id,
+      (message.createdAt as Date | undefined) ?? new Date(),
+    );
 
     this.logger.log({
       eventType: 'message_attachment_created',

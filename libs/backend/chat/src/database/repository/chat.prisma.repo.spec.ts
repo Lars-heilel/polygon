@@ -10,6 +10,7 @@ describe('ChatPrismaRepository', () => {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
   };
   const chatMember = {
     findUnique: jest.fn(),
@@ -117,6 +118,8 @@ describe('ChatPrismaRepository', () => {
       where: {
         chatId: 'chat-1',
         senderId: { not: 'user-1' },
+        deletedAt: null,
+        deletions: { none: { userId: 'user-1' } },
         OR: [
           { createdAt: { gt: lastReadAt } },
           { createdAt: lastReadAt, id: { gt: 'message-1' } },
@@ -143,6 +146,8 @@ describe('ChatPrismaRepository', () => {
       where: {
         chatId: 'chat-1',
         senderId: { not: 'user-1' },
+        deletedAt: null,
+        deletions: { none: { userId: 'user-1' } },
       },
     });
   });
@@ -157,6 +162,8 @@ describe('ChatPrismaRepository', () => {
       where: {
         chatId: 'chat-1',
         senderId: { not: 'user-1' },
+        deletedAt: null,
+        deletions: { none: { userId: 'user-1' } },
         OR: [
           { createdAt: { gt: lastReadAt } },
           { createdAt: lastReadAt, id: { gt: 'message-1' } },
@@ -258,7 +265,7 @@ describe('ChatPrismaRepository', () => {
         cursor: { id: 'message-3' },
         skip: 1,
         take: 2,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
     );
   });
@@ -474,6 +481,50 @@ describe('ChatPrismaRepository', () => {
         update: { deletedAt: expect.any(Date) },
       }),
     );
+  });
+
+  it('creates a message and touches chat lastMessage plus sender lastRead in one transaction', async () => {
+    const createdAt = new Date('2026-07-22T00:00:00.000Z');
+    message.create.mockResolvedValue({ id: 'message-1', chatId: 'chat-1', createdAt });
+    chat.update.mockResolvedValue({ id: 'chat-1' });
+    chatMember.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      repository.createMessageWithTouch({
+        chatId: 'chat-1',
+        clientId: 'c-1',
+        senderId: 'user-1',
+        type: 'TEXT',
+        text: 'hi',
+        attachments: [],
+      }),
+    ).resolves.toEqual({ id: 'message-1', chatId: 'chat-1', createdAt });
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(chat.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'chat-1' },
+        data: { lastMessageId: 'message-1', lastMessageAt: createdAt, updatedAt: createdAt },
+      }),
+    );
+    expect(chatMember.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { chatId: 'chat-1', userId: 'user-1' },
+        data: { lastReadMessageId: 'message-1', lastReadAt: createdAt },
+      }),
+    );
+  });
+
+  it('touches chat lastMessage marker', async () => {
+    const at = new Date('2026-07-22T00:00:00.000Z');
+    chat.update.mockResolvedValue({ id: 'chat-1' });
+
+    await expect(repository.touchChatLastMessage('chat-1', 'message-1', at)).resolves.toBeUndefined();
+
+    expect(chat.update).toHaveBeenCalledWith({
+      where: { id: 'chat-1' },
+      data: { lastMessageId: 'message-1', lastMessageAt: at, updatedAt: at },
+    });
   });
 
   it('findMessageByClientId returns message by scoped clientId', async () => {
