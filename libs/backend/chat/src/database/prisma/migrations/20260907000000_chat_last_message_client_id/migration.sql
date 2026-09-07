@@ -17,8 +17,8 @@ WHERE a."chat_id" = b."chat_id"
 
 -- Replace the non-unique (chat_id, client_id) index with a partial scoped unique index (NULL clientIds stay non-unique)
 DROP INDEX IF EXISTS "Message_chat_id_client_id_idx";
-CREATE UNIQUE INDEX "Message_chatId_clientId_key" ON "Message"("chat_id", "client_id") WHERE "client_id" IS NOT NULL;
+CREATE UNIQUE INDEX "Message_chatId_clientId_partial_key" ON "Message"("chat_id", "client_id") WHERE "client_id" IS NOT NULL;
 
 -- Widen the history index with a deterministic id tie-breaker
-DROP INDEX IF EXISTS "Message_chatId_createdAt_idx";
+DROP INDEX IF EXISTS "Message_chat_id_created_at_idx";
 CREATE INDEX "Message_chatId_createdAt_id_idx" ON "Message"("chat_id", "created_at" DESC, "id" DESC);
