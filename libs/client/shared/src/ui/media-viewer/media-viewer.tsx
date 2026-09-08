@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 
 import { cn } from '../../lib/utils/cn';
 import { IconButton } from '../icon-button';
-import { Text } from '../typography';
 
 export interface MediaViewerItem {
   id: string;
@@ -81,38 +80,51 @@ export function MediaViewer({
   return createPortal(
     <div
       data-testid="media-viewer"
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-background/95 p-3 text-text sm:p-6"
+      className="media-viewer"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
-
       <div
-        className="relative z-10 flex h-full w-full max-w-6xl flex-col"
+        className="relative z-10 flex h-full w-full flex-col"
         onClick={(event) => event.stopPropagation()}
       >
         <div
           data-testid="media-viewer-chrome"
-          className="mb-3 flex min-h-11 items-center justify-between gap-3 rounded-md border border-border bg-surface px-2 py-2 shadow-lg sm:px-3"
+          className="media-viewer__bar"
         >
-          <Text size="sm" className="min-w-0 flex-1 truncate">
+          <span className="media-viewer__title">
             {activeItem?.label ?? activeItem?.alt ?? 'Media'}
-          </Text>
+          </span>
           {items.length > 1 && (
-            <Text size="xs" color="muted" className="shrink-0 tabular-nums">
+            <span className="media-viewer__counter">
               {selectedIndex + 1} / {items.length}
-            </Text>
+            </span>
           )}
-          <IconButton
+          {activeItem && (
+            <a
+              href={activeItem.src}
+              download
+              aria-label="Download media"
+              className="media-viewer__action"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </a>
+          )}
+          <button
             type="button"
-            label="Close media viewer"
-            size="sm"
-            variant="ghost"
+            aria-label="Close media viewer"
             onClick={onClose}
-            icon={<span aria-hidden="true" className="text-lg leading-none">x</span>}
-          />
+            className="media-viewer__action"
+          >
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-md bg-black">
+        <div className="media-viewer__stage">
           {items.length > 1 && (
             <>
               <IconButton
@@ -124,8 +136,8 @@ export function MediaViewer({
                   event.stopPropagation();
                   scrollPrev();
                 }}
-                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-surface/90 sm:left-4"
-                icon={<span aria-hidden="true" className="text-2xl leading-none">‹</span>}
+                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-white/10 text-white hover:bg-white/20 sm:left-4"
+                icon={<ChevronLeftIcon />}
               />
               <IconButton
                 type="button"
@@ -136,8 +148,8 @@ export function MediaViewer({
                   event.stopPropagation();
                   scrollNext();
                 }}
-                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-surface/90 sm:right-4"
-                icon={<span aria-hidden="true" className="text-2xl leading-none">›</span>}
+                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-white/10 text-white hover:bg-white/20 sm:right-4"
+                icon={<ChevronRightIcon />}
               />
             </>
           )}
@@ -145,17 +157,17 @@ export function MediaViewer({
           <div className="h-full overflow-hidden" ref={emblaRef}>
             <div className="flex h-full">
               {items.map((item, index) => (
-                <div key={item.id} className="flex min-w-0 shrink-0 basis-full items-center justify-center p-2 sm:p-6">
+                <div key={item.id} className="flex min-w-0 shrink-0 basis-full items-center justify-center">
                   {item.type === 'image' ? (
                     <img
                       src={item.src}
                       alt={item.alt ?? item.label ?? 'Media'}
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-[82vh] max-w-full object-contain"
                     />
                   ) : (
                     <video
                       src={item.src}
-                      className="max-h-full max-w-full rounded-md object-contain"
+                      className="max-h-[82vh] max-w-full object-contain"
                       controls
                       autoPlay={selectedIndex === index}
                       playsInline
@@ -168,7 +180,7 @@ export function MediaViewer({
         </div>
 
         {items.length > 1 && (
-          <div className="mt-3 flex justify-center gap-2">
+          <div className="flex shrink-0 justify-center gap-2 py-3">
             {items.map((item, index) => (
               <button
                 key={item.id}
@@ -177,7 +189,7 @@ export function MediaViewer({
                 onClick={() => emblaApi?.scrollTo(index)}
                 className={cn(
                   'h-2 w-2 rounded-full transition-colors',
-                  index === selectedIndex ? 'bg-primary' : 'bg-surface-elevated',
+                  index === selectedIndex ? 'bg-white' : 'bg-white/30',
                 )}
               />
             ))}
@@ -186,5 +198,21 @@ export function MediaViewer({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg aria-hidden="true" className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg aria-hidden="true" className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
   );
 }

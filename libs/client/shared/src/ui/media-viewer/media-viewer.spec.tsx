@@ -55,16 +55,17 @@ const items: MediaViewerItem[] = [
 ];
 
 describe('MediaViewer', () => {
-  it('renders the selected media, caption, count, and theme-aware controls', () => {
+  it('renders the selected media, caption, count, and download control', () => {
     render(<MediaViewer isOpen items={items} initialIndex={1} onClose={vi.fn()} />);
 
     expect(screen.getByLabelText('Close media viewer')).toBeTruthy();
+    expect(screen.getByLabelText('Download media')).toBeTruthy();
     expect(screen.getByLabelText('Previous media')).toBeTruthy();
     expect(screen.getByLabelText('Next media')).toBeTruthy();
     expect(screen.getByText('Second video')).toBeTruthy();
     expect(screen.getByText('2 / 2')).toBeTruthy();
-    expect(screen.getByTestId('media-viewer').className).toContain('bg-background/95');
-    expect(screen.getByTestId('media-viewer-chrome').className).toContain('bg-surface');
+    expect(screen.getByTestId('media-viewer').className).toContain('media-viewer');
+    expect(screen.getByTestId('media-viewer-chrome').className).toContain('media-viewer__bar');
   });
 
   it('closes from button, Escape, and backdrop click', () => {

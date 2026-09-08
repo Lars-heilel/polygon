@@ -1,0 +1,25 @@
+@layer components {
+  .media-viewer {
+    @apply fixed inset-0 z-[70] flex flex-col bg-black/90 text-white;
+  }
+
+  .media-viewer__bar {
+    @apply flex min-h-12 shrink-0 items-center gap-2 px-2 py-1.5 sm:px-3;
+  }
+
+  .media-viewer__title {
+    @apply min-w-0 flex-1 truncate text-sm text-white;
+  }
+
+  .media-viewer__counter {
+    @apply shrink-0 text-xs text-white/60 tabular-nums;
+  }
+
+  .media-viewer__action {
+    @apply grid size-9 shrink-0 place-items-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white;
+  }
+
+  .media-viewer__stage {
+    @apply relative flex min-h-0 flex-1 items-center justify-center bg-black;
+  }
+}
