@@ -1,0 +1,35 @@
+@layer components {
+  .msg-bubble {
+    @apply min-w-0 max-w-[min(82vw,32rem)] text-sm shadow-[var(--shadow-surface)] sm:max-w-[70%];
+    @apply rounded-lg border;
+  }
+
+  .msg-bubble--mine {
+    @apply border-primary bg-primary text-text-inverse rounded-br-sm;
+  }
+
+  .msg-bubble--theirs {
+    @apply border-border bg-surface text-text rounded-bl-sm;
+  }
+
+  /* Медиа в край пузыря, как в Telegram */
+  .msg-bubble--media {
+    @apply overflow-hidden p-0;
+  }
+
+  .msg-bubble--media img,
+  .msg-bubble--media video {
+    @apply block h-auto w-full object-cover;
+  }
+
+  /* Время оверлеем на картинке */
+  .msg-media-overlay {
+    @apply absolute right-1.5 bottom-1.5 flex items-center gap-1.5;
+    @apply rounded-full bg-black/55 py-0.5 pr-1.5 pl-2 text-[10px] font-medium text-white;
+  }
+
+  /* Только эмодзи — крупно, без пузыря */
+  .msg-bubble--emoji-only {
+    @apply border-0 bg-transparent px-0 text-3xl shadow-none;
+  }
+}

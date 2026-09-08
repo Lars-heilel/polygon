@@ -17,6 +17,12 @@ import { Button, Text, VirtualFeed, socket } from '@org/shared';
 import { DeleteMessageModal } from './delete-message-modal';
 import { ForwardMessageModal } from './forward-message-modal';
 
+interface MessageGroupFlags {
+  showAvatar: boolean;
+  showTime: boolean;
+  tight: boolean;
+}
+
 interface ChatMessageRowProps {
   msg: Message;
   isMine: boolean;
@@ -24,6 +30,7 @@ interface ChatMessageRowProps {
   senderAvatarUrl?: string;
   audioQueue: AudioTrack[];
   audioQueueIndexByMessageId: Map<string, number>;
+  groupFlags?: MessageGroupFlags;
   onEditMessage?: (message: Message) => void;
   onDeleteMessage?: (message: Message) => void;
   onForwardMessage?: (message: Message) => void;
@@ -46,13 +53,17 @@ export const ChatMessageRow = memo(({
   senderAvatarUrl,
   audioQueue,
   audioQueueIndexByMessageId,
+  groupFlags,
   onEditMessage,
   onDeleteMessage,
   onForwardMessage,
 }: ChatMessageRowProps) => {
+  const showAvatar = groupFlags?.showAvatar ?? true;
+  const showTime = groupFlags?.showTime ?? true;
+  const tight = groupFlags?.tight ?? false;
   return (
     <div
-      className="px-4 pb-3"
+      className={tight ? 'px-4 pb-1' : 'px-4 pb-3'}
       data-testid="message-row"
       data-message-id={msg.id}
       data-message-client-id={msg.clientId ?? undefined}
@@ -64,6 +75,8 @@ export const ChatMessageRow = memo(({
         isMine={isMine}
         senderName={senderName}
         senderAvatarUrl={senderAvatarUrl}
+        showAvatar={showAvatar}
+        showTime={showTime}
         actionsSlot={
           <MessageActionsMenu
             message={msg}
@@ -160,6 +173,22 @@ export const VirtualMessageList = memo(function MessageList({
     }
     return map;
   }, [allMessages]);
+  const groupFlagsByKey = useMemo(() => {
+    const map = new Map<string, MessageGroupFlags>();
+    const withinGap = (a: Message, b: Message) =>
+      a.senderId === b.senderId
+      && Math.abs(+new Date(a.createdAt) - +new Date(b.createdAt)) <= 5 * 60 * 1000;
+    allMessages.forEach((msg, index) => {
+      const prevGrouped = index > 0 && withinGap(allMessages[index - 1], msg);
+      const nextGrouped = index < allMessages.length - 1 && withinGap(msg, allMessages[index + 1]);
+      map.set(getMessageVirtualKey(msg), {
+        showAvatar: !prevGrouped,
+        showTime: !nextGrouped,
+        tight: prevGrouped,
+      });
+    });
+    return map;
+  }, [allMessages]);
 
   const handleStartReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -222,6 +251,7 @@ export const VirtualMessageList = memo(function MessageList({
               senderAvatarUrl={profile?.avatarUrl ?? undefined}
               audioQueue={audioQueue}
               audioQueueIndexByMessageId={audioQueueIndexByMessageId}
+              groupFlags={groupFlagsByKey.get(getMessageVirtualKey(msg))}
               onEditMessage={onEditMessage}
               onDeleteMessage={setMessagePendingDelete}
               onForwardMessage={setMessagePendingForward}

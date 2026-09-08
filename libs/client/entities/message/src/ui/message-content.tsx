@@ -17,6 +17,20 @@ export const MessageContent = memo(function MessageContent({
   const parts = splitTextByLinks(text);
   const links = extractLinks(text);
   const hasLinks = links.length > 0;
+  const isSingleUrl = hasLinks && parts.length === 1 && parts[0].type === 'link';
+
+  if (isSingleUrl) {
+    return (
+      <div
+        data-testid="message-content"
+        className="w-full min-w-0 max-w-80"
+      >
+        {links.map((url) => (
+          <LinkPreviewCard key={url} url={url} isMine={isMine} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div

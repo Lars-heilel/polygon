@@ -8,6 +8,7 @@ import type { Message } from '../message.api.js';
 interface MessageActionsMenuProps {
   message: Message;
   isMine: boolean;
+  tone?: 'default' | 'onMedia';
   onEdit: (message: Message) => void;
   onForward: (message: Message) => void;
   onDelete: (message: Message) => void;
@@ -85,10 +86,12 @@ function MenuActionButton({ children, danger, disabled, onClick }: MenuActionBut
 export const MessageActionsMenu = memo(function MessageActionsMenu({
   message,
   isMine,
+  tone = 'default',
   onEdit,
   onForward,
   onDelete,
 }: MessageActionsMenuProps) {
+  const onMedia = tone === 'onMedia';
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<CSSProperties>({});
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -165,10 +168,12 @@ export const MessageActionsMenu = memo(function MessageActionsMenu({
           className={cn(
             'h-8 w-8 rounded-md border-0 bg-transparent shadow-none',
             'transition-colors',
-            isMine
-              ? 'text-text-inverse/70 hover:bg-white/10 hover:text-text-inverse'
-              : 'text-text-muted hover:bg-surface-elevated hover:text-text',
-            isOpen && (isMine ? 'bg-white/10 text-text-inverse' : 'bg-surface-elevated text-text'),
+            onMedia
+              ? 'text-white/85 hover:bg-white/20 hover:text-white'
+              : isMine
+                ? 'text-white/85 hover:bg-white/10 hover:text-text-inverse'
+                : 'text-text-muted hover:bg-surface-elevated hover:text-text',
+            isOpen && (onMedia || isMine ? 'bg-white/10 text-white' : 'bg-surface-elevated text-text'),
           )}
         />
       </span>

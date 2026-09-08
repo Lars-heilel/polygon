@@ -11,7 +11,7 @@ dayjs.extend(isYesterday);
  * Форматирует дату в формат времени (14:30)
  */
 export function formatTime(date: string | Date): string {
-  return dayjs(date).format('DD.MM.YYYY HH:mm');
+  return dayjs(date).format('HH:mm');
 }
 
 /**
