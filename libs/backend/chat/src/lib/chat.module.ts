@@ -5,11 +5,13 @@ import {
   CHAT_PRISMA_REPOSITORY_TOKEN,
   CHAT_SERVICE_TOKEN,
   CoreConfigModule,
+  CoreRedisModule,
   type Env,
   MEDIA_CLIENT_TOKEN,
   MEDIA_QUEUE,
 } from '@org/core';
 
+import { ChatCacheService } from '../cache/chat-cache.service';
 import { ChatController } from '../controllers/chat.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { ChatPrismaRepository } from '../database/repository/chat.prisma.repo';
@@ -30,13 +32,14 @@ const mediaClient = {
 };
 
 @Module({
-  imports: [CoreConfigModule, ClientsModule.registerAsync([mediaClient])],
+  imports: [CoreConfigModule, CoreRedisModule, ClientsModule.registerAsync([mediaClient])],
   controllers: [ChatController],
   providers: [
     PrismaService,
+    ChatCacheService,
     { provide: CHAT_PRISMA_REPOSITORY_TOKEN, useClass: ChatPrismaRepository },
     { provide: CHAT_SERVICE_TOKEN, useClass: ChatService },
   ],
-  exports: [PrismaService],
+  exports: [PrismaService, ChatCacheService],
 })
 export class OrgChatModule {}
