@@ -9,3 +9,6 @@ export * from './dto/send-message.dto';
 export * from './dto/mark-chat-read.dto';
 export * from './dto/edit-message.dto';
 export * from './dto/delete-message.dto';
+
+// Pure cache key builders (no runtime dependencies) — shared with gateway read-through.
+export * from './cache/chat-cache.keys';

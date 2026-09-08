@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -45,7 +46,9 @@ import {
 } from '@org/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
+import type { Response } from 'express';
 
+import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 @ApiTags('chats')
@@ -59,6 +62,7 @@ export class ChatGatewayController {
     @Inject(CHAT_CLIENT_TOKEN) private readonly chatClient: ClientProxy,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     private readonly socketGateway: ChatSocketGateway,
+    private readonly chatCache: GatewayChatCacheService,
   ) {}
 
   @Post('direct')
@@ -89,15 +93,28 @@ export class ChatGatewayController {
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  async getChats(@CurrentUser() user: JwtPayload) {
+  async getChats(
+    @CurrentUser() user: JwtPayload,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
     this.logger.log({ eventType: 'chat_list_requested', hasUserId: !!user.sub });
+    const cached = await this.chatCache.getChatList(user.sub);
+    if (cached) {
+      this.logger.debug({ eventType: 'chat_list_cache_hit', hasUserId: !!user.sub });
+      res?.setHeader('X-Cache', 'HIT');
+      return cached;
+    }
     const chats = await this.send<{ members: { userId: string }[] }[]>(
       this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId: user.sub }),
     );
 
-    const memberIds = [...new Set(chats.flatMap((c) => c.members.map((m) => m.userId)))];
+    const memberIds = [...new Set(chats.flatMap((c) => (c.members ?? []).map((m) => m.userId)))];
 
-    if (memberIds.length === 0) return chats;
+    if (memberIds.length === 0) {
+      await this.chatCache.setChatList(user.sub, chats);
+      res?.setHeader('X-Cache', 'MISS');
+      return chats;
+    }
 
     const profiles = await this.send<UserPublic[]>(
       this.userClient.send(USER_PATTERNS.GET_MANY_BY_IDS, { ids: memberIds }),
@@ -105,13 +122,16 @@ export class ChatGatewayController {
 
     const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
-    return chats.map((chat) => ({
+    const enriched = chats.map((chat) => ({
       ...chat,
-      members: chat.members.map((m) => ({
+      members: (chat.members ?? []).map((m) => ({
         ...m,
         profile: profileMap.get(m.userId) ?? null,
       })),
     }));
+    await this.chatCache.setChatList(user.sub, enriched);
+    res?.setHeader('X-Cache', 'MISS');
+    return enriched;
   }
 
   @Get(':id/messages')
@@ -131,7 +151,15 @@ export class ChatGatewayController {
     @Param('id') chatId: string,
     @Query('cursor') cursor?: string,
     @Query('take') take?: string,
+    @Res({ passthrough: true }) res?: Response,
   ): Promise<MessagePage> {
+    const cacheCursor = cursor ?? 'HEAD';
+    const cached = await this.chatCache.getMessagesPage(chatId, cacheCursor);
+    if (cached) {
+      this.logger.debug({ eventType: 'chat_messages_cache_hit', hasChatId: !!chatId });
+      res?.setHeader('X-Cache', 'HIT');
+      return cached;
+    }
     const page = await this.send<MessagePage>(
       this.chatClient.send(CHAT_PATTERNS.GET_MESSAGES, {
         chatId,
@@ -141,10 +169,13 @@ export class ChatGatewayController {
       }),
     );
 
-    return {
+    const enriched: MessagePage = {
       ...page,
       messages: await this.enrichForwardedMessages(page.messages),
     };
+    await this.chatCache.setMessagesPage(chatId, cacheCursor, enriched);
+    res?.setHeader('X-Cache', 'MISS');
+    return enriched;
   }
 
   @Get(':id/media/messages')
@@ -215,14 +246,15 @@ export class ChatGatewayController {
     );
 
     this.socketGateway.broadcastMessage(chatId, message);
-    await this.socketGateway.triggerPushForOfflineRecipients(chatId, user.sub, message);
+    const memberIds = await this.socketGateway.triggerPushForOfflineRecipients(chatId, user.sub, message);
+    await this.invalidateChatForMembers(chatId, memberIds);
 
     return message;
   }
 
   @Post(':id/read')
   @HttpCode(200)
-  markRead(
+  async markRead(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
     @Body() dto: MarkChatReadDto,
@@ -233,13 +265,15 @@ export class ChatGatewayController {
       hasUserId: !!user.sub,
       hasMessageId: !!dto.messageId,
     });
-    return this.send(
+    const result = await this.send(
       this.chatClient.send(CHAT_PATTERNS.MARK_READ, {
         chatId,
         userId: user.sub,
         messageId: dto.messageId ?? null,
       }),
     );
+    await this.invalidateChatForMembers(chatId);
+    return result;
   }
 
   @Patch(':id/messages/:messageId')
@@ -267,6 +301,7 @@ export class ChatGatewayController {
       }),
     );
     this.socketGateway.broadcastMessageUpdated(chatId, message);
+    await this.invalidateChatForMembers(chatId);
     return message;
   }
 
@@ -303,6 +338,7 @@ export class ChatGatewayController {
       this.socketGateway.emitToUser(user.sub, 'message:hidden', { chatId, messageId });
     }
 
+    await this.invalidateChatForMembers(chatId);
     return result;
   }
 
@@ -357,6 +393,7 @@ export class ChatGatewayController {
         hasTargetChatId: !!targetChatId,
       });
 
+      await this.invalidateChatForMembers(targetChatId);
       return messages;
     } catch (error) {
       this.logger.warn({
@@ -368,6 +405,27 @@ export class ChatGatewayController {
       });
       throw error;
     }
+  }
+
+  private async invalidateChatForMembers(chatId: string, knownMemberIds?: string[]): Promise<void> {
+    await this.chatCache.invalidateChatPages(chatId);
+    let memberIds = knownMemberIds ?? [];
+    if (!knownMemberIds) {
+      const members = await lastValueFrom(
+        this.chatClient.send<{ userId: string }[]>(CHAT_PATTERNS.GET_MEMBERS, { chatId }),
+      ).catch(() => [] as { userId: string }[]);
+      memberIds = Array.isArray(members)
+        ? members.filter((m) => typeof m.userId === 'string').map((m) => m.userId)
+        : [];
+    }
+    for (const memberId of memberIds) {
+      await this.chatCache.invalidateChatList(memberId);
+    }
+    this.logger.debug({
+      eventType: 'chat_cache_invalidated',
+      hasChatId: !!chatId,
+      memberCount: memberIds.length,
+    });
   }
 
   private async enrichPreparedForwardMessages(

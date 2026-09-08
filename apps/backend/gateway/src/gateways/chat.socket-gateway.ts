@@ -15,12 +15,17 @@ import {
   CHAT_PATTERNS,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_EVENTS,
+  REDIS_CLIENT,
   TokenService,
   USER_CLIENT_TOKEN,
   USER_PATTERNS,
 } from '@org/core';
+import { sendMessageSchema } from '@org/common';
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
+import type Redis from 'ioredis';
+
+import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';
 
 interface SocketMessageAttachmentPayload {
   mediaId: string;
@@ -51,7 +56,36 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     @Inject(NOTIFICATION_CLIENT_TOKEN) private readonly notificationClient: ClientProxy,
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
     private readonly banMarkers: BanMarkerRepository,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly chatCache: GatewayChatCacheService,
   ) {}
+
+  private presenceKey(userId: string): string {
+    return `presence:${userId}`;
+  }
+
+  private typingKey(chatId: string, userId: string): string {
+    return `typing:${chatId}:${userId}`;
+  }
+
+  private async markOnline(userId: string, socketId: string): Promise<void> {
+    await this.redis.sadd(this.presenceKey(userId), socketId).catch(() => undefined);
+    await this.redis.expire(this.presenceKey(userId), 120).catch(() => undefined);
+  }
+
+  private async markOfflineSocket(userId: string, socketId: string): Promise<boolean> {
+    try {
+      await this.redis.srem(this.presenceKey(userId), socketId);
+      const remaining = await this.redis.scard(this.presenceKey(userId));
+      if (remaining === 0) {
+        await this.redis.del(this.presenceKey(userId));
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
 
   async handleConnection(socket: Socket): Promise<void> {
     const cookieHeader = socket.handshake.headers.cookie ?? '';
@@ -107,9 +141,41 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     const sockets = this.userSockets.get(userId) ?? new Set();
     sockets.add(socket.id);
     this.userSockets.set(userId, sockets);
+
+    await this.markOnline(userId, socket.id);
+    await this.rejoinChats(socket, userId);
   }
 
-  handleDisconnect(socket: Socket) {
+  private async rejoinChats(socket: Socket, userId: string): Promise<void> {
+    const chats = await lastValueFrom(
+      this.chatClient.send(CHAT_PATTERNS.GET_CHATS, { userId }),
+    ).catch(() => null);
+    if (!Array.isArray(chats)) return;
+
+    const joined: string[] = [];
+    for (const chat of chats as { id?: unknown }[]) {
+      if (typeof chat.id !== 'string') continue;
+      try {
+        await socket.join(`chat:${chat.id}`);
+      } catch {
+        /* join failed — client will re-emit chat:join */
+      }
+      joined.push(chat.id);
+    }
+    if (joined.length === 0) return;
+
+    this.userChats.set(userId, new Set(joined));
+    this.logger.log({
+      eventType: 'ws_chats_rejoined',
+      hasUserId: !!userId,
+      chatCount: joined.length,
+    });
+    for (const chatId of joined) {
+      this.server.to(`chat:${chatId}`).emit('user:online', { userId, chatId });
+    }
+  }
+
+  async handleDisconnect(socket: Socket): Promise<void> {
     const userId = socket.data['userId'] as string | undefined;
     this.logger.log({
       eventType: 'ws_disconnected',
@@ -124,19 +190,28 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       sockets.delete(socket.id);
       if (sockets.size === 0) {
         this.userSockets.delete(userId);
-        const chats = this.userChats.get(userId);
-        if (chats) {
-          chats.forEach((chatId) => {
-            this.server.to(`chat:${chatId}`).emit('user:offline', { userId, chatId });
-          });
-          this.userChats.delete(userId);
-        }
+      }
+    }
+
+    const fullyOffline = await this.markOfflineSocket(userId, socket.id);
+    if (fullyOffline || !this.userSockets.has(userId)) {
+      const chats = this.userChats.get(userId);
+      if (chats) {
+        chats.forEach((chatId) => {
+          this.server.to(`chat:${chatId}`).emit('user:offline', { userId, chatId });
+        });
+        this.userChats.delete(userId);
       }
     }
   }
 
-  isUserOnline(userId: string): boolean {
-    return this.userSockets.has(userId) && (this.userSockets.get(userId)?.size ?? 0) > 0;
+  async isUserOnline(userId: string): Promise<boolean> {
+    try {
+      const count = await this.redis.exists(this.presenceKey(userId));
+      return count === 1;
+    } catch {
+      return false;
+    }
   }
 
   disconnectUser(userId: string): void {
@@ -149,6 +224,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
     this.userSockets.delete(userId);
     this.userChats.delete(userId);
+    this.redis.del(this.presenceKey(userId)).catch(() => undefined);
   }
 
   @SubscribeMessage('chat:join')
@@ -238,21 +314,75 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       hasFile: !!payload.fileId || !!payload.attachments?.length,
     });
 
+    const parsed = sendMessageSchema.safeParse({
+      clientId: payload.clientId,
+      type: payload.type,
+      text: payload.text,
+      attachments: payload.attachments,
+      fileId: payload.fileId,
+      fileBucket: payload.fileBucket,
+      fileKey: payload.fileKey,
+      fileName: payload.fileName,
+      fileSize: payload.fileSize,
+      fileMime: payload.fileMime,
+      fileCategory: payload.fileCategory,
+    });
+
+    if (!parsed.success) {
+      this.logger.warn({
+        eventType: 'socket_message_send_validation_failed',
+        hasUserId: !!userId,
+        hasChatId: !!payload.chatId,
+        hasClientId: !!payload.clientId,
+        issueCount: parsed.error.issues.length,
+      });
+      socket.emit('message:send:error', {
+        code: 'VALIDATION_ERROR',
+        message: parsed.error.issues[0]?.message ?? 'Invalid message payload',
+        chatId: payload.chatId,
+        clientId: payload.clientId ?? null,
+      });
+      return;
+    }
+
+    const isMember = await lastValueFrom(
+      this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId: payload.chatId,
+        userId,
+      }),
+    ).catch(() => false);
+
+    if (!isMember) {
+      this.logger.warn({
+        eventType: 'socket_message_send_denied',
+        hasUserId: !!userId,
+        hasChatId: !!payload.chatId,
+        hasClientId: !!payload.clientId,
+      });
+      socket.emit('message:send:error', {
+        code: 'FORBIDDEN',
+        message: 'Not a member of this chat',
+        chatId: payload.chatId,
+        clientId: payload.clientId ?? null,
+      });
+      return;
+    }
+
     const message = await lastValueFrom(
       this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
         chatId: payload.chatId,
-        clientId: payload.clientId ?? null,
+        clientId: parsed.data.clientId ?? null,
         senderId: userId,
-        type: payload.type ?? 'TEXT',
-        text: payload.text ?? null,
-        fileId: payload.fileId ?? null,
-        fileBucket: payload.fileBucket ?? null,
-        fileKey: payload.fileKey ?? null,
-        fileName: payload.fileName ?? null,
-        fileSize: payload.fileSize ?? null,
-        fileMime: payload.fileMime ?? null,
-        fileCategory: payload.fileCategory ?? null,
-        attachments: payload.attachments ?? [],
+        type: parsed.data.type,
+        text: parsed.data.text ?? null,
+        fileId: parsed.data.fileId ?? null,
+        fileBucket: parsed.data.fileBucket ?? null,
+        fileKey: parsed.data.fileKey ?? null,
+        fileName: parsed.data.fileName ?? null,
+        fileSize: parsed.data.fileSize ?? null,
+        fileMime: parsed.data.fileMime ?? null,
+        fileCategory: parsed.data.fileCategory ?? null,
+        attachments: parsed.data.attachments ?? [],
       }),
     ).catch((err: unknown) => {
       this.logger.error({
@@ -261,18 +391,22 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         hasClientId: !!payload.clientId,
         hasError: !!err,
       });
-      if (payload.clientId) {
-        socket.emit('message:send:error', {
-          chatId: payload.chatId,
-          clientId: payload.clientId,
-        });
-      }
+      socket.emit('message:send:error', {
+        code: 'SEND_FAILED',
+        message: 'Failed to send message',
+        chatId: payload.chatId,
+        clientId: payload.clientId ?? null,
+      });
       return null;
     });
 
     if (message) {
       this.broadcastMessage(payload.chatId, message);
-      await this.triggerPushForOfflineRecipients(payload.chatId, userId, message);
+      const memberIds = await this.triggerPushForOfflineRecipients(payload.chatId, userId, message);
+      await this.chatCache.invalidateChatPages(payload.chatId);
+      for (const memberId of memberIds) {
+        await this.chatCache.invalidateChatList(memberId);
+      }
     }
   }
 
@@ -280,7 +414,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     chatId: string,
     senderId: string,
     message: { text?: string | null; [key: string]: unknown },
-  ) {
+  ): Promise<string[]> {
     try {
       const [members, sender] = await Promise.all([
         lastValueFrom<{ userId: string }[]>(
@@ -306,7 +440,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       for (const member of members) {
         if (member.userId === senderId) continue;
 
-        const online = this.isUserOnline(member.userId);
+        const online = await this.isUserOnline(member.userId);
         this.logger.debug({
           eventType: 'push_recipient_online_check',
           online,
@@ -336,28 +470,32 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         skippedOnline,
         pushSent: sent,
       });
+      return members.map((member) => member.userId);
     } catch (err) {
       this.logger.error({
         eventType: 'push_offline_recipients_failed',
         hasChatId: !!chatId,
         hasError: !!err,
       });
+      return [];
     }
   }
 
   @SubscribeMessage('typing:start')
-  handleTypingStart(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
+  async handleTypingStart(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
+    await this.redis.set(this.typingKey(payload.chatId, userId), '1', 'EX', 3).catch(() => undefined);
     this.server
       .to(`chat:${payload.chatId}`)
       .emit('user:typing', { userId, chatId: payload.chatId, isTyping: true });
   }
 
   @SubscribeMessage('typing:stop')
-  handleTypingStop(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
+  async handleTypingStop(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
+    await this.redis.del(this.typingKey(payload.chatId, userId)).catch(() => undefined);
     this.server
       .to(`chat:${payload.chatId}`)
       .emit('user:typing', { userId, chatId: payload.chatId, isTyping: false });

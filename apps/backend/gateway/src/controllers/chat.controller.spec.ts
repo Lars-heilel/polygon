@@ -13,19 +13,93 @@ describe('ChatGatewayController', () => {
       broadcastMessageUpdated: jest.fn(),
       broadcastMessageDeleted: jest.fn(),
       emitToUser: jest.fn(),
-      triggerPushForOfflineRecipients: jest.fn(),
+      triggerPushForOfflineRecipients: jest.fn<Promise<string[]>, []>().mockResolvedValue([]),
+    };
+    const store = new Map<string, string>();
+    const chatCache = {
+      getChatList: jest.fn(async (userId: string) => {
+        const raw = store.get(`chat:list:${userId}`);
+        return raw ? (JSON.parse(raw) as unknown) : null;
+      }),
+      setChatList: jest.fn(async (userId: string, chats: unknown) => {
+        store.set(`chat:list:${userId}`, JSON.stringify(chats));
+      }),
+      invalidateChatList: jest.fn(async (userId: string) => {
+        store.delete(`chat:list:${userId}`);
+      }),
+      getMessagesPage: jest.fn(async (chatId: string, cursor: string) => {
+        const raw = store.get(`chat:msgs:${chatId}:${cursor}`);
+        return raw ? (JSON.parse(raw) as unknown) : null;
+      }),
+      setMessagesPage: jest.fn(async (chatId: string, cursor: string, page: unknown) => {
+        store.set(`chat:msgs:${chatId}:${cursor}`, JSON.stringify(page));
+      }),
+      invalidateChatPages: jest.fn(async (chatId: string) => {
+        for (const key of [...store.keys()]) {
+          if (key.startsWith(`chat:msgs:${chatId}:`)) store.delete(key);
+        }
+      }),
     };
     return {
       chatClient,
       userClient,
       socketGateway,
+      chatCache,
+      res: () => ({ setHeader: jest.fn() }),
       controller: new ChatGatewayController(
         chatClient as unknown as ClientProxy,
         userClient as unknown as ClientProxy,
         socketGateway as never,
+        chatCache as never,
       ),
     };
   }
+
+  it('GET /chats serves from cache on second call', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValueOnce(of([{ id: 'c1' }]));
+    const firstRes = ctx.res();
+    const secondRes = ctx.res();
+
+    await ctx.controller.getChats({ sub: 'user-1' } as never, firstRes as never);
+    await ctx.controller.getChats({ sub: 'user-1' } as never, secondRes as never);
+
+    expect(ctx.chatClient.send).toHaveBeenCalledTimes(1);
+    expect(firstRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
+    expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'HIT');
+  });
+
+  it('GET /chats/:id/messages serves from cache on second call', async () => {
+    const ctx = controller();
+    const page = { messages: [], nextCursor: null };
+    ctx.chatClient.send.mockReturnValueOnce(of(page));
+    const firstRes = ctx.res();
+    const secondRes = ctx.res();
+
+    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, firstRes as never);
+    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, secondRes as never);
+
+    expect(ctx.chatClient.send).toHaveBeenCalledTimes(1);
+    expect(firstRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
+    expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'HIT');
+  });
+
+  it('sendMessage invalidates chat pages and member lists', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.SEND_MESSAGE) return of({ id: 'message-1', chatId: 'chat-1' });
+      return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
+    });
+    ctx.socketGateway.triggerPushForOfflineRecipients.mockResolvedValue(['user-1', 'user-2']);
+
+    await ctx.controller.sendMessage({ sub: 'user-1' } as never, 'chat-1', {
+      text: 'hello',
+    } as never);
+
+    expect(ctx.chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
+    expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-1');
+    expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
+  });
 
   it('passes fileCategory when sending a file message over HTTP', async () => {
     const ctx = controller();

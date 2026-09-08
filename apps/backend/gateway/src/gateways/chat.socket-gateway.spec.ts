@@ -22,18 +22,20 @@ describe('ChatSocketGateway ban enforcement', () => {
   };
   type ChatSocketGatewayUnderTest = {
     handleConnection(socket: never): Promise<void>;
-    handleDisconnect(socket: never): void;
+    handleDisconnect(socket: never): Promise<void>;
     handleJoin(socket: never, payload: { chatId: string }): Promise<void>;
-    isUserOnline(userId: string): boolean;
+    isUserOnline(userId: string): Promise<boolean>;
     disconnectUser(userId: string): void;
     triggerPushForOfflineRecipients(
       chatId: string,
       senderId: string,
       message: { text?: string | null; [key: string]: unknown },
-    ): Promise<void>;
+    ): Promise<string[]>;
     broadcastMessageUpdated(chatId: string, message: unknown): void;
     broadcastMessageDeleted(chatId: string, messageId: string): void;
     emitToUser(userId: string, event: string, payload: unknown): void;
+    handleTypingStart(socket: never, payload: { chatId: string }): Promise<void>;
+    handleTypingStop(socket: never, payload: { chatId: string }): Promise<void>;
     handleSendMessage(
       socket: never,
       payload: {
@@ -75,11 +77,75 @@ describe('ChatSocketGateway ban enforcement', () => {
     notificationClient: ClientProxy,
     userClient: ClientProxy,
     banMarkers: BanMarkersMock,
+    redis: unknown,
+    chatCache: unknown,
   ) => ChatSocketGatewayUnderTest;
 
   let ChatSocketGateway: ChatSocketGatewayConstructor;
 
+  function makeRedis() {
+    const sets = new Map<string, Set<string>>();
+    const strings = new Map<string, string>();
+    return {
+      sets,
+      sadd: jest.fn(async (key: string, ...members: string[]) => {
+        const set = sets.get(key) ?? new Set<string>();
+        let added = 0;
+        for (const member of members) {
+          if (!set.has(member)) {
+            set.add(member);
+            added++;
+          }
+        }
+        sets.set(key, set);
+        return added;
+      }),
+      srem: jest.fn(async (key: string, ...members: string[]) => {
+        const set = sets.get(key);
+        if (!set) return 0;
+        let removed = 0;
+        for (const member of members) {
+          if (set.delete(member)) removed++;
+        }
+        return removed;
+      }),
+      scard: jest.fn(async (key: string) => sets.get(key)?.size ?? 0),
+      exists: jest.fn(async (key: string) => ((sets.get(key)?.size ?? 0) > 0 || strings.has(key) ? 1 : 0)),
+      expire: jest.fn(async () => 1),
+      set: jest.fn(async (key: string, value: string) => {
+        strings.set(key, value);
+        return 'OK';
+      }),
+      get: jest.fn(async (key: string) => strings.get(key) ?? null),
+      del: jest.fn(async (...keys: string[]) => {
+        let removed = 0;
+        for (const key of keys) {
+          if (sets.delete(key)) removed++;
+          if (strings.delete(key)) removed++;
+        }
+        return removed;
+      }),
+    };
+  }
+
+  type RedisMock = ReturnType<typeof makeRedis>;
+
+  function makeChatCache() {
+    return {
+      getChatList: jest.fn(async () => null),
+      setChatList: jest.fn(async () => undefined),
+      invalidateChatList: jest.fn(async () => undefined),
+      getMessagesPage: jest.fn(async () => null),
+      setMessagesPage: jest.fn(async () => undefined),
+      invalidateChatPages: jest.fn(async () => undefined),
+    };
+  }
+
+  type ChatCacheMock = ReturnType<typeof makeChatCache>;
+
   let gateway: ChatSocketGatewayUnderTest;
+  let redis: RedisMock;
+  let chatCache: ChatCacheMock;
   let logger: {
     debug: jest.Mock;
     error: jest.Mock;
@@ -137,12 +203,16 @@ describe('ChatSocketGateway ban enforcement', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    redis = makeRedis();
+    chatCache = makeChatCache();
     gateway = new ChatSocketGateway(
       tokenService,
       chatClient as unknown as ClientProxy,
       notificationClient as unknown as ClientProxy,
       userClient as unknown as ClientProxy,
       banMarkers,
+      redis,
+      chatCache,
     );
     (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
       sockets: { sockets: new Map() },
@@ -166,7 +236,7 @@ describe('ChatSocketGateway ban enforcement', () => {
 
     expect(tokenService.verifyAccessToken).toHaveBeenCalledWith('token');
     expect(banMarkers.findActiveMarker).toHaveBeenCalledWith('user-1');
-    expect(gateway.isUserOnline('user-1')).toBe(true);
+    expect(await gateway.isUserOnline('user-1')).toBe(true);
     expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
@@ -185,7 +255,7 @@ describe('ChatSocketGateway ban enforcement', () => {
       bannedUntil: '2026-07-09T10:00:00.000Z',
     });
     expect(socket.disconnect).toHaveBeenCalledWith(true);
-    expect(gateway.isUserOnline('user-1')).toBe(false);
+    expect(await gateway.isUserOnline('user-1')).toBe(false);
   });
 
   it('fails closed when the ban marker repository cannot parse Redis state', async () => {
@@ -198,7 +268,7 @@ describe('ChatSocketGateway ban enforcement', () => {
       code: 'ACCOUNT_BAN_CHECK_UNAVAILABLE',
     });
     expect(socket.disconnect).toHaveBeenCalledWith(true);
-    expect(gateway.isUserOnline('user-1')).toBe(false);
+    expect(await gateway.isUserOnline('user-1')).toBe(false);
   });
 
   it('disconnectUser disconnects every registered socket and removes the map entry', async () => {
@@ -221,7 +291,7 @@ describe('ChatSocketGateway ban enforcement', () => {
 
     expect(firstSocket.disconnect).toHaveBeenCalledWith(true);
     expect(secondSocket.disconnect).toHaveBeenCalledWith(true);
-    expect(gateway.isUserOnline('user-1')).toBe(false);
+    expect(await gateway.isUserOnline('user-1')).toBe(false);
   });
 
   it('does not write raw websocket auth identifiers to diagnostic logs', async () => {
@@ -230,7 +300,7 @@ describe('ChatSocketGateway ban enforcement', () => {
     socket.id = 'socket-secret-id';
 
     await gateway.handleConnection(socket as never);
-    gateway.handleDisconnect(socket as never);
+    await gateway.handleDisconnect(socket as never);
 
     banMarkers.findActiveMarker.mockRejectedValueOnce(
       new Error('Invalid ban marker for user@example.com token=secret'),
@@ -329,7 +399,12 @@ describe('ChatSocketGateway ban enforcement', () => {
       type: 'TEXT',
       text: 'hello',
     };
-    chatClient.send.mockReturnValueOnce(of(message));
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(true);
+      if (pattern === 'chat.sendMessage') return of(message);
+      if (pattern === 'chat.getMembers') return of([{ userId: 'user-1' }]);
+      return of(true);
+    });
 
     await gateway.handleSendMessage(socket as never, {
       chatId: 'chat-1',
@@ -362,12 +437,16 @@ describe('ChatSocketGateway ban enforcement', () => {
         category: 'IMAGE',
       },
     ];
-    chatClient.send.mockReturnValueOnce(of({
-      id: 'message-1',
-      chatId: 'chat-1',
-      type: 'IMAGE',
-      attachments,
-    }));
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(true);
+      if (pattern === 'chat.getMembers') return of([{ userId: 'user-1' }]);
+      return of({
+        id: 'message-1',
+        chatId: 'chat-1',
+        type: 'IMAGE',
+        attachments,
+      });
+    });
 
     await gateway.handleSendMessage(socket as never, {
       chatId: 'chat-1',
@@ -401,6 +480,115 @@ describe('ChatSocketGateway ban enforcement', () => {
       chatId: 'chat-1',
       messageId: 'message-1',
     });
+  });
+
+  it('tracks presence in Redis with a 120s TTL instead of a local map', async () => {
+    const socket = makeSocket();
+
+    await gateway.handleConnection(socket as never);
+
+    expect(redis.sadd).toHaveBeenCalledWith('presence:user-1', socket.id);
+    expect(redis.expire).toHaveBeenCalledWith('presence:user-1', 120);
+    expect(await gateway.isUserOnline('user-1')).toBe(true);
+
+    await gateway.handleDisconnect(socket as never);
+
+    expect(await gateway.isUserOnline('user-1')).toBe(false);
+  });
+
+  it('falls back to offline when Redis presence checks fail', async () => {
+    redis.exists.mockRejectedValueOnce(new Error('redis down'));
+
+    await expect(gateway.isUserOnline('user-1')).resolves.toBe(false);
+  });
+
+  it('stores typing state with a short TTL and relays it to the room', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    const emit = jest.fn();
+    const to = jest.fn(() => ({ emit }));
+    (gateway as unknown as { server: { to: jest.Mock } }).server = {
+      ...(gateway as unknown as { server: object }).server,
+      to,
+    };
+
+    await gateway.handleTypingStart(socket as never, { chatId: 'chat-1' });
+
+    expect(redis.set).toHaveBeenCalledWith('typing:chat-1:user-1', '1', 'EX', 3);
+    expect(to).toHaveBeenCalledWith('chat:chat-1');
+    expect(emit).toHaveBeenCalledWith('user:typing', {
+      userId: 'user-1',
+      chatId: 'chat-1',
+      isTyping: true,
+    });
+
+    await gateway.handleTypingStop(socket as never, { chatId: 'chat-1' });
+
+    expect(redis.del).toHaveBeenCalledWith('typing:chat-1:user-1');
+    expect(emit).toHaveBeenCalledWith('user:typing', {
+      userId: 'user-1',
+      chatId: 'chat-1',
+      isTyping: false,
+    });
+  });
+
+  it('rejects invalid socket message payloads with a structured error', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      text: '',
+    });
+
+    expect(chatClient.send).not.toHaveBeenCalled();
+    expect(socket.emit).toHaveBeenCalledWith(
+      'message:send:error',
+      expect.objectContaining({ code: 'VALIDATION_ERROR', message: expect.any(String) }),
+    );
+  });
+
+  it('rejects socket sends from non-members with a structured error', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(false);
+      return of(true);
+    });
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      text: 'hello',
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith(
+      'message:send:error',
+      expect.objectContaining({ code: 'FORBIDDEN', message: expect.any(String) }),
+    );
+    expect(socket.emit).not.toHaveBeenCalledWith(
+      'message:new',
+      expect.anything(),
+    );
+  });
+
+  it('invalidates chat cache pages and lists after a socket send', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(true);
+      if (pattern === 'chat.getMembers') return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
+      return of({ id: 'message-1', chatId: 'chat-1', text: 'hello' });
+    });
+    userClient.send.mockReturnValue(of({ name: 'Sender', displayName: null }));
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      text: 'hello',
+    });
+
+    expect(chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
+    expect(chatCache.invalidateChatList).toHaveBeenCalledWith('user-1');
+    expect(chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
   });
 
   it('emits targeted events to every socket for one user', async () => {

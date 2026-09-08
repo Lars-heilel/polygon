@@ -40,7 +40,8 @@ import {
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { AdminController } from '../controllers/admin.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
-import { FrontendErrorController } from '../controllers/frontend-error.controller';
+
+import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';import { FrontendErrorController } from '../controllers/frontend-error.controller';
 import { MediaGatewayController } from '../controllers/media.controller';
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
@@ -103,6 +104,7 @@ const rmqClient = (name: string, queue: string) => ({
     { provide: SESSION_CACHE_REPOSITORY_TOKEN, useClass: SessionRedisRepository },
     SessionGuard,
     ChatSocketGateway,
+    GatewayChatCacheService,
     LocalStrategy,
     GithubStrategy,
     GoogleStrategy,
