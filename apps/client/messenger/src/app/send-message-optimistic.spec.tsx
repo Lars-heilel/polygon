@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { InfiniteData } from '@tanstack/react-query';
 
 import type { MessagePage } from '@org/entities-message';
-import { useSendMessage } from '@org/features-send-message';
+import { removeOptimisticMessage, useSendMessage } from '@org/features-send-message';
 import { queryClient, socket } from '@org/shared';
 
 describe('useSendMessage optimistic socket send', () => {
@@ -11,7 +11,7 @@ describe('useSendMessage optimistic socket send', () => {
     jest.clearAllMocks();
   });
 
-  it('inserts an optimistic message with clientId before emitting the socket event', () => {
+  it('inserts an optimistic message with clientId before emitting the socket event', async () => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1'], {
       pages: [{ messages: [], nextCursor: null }],
       pageParams: [undefined],
@@ -23,8 +23,8 @@ describe('useSendMessage optimistic socket send', () => {
     act(() => {
       result.current.setMessageText('hello');
     });
-    act(() => {
-      result.current.handleSend();
+    await act(async () => {
+      await result.current.handleSend();
     });
 
     const cached = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1']);
@@ -62,7 +62,7 @@ describe('useSendMessage optimistic socket send', () => {
     expect(result.current.setMessageText).toBe(setMessageText);
   });
 
-  it('inserts optimistic media without a stable content URL and emits attachment payload', () => {
+  it('inserts optimistic media without a stable content URL and emits attachment payload', async () => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1'], {
       pages: [{ messages: [], nextCursor: null }],
       pageParams: [undefined],
@@ -82,8 +82,8 @@ describe('useSendMessage optimistic socket send', () => {
         fileCategory: 'IMAGE',
       });
     });
-    act(() => {
-      result.current.handleSend();
+    await act(async () => {
+      await result.current.handleSend();
     });
 
     const cached = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1']);
@@ -107,5 +107,56 @@ describe('useSendMessage optimistic socket send', () => {
         fileNameSnapshot: 'image.png',
       })],
     }));
+  });
+
+  it('rolls back the optimistic message when the socket emit fails', async () => {
+    queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1'], {
+      pages: [{ messages: [], nextCursor: null }],
+      pageParams: [undefined],
+    });
+    jest.spyOn(socket, 'emit');
+
+    const { result } = renderHook(() => useSendMessage('chat-1', 'user-1'));
+
+    act(() => {
+      result.current.setMessageText('hello');
+    });
+    jest.spyOn(socket, 'emit').mockImplementationOnce(() => {
+      throw new Error('socket down');
+    });
+    await act(async () => {
+      await expect(result.current.handleSend()).rejects.toThrow('Socket send failed');
+    });
+
+    const cached = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1']);
+    expect(cached?.pages[0].messages).toHaveLength(0);
+  });
+
+  it('removes only the optimistic message matching clientId', async () => {
+    queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1'], {
+      pages: [{ messages: [], nextCursor: null }],
+      pageParams: [undefined],
+    });
+
+    const { result } = renderHook(() => useSendMessage('chat-1', 'user-1'));
+
+    act(() => {
+      result.current.setMessageText('hello');
+    });
+    await act(async () => {
+      await result.current.handleSend();
+    });
+
+    const cached = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1']);
+    expect(cached?.pages[0].messages).toHaveLength(1);
+    const clientId = cached?.pages[0].messages[0]?.clientId;
+    expect(clientId).toEqual(expect.any(String));
+
+    act(() => {
+      removeOptimisticMessage('chat-1', clientId as string);
+    });
+
+    const next = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', 'chat-1']);
+    expect(next?.pages[0].messages).toHaveLength(0);
   });
 });

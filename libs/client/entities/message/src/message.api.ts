@@ -29,14 +29,6 @@ export const messageApi = {
     return normalizeMessagePage(raw);
   },
 
-  async sendMessage(chatId: string, text: string): Promise<Message> {
-    const raw = await authedFetch<RawMessage>(API_ROUTES.chats.messages(chatId), {
-      method: 'POST',
-      body: JSON.stringify({ text }),
-    });
-    return normalizeMessage(raw);
-  },
-
   async editMessage(chatId: string, messageId: string, text: string): Promise<Message> {
     const raw = await authedFetch<RawMessage>(API_ROUTES.chats.message(chatId, messageId), {
       method: 'PATCH',
@@ -71,54 +63,16 @@ export function useInfiniteMessagesQuery(chatId: string) {
     queryFn: ({ pageParam }) => messageApi.getMessages(chatId, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    staleTime: 15_000,
+    gcTime: 10 * 60_000,
   });
 }
 
 export function useMessagesQuery(chatId: string) {
   return useSuspenseQuery({
-    queryKey: ['messages', chatId],
+    queryKey: ['messages-flat', chatId],
     queryFn: () => messageApi.getMessages(chatId),
     select: (data) => data.messages,
-  });
-}
-
-export function useSendMessageMutation(chatId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (text: string) => messageApi.sendMessage(chatId, text),
-    onMutate: async (text) => {
-      await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
-      const snapshot = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', chatId]);
-
-      queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) => {
-        if (!old) return old;
-        const optimistic = {
-          id: crypto.randomUUID(),
-          chatId,
-          senderId: '',
-          text,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        } as Message;
-
-        return {
-          ...old,
-          pages: old.pages.map((page, i) =>
-            i === 0 ? { ...page, messages: [...page.messages, optimistic] } : page,
-          ),
-        };
-      });
-
-      return { snapshot };
-    },
-    onError: (_err, _text, ctx) => {
-      if (ctx?.snapshot) {
-        queryClient.setQueryData(['messages', chatId], ctx.snapshot);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-    },
   });
 }
 

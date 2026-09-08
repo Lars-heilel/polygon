@@ -42,10 +42,12 @@ export function upsertMessageIntoPages<
     ...page,
     messages: page.messages.map((message) => {
       const sameServerId = message.id === normalizedMsg.id;
-      const sameClientId = Boolean(message.clientId) && message.clientId === normalizedMsg.clientId;
-      const samePendingMessage = isMatchingPendingEcho(message, normalizedMsg);
+      const sameClientId =
+        Boolean(message.clientId) &&
+        Boolean(normalizedMsg.clientId) &&
+        message.clientId === normalizedMsg.clientId;
 
-      if (!sameServerId && !sameClientId && !samePendingMessage) return message;
+      if (!sameServerId && !sameClientId) return message;
 
       replaced = true;
       return {
@@ -66,20 +68,6 @@ export function upsertMessageIntoPages<
   }
 
   return appendMessageToPages({ ...old, pages } as TData, normalizedMsg);
-}
-
-function isMatchingPendingEcho(message: MessageLike, msg: MessageLike): boolean {
-  if (message.localStatus !== 'sending') return false;
-  if (msg.localStatus === 'sending') return false;
-  if (message.chatId !== msg.chatId) return false;
-  if (message.senderId && msg.senderId && message.senderId !== msg.senderId) return false;
-  if (message.type && msg.type && message.type !== msg.type) return false;
-
-  if (message.media?.fileId || msg.media?.fileId) {
-    return Boolean(message.media?.fileId) && message.media?.fileId === msg.media?.fileId;
-  }
-
-  return Boolean(message.text) && message.text === msg.text;
 }
 
 export function appendMessageToPages<

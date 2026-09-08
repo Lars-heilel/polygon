@@ -107,7 +107,15 @@ describe('chat socket cache updaters', () => {
     }));
   });
 
-  it('replaces an optimistic text message when the server echo loses clientId', () => {
+  it('does NOT absorb foreign message with same text into pending', () => {
+    const old = { pageParams: [undefined], pages: [{ messages: [{ id: 'client:k1', clientId: 'k1', chatId: 'c1', senderId: 'me', type: 'TEXT', text: 'hello', createdAt: 't0', localStatus: 'sending' as const }] }] };
+    const foreign = { id: 'srv-9', clientId: null, chatId: 'c1', senderId: 'other', type: 'TEXT', text: 'hello', createdAt: 't1' };
+    const next = upsertMessageIntoPages(old, foreign);
+    expect(next?.pages[0].messages).toHaveLength(2);
+    expect(next?.pages[0].messages[0].localStatus).toBe('sending');
+  });
+
+  it('does NOT absorb a server echo that lost clientId into pending (echo must carry clientId)', () => {
     const optimistic = {
       id: 'client-temp-1',
       clientId: 'client-1',
@@ -132,15 +140,46 @@ describe('chat socket cache updaters', () => {
 
     const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
 
-    expect(next?.pages[0].messages).toHaveLength(1);
+    expect(next?.pages[0].messages).toHaveLength(2);
     expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      id: 'server-message-1',
       clientId: 'client-1',
-      localStatus: 'sent',
+      localStatus: 'sending',
     }));
   });
 
-  it('replaces an optimistic file message when the server echo loses clientId', () => {
+  it('does NOT absorb a file server echo that lost clientId into pending', () => {
+    const optimistic = {
+      id: 'client-temp-1',
+      clientId: 'client-1',
+      chatId: 'chat-2',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hello',
+      media: null,
+      createdAt: '2026-07-14T10:00:00.000Z',
+      localStatus: 'sending' as const,
+    };
+    const serverMessage = {
+      id: 'server-message-1',
+      clientId: null,
+      chatId: 'chat-2',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hello',
+      media: null,
+      createdAt: '2026-07-14T10:00:01.000Z',
+    };
+
+    const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
+
+    expect(next?.pages[0].messages).toHaveLength(2);
+    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
+      clientId: 'client-1',
+      localStatus: 'sending',
+    }));
+  });
+
+  it('does NOT absorb a file server echo that lost clientId into pending', () => {
     const optimistic = {
       id: 'client-temp-1',
       clientId: 'client-1',
@@ -165,11 +204,10 @@ describe('chat socket cache updaters', () => {
 
     const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
 
-    expect(next?.pages[0].messages).toHaveLength(1);
+    expect(next?.pages[0].messages).toHaveLength(2);
     expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      id: 'server-message-1',
       clientId: 'client-1',
-      localStatus: 'sent',
+      localStatus: 'sending',
     }));
   });
 

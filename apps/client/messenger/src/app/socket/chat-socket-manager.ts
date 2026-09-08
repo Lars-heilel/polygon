@@ -49,14 +49,25 @@ function handleNewMessage(msg: Message) {
   });
 }
 
-function handleMessageSendError(payload: { chatId: string; clientId: string }) {
+interface MessageSendErrorPayload {
+  chatId: string;
+  clientId: string | null;
+  code?: string;
+  message?: string;
+}
+
+function handleMessageSendError(payload: MessageSendErrorPayload) {
   frontendLog('warn', 'ChatSocket', 'message_send_failed', {
     hasChatId: !!payload.chatId,
     hasClientId: !!payload.clientId,
+    code: payload.code ?? 'UNKNOWN',
   });
 
+  const { clientId } = payload;
+  if (!clientId) return;
+
   queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', payload.chatId], (old) =>
-    markMessageSendError(old, payload.clientId),
+    markMessageSendError(old, clientId),
   );
 }
 

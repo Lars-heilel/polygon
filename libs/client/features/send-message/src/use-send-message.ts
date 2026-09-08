@@ -132,6 +132,20 @@ function insertOptimisticMessage(chatId: string, message: Message) {
   });
 }
 
+export function removeOptimisticMessage(chatId: string, clientId: string) {
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) => {
+    if (!old) return old;
+
+    return {
+      ...old,
+      pages: old.pages.map((page) => ({
+        ...page,
+        messages: page.messages.filter((message) => message.clientId !== clientId),
+      })),
+    };
+  });
+}
+
 export function useSendMessage(chatId: string | null, senderId: string | null = null) {
   const [messageText, setMessageText] = useState('');
   const isTypingRef = useRef(false);
@@ -178,8 +192,9 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
     pendingFileRef.current = file;
   }, []);
 
-  const handleSend = useCallback(() => {
-    if (!chatIdRef.current || !senderId) return;
+  const handleSend = useCallback(async () => {
+    const chatId = chatIdRef.current;
+    if (!chatId || !senderId) return;
 
     const file = pendingFileRef.current;
 
@@ -188,7 +203,7 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
       const attachment = createAttachmentPayload(file);
       const optimistic = createOptimisticMessage({
         clientId,
-        chatId: chatIdRef.current,
+        chatId,
         senderId,
         text: null,
         file,
@@ -196,20 +211,31 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
 
       pendingFileRef.current = null;
       setMessageText('');
-      insertOptimisticMessage(chatIdRef.current, optimistic);
+      await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
+      const snapshot = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', chatId]);
+      insertOptimisticMessage(chatId, optimistic);
       frontendLog('debug', 'SendMessage', 'message_send_requested', {
-        hasChatId: !!chatIdRef.current,
+        hasChatId: !!chatId,
         hasClientId: !!clientId,
         hasFile: true,
         hasText: false,
         type: getMessageTypeFromCategory(file.fileCategory),
       });
-      socket.emit('message:send', {
-        chatId: chatIdRef.current,
-        clientId,
-        type: getMessageTypeFromCategory(file.fileCategory),
-        attachments: [attachment],
-      });
+      try {
+        socket.emit('message:send', {
+          chatId,
+          clientId,
+          type: getMessageTypeFromCategory(file.fileCategory),
+          attachments: [attachment],
+        });
+      } catch {
+        if (snapshot) queryClient.setQueryData(['messages', chatId], snapshot);
+        frontendLog('warn', 'SendMessage', 'message_send_failed', {
+          hasChatId: !!chatId,
+          hasClientId: !!clientId,
+        });
+        throw new Error('Socket send failed');
+      }
       stopTyping();
       return;
     }
@@ -219,21 +245,32 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
     const clientId = crypto.randomUUID();
     const optimistic = createOptimisticMessage({
       clientId,
-      chatId: chatIdRef.current,
+      chatId,
       senderId,
       text: trimmed,
     });
 
     setMessageText('');
-    insertOptimisticMessage(chatIdRef.current, optimistic);
+    await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
+    const snapshot = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', chatId]);
+    insertOptimisticMessage(chatId, optimistic);
     frontendLog('debug', 'SendMessage', 'message_send_requested', {
-      hasChatId: !!chatIdRef.current,
+      hasChatId: !!chatId,
       hasClientId: !!clientId,
       hasFile: false,
       hasText: true,
       type: 'TEXT',
     });
-    socket.emit('message:send', { chatId: chatIdRef.current, text: trimmed, clientId });
+    try {
+      socket.emit('message:send', { chatId, text: trimmed, clientId });
+    } catch {
+      if (snapshot) queryClient.setQueryData(['messages', chatId], snapshot);
+      frontendLog('warn', 'SendMessage', 'message_send_failed', {
+        hasChatId: !!chatId,
+        hasClientId: !!clientId,
+      });
+      throw new Error('Socket send failed');
+    }
     stopTyping();
   }, [messageText, senderId, stopTyping]);
 

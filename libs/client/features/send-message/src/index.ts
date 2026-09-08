@@ -1,4 +1,4 @@
-export { useSendMessage } from './use-send-message';
+export { removeOptimisticMessage, useSendMessage } from './use-send-message';
 export { getMessageTypeFromCategory, type FileAttachment } from './use-send-message';
 export {
   getCategoryFromMime,

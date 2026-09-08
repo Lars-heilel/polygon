@@ -6,7 +6,6 @@ export {
   useForwardMessagesMutation,
   useInfiniteMessagesQuery,
   useMessagesQuery,
-  useSendMessageMutation,
 } from './message.api.js';
 export type { DeleteMessageMode, ForwardMessagesInput } from './message.api.js';
 export { removeMessageFromPages, updateMessageInPages } from './message-cache.js';
