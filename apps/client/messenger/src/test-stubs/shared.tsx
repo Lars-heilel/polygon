@@ -187,6 +187,8 @@ export function frontendLog() {
 
 export const socket = {
   emit: () => undefined,
+  on: () => undefined,
+  off: () => undefined,
 };
 
 export function formatTime(value: string) {

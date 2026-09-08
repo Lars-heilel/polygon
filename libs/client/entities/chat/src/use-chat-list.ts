@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 
 import { useGetChatsSuspenseQuery } from './chat.api';
 import { getMessagePreview } from './chat-preview';
-import { selectUnreadByChatId, useChatStore } from './chat.store';
 import { getChatDisplayName } from './chat.utils';
 import { usePresenceStore } from './presence.store';
 
@@ -18,7 +17,6 @@ function getOtherUserInfo(
 export function useChatList(myId: string) {
   const { data: chats } = useGetChatsSuspenseQuery();
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
-  const unreadByChatId = useChatStore(selectUnreadByChatId);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
@@ -32,12 +30,12 @@ export function useChatList(myId: string) {
           avatarUrl: other?.avatarUrl ?? chat.avatarUrl ?? undefined,
           lastMessage: getMessagePreview(chat.lastMessage),
           time: chat.lastMessage?.createdAt ?? null,
-          unread: chat.unreadCount ?? unreadByChatId[chat.id] ?? 0,
+          unread: chat.unreadCount ?? 0,
           online: other ? (onlineUsers[other.userId] ?? false) : false,
         };
       })
       .filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [chats, myId, onlineUsers, searchQuery, unreadByChatId]);
+  }, [chats, myId, onlineUsers, searchQuery]);
 
   return {
     chats: filteredChats,

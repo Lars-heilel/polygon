@@ -1,5 +1,5 @@
 import type { Chat } from '@org/entities-chat';
-import { useChatStore } from '@org/entities-chat';
+import { chatApi, useChatStore } from '@org/entities-chat';
 import { usePresenceStore } from '@org/entities-chat';
 import type { Message, MessagePage } from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
@@ -14,6 +14,11 @@ import {
   updateMessageInPages,
 } from './chat-cache-updaters';
 
+function getCurrentUserId(): string | null {
+  // Same source as use-message-notification — no new session plumbing.
+  return queryClient.getQueryData<{ id: string }>(['me'])?.id ?? null;
+}
+
 function handleNewMessage(msg: Message) {
   frontendLog('debug', 'ChatSocket', 'message_received', {
     hasChatId: !!msg.chatId,
@@ -22,14 +27,18 @@ function handleNewMessage(msg: Message) {
   });
 
   const chatStore = useChatStore.getState();
+  const currentUserId = getCurrentUserId();
+  const isOwn = currentUserId !== null && msg.senderId === currentUserId;
+  const isActiveChat = msg.chatId === chatStore.activeChatId;
   const tabVisible = document.visibilityState === 'visible' && document.hasFocus();
-  const shouldIncrementUnread = msg.chatId !== chatStore.activeChatId || !tabVisible;
 
   unstable_batchedUpdates(() => {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
       upsertMessageIntoPages(old, msg),
     );
+    queryClient.invalidateQueries({ queryKey: ['messages-flat', msg.chatId] });
 
+    // Guarded inside: only moves the preview forward, never back.
     queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
       updateChatListLastMessage(old, msg),
     );
@@ -38,11 +47,20 @@ function handleNewMessage(msg: Message) {
       queryClient.invalidateQueries({ queryKey: ['chat-media-messages', msg.chatId] });
     }
 
-    if (shouldIncrementUnread) {
+    if (isOwn) {
+      // Own messages (incl. socket echo) never affect unread.
+    } else if (!isActiveChat || !tabVisible) {
+      // Single-source unread: bump the server-derived counter only.
       queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
         updateChatListUnreadCount(old, msg.chatId, 1),
       );
-      chatStore.incrementUnread(msg.chatId);
+    } else {
+      // Foreign message arrived while the user is looking at the chat —
+      // clear it on the server right away (fire-and-forget) and mirror the zero.
+      void chatApi.markRead(msg.chatId).catch(() => undefined);
+      queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
+        old.map((chat) => (chat.id === msg.chatId ? { ...chat, unreadCount: 0 } : chat)),
+      );
     }
 
     chatStore.setLastReceivedMessage(msg);
@@ -81,6 +99,16 @@ function handleMessageUpdated(msg: Message) {
   queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
     updateMessageInPages(old, msg),
   );
+  queryClient.invalidateQueries({ queryKey: ['messages-flat', msg.chatId] });
+
+  // Keep the list preview in sync when the edited message is the preview.
+  const chats = queryClient.getQueryData<Chat[]>(['chats']);
+  const target = chats?.find((chat) => chat.id === msg.chatId);
+  if (target?.lastMessage && target.lastMessage.id === msg.id) {
+    queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
+      updateChatListLastMessage(old, msg),
+    );
+  }
 }
 
 function handleMessageRemoved(payload: { chatId: string; messageId: string }) {
@@ -93,6 +121,19 @@ function handleMessageRemoved(payload: { chatId: string; messageId: string }) {
     removeMessageFromPages(old, payload.messageId),
   );
   queryClient.invalidateQueries({ queryKey: ['chat-media-messages', payload.chatId] });
+  queryClient.invalidateQueries({ queryKey: ['messages-flat', payload.chatId] });
+
+  // If the removed message was the list preview, clear it locally and let the
+  // server refetch recompute the true tail (GET messages take:1 equivalent).
+  const chats = queryClient.getQueryData<Chat[]>(['chats']);
+  const target = chats?.find((chat) => chat.id === payload.chatId);
+  if (target?.lastMessage && target.lastMessage.id === payload.messageId) {
+    queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
+      old.map((chat) => (chat.id === payload.chatId ? { ...chat, lastMessage: null } : chat)),
+    );
+    queryClient.invalidateQueries({ queryKey: ['chats'] });
+    queryClient.invalidateQueries({ queryKey: ['messages', payload.chatId] });
+  }
 }
 
 function handleUserOnline(payload: { userId: string; chatId: string }) {

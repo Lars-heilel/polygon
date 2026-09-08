@@ -149,6 +149,16 @@ export function updateChatListLastMessage<TChat extends ChatLike, TMessage exten
   msg: TMessage,
 ): TChat[] {
   const normalizedMsg = normalizeSocketMessage(msg);
+  const current = (chats ?? []).find((chat) => chat.id === normalizedMsg.chatId)?.lastMessage;
+  // Guard against out-of-order delivery: never let a stale event roll the
+  // preview back. Equal timestamps still replace (edit in place / same-time send).
+  if (
+    current?.createdAt &&
+    normalizedMsg.createdAt &&
+    new Date(normalizedMsg.createdAt).getTime() < new Date(current.createdAt).getTime()
+  ) {
+    return chats ?? [];
+  }
   const next = (chats ?? []).map((chat) =>
     chat.id === normalizedMsg.chatId ? { ...chat, lastMessage: normalizedMsg } as TChat : chat,
   );

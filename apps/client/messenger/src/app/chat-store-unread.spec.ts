@@ -17,20 +17,23 @@ describe('chat unread state', () => {
     return store;
   }
 
-  it('keeps unread counters after store module reload until the chat is marked read', () => {
-    const firstStore = loadChatStore();
-    firstStore.getState().incrementUnread('chat-1');
+  it('keeps transient unread counters in memory until the chat is marked read', () => {
+    const store = loadChatStore();
+    store.getState().incrementUnread('chat-1');
 
-    expect(firstStore.getState().unreadByChatId).toEqual({ 'chat-1': 1 });
+    expect(store.getState().unreadByChatId).toEqual({ 'chat-1': 1 });
 
-    jest.resetModules();
-    const secondStore = loadChatStore();
+    store.getState().markChatRead('chat-1');
 
-    expect(secondStore.getState().unreadByChatId).toEqual({ 'chat-1': 1 });
+    expect(store.getState().unreadByChatId).toEqual({});
+  });
 
-    secondStore.getState().markChatRead('chat-1');
+  it('does not persist unread counters across module reload (server unreadCount is the source)', () => {
+    localStorage.setItem('chat-unread-state', JSON.stringify({ state: { unreadByChatId: { 'chat-1': 1 } } }));
+    const store = loadChatStore();
 
-    expect(secondStore.getState().unreadByChatId).toEqual({});
+    expect(store.getState().unreadByChatId).toEqual({});
+    expect(localStorage.getItem('chat-unread-state')).toBeNull();
   });
 
   it('does not persist active chat state across module reload', () => {
@@ -42,6 +45,6 @@ describe('chat unread state', () => {
     const secondStore = loadChatStore();
 
     expect(secondStore.getState().activeChatId).toBeNull();
-    expect(secondStore.getState().unreadByChatId).toEqual({ 'chat-2': 1 });
+    expect(secondStore.getState().unreadByChatId).toEqual({});
   });
 });

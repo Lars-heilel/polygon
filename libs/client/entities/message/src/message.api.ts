@@ -85,6 +85,7 @@ export function useEditMessageMutation(chatId: string) {
       queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
         updateMessageInPages<InfiniteData<MessagePage>, Message>(old, message),
       );
+      queryClient.invalidateQueries({ queryKey: ['messages-flat', chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
@@ -99,6 +100,7 @@ export function useDeleteMessageMutation(chatId: string) {
       queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
         removeMessageFromPages(old, id),
       );
+      queryClient.invalidateQueries({ queryKey: ['messages-flat', chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
@@ -109,8 +111,10 @@ export function useForwardMessagesMutation() {
   return useMutation({
     mutationFn: ({ targetChatId, input }: { targetChatId: string; input: ForwardMessagesInput }) =>
       messageApi.forwardMessages(targetChatId, input),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['messages', variables.targetChatId] });
+      queryClient.invalidateQueries({ queryKey: ['messages-flat', variables.targetChatId] });
     },
   });
 }

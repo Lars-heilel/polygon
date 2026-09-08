@@ -249,6 +249,38 @@ describe('chat socket cache updaters', () => {
     expect(next[0]).not.toHaveProperty('messages');
   });
 
+  it('does not roll back lastMessage on out-of-order event', () => {
+    const chats = [
+      {
+        id: 'chat-1',
+        updatedAt: '2026-09-07T09:00:00.000Z',
+        lastMessage: { id: 'new-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T10:00:00.000Z' },
+      },
+    ];
+    const stale = { id: 'old-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T09:00:00.000Z' };
+
+    const next = updateChatListLastMessage(chats, stale);
+
+    expect(next[0].lastMessage).toEqual(
+      expect.objectContaining({ id: 'new-1', createdAt: '2026-09-07T10:00:00.000Z' }),
+    );
+  });
+
+  it('replaces lastMessage when the incoming message is newer', () => {
+    const chats = [
+      {
+        id: 'chat-1',
+        updatedAt: '2026-09-07T09:00:00.000Z',
+        lastMessage: { id: 'old-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T09:00:00.000Z' },
+      },
+    ];
+    const fresh = { id: 'new-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T10:00:00.000Z' };
+
+    const next = updateChatListLastMessage(chats, fresh);
+
+    expect(next[0].lastMessage).toEqual(expect.objectContaining({ id: 'new-1' }));
+  });
+
   it('optimistically increments unread count for the changed chat', () => {
     const chats: ChatCacheItem[] = [
       {
