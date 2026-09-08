@@ -1,0 +1,25 @@
+em-emoji-picker {
+  --rgb-background: 23, 25, 29;
+  --rgb-color: 244, 246, 248;
+  --rgb-accent: 79, 124, 255;
+  --rgb-input: 32, 35, 41;
+  --color-border: var(--color-border);
+  --font-family: var(--font-sans);
+  --border-radius: var(--radius-xl);
+  --shadow: var(--shadow-popover);
+
+  height: 400px;
+  border: 1px solid var(--color-border);
+}
+
+.theme-light em-emoji-picker {
+  --rgb-background: 255, 255, 255;
+  --rgb-color: 21, 25, 34;
+  --rgb-accent: 49, 95, 220;
+  --rgb-input: 240, 243, 247;
+}
+
+[data-sonner-toaster] {
+  --width: 360px;
+  font-family: var(--font-sans) !important;
+}

@@ -5,7 +5,22 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
-const css = readFileSync(join(currentDir, 'global.css'), 'utf8');
+
+function resolveCssBundle(entry: string, seen = new Set<string>()): string {
+  const entryPath = join(currentDir, entry);
+  if (seen.has(entryPath)) return '';
+  seen.add(entryPath);
+  const raw = readFileSync(entryPath, 'utf8');
+  const dir = dirname(entryPath);
+  return raw.replace(/@import\s+['"](\.\/[^'"]+\.css)['"]\s*;/g, (_match, rel: string) => {
+    const resolved = join(dir, rel);
+    if (seen.has(resolved)) return '';
+    seen.add(resolved);
+    return readFileSync(resolved, 'utf8');
+  });
+}
+
+const css = resolveCssBundle('global.css');
 
 describe('global.css design-system contract', () => {
   it('defines the semantic tokens consumed by shared UI', () => {
