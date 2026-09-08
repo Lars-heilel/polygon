@@ -336,6 +336,22 @@ export class ChatPrismaRepository implements IChatRepository {
                 })),
               }
             : undefined,
+          forwardContext: data.forwardContext
+            ? {
+                create: {
+                  originalMessageId: data.forwardContext.originalMessageId ?? null,
+                  originalChatId: data.forwardContext.originalChatId ?? null,
+                  originalAuthorId: data.forwardContext.originalAuthorId,
+                  originalAuthorNameSnapshot: data.forwardContext.originalAuthorNameSnapshot,
+                  originalAuthorDisplayNameSnapshot:
+                    data.forwardContext.originalAuthorDisplayNameSnapshot ?? null,
+                  originalMessageCreatedAt: data.forwardContext.originalMessageCreatedAt,
+                  originalMessageType: data.forwardContext.originalMessageType,
+                  originalTextPreview: data.forwardContext.originalTextPreview ?? null,
+                  originalFileNamePreview: data.forwardContext.originalFileNamePreview ?? null,
+                },
+              }
+            : undefined,
         },
         select: MESSAGE_SELECT_FIELDS,
       });

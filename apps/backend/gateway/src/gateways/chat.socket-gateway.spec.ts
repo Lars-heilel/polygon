@@ -591,6 +591,30 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
   });
 
+  it('falls back to GET_MEMBERS for invalidation when push fails', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(true);
+      if (pattern === 'chat.getMembers') return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
+      return of({ id: 'message-1', chatId: 'chat-1', text: 'hello' });
+    });
+    userClient.send.mockReturnValue(of({ name: 'Sender', displayName: null }));
+    notificationClient.emit.mockImplementation(() => {
+      throw new Error('push down');
+    });
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      text: 'hello',
+    });
+
+    expect(chatClient.send).toHaveBeenCalledWith('chat.getMembers', { chatId: 'chat-1' });
+    expect(chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
+    expect(chatCache.invalidateChatList).toHaveBeenCalledWith('user-1');
+    expect(chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
+  });
+
   it('emits targeted events to every socket for one user', async () => {
     const firstSocket = makeSocket();
     firstSocket.id = 'socket-1';

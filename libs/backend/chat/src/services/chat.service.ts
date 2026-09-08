@@ -230,12 +230,6 @@ export class ChatService implements IChatService {
       throw error;
     }
 
-    await this.repo.touchChatLastMessage(
-      chatId,
-      message.id,
-      (message.createdAt as Date | undefined) ?? new Date(),
-    );
-
     this.logger.log({
       eventType: 'message_attachment_created',
       hasMessageId: !!message.id,
@@ -630,7 +624,7 @@ export class ChatService implements IChatService {
     const cloned: Message[] = [];
     try {
       for (const message of messages) {
-        const created = await this.repo.createMessageWithRelations({
+        const created = await this.repo.createMessageWithTouch({
           chatId: targetChatId,
           clientId: null,
           senderId: userId,

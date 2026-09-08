@@ -27,12 +27,12 @@ describe('ChatGatewayController', () => {
       invalidateChatList: jest.fn(async (userId: string) => {
         store.delete(`chat:list:${userId}`);
       }),
-      getMessagesPage: jest.fn(async (chatId: string, cursor: string) => {
-        const raw = store.get(`chat:msgs:${chatId}:${cursor}`);
+      getMessagesPage: jest.fn(async (chatId: string, cursor: string, userId?: string, take?: number) => {
+        const raw = store.get(`chat:msgs:${chatId}:${userId ?? '-'}:${cursor}:${take ?? '-'}`);
         return raw ? (JSON.parse(raw) as unknown) : null;
       }),
-      setMessagesPage: jest.fn(async (chatId: string, cursor: string, page: unknown) => {
-        store.set(`chat:msgs:${chatId}:${cursor}`, JSON.stringify(page));
+      setMessagesPage: jest.fn(async (chatId: string, cursor: string, page: unknown, _ttlSec = 60, userId?: string, take?: number) => {
+        store.set(`chat:msgs:${chatId}:${userId ?? '-'}:${cursor}:${take ?? '-'}`, JSON.stringify(page));
       }),
       invalidateChatPages: jest.fn(async (chatId: string) => {
         for (const key of [...store.keys()]) {
@@ -72,16 +72,97 @@ describe('ChatGatewayController', () => {
   it('GET /chats/:id/messages serves from cache on second call', async () => {
     const ctx = controller();
     const page = { messages: [], nextCursor: null };
-    ctx.chatClient.send.mockReturnValueOnce(of(page));
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of(page);
+    });
     const firstRes = ctx.res();
     const secondRes = ctx.res();
 
     await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, firstRes as never);
     await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, secondRes as never);
 
-    expect(ctx.chatClient.send).toHaveBeenCalledTimes(1);
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(
+      CHAT_PATTERNS.GET_MESSAGES,
+      expect.objectContaining({ chatId: 'chat-1', userId: 'user-1' }),
+    );
+    expect(
+      ctx.chatClient.send.mock.calls.filter(([pattern]) => pattern === CHAT_PATTERNS.GET_MESSAGES),
+    ).toHaveLength(1);
     expect(firstRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
     expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'HIT');
+  });
+
+  it('GET /chats/:id/messages misses for a different user (per-user pages)', async () => {
+    const ctx = controller();
+    const page = { messages: [], nextCursor: null };
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of(page);
+    });
+
+    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, ctx.res() as never);
+    const secondRes = ctx.res();
+    await ctx.controller.getMessages({ sub: 'user-2' } as never, 'chat-1', undefined, undefined, secondRes as never);
+
+    expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
+    expect(
+      ctx.chatClient.send.mock.calls.filter(([pattern]) => pattern === CHAT_PATTERNS.GET_MESSAGES),
+    ).toHaveLength(2);
+  });
+
+  it('GET /chats/:id/messages rejects non-members without touching the cache', async () => {
+    const ctx = controller();
+    const page = { messages: [], nextCursor: null };
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of(page);
+    });
+
+    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, ctx.res() as never);
+    expect(ctx.chatCache.getMessagesPage).toHaveBeenCalled();
+
+    ctx.chatCache.getMessagesPage.mockClear();
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(false);
+      return of(page);
+    });
+
+    await expect(
+      ctx.controller.getMessages({ sub: 'intruder' } as never, 'chat-1', undefined, undefined, ctx.res() as never),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(ctx.chatCache.getMessagesPage).not.toHaveBeenCalled();
+  });
+
+  it('GET /chats/:id/messages keys pages by take', async () => {
+    const ctx = controller();
+    const page = { messages: [], nextCursor: null };
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of(page);
+    });
+
+    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, '5', ctx.res() as never);
+    const secondRes = ctx.res();
+    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, '50', secondRes as never);
+
+    expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
+    expect(ctx.chatCache.setMessagesPage).toHaveBeenCalledWith(
+      'chat-1',
+      'HEAD',
+      expect.anything(),
+      expect.anything(),
+      'user-1',
+      5,
+    );
+    expect(ctx.chatCache.setMessagesPage).toHaveBeenCalledWith(
+      'chat-1',
+      'HEAD',
+      expect.anything(),
+      expect.anything(),
+      'user-1',
+      50,
+    );
   });
 
   it('sendMessage invalidates chat pages and member lists', async () => {
@@ -96,6 +177,25 @@ describe('ChatGatewayController', () => {
       text: 'hello',
     } as never);
 
+    expect(ctx.chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
+    expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-1');
+    expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
+  });
+
+  it('falls back to GET_MEMBERS when push returns no member ids', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.SEND_MESSAGE) return of({ id: 'message-1', chatId: 'chat-1' });
+      if (pattern === CHAT_PATTERNS.GET_MEMBERS) return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
+      return of([]);
+    });
+    ctx.socketGateway.triggerPushForOfflineRecipients.mockResolvedValue([]);
+
+    await ctx.controller.sendMessage({ sub: 'user-1' } as never, 'chat-1', {
+      text: 'hello',
+    } as never);
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.GET_MEMBERS, { chatId: 'chat-1' });
     expect(ctx.chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
     expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-1');
     expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
@@ -150,22 +250,25 @@ describe('ChatGatewayController', () => {
 
   it('loads messages and enriches forwarded author snapshots for display', async () => {
     const ctx = controller();
-    ctx.chatClient.send.mockReturnValue(of({
-      messages: [{
-        id: 'message-1',
-        chatId: 'chat-1',
-        senderId: 'sender-1',
-        type: 'TEXT',
-        text: 'forwarded text',
-        attachments: [],
-        forwardContext: {
-          originalAuthorId: 'author-1',
-          originalAuthorNameSnapshot: 'author-1',
-          originalAuthorDisplayNameSnapshot: null,
-        },
-      }],
-      nextCursor: null,
-    }));
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of({
+        messages: [{
+          id: 'message-1',
+          chatId: 'chat-1',
+          senderId: 'sender-1',
+          type: 'TEXT',
+          text: 'forwarded text',
+          attachments: [],
+          forwardContext: {
+            originalAuthorId: 'author-1',
+            originalAuthorNameSnapshot: 'author-1',
+            originalAuthorDisplayNameSnapshot: null,
+          },
+        }],
+        nextCursor: null,
+      });
+    });
     ctx.userClient.send.mockReturnValue(of([{
       id: 'author-1',
       name: 'Alice',

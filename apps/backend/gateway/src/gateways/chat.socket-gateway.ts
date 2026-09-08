@@ -402,7 +402,20 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
     if (message) {
       this.broadcastMessage(payload.chatId, message);
-      const memberIds = await this.triggerPushForOfflineRecipients(payload.chatId, userId, message);
+      let memberIds = await this.triggerPushForOfflineRecipients(payload.chatId, userId, message);
+      if (memberIds.length === 0) {
+        memberIds = await lastValueFrom(
+          this.chatClient.send<{ userId: string }[]>(CHAT_PATTERNS.GET_MEMBERS, {
+            chatId: payload.chatId,
+          }),
+        )
+          .then((members) =>
+            Array.isArray(members)
+              ? members.filter((m) => typeof m.userId === 'string').map((m) => m.userId)
+              : [],
+          )
+          .catch(() => [] as string[]);
+      }
       await this.chatCache.invalidateChatPages(payload.chatId);
       for (const memberId of memberIds) {
         await this.chatCache.invalidateChatList(memberId);

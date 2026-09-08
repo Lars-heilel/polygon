@@ -320,7 +320,8 @@ describe('ChatService', () => {
     const msg = await service.sendMessage('chat-1', 'user-1', { clientId: 'c-2', type: 'TEXT', text: 'yo' });
 
     expect(msg.id).toBeDefined();
-    expect(repo.touchChatLastMessage).toHaveBeenCalledWith('chat-1', msg.id, expect.any(Date));
+    expect(repo.createMessageWithTouch).toHaveBeenCalledTimes(1);
+    expect(repo.touchChatLastMessage).not.toHaveBeenCalled();
   });
 
   it('returns winner on P2002 race without duplicate', async () => {
@@ -552,7 +553,7 @@ describe('ChatService', () => {
       lastReadMessageId: null,
       lastReadAt: null,
     });
-    repo.createMessageWithRelations.mockResolvedValue({
+    repo.createMessageWithTouch.mockResolvedValue({
       id: 'cloned-message',
       attachments: [{
         id: 'attachment-1',
@@ -624,7 +625,7 @@ describe('ChatService', () => {
       }),
     ]);
 
-    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(expect.objectContaining({
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(expect.objectContaining({
       chatId: 'target-chat',
       senderId: 'forwarder',
       attachments: [expect.objectContaining({ mediaId: 'media-1' })],
@@ -647,6 +648,56 @@ describe('ChatService', () => {
     }));
   });
 
+  it('touches target chat lastMessage on forward clone via transactional create', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({
+      chatId: 'target-chat',
+      userId: 'forwarder',
+      role: 'MEMBER',
+      joinedAt: new Date('2026-07-22T00:00:00.000Z'),
+      lastReadMessageId: null,
+      lastReadAt: null,
+    });
+    repo.createMessageWithTouch
+      .mockResolvedValueOnce({ id: 'cloned-1', chatId: 'target-chat' } as Message)
+      .mockResolvedValueOnce({ id: 'cloned-2', chatId: 'target-chat' } as Message);
+    const service = new ChatService(repo);
+
+    const baseInput = {
+      chatId: 'source-chat',
+      senderId: 'original-sender',
+      originalAuthorId: 'author-1',
+      originalAuthorNameSnapshot: 'Alice',
+      originalAuthorDisplayNameSnapshot: null,
+      type: 'TEXT' as const,
+      text: 'forwarded',
+      createdAt: new Date('2026-07-21T10:15:00.000Z'),
+      attachments: [],
+      forwardContext: null,
+    };
+
+    const cloned = await service.cloneForwardMessages({
+      targetChatId: 'target-chat',
+      userId: 'forwarder',
+      messages: [
+        { ...baseInput, messageId: 'source-1' },
+        { ...baseInput, messageId: 'source-2' },
+      ],
+    });
+
+    expect(cloned.map((message) => message.id)).toEqual(['cloned-1', 'cloned-2']);
+    expect(repo.createMessageWithTouch).toHaveBeenCalledTimes(2);
+    expect(repo.createMessageWithTouch).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        chatId: 'target-chat',
+        forwardContext: expect.objectContaining({ originalAuthorId: 'author-1' }),
+      }),
+    );
+    expect(repo.createMessageWithRelations).not.toHaveBeenCalled();
+    expect(repo.touchChatLastMessage).not.toHaveBeenCalled();
+  });
+
   it('compensates forwarded clones when media reference protection fails', async () => {
     const repo = repoMock();
     const mediaClient = { send: jest.fn(() => throwError(() => new Error('media unavailable'))) };
@@ -658,7 +709,7 @@ describe('ChatService', () => {
       lastReadMessageId: null,
       lastReadAt: null,
     });
-    repo.createMessageWithRelations.mockResolvedValue({
+    repo.createMessageWithTouch.mockResolvedValue({
       id: 'cloned-message',
       attachments: [{
         id: 'attachment-1',

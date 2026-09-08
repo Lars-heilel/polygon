@@ -38,6 +38,18 @@ describe('ChatCacheService', () => {
     await expect(cache.getMessagesPage('c1', 'cursor-2')).resolves.toBeNull();
   });
 
+  it('isolates message pages per user and take', async () => {
+    const cache = createCache();
+    await cache.setMessagesPage('c1', 'HEAD', { messages: ['u1'], nextCursor: null } as never, 60, 'u1', 50);
+    await expect(cache.getMessagesPage('c1', 'HEAD', 'u1', 50)).resolves.toEqual({
+      messages: ['u1'],
+      nextCursor: null,
+    });
+    await expect(cache.getMessagesPage('c1', 'HEAD', 'u2', 50)).resolves.toBeNull();
+    await expect(cache.getMessagesPage('c1', 'HEAD', 'u1', 5)).resolves.toBeNull();
+    await expect(cache.getMessagesPage('c1', 'HEAD')).resolves.toBeNull();
+  });
+
   it('tracks unread counters with reset', async () => {
     const cache = createCache();
     await expect(cache.getUnread('c1', 'u1')).resolves.toBeNull();

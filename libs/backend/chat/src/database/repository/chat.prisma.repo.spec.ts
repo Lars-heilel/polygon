@@ -527,6 +527,55 @@ describe('ChatPrismaRepository', () => {
     });
   });
 
+  it('persists forwardContext and touches chat lastMessage on forward clone', async () => {
+    const createdAt = new Date('2026-07-22T00:00:00.000Z');
+    message.create.mockResolvedValue({ id: 'cloned-1', chatId: 'target-chat', createdAt });
+    chat.update.mockResolvedValue({ id: 'target-chat' });
+    chatMember.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      repository.createMessageWithTouch({
+        chatId: 'target-chat',
+        clientId: null,
+        senderId: 'forwarder',
+        type: 'TEXT',
+        text: 'forwarded',
+        attachments: [],
+        forwardContext: {
+          originalMessageId: 'original-1',
+          originalChatId: 'source-chat',
+          originalAuthorId: 'author-1',
+          originalAuthorNameSnapshot: 'Alice',
+          originalAuthorDisplayNameSnapshot: null,
+          originalMessageCreatedAt: createdAt,
+          originalMessageType: 'TEXT',
+          originalTextPreview: 'forwarded',
+          originalFileNamePreview: null,
+        },
+      }),
+    ).resolves.toEqual({ id: 'cloned-1', chatId: 'target-chat', createdAt });
+
+    expect(message.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          chatId: 'target-chat',
+          forwardContext: expect.objectContaining({
+            create: expect.objectContaining({
+              originalMessageId: 'original-1',
+              originalAuthorId: 'author-1',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(chat.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'target-chat' },
+        data: { lastMessageId: 'cloned-1', lastMessageAt: createdAt, updatedAt: createdAt },
+      }),
+    );
+  });
+
   it('findMessageByClientId returns message by scoped clientId', async () => {
     message.findFirst.mockResolvedValue({ id: 'msg-1' });
 

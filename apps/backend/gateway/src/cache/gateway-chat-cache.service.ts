@@ -43,9 +43,14 @@ export class GatewayChatCacheService {
     }
   }
 
-  async getMessagesPage(chatId: string, cursor: string): Promise<MessagePage | null> {
+  async getMessagesPage(
+    chatId: string,
+    cursor: string,
+    userId?: string,
+    take?: number | string,
+  ): Promise<MessagePage | null> {
     try {
-      const raw = await this.redis.get(chatMsgsKey(chatId, cursor));
+      const raw = await this.redis.get(chatMsgsKey(chatId, cursor, userId, take));
       if (!raw) return null;
       return JSON.parse(raw) as MessagePage;
     } catch {
@@ -58,9 +63,16 @@ export class GatewayChatCacheService {
     cursor: string,
     page: MessagePage,
     ttlSec = 60,
+    userId?: string,
+    take?: number | string,
   ): Promise<void> {
     try {
-      await this.redis.set(chatMsgsKey(chatId, cursor), JSON.stringify(page), 'EX', ttlSec);
+      await this.redis.set(
+        chatMsgsKey(chatId, cursor, userId, take),
+        JSON.stringify(page),
+        'EX',
+        ttlSec,
+      );
     } catch {
       /* skip */
     }

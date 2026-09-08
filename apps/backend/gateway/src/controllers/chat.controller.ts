@@ -154,7 +154,17 @@ export class ChatGatewayController {
     @Res({ passthrough: true }) res?: Response,
   ): Promise<MessagePage> {
     const cacheCursor = cursor ?? 'HEAD';
-    const cached = await this.chatCache.getMessagesPage(chatId, cacheCursor);
+    const takeNum = take ? parseInt(take, 10) : 50;
+    const isMember = await this.send<boolean>(
+      this.chatClient.send(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId,
+        userId: user.sub,
+      }),
+    );
+    if (!isMember) {
+      throw new HttpException('Not a member of this chat', 403);
+    }
+    const cached = await this.chatCache.getMessagesPage(chatId, cacheCursor, user.sub, takeNum);
     if (cached) {
       this.logger.debug({ eventType: 'chat_messages_cache_hit', hasChatId: !!chatId });
       res?.setHeader('X-Cache', 'HIT');
@@ -173,7 +183,7 @@ export class ChatGatewayController {
       ...page,
       messages: await this.enrichForwardedMessages(page.messages),
     };
-    await this.chatCache.setMessagesPage(chatId, cacheCursor, enriched);
+    await this.chatCache.setMessagesPage(chatId, cacheCursor, enriched, 60, user.sub, takeNum);
     res?.setHeader('X-Cache', 'MISS');
     return enriched;
   }
@@ -410,7 +420,7 @@ export class ChatGatewayController {
   private async invalidateChatForMembers(chatId: string, knownMemberIds?: string[]): Promise<void> {
     await this.chatCache.invalidateChatPages(chatId);
     let memberIds = knownMemberIds ?? [];
-    if (!knownMemberIds) {
+    if (!knownMemberIds || knownMemberIds.length === 0) {
       const members = await lastValueFrom(
         this.chatClient.send<{ userId: string }[]>(CHAT_PATTERNS.GET_MEMBERS, { chatId }),
       ).catch(() => [] as { userId: string }[]);
