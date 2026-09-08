@@ -20,26 +20,10 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function getFileIcon(fileName: string): string {
-  const ext = fileName.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'pdf':
-      return '📄';
-    case 'doc':
-    case 'docx':
-      return '📝';
-    case 'xls':
-    case 'xlsx':
-      return '📊';
-    case 'zip':
-    case 'rar':
-    case '7z':
-      return '📦';
-    case 'txt':
-      return '📃';
-    default:
-      return '📎';
-  }
+function getFileExt(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  if (!ext || ext === fileName.toLowerCase()) return 'FILE';
+  return ext.slice(0, 4).toUpperCase();
 }
 
 function getMediaDimensions(message: Message): { width: number | null; height: number | null } {
@@ -53,6 +37,20 @@ function getMessageMediaUrl(message: Message): string {
   return message.media?.contentUrl ?? '';
 }
 
+function getThemePrimaryRgb(): [number, number, number] {
+  const fallback: [number, number, number] = [103, 87, 242];
+  if (typeof document === 'undefined') return fallback;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+  const match = /^#([0-9a-f]{6})$/i.exec(raw);
+  if (!match) return fallback;
+  const hex = match[1];
+  return [
+    parseInt(hex.slice(0, 2), 16),
+    parseInt(hex.slice(2, 4), 16),
+    parseInt(hex.slice(4, 6), 16),
+  ];
+}
+
 export const FileMessage = memo(function FileMessage({
   message,
   isMine,
@@ -63,7 +61,7 @@ export const FileMessage = memo(function FileMessage({
   const mime = message.media?.mime ?? null;
 
   if (!getMessageMediaUrl(message)) {
-    return <PendingFileMessage message={message} />;
+    return <PendingFileMessage message={message} isMine={isMine} />;
   }
 
   if (category === 'VOICE') {
@@ -121,7 +119,7 @@ export const FileMessage = memo(function FileMessage({
   );
 });
 
-const PendingFileMessage = memo(function PendingFileMessage({ message }: Pick<FileMessageProps, 'message'>) {
+const PendingFileMessage = memo(function PendingFileMessage({ message, isMine }: Pick<FileMessageProps, 'message' | 'isMine'>) {
   const fileName = message.media?.fileName ?? null;
   const fileSize = message.media?.size ?? null;
 
@@ -130,15 +128,25 @@ const PendingFileMessage = memo(function PendingFileMessage({ message }: Pick<Fi
       data-testid="pending-file-message"
       className={cn(
         'flex max-w-full min-w-0 items-center gap-3 rounded-lg border px-3 py-2',
-        'border-border bg-surface text-text opacity-80',
+        isMine
+          ? 'border-white/20 bg-white/10 text-white opacity-80'
+          : 'border-border bg-surface text-text opacity-80',
       )}
     >
-      <span className="text-xl">{getFileIcon(fileName ?? '')}</span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide',
+          isMine ? 'bg-white/20 text-white' : 'bg-primary-muted text-primary',
+        )}
+      >
+        {getFileExt(fileName ?? '')}
+      </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate text-text">
+        <p className={cn('text-sm font-medium truncate', isMine ? 'text-white' : 'text-text')}>
           {fileName ?? 'File'}
         </p>
-        <p className="text-xs text-text-muted">
+        <p className={cn('text-xs', isMine ? 'text-white/70' : 'text-text-muted')}>
           {message.localStatus === 'error' ? 'Failed to send' : fileSize ? formatFileSize(fileSize) : ''}
         </p>
       </div>
@@ -165,13 +173,13 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
         data-testid="image-message"
         aria-label={`Open image ${message.media?.fileName ?? 'Image'}`}
         onClick={() => setLightboxOpen(true)}
-        className="block w-full max-w-[280px] transition-opacity hover:opacity-90 focus:outline-none"
+        className="block w-full transition-opacity hover:opacity-90 focus:outline-none"
       >
         <MediaFrame
           data-testid="image-message-frame"
           width={mediaDimensions.width}
           height={mediaDimensions.height}
-          maxWidth={280}
+          maxWidth={480}
         >
           <img
             data-testid="image-message-media"
@@ -197,7 +205,6 @@ const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessage
   return (
     <WaveformAudioMessage
       variant="voice"
-      title="Voice message"
       url={getMessageMediaUrl(message)}
       isMine={isMine}
     />
@@ -327,13 +334,13 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
         data-testid="video-message"
         aria-label={`Play video ${message.media?.fileName ?? 'Video'}`}
         onClick={() => setLightboxOpen(true)}
-        className="block w-full max-w-[280px] transition-opacity hover:opacity-90 focus:outline-none"
+        className="block w-full transition-opacity hover:opacity-90 focus:outline-none"
       >
         <MediaFrame
           data-testid="video-message-frame"
           width={mediaDimensions.width}
           height={mediaDimensions.height}
-          maxWidth={280}
+          maxWidth={480}
         >
           <video
             data-testid="video-message-media"
@@ -369,6 +376,7 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
 
 const FileAttachmentMessage = memo(function FileAttachmentMessage({
   message,
+  isMine,
 }: FileMessageProps) {
   const fileUrl = getMessageMediaUrl(message);
   const fileName = message.media?.fileName ?? null;
@@ -382,15 +390,25 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
       rel="noopener noreferrer"
       className={cn(
         'flex max-w-full min-w-0 items-center gap-3 rounded-lg border px-3 py-2 transition-colors',
-        'border-border bg-surface text-text hover:bg-surface-elevated',
+        isMine
+          ? 'border-white/20 bg-white/10 text-white hover:bg-white/15'
+          : 'border-border bg-surface text-text hover:bg-surface-elevated',
       )}
     >
-      <span className="text-xl">{getFileIcon(fileName ?? '')}</span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide',
+          isMine ? 'bg-white/20 text-white' : 'bg-primary-muted text-primary',
+        )}
+      >
+        {getFileExt(fileName ?? '')}
+      </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate text-text">
+        <p className={cn('text-sm font-medium truncate', isMine ? 'text-white' : 'text-text')}>
           {fileName ?? 'Unknown file'}
         </p>
-        <p className="text-xs text-text-muted">
+        <p className={cn('text-xs', isMine ? 'text-white/70' : 'text-text-muted')}>
           {fileSize ? formatFileSize(fileSize) : ''}
         </p>
       </div>
@@ -413,6 +431,7 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
 
 const AudioFileMessage = memo(function AudioFileMessage({
   message,
+  isMine,
   audioQueue,
   audioQueueIndex,
 }: FileMessageProps) {
@@ -432,14 +451,19 @@ const AudioFileMessage = memo(function AudioFileMessage({
       data-testid="audio-file-message"
       className={cn(
         'flex min-h-[60px] w-[min(100%,300px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
-        'border-border bg-surface text-text',
+        isMine
+          ? 'border-white/20 bg-white/10 text-white'
+          : 'border-border bg-surface text-text',
       )}
     >
       <button
         type="button"
         aria-label={player.isPlaying ? 'Pause audio' : 'Play audio'}
         onClick={player.toggle}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90"
+        className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors',
+          isMine ? 'bg-white text-primary hover:bg-white/85' : 'bg-primary text-white hover:bg-primary-hover',
+        )}
       >
         {player.isPlaying ? (
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -452,10 +476,10 @@ const AudioFileMessage = memo(function AudioFileMessage({
         )}
       </button>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-text">
+        <p className={cn('truncate text-sm font-medium', isMine ? 'text-white' : 'text-text')}>
           {track.title}
         </p>
-        <p className="mt-1 truncate text-xs text-text-muted">
+        <p className={cn('mt-1 truncate text-xs', isMine ? 'text-white/70' : 'text-text-muted')}>
           {player.duration > 0
             ? `${formatAudioTime(player.currentTime)} / ${formatAudioTime(player.duration)}`
             : message.media?.size ? formatFileSize(message.media.size) : 'Audio file'}
@@ -467,14 +491,12 @@ const AudioFileMessage = memo(function AudioFileMessage({
 
 interface WaveformAudioMessageProps {
   variant: 'audio' | 'voice';
-  title: string;
   url: string;
   isMine: boolean;
 }
 
 const WaveformAudioMessage = memo(function WaveformAudioMessage({
   variant,
-  title,
   url,
   isMine,
 }: WaveformAudioMessageProps) {
@@ -493,14 +515,15 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     import('wavesurfer.js').then((WaveSurferMod) => {
       if (!mounted || !waveformRef.current) return;
 
+      const [pr, pg, pb] = getThemePrimaryRgb();
       const ws = WaveSurferMod.default.create({
         container: waveformRef.current,
         waveColor: variant === 'audio'
-          ? 'rgba(112,59,247,0.48)'
-          : isMine ? 'rgba(255,255,255,0.34)' : 'rgba(112,59,247,0.48)',
+          ? `rgba(${pr},${pg},${pb},0.48)`
+          : isMine ? 'rgba(255,255,255,0.34)' : `rgba(${pr},${pg},${pb},0.48)`,
         progressColor: variant === 'audio'
-          ? 'rgb(112,59,247)'
-          : isMine ? 'rgba(255,255,255,0.9)' : 'rgb(112,59,247)',
+          ? `rgb(${pr},${pg},${pb})`
+          : isMine ? 'rgba(255,255,255,0.9)' : `rgb(${pr},${pg},${pb})`,
         barWidth: variant === 'voice' ? 2 : 3,
         barGap: 1.5,
         barRadius: 999,
@@ -562,7 +585,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     <div
       data-testid={`${variant}-waveform-message`}
       className={cn(
-        'flex min-h-[88px] w-[clamp(220px,64vw,360px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        'flex min-h-[56px] w-[clamp(220px,64vw,360px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
         variant === 'audio'
           ? 'border-border bg-surface'
           : isMine ? 'border-white/20 bg-white/10' : 'border-border bg-surface',
@@ -590,10 +613,7 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
         )}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-sm font-medium', variant !== 'audio' && isMine ? 'text-white' : 'text-text')}>
-          {title}
-        </p>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <span className={cn('w-8 text-[11px] font-medium tabular-nums', variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted')}>
             {formatAudioTime(displayCurrentTime)}
           </span>
