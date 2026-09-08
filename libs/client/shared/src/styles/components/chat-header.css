@@ -1,0 +1,5 @@
+@layer components {
+  .chat-header-btn {
+    @apply -ml-2 rounded-lg px-2 py-1 transition-colors hover:bg-surface-elevated focus-visible:outline-2 cursor-pointer;
+  }
+}

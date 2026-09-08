@@ -65,10 +65,11 @@ function ModalHeader({ title, onClose, children, className }: ModalHeaderProps) 
 interface ModalBodyProps {
   children: ReactNode;
   className?: string;
+  scroll?: boolean;
 }
 
-function ModalBody({ children, className }: ModalBodyProps) {
-  return <div className={cn('px-6 py-4 overflow-y-auto', className)}>{children}</div>;
+function ModalBody({ children, className, scroll = true }: ModalBodyProps) {
+  return <div className={cn('px-6 py-4', scroll && 'overflow-y-auto', className)}>{children}</div>;
 }
 
 // --- Footer ---

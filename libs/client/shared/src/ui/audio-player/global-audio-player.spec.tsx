@@ -50,8 +50,8 @@ describe('GlobalAudioPlayer', () => {
 
     render(<GlobalAudioPlayer mode="embedded" />);
 
-    expect(screen.getByTestId('embedded-audio-player').className).toContain('h-10');
-    expect(screen.getByTestId('audio-player-controls').className).toContain('h-10');
+    expect(screen.getByTestId('embedded-audio-player').className).toContain('h-14');
+    expect(screen.getByTestId('audio-player-controls').className).toContain('h-14');
     expect(screen.getByLabelText('Previous audio')).toBeTruthy();
     expect(screen.getByLabelText('Next audio')).toBeTruthy();
     expect(screen.getByText('Track title').className).toContain('text-xs');

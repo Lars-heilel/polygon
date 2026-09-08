@@ -25,13 +25,16 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
+      "path": "../../../shared/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../features/user-profile/tsconfig.lib.json"
+    },
+    {
       "path": "../../../features/upload-avatar/tsconfig.lib.json"
     },
     {
       "path": "../../../entities/user/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../shared/tsconfig.lib.json"
     }
   ]
 }

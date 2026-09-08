@@ -1,6 +1,6 @@
 @layer components {
   .media-viewer {
-    @apply fixed inset-0 z-[70] flex flex-col bg-black/90 text-white;
+    @apply fixed inset-0 z-[120] flex flex-col bg-black/90 text-white;
   }
 
   .media-viewer__bar {

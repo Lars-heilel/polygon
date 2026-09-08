@@ -13,6 +13,7 @@ import {
   VirtualFeed,
   cn,
   formatTime,
+  splitTextByLinks,
 } from '@org/shared';
 
 import {
@@ -58,9 +59,16 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
   const flatItems = useMemo(() => flattenGroups(groups), [groups]);
   const visualItems = useMemo(() => buildVisualViewerItems(items), [items]);
 
+  const openEntry = (entry: ChatMediaEntry) => {
+    const nextIndex = visualItems.findIndex((visualItem) => visualItem.id === entry.id);
+    if (nextIndex >= 0) {
+      setViewerIndex(nextIndex);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="scrollbar-none flex shrink-0 gap-1 overflow-x-auto rounded-md border border-border bg-surface-elevated p-1">
+      <div className="flex shrink-0 gap-1 overflow-x-auto rounded-md border border-border bg-surface-elevated p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -91,7 +99,7 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
           <VirtualFeed
             mode="forward"
             items={flatItems}
-            getKey={(item) => item.type === 'header' ? `header:${item.label}` : `entry:${item.entry.id}`}
+            getKey={(item) => item.type === 'header' ? `header:${item.label}` : item.type === 'grid' ? `grid:${item.entries.map((entry) => entry.id).join(',')}` : `entry:${item.entry.id}`}
             estimateItemHeight={180}
             hasNext={hasNextPage}
             isLoadingNext={isFetchingNextPage}
@@ -110,8 +118,22 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
             renderItem={(item) => {
               if (item.type === 'header') {
                 return (
-                  <div className="sticky top-0 z-10 bg-background/95 px-1 py-2 text-xs font-medium text-text-muted backdrop-blur">
+                  <div className="sticky top-0 z-10 bg-surface px-1 py-2 text-xs font-medium text-text-muted">
                     {item.label}
+                  </div>
+                );
+              }
+
+              if (item.type === 'grid') {
+                return (
+                  <div className="mb-3 grid grid-cols-3 gap-1">
+                    {item.entries.map((entry) => (
+                      <GridThumb
+                        key={entry.id}
+                        entry={entry}
+                        onOpen={() => openEntry(entry)}
+                      />
+                    ))}
                   </div>
                 );
               }
@@ -124,12 +146,7 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
                   entry={item.entry}
                   isMine={isMine}
                   senderName={profile?.displayName ?? profile?.name ?? 'Unknown'}
-                  onOpenViewer={() => {
-                    const nextIndex = visualItems.findIndex((visualItem) => visualItem.id === item.entry.id);
-                    if (nextIndex >= 0) {
-                      setViewerIndex(nextIndex);
-                    }
-                  }}
+                  onOpenViewer={() => openEntry(item.entry)}
                 />
               );
             }}
@@ -147,21 +164,40 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
   );
 });
 
+type VisualEntry = Extract<ChatMediaEntry, { kind: 'file' }>;
+
 type FlatItem =
   | { type: 'header'; label: string }
+  | { type: 'grid'; entries: VisualEntry[] }
   | { type: 'entry'; entry: ChatMediaEntry };
+
+function isVisualEntry(entry: ChatMediaEntry): entry is VisualEntry {
+  return entry.kind === 'file'
+    && ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.media?.category ?? '');
+}
 
 function flattenGroups(groups: Map<string, ChatMediaEntry[]>): FlatItem[] {
   const items: FlatItem[] = [];
 
   for (const [label, entries] of groups) {
     items.push({ type: 'header', label });
-    for (const entry of entries) {
+    const visual = entries.filter(isVisualEntry);
+    const rest = entries.filter((entry) => !isVisualEntry(entry));
+    if (visual.length > 0) {
+      items.push({ type: 'grid', entries: visual });
+    }
+    for (const entry of rest) {
       items.push({ type: 'entry', entry });
     }
   }
 
   return items;
+}
+
+function isSingleUrlText(text: string | null | undefined, url: string): boolean {
+  if (!text?.trim()) return false;
+  const parts = splitTextByLinks(text);
+  return parts.length === 1 && parts[0].type === 'link' && parts[0].value === url;
 }
 
 const MediaEntryCard = memo(function MediaEntryCard({
@@ -201,7 +237,7 @@ const MediaEntryCard = memo(function MediaEntryCard({
       ) : (
         <div className="space-y-2">
           <LinkPreviewCard url={entry.url} />
-          {entry.message.text ? (
+          {entry.message.text && !isSingleUrlText(entry.message.text, entry.url) ? (
             <div className="rounded-md border border-border bg-surface-elevated p-2">
               <MessageContent text={entry.message.text} isMine={false} />
             </div>
@@ -209,6 +245,50 @@ const MediaEntryCard = memo(function MediaEntryCard({
         </div>
       )}
     </div>
+  );
+});
+
+const GridThumb = memo(function GridThumb({
+  entry,
+  onOpen,
+}: {
+  entry: Extract<ChatMediaEntry, { kind: 'file' }>;
+  onOpen: () => void;
+}) {
+  const src = entry.message.media?.contentUrl ?? '';
+  const isVideo = entry.message.media?.category !== 'IMAGE';
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Open media ${entry.message.media?.fileName ?? 'file'}`}
+      className="relative block aspect-square w-full overflow-hidden rounded-md bg-surface-elevated transition-opacity hover:opacity-90 focus:outline-none"
+    >
+      {isVideo ? (
+        <video
+          src={src}
+          className="h-full w-full object-cover"
+          preload="metadata"
+        />
+      ) : (
+        <img
+          src={src}
+          alt={entry.message.media?.fileName ?? 'Image'}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      )}
+      {isVideo && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60">
+            <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </span>
+      )}
+    </button>
   );
 });
 

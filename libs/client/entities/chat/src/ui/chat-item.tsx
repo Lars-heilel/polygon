@@ -39,7 +39,7 @@ export const ChatItem = memo(function ChatItem({
         />
         {online && (
           <Badge
-            variant="primary"
+            variant="success"
             size="sm"
             dot
             className="absolute bottom-0 right-0 border-2 border-surface"

@@ -109,8 +109,8 @@ export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioP
           data-testid={`${mode}-audio-player`}
           className={cn(
             mode === 'floating'
-              ? 'pointer-events-none fixed inset-x-0 top-0 z-50 flex h-10 justify-center border-b border-border bg-background/95 px-2 backdrop-blur'
-              : 'h-10 border-b border-border bg-background/95',
+              ? 'pointer-events-none fixed inset-x-0 top-0 z-50 flex h-14 justify-center border-b border-border bg-background/95 px-2 backdrop-blur'
+              : 'h-14 border-b border-border bg-background/95',
             className,
           )}
         >
@@ -120,29 +120,30 @@ export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioP
               mode === 'floating' && 'max-w-5xl',
             )}
           >
-            <div data-testid="audio-player-controls" className="flex h-10 items-center gap-2 px-3">
+            <div data-testid="audio-player-controls" className="flex h-14 items-center gap-1.5 px-2 sm:gap-2 sm:px-3">
               <button
                 type="button"
                 aria-label="Previous audio"
                 onClick={playPrev}
                 disabled={!canPlayPrev}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-primary transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:text-text-muted/45 disabled:hover:bg-transparent"
+                className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent sm:flex"
               >
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 6h2v12H6V6zm3 6 9-6v12l-9-6z" />
                 </svg>
               </button>
               <button
                 type="button"
+                aria-label={status === 'playing' ? 'Pause audio' : 'Play audio'}
                 onClick={status === 'playing' ? pause : resume}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
               >
                 {status === 'playing' ? (
-                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                   </svg>
                 ) : (
-                  <svg className="ml-0.5 h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 )}
@@ -152,30 +153,42 @@ export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioP
                 aria-label="Next audio"
                 onClick={playNext}
                 disabled={!canPlayNext}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-primary transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:text-text-muted/45 disabled:hover:bg-transparent"
+                className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent sm:flex"
               >
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16 6h2v12h-2V6zM6 18V6l9 6-9 6z" />
                 </svg>
               </button>
-              <p className="min-w-0 max-w-[34vw] truncate text-xs font-medium text-text sm:max-w-[28rem]">
-                {currentTrack.title}
-              </p>
-              <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-text-muted">
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+                <p className="truncate text-xs font-medium text-text">
+                  {currentTrack.title}
+                </p>
+                <div className="relative flex h-6 items-center">
+                  <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-border">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                      style={{ width: `${duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <div
+                    className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-primary shadow"
+                    style={{ left: `calc(${(duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0).toFixed(2)}% - 7px)` }}
+                  />
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 0}
+                    step={0.1}
+                    value={Math.min(currentTime, duration || 0)}
+                    onChange={(event) => seekTo(Number(event.target.value))}
+                    aria-label="Seek audio"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </div>
+              </div>
+              <span className="hidden w-9 shrink-0 text-right text-[11px] tabular-nums text-text-muted sm:block">
                 {formatAudioTime(currentTime)}
               </span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={0.1}
-                value={Math.min(currentTime, duration || 0)}
-                onChange={(event) => seekTo(Number(event.target.value))}
-                className={cn(
-                  'h-1 min-w-16 flex-1 cursor-pointer appearance-none rounded-full bg-border',
-                  '[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary',
-                )}
-              />
               <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-text-muted">
                 {formatAudioTime(duration)}
               </span>
@@ -183,9 +196,9 @@ export function GlobalAudioPlayer({ mode = 'floating', className }: GlobalAudioP
                 type="button"
                 aria-label="Close audio player"
                 onClick={close}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>

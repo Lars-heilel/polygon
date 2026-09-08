@@ -52,7 +52,8 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
       {otherUserId && (
         <button
           onClick={() => setProfileUserId(otherUserId)}
-          className="flex items-center gap-3 flex-1 text-left"
+          title="Open profile"
+          className="chat-header-btn group flex flex-1 items-center gap-3 text-left"
         >
           <div className="relative ">
             <Avatar
@@ -81,7 +82,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
                 size="xs"
                 color="muted"
               >
-                печатает...
+                typing...
               </Text>
             ) : isOnline ? (
               <Text
@@ -92,6 +93,15 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
               </Text>
             ) : null}
           </div>
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 text-text-muted opacity-0 transition-opacity group-hover:opacity-100"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       )}
       {!otherUserId && (
@@ -123,7 +133,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
                 size="xs"
                 color="muted"
               >
-                печатает...
+                typing...
               </Text>
             ) : isOnline ? (
               <Text

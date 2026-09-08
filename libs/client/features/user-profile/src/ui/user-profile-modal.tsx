@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
 
 import { useCreateDirectChatMutation } from '@org/entities-chat';
-import { Avatar, Badge, Button, Heading, Modal, Skeleton, Text } from '@org/shared';
+import { Button, Modal, Skeleton, Text } from '@org/shared';
 import { useNavigate } from 'react-router';
 
 import { useUserProfileQuery } from '../api/use-user-profile.js';
+import { ProfileHeader } from './profile-header.js';
 import { ProfileMediaPanel } from './profile-media-panel.js';
 
 interface UserProfileModalProps {
@@ -50,7 +51,7 @@ export function UserProfileModal({
       >
         <Modal.Header title="Profile" />
 
-        <Modal.Body className="min-h-0 flex-1 p-0">
+        <Modal.Body className="flex min-h-0 flex-1 flex-col p-0" scroll={activeTab !== 'media' || !chatId}>
           {isLoading ? (
             <div
               data-testid="profile-modal-loading"
@@ -69,60 +70,25 @@ export function UserProfileModal({
               <ProfileMediaPanel chatId={chatId} />
             </div>
           ) : (
-            <div className="flex h-full flex-col items-center gap-3 overflow-y-auto px-6 py-6">
-              {onAvatarClick ? (
-                <button
-                  type="button"
-                  aria-label="Open avatar history"
-                  onClick={onAvatarClick}
-                  className="shrink-0 rounded-full"
-                >
-                  <Avatar
-                    src={profile.avatarUrl ?? undefined}
-                    name={profile.displayName ?? profile.name}
-                    size="xl"
-                    className="ring-2 ring-border"
-                  />
-                </button>
-              ) : (
-                <Avatar
-                  src={profile.avatarUrl ?? undefined}
-                  name={profile.displayName ?? profile.name}
-                  size="xl"
-                  className="shrink-0 ring-2 ring-border"
-                />
-              )}
-
-              <div className="text-center">
-                <Heading level={5} as="h3" className="flex items-center justify-center gap-2">
-                  {profile.displayName ?? profile.name}
-                  {profile.role === 'CREATOR' && <Badge variant="warning">Creator</Badge>}
-                </Heading>
-                <Text size="xs" color="muted">@{profile.name}</Text>
-              </div>
-
-              {profile.bio && (
-                <Text size="sm" className="max-w-xs break-words text-center">
-                  {profile.bio}
-                </Text>
-              )}
-
-              <div className="mt-3 w-full max-w-xs rounded-md border border-border bg-surface-elevated px-4 py-2 text-center">
-                <Text size="sm" color="muted" className="break-all">
-                  {profile.email}
-                </Text>
-              </div>
-
-              {showSendButton && (
-                <Button
-                  type="button"
-                  loading={creatingChat}
-                  onClick={handleSendMessage}
-                  className="mt-auto w-full max-w-xs"
-                >
-                  Send message
-                </Button>
-              )}
+            <div className="h-full overflow-y-auto px-6 py-6">
+              <ProfileHeader
+                avatarUrl={profile.avatarUrl}
+                displayName={profile.displayName ?? profile.name}
+                handleName={profile.name}
+                role={profile.role}
+                bio={profile.bio}
+                onAvatarClick={onAvatarClick ?? undefined}
+                actions={showSendButton ? (
+                  <Button
+                    type="button"
+                    loading={creatingChat}
+                    onClick={handleSendMessage}
+                    className="mt-3 w-full max-w-xs"
+                  >
+                    Send message
+                  </Button>
+                ) : undefined}
+              />
             </div>
           )}
         </Modal.Body>
