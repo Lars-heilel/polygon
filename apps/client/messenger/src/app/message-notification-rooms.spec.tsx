@@ -54,10 +54,17 @@ describe('useMessageNotification room joins', () => {
     mockChats = [{ id: 'chat-1' }, { id: 'chat-2' }];
     mockSocketEmit.mockClear();
     mockLoggerDebug.mockClear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('does not rejoin all notification rooms when only the active chat changes', () => {
     const { rerender } = renderHook(() => useMessageNotification());
+
+    jest.advanceTimersByTime(500);
 
     expect(mockSocketEmit).toHaveBeenCalledTimes(2);
     expect(mockSocketEmit).toHaveBeenNthCalledWith(1, 'chat:join', { chatId: 'chat-1' });
@@ -65,8 +72,28 @@ describe('useMessageNotification room joins', () => {
 
     mockActiveChatId = 'chat-2';
     rerender();
+    jest.advanceTimersByTime(500);
 
     expect(mockSocketEmit).toHaveBeenCalledTimes(2);
+  });
+
+  it('joins only new chats and leaves removed ones (diff)', () => {
+    const { rerender } = renderHook(() => useMessageNotification());
+    jest.advanceTimersByTime(500);
+    expect(mockSocketEmit).toHaveBeenCalledTimes(2);
+
+    mockChats = [{ id: 'chat-2' }, { id: 'chat-3' }];
+    rerender();
+    jest.advanceTimersByTime(500);
+
+    expect(mockSocketEmit).toHaveBeenCalledWith('chat:join', { chatId: 'chat-3' });
+    expect(mockSocketEmit).toHaveBeenCalledWith('chat:leave', { chatId: 'chat-1' });
+    expect(mockSocketEmit).toHaveBeenCalledTimes(4);
+    expect(
+      mockSocketEmit.mock.calls.filter(
+        ([event, payload]) => event === 'chat:join' && payload.chatId === 'chat-2',
+      ),
+    ).toHaveLength(1);
   });
 
   it('does not attach its own message:new listener', () => {

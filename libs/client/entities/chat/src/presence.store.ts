@@ -13,7 +13,14 @@ export const usePresenceStore = create<PresenceState>()((set) => ({
       onlineUsers: { ...state.onlineUsers, [userId]: true },
     })),
   setOffline: (userId) =>
-    set((state) => ({
-      onlineUsers: { ...state.onlineUsers, [userId]: false },
-    })),
+    set((state) => {
+      if (!(userId in state.onlineUsers)) {
+        return state;
+      }
+      return {
+        onlineUsers: Object.fromEntries(
+          Object.entries(state.onlineUsers).filter(([key]) => key !== userId),
+        ),
+      };
+    }),
 }));

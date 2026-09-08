@@ -1,12 +1,28 @@
 import { useSessionStore } from '@org/entities-user';
-import { socket } from '@org/shared';
+import type { Chat } from '@org/entities-chat';
+import { useChatStore } from '@org/entities-chat';
+import { queryClient, socket } from '@org/shared';
 
 import { initChatSocketManager } from './chat-socket-manager';
+
+export function rejoinAllChats(): void {
+  const chats = queryClient.getQueryData<Chat[]>(['chats']) ?? [];
+  const ids = new Set(chats.map((chat) => chat.id));
+  const activeChatId = useChatStore.getState().activeChatId;
+  if (activeChatId) {
+    ids.add(activeChatId);
+  }
+  for (const chatId of ids) {
+    socket.emit('chat:join', { chatId });
+  }
+}
 
 export function initSocketMiddleware(): () => void {
   let cleanupChatManager: (() => void) | null = null;
 
-  return useSessionStore.subscribe(
+  socket.on('connect', rejoinAllChats);
+
+  const unsubscribeSession = useSessionStore.subscribe(
     (state) => state.isAuthenticated,
     (isAuthenticated, wasAuthenticated) => {
       if (isAuthenticated && !wasAuthenticated) {
@@ -19,4 +35,9 @@ export function initSocketMiddleware(): () => void {
       }
     },
   );
+
+  return () => {
+    socket.off('connect', rejoinAllChats);
+    unsubscribeSession();
+  };
 }

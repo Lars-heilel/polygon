@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { debounce } from 'es-toolkit';
+
 import {
   getMessagePreview,
   selectLastReceivedMessage,
@@ -38,6 +40,7 @@ export function useMessageNotification() {
   const isMuted = useNotificationStore((s) => s.isMuted);
   const lastMsg = useChatStore(selectLastReceivedMessage);
   const processedIdRef = useRef<string | null>(null);
+  const joinedRef = useRef<Set<string>>(new Set());
   const { data: chats } = useGetChatsQuery();
 
   useEffect(() => {
@@ -58,9 +61,26 @@ export function useMessageNotification() {
   }, []);
 
   useEffect(() => {
-    if (!chats?.length) return;
-    logger.debug('Joining chat notification rooms', { chatCount: chats.length });
-    chats.forEach((chat) => socket.emit('chat:join', { chatId: chat.id }));
+    const joinDiff = debounce(() => {
+      const ids = new Set((chats ?? []).map((chat) => chat.id));
+      logger.debug('Joining chat notification rooms', { chatCount: ids.size });
+      for (const id of ids) {
+        if (!joinedRef.current.has(id)) {
+          socket.emit('chat:join', { chatId: id });
+          joinedRef.current.add(id);
+        }
+      }
+      for (const id of Array.from(joinedRef.current)) {
+        if (!ids.has(id)) {
+          socket.emit('chat:leave', { chatId: id });
+          joinedRef.current.delete(id);
+        }
+      }
+    }, 500);
+    joinDiff();
+    return () => {
+      joinDiff.cancel();
+    };
   }, [chats, logger]);
 
   useEffect(() => {

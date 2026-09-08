@@ -18,7 +18,7 @@ interface ChatState {
 interface ChatActions {
   setActiveChat: (chatId: string | null) => void;
   setActiveMessage: (messageId: string | null) => void;
-  setIsTyping: (userId: string, isTyping: boolean) => void;
+  setIsTyping: (userId: string, isTyping: boolean, ttlMs?: number) => void;
   setLastReceivedMessage: (msg: Message) => void;
   /**
    * @deprecated Unread is single-sourced from the server (`chat.unreadCount`).
@@ -35,6 +35,16 @@ interface ChatActions {
 
 type ChatStore = ChatState & ChatActions;
 
+const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearTypingTimer(userId: string): void {
+  const existing = typingTimers.get(userId);
+  if (existing) {
+    clearTimeout(existing);
+    typingTimers.delete(userId);
+  }
+}
+
 export const useChatStore = create<ChatStore>()(
   subscribeWithSelector((set) => ({
     activeChatId: null,
@@ -44,12 +54,22 @@ export const useChatStore = create<ChatStore>()(
     unreadByChatId: {},
     setActiveChat: (chatId) => set({ activeChatId: chatId }),
     setActiveMessage: (messageId) => set({ activeMessageId: messageId }),
-    setIsTyping: (userId, isTyping) =>
-      set((state) => ({
-        typingUsers: isTyping
-          ? { ...state.typingUsers, [userId]: true }
-          : Object.fromEntries(Object.entries(state.typingUsers).filter(([k]) => k !== userId)),
-      })),
+    setIsTyping: (userId, isTyping, ttlMs = 3000) =>
+      set((state) => {
+        clearTypingTimer(userId);
+        if (isTyping) {
+          const timer = setTimeout(() => {
+            useChatStore.getState().setIsTyping(userId, false);
+          }, ttlMs);
+          typingTimers.set(userId, timer);
+          return { typingUsers: { ...state.typingUsers, [userId]: true } };
+        }
+        return {
+          typingUsers: Object.fromEntries(
+            Object.entries(state.typingUsers).filter(([k]) => k !== userId),
+          ),
+        };
+      }),
     setLastReceivedMessage: (msg) => set({ lastReceivedMessage: msg }),
     /** @deprecated use server unreadCount */
     incrementUnread: (chatId) =>
@@ -72,14 +92,18 @@ export const useChatStore = create<ChatStore>()(
           ),
         };
       }),
-    reset: () =>
-      set({
+    reset: () => {
+      for (const userId of Array.from(typingTimers.keys())) {
+        clearTypingTimer(userId);
+      }
+      return set({
         activeChatId: null,
         activeMessageId: null,
         typingUsers: {},
         lastReceivedMessage: null,
         unreadByChatId: {},
-      }),
+      });
+    },
   })),
 );
 

@@ -23,7 +23,16 @@ export function useChatSocket(chatId: string) {
     );
     socket.emit('chat:join', { chatId });
 
+    // Retry the join if the socket reconnects while this chat is open —
+    // the global rejoin covers the list, this covers a chat opened before
+    // the first snapshot arrived.
+    const retryJoin = () => {
+      socket.emit('chat:join', { chatId: chatIdRef.current });
+    };
+    socket.on('connect', retryJoin);
+
     return () => {
+      socket.off('connect', retryJoin);
       setActiveChat(null);
       socket.emit('chat:leave', { chatId });
     };
