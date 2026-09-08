@@ -31,6 +31,7 @@ export interface VirtualFeedProps<TItem> {
   isLoadingPrevious?: boolean;
   isLoadingNext?: boolean;
   empty?: ReactNode;
+  header?: ReactNode;
   footer?: ReactNode;
   floatingAction?: ReactNode;
   estimateItemHeight?: number;
@@ -84,6 +85,7 @@ function VirtualFeedInner<TItem>(
     isLoadingPrevious,
     isLoadingNext,
     empty,
+    header,
     footer,
     floatingAction,
     estimateItemHeight = 80,
@@ -167,9 +169,10 @@ function VirtualFeedInner<TItem>(
 
   const components = useMemo(
     () => ({
+      Header: () => <>{header}</>,
       Footer: () => <>{footer}</>,
     }),
-    [footer],
+    [header, footer],
   );
 
   if (items.length === 0 && empty) {

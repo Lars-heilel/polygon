@@ -210,6 +210,7 @@ export const VirtualMessageList = memo(function MessageList({
         isLoadingPrevious={isFetchingNextPage}
         loadPrevious={handleStartReached}
         onAtBottomChange={handleAtBottomChange}
+        header={<div className="h-4" />}
         footer={<div className="h-6" />}
         renderItem={(msg) => {
           const profile = memberProfileMap.get(msg.senderId);
