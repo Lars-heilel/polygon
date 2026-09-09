@@ -20,13 +20,14 @@ See full feature walkthrough: [docs/FEATURES.md](docs/FEATURES.md).
 
 ![Polygon messenger — desktop, media and audio messages](docs/screenshots/app/messenger.png)
 
-### Landing — Mobile
+### Mobile
 
-![Polygon landing — mobile](docs/screenshots/app/mobile-lending.png)
-
-### Messenger — Mobile
-
-![Polygon messenger — mobile, media and audio messages](docs/screenshots/app/mobile-messenger.png)
+<table>
+  <tr>
+    <td><img src="docs/screenshots/app/mobile-lending.png" width="280" alt="Polygon landing — mobile" /></td>
+    <td><img src="docs/screenshots/app/mobile-messenger.png" width="280" alt="Polygon messenger — mobile, media and audio messages" /></td>
+  </tr>
+</table>
 
 ## Tech Stack
 
