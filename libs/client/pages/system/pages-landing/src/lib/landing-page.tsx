@@ -10,6 +10,7 @@ const ROBOTS_CONTENT = 'noindex, nofollow, noarchive';
 
 function upsertRobotsMeta(): () => void {
   const previous = document.querySelector('meta[name="robots"]');
+  const hadPrevious = previous !== null;
   const previousContent = previous?.getAttribute('content');
   let meta = previous as HTMLMetaElement | null;
   if (!meta) {
@@ -19,8 +20,12 @@ function upsertRobotsMeta(): () => void {
   }
   meta.setAttribute('content', ROBOTS_CONTENT);
   return () => {
-    if (previous) {
-      if (previousContent) previous.setAttribute('content', previousContent);
+    if (hadPrevious && previous) {
+      if (previousContent === null || previousContent === undefined) {
+        previous.removeAttribute('content');
+      } else {
+        previous.setAttribute('content', previousContent);
+      }
     } else {
       meta?.remove();
     }

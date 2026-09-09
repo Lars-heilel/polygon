@@ -42,7 +42,12 @@ export function LandingStack(): JSX.Element {
         </ul>
       </div>
       <div className="flex flex-col gap-3">
-        <Heading level={2}>Built on</Heading>
+        <Heading
+          level={2}
+          id="landing-stack-tech-title"
+        >
+          Built on
+        </Heading>
         <ul className="flex flex-col gap-2">
           {TECHNOLOGIES.map((item) => (
             <li key={item}>

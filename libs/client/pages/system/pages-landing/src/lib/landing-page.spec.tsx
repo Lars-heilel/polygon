@@ -12,6 +12,10 @@ function renderLanding(): void {
 }
 
 describe('LandingPage', () => {
+  beforeEach(() => {
+    document.querySelector('meta[name="robots"]')?.remove();
+  });
+
   it('renders single h1, landmarks and CTA links', () => {
     renderLanding();
 
@@ -38,5 +42,47 @@ describe('LandingPage', () => {
       'noindex, nofollow, noarchive',
     );
     unmount();
+    expect(document.querySelector('meta[name="robots"]')).toBeNull();
+  });
+
+  it('restores pre-existing robots content on unmount', () => {
+    const existing = document.createElement('meta');
+    existing.setAttribute('name', 'robots');
+    existing.setAttribute('content', 'index, follow');
+    document.head.appendChild(existing);
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>,
+    );
+
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+      'noindex, nofollow, noarchive',
+    );
+    unmount();
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+      'index, follow',
+    );
+  });
+
+  it('removes content attribute when pre-existing meta had none', () => {
+    const existing = document.createElement('meta');
+    existing.setAttribute('name', 'robots');
+    document.head.appendChild(existing);
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>,
+    );
+
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+      'noindex, nofollow, noarchive',
+    );
+    unmount();
+    const meta = document.querySelector('meta[name="robots"]');
+    expect(meta).not.toBeNull();
+    expect(meta?.hasAttribute('content')).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { Button, Heading, Text } from '@org/shared';
+import { Heading, Text } from '@org/shared';
 import { Link } from 'react-router';
 
 export function LandingHero(): JSX.Element {
@@ -31,16 +31,17 @@ export function LandingHero(): JSX.Element {
         Chats, media sharing and real-time updates in one clean app.
       </Text>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Link to="/chats">
-          <Button size="lg">Open messenger</Button>
+        <Link
+          to="/chats"
+          className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-base font-medium text-white transition-colors hover:bg-primary-hover"
+        >
+          Open messenger
         </Link>
-        <Link to="/auth/login">
-          <Button
-            variant="secondary"
-            size="lg"
-          >
-            Sign in
-          </Button>
+        <Link
+          to="/auth/login"
+          className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-5 py-2.5 text-base font-medium text-text transition-colors hover:bg-surface-elevated"
+        >
+          Sign in
         </Link>
       </div>
     </section>

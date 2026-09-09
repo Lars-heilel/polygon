@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { Button, Text } from '@org/shared';
+import { Text } from '@org/shared';
 import { Link } from 'react-router';
 
 export function LandingHeader(): JSX.Element {
@@ -32,19 +32,17 @@ export function LandingHeader(): JSX.Element {
           </Text>
         </Link>
         <div className="flex items-center gap-4">
-          <Link
-            to="/landing#stack"
+          <a
+            href="#stack"
             className="text-sm text-text-muted hover:text-text"
           >
             Stack
-          </Link>
-          <Link to="/auth/login">
-            <Button
-              variant="secondary"
-              size="sm"
-            >
-              Sign in
-            </Button>
+          </a>
+          <Link
+            to="/auth/login"
+            className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+          >
+            Sign in
           </Link>
         </div>
       </nav>
