@@ -173,6 +173,9 @@
     },
     {
       "path": "./apps/client/admin"
+    },
+    {
+      "path": "./libs/client/pages/system/pages-landing"
     }
   ]
 }
