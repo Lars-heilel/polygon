@@ -19,8 +19,12 @@
     "dist",
     "**/*.spec.ts",
     "src/**/*.spec.ts",
+    "**/*.spec.tsx",
+    "src/**/*.spec.tsx",
     "**/*.test.ts",
-    "src/**/*.test.ts"
+    "src/**/*.test.ts",
+    "**/*.test.tsx",
+    "src/**/*.test.tsx"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
