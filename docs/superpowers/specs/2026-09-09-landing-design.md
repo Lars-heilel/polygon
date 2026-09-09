@@ -36,8 +36,12 @@ libs/client/pages/system/pages-landing/
 ```
 
 Route wiring in `apps/client/messenger/src/app/router/router.tsx`:
-- Public `path: '/landing'` as a sibling of guards ( NOT inside `GuestGuard` /
-  `AppGuard`), `lazy: () => import('@org/pages-landing')`.
+- Index `/` lives inside `GuestGuard` and lazy-renders `LandingPage`: guests see
+  the landing as the start page, authenticated users are redirected to `/chats`
+  by the guard, loading state shows the guard spinner.
+- Public alias `path: '/landing'` (same lazy `LandingPage`) for share-by-link.
+- Both are siblings of `GuestGuard`/`AppGuard` scope ( NOT inside `AppGuard`),
+  `lazy: () => import('@org/pages-landing')`.
 - Existing `errorElement: <RouteError />` and `*` NotFound behaviour unchanged.
 
 Why not a separate Vite app (approach B) or inline components in

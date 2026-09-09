@@ -10,20 +10,15 @@ export const router = createBrowserRouter([
     path: '/',
     errorElement: <RouteError />,
     children: [
-      {
-        index: true,
-        element: (
-          <Navigate
-            to="/chats"
-            replace
-          />
-        ),
-      },
-
-      // Guest routes (login, register, etc.)
+      // Guest routes (landing, login, register, etc.)
       {
         element: <GuestGuard />,
         children: [
+          {
+            index: true,
+            lazy: () =>
+              import('@org/pages-landing').then((m) => ({ Component: m.LandingPage })),
+          },
           {
             path: '/auth',
             children: [
