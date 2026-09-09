@@ -1,46 +1,56 @@
-# Polygon
+# Polygon — Fast, Private Messenger for Teams
 
-_By Lars Heilel (Igor Shevchenko)_
+Developed by **Igor Shevchenko**.
 
-Polygon is a full-stack messenger built as an Nx monorepo. It combines a React messenger SPA, a NestJS API Gateway and backend services, service-owned PostgreSQL databases, RabbitMQ communication, Redis-backed sessions, MinIO media storage, and Socket.IO real-time delivery.
+## Overview
+
+Polygon is a real-time messenger monorepo (Nx): chats, media sharing and real-time updates in one clean app.
+
+- Landing page as start page for guests with sign-in entry.
+- Direct and saved-message chats, user search, notifications.
+- Real-time updates over Socket.IO, media sharing through the NestJS API Gateway.
+
+See full feature walkthrough: [docs/FEATURES.md](docs/FEATURES.md).
+
+### Landing — Desktop
+
+![Polygon landing — desktop](docs/screenshots/app/lending.png)
+
+### Messenger — Desktop
+
+![Polygon messenger — desktop, media and audio messages](docs/screenshots/app/messenger.png)
+
+### Landing — Mobile
+
+![Polygon landing — mobile](docs/screenshots/app/mobile-lending.png)
+
+### Messenger — Mobile
+
+![Polygon messenger — mobile, media and audio messages](docs/screenshots/app/mobile-messenger.png)
 
 ## Tech Stack
 
-| Area                 | Stack                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| Monorepo             | Nx, npm workspaces                                                                    |
-| Client               | React, Vite, TypeScript, Feature-Sliced Design, TanStack Query, Zustand, Tailwind CSS |
-| Gateway and services | NestJS, RabbitMQ `ClientProxy`, Socket.IO, Zod DTO validation                         |
-| Data                 | PostgreSQL per service, Prisma, Redis, MinIO, Meilisearch                             |
-| Auth and sessions    | HttpOnly cookies, JWT access/refresh tokens, Redis-backed session revocation          |
-| Observability        | Pino/Nest logging, OpenTelemetry, Prometheus, Grafana, Loki, Tempo, Alloy             |
-| Testing              | Jest, Testing Library, Supertest, MSW, Playwright, Nx task orchestration              |
+**Frontend (`apps/client/*`, `libs/client/*`)**
 
-## Documentation Routing
+- React 19 + Vite 7 SPA, React Router 7, Zustand, TanStack Query / Virtual
+- Tailwind CSS v4, Socket.IO client, MSW mocks, Storybook, Vitest / Jest
 
-Use the engineering references for implementation and maintenance work.
+**Backend (`apps/backend/*`, `libs/backend/*`)**
 
-| Document                                       | Use it for                                                                                                   |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Architecture](./docs/ARCHITECTURE.md)         | Runtime model, service ownership, security boundaries, realtime flow, and shared contracts                   |
-| [Development Guide](./docs/DEVELOPMENT.md)     | Nx workflow, coding conventions, FSD boundaries, logging rules, and testing strategy                         |
-| [Setup Guide](./docs/SETUP.md)                 | Local environment, Docker infrastructure, Prisma notes, startup commands, and remote device testing          |
-| [Monorepo Gotchas](./docs/MONOREPO_GOTCHAS.md) | Tailwind v4 source paths, Vite proxy, Prisma env lookup, MSW setup, Gateway Supertest, and Nx cache behavior |
-| [Observability](./docs/OBSERVABILITY.md)       | Logging, metrics, tracing, dashboards, redaction rules, and diagnostic runbooks                              |
+- NestJS 11 API Gateway + microservices: auth, user, chat, media, notification, search
+- Database-per-service via Prisma + PostgreSQL 17, Redis 7 sessions
+- RabbitMQ events, Socket.IO WebSockets, MinIO media storage, Meilisearch user search
+- OpenTelemetry + Pino logging, Swagger docs, Jest / Supertest
 
-## Implemented System
+**Platform / Workspace**
 
-- Cookie-based authentication with email/password, GitHub and Google OAuth, email verification, password reset, refresh-token rotation, and revocation of Redis-backed sessions. Private routes reject revoked sessions.
-- Direct chats and self chats with cursor-paginated history, unread counters, read state, typing indicators, online presence, and real-time Socket.IO updates.
-- Text, image, video, audio, voice, circle video, and document messages with MinIO-backed uploads and protected media delivery.
-- Message editing, deletion for everyone or for self, copying, and forwarding with durable original-author snapshots.
-- Link previews, image and video viewers, chat media panels, waveform voice/audio messages, a compact global audio player, and client-side media rendering and playback.
-- User search, profiles, avatar history, settings, device and session management, and light and dark themes.
-- Push subscription and VAPID-key API surfaces, plus sanitized frontend error reporting and structured backend observability.
-- Administrative API support for user details, sessions, bans, and related moderation data.
+- Nx 22 monorepo, TypeScript 5.9, ESLint + Prettier
+- Docker Compose: Postgres, Redis, MinIO, RabbitMQ, Meilisearch
+- Observability: Prometheus, Grafana, Loki, Tempo, Alloy + exporters
 
-## Architecture
+## Documentation
 
-The React/Vite messenger client communicates through the NestJS API Gateway. The gateway exposes HTTP and WebSocket entry points and routes work to the Auth, User, Chat, Media, Notification, and Search services through RabbitMQ. Each data-owning service has its own PostgreSQL database; Redis stores session state and supports cache and real-time coordination. MinIO stores uploaded media.
-
-The client is organized into sliced Feature-Sliced Design packages under `libs/client`. Shared schemas and utilities live in common libraries, while Nx manages project boundaries, dependency graphs, caching, and builds.
+- [Features — detailed overview](docs/FEATURES.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Development Guide](docs/DEVELOPMENT.md)
+- [Monorepo Gotchas](docs/MONOREPO_GOTCHAS.md)
