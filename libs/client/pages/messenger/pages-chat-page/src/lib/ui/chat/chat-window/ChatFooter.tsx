@@ -180,7 +180,7 @@ export const ChatFooter = memo(function ChatFooter({
   const hasAttachment = pendingFile !== null;
 
   return (
-    <div className="relative z-[60] px-2 py-3 border-t border-border sticky shrink-0 bg-background sm:px-4">
+    <div className="relative z-[60] px-2 py-3 border-t border-border sticky shrink-0 bg-surface sm:px-4">
       {isEditing && (
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-surface-elevated px-2 py-1.5 text-sm">
           <Text as="span" size="sm" className="flex-1 truncate">

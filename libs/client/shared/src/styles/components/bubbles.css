@@ -9,7 +9,7 @@
   }
 
   .msg-bubble--theirs {
-    @apply border-border bg-surface text-text rounded-bl-sm;
+    @apply border-border bg-surface-elevated text-text rounded-bl-sm;
   }
 
   /* Медиа в край пузыря, как в Telegram */

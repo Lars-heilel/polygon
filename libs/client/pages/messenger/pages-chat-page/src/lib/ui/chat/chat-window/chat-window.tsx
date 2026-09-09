@@ -15,7 +15,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
+    <div className="flex flex-col h-full overflow-hidden bg-surface">
       <GlobalAudioPlayer mode="embedded" />
 
       <header className="shrink-0">

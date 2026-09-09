@@ -126,18 +126,18 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 max-sm:items-stretch"
       onClick={onClose}
     >
       <div
-        className="relative mx-4 flex h-auto max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-surface text-text shadow-[var(--shadow-popover)]"
+        className="relative mx-2 flex h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface text-text shadow-[var(--shadow-popover)] max-sm:mx-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-screen max-sm:rounded-none max-sm:border-0 sm:mx-4 sm:w-[min(96vw,56rem)] sm:max-h-[calc(100dvh-2rem)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-sm font-semibold text-text">Avatar History</h2>
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 max-sm:bg-black max-sm:border-white/10 max-sm:text-white">
+          <h2 className="text-sm font-semibold text-text max-sm:text-white">Avatar History</h2>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-text-muted transition hover:bg-surface-elevated hover:text-text"
+            className="rounded-full p-1.5 text-text-muted transition hover:bg-surface-elevated hover:text-text max-sm:text-white/70 max-sm:hover:bg-white/10 max-sm:hover:text-white"
             aria-label="Close"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,15 +153,15 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
           />
         ) : (
           <>
-            <div className="relative shrink-0 px-12 py-6 sm:px-16 sm:py-8">
-              <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex">
+            <div className="relative flex flex-1 items-center justify-center bg-black px-0 py-0 max-sm:min-h-0 sm:shrink-0 sm:px-8 sm:py-6">
+              <div className="h-full w-full overflow-hidden max-sm:flex max-sm:flex-1 sm:h-auto" ref={emblaRef}>
+                <div className="flex h-full sm:h-auto">
                   {files.map((file) => (
-                    <div key={file.id} className="flex shrink-0 basis-full items-center justify-center">
+                    <div key={file.id} className="flex h-full shrink-0 basis-full items-center justify-center max-sm:p-2 sm:h-auto">
                       <img
                         src={file.url}
                         alt={file.originalName}
-                        className="max-h-[min(44dvh,360px)] max-w-full rounded-2xl object-contain shadow-2xl sm:max-h-[56vh]"
+                        className="max-h-[78dvh] max-w-full rounded-2xl object-contain shadow-2xl max-sm:max-h-[72dvh] max-sm:rounded-xl sm:max-h-[78vh]"
                       />
                     </div>
                   ))}

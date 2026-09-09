@@ -31,7 +31,7 @@ export function ChatsLayout() {
   const isMobile = useIsMobile();
 
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [_isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleSelectChat = useCallback(
     (chatId: string) => {
@@ -61,12 +61,11 @@ export function ChatsLayout() {
         <ChatListSidebar
           selectedChatId={selectedChatId}
           onSelectChat={handleSelectChat}
-          isSidebarOpen={isSidebarOpen}
+          isSidebarOpen
           onToggleSidebar={toggleSidebar}
         />
       }
-      sidebarOpen={isSidebarOpen}
-      onToggleSidebar={toggleSidebar}
+      sidebarOpen
     >
       <Outlet />
     </SidebarLayout>

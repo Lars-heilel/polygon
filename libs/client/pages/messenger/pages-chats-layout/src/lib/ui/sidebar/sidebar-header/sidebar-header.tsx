@@ -11,7 +11,7 @@ export function SidebarHeader({ onMenuClick }: SidebarHeaderProps) {
         <button
           onClick={onMenuClick}
           aria-label="Open menu"
-          className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
+          className="hidden p-2 hover:bg-surface-elevated rounded-lg transition-colors"
         >
           <svg
             className="w-5 h-5 text-text-muted"
