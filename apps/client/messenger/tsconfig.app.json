@@ -53,6 +53,9 @@
       "path": "../../../libs/client/pages/system/pages-design-system/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/client/pages/system/pages-landing/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/common/tsconfig.lib.json"
     },
     {
