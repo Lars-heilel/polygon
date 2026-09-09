@@ -42,6 +42,12 @@ export const router = createBrowserRouter([
         ],
       },
 
+      // Public landing (share-by-link only, noindex)
+      {
+        path: '/landing',
+        lazy: () => import('@org/pages-landing').then((m) => ({ Component: m.LandingPage })),
+      },
+
       // Authenticated routes (chats, chat page)
       { element: <AppGuard />, children: appRoutes },
 
