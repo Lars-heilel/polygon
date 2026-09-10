@@ -25,16 +25,17 @@ module.exports = {
     {
       ...sharedConfig,
       displayName: 'unit',
-      testMatch: ['**/Tests/units/**/*.spec.ts'],
+      testMatch: ['**/__tests__/**/*.spec.ts'],
+      testPathIgnorePatterns: ['/__tests__/integration/'],
       moduleNameMapper: {
         ...sharedConfig.moduleNameMapper,
-        '^@org/core$': '<rootDir>/src/Tests/__mocks__/core.mock.ts',
+        '^@org/core$': '<rootDir>/src/__mocks__/core.mock.ts',
       },
     },
     {
       ...sharedConfig,
       displayName: 'integration',
-      testMatch: ['**/Tests/integration/**/*.spec.ts'],
+      testMatch: ['**/__tests__/integration/**/*.spec.ts'],
     },
   ],
 };
