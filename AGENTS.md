@@ -22,6 +22,12 @@
 
 <!-- nx configuration end-->
 
+## Package Manager — NPM only
+
+- This workspace uses **NPM exclusively**. Do NOT use pnpm, yarn or bun — they break the install/layout.
+- Nx auto-update likes to re-insert a `pnpm` example into the header above. Ignore it: always run Nx via `npm exec nx ...` (e.g., `npm exec nx run-many --target=build`).
+- Source of truth for deps is `package-lock.json`. Never add `pnpm-lock.yaml` / `yarn.lock` / `bun.lock`.
+
 # Workspace Reference Documents
 
 Before implementing features, fixing bugs, or refactoring in this repository, you **MUST** read and understand the following documents to align with the project's architecture, design patterns, and monorepo quirks:
