@@ -1,57 +1,57 @@
-# Руководство по разработке
+# Development Guide
 
-## 1. Требования
+## 1. Prerequisites
 
-- Node 22, **только NPM** (`package-lock.json` — источник правды; никогда не добавлять
-  `pnpm-lock.yaml` / `yarn.lock` / `bun.lock` — см. `AGENTS.md`).
-- Docker Compose для инфры (Postgres, Redis, MinIO, RabbitMQ, Meilisearch, observability).
-- Все Nx-задачи запускать через `npm exec nx ...`, никогда через глобальный Nx.
+- Node 22, **NPM only** (`package-lock.json` is the source of truth; never add
+  `pnpm-lock.yaml` / `yarn.lock` / `bun.lock` — see `AGENTS.md`).
+- Docker Compose for infra (Postgres, Redis, MinIO, RabbitMQ, Meilisearch, observability).
+- Run every Nx task via `npm exec nx ...`, never via a global Nx binary.
 
-## 2. Почему `apps/` vs `libs/`
+## 2. Why `apps/` vs `libs/`
 
-- `apps/*` — **деплоебильные точки входа**: тонкие оболочки (Nest `main.ts` + модуль, Vite
-  `main.tsx` + роутер/провайдеры). Бизнес-логики здесь нет.
-  - Бэкенд: `apps/backend/gateway`, `apps/backend/{auth,user,chat,media,notification,search}-service`.
-  - Клиент: `apps/client/messenger` (4200), `apps/client/admin` (4300, base `/admin/`).
-- `libs/*` — **переиспользуемые пакеты** с реальной логикой, один npm-пакет на слайс (`@org/*`):
-  - `libs/backend/*` — реализации сервисов (контроллеры, сервисы, Prisma-репозитории).
-  - `libs/client/*` — FSD-слайсы (`entities`, `features`, `pages/*`, `layouts`, `shared`).
-  - `libs/common` — фреймворк-агностик контракты для обеих сторон (см. §3).
-  - `libs/backend/core` — общий серверный plumbing (конфиг, Redis, токены, хранилище, гарды).
+- `apps/*` are **deployable entry points**: thin shells (Nest `main.ts` + module, Vite
+  `main.tsx` + router/providers). No business logic lives here.
+  - Backend: `apps/backend/gateway`, `apps/backend/{auth,user,chat,media,notification,search}-service`.
+  - Client: `apps/client/messenger` (4200), `apps/client/admin` (4300, base `/admin/`).
+- `libs/*` are **reusable packages** with the real logic, one npm package per slice (`@org/*`):
+  - `libs/backend/*` — service implementations (controllers, services, Prisma repos).
+  - `libs/client/*` — FSD slices (`entities`, `features`, `pages/*`, `layouts`, `shared`).
+  - `libs/common` — framework-agnostic contracts for both sides (see §3).
+  - `libs/backend/core` — shared server plumbing (config, Redis, tokens, storage, guards).
 
-Правило: **весь код живёт в библиотеках, где это возможно; apps только импортируют и связывают**.
-Модули-входы — чистая композиция с `controllers: []`:
+Rule: **all code lives in libraries wherever possible; apps only import and wire**.
+Entry modules are pure composition with `controllers: []`:
 
 ```ts
-// apps/backend/user-service/src/app/user.module.ts — весь модуль приложения
+// apps/backend/user-service/src/app/user.module.ts — the whole app module
 imports: [ObservabilityModule.forService(SERVICE_NAMES.user), OrgUserModule],
 controllers: [],
 ```
 
-То же на клиенте: в `apps/client/*` только `main.tsx`, роутер и провайдеры.
+Same on the client: `apps/client/*` hold only `main.tsx`, router, and providers.
 
-## 3. `libs/common` — единый источник правды
+## 3. `libs/common` — Single Source of Truth
 
-Всё взаимодействие клиент↔gateway идёт через контракты из `libs/common/src`. **Никаких
-захардкоженных URL, строк роутов и самопальных шейпов** ни с одной стороны.
+All client↔gateway interaction goes through contracts defined in `libs/common/src`. **No hardcoded
+URLs, route strings, or ad-hoc shapes** on either side.
 
-| Контракт | Где | Правило |
-|---|---|---|
-| HTTP-пути | `constants/routes.ts` → `API_ROUTES` | Корни `@Controller` gateway и каждый вызов `apiFetch`/`authedFetch` на клиенте — только отсюда (например, `API_ROUTES.chats.direct`). Вместо интерполяции строк — функции-билдеры (`byId(id)`, `read(id)`). |
-| Клиентские роуты | `constants/routes.ts` → `CLIENT_ROUTES` | Определения React Router и редиректы — только отсюда (гарды в `apps/client/messenger/src/app/router/guards.tsx`). |
-| Валидация + типы | `schemas/*` (zod) | **Новые контракты создаются сначала здесь**, как zod-схемы. Типы выводятся (`z.infer`), руками не дублируются. У каждой области — `index.ts` + лежащий рядом `*.spec.ts`. |
-| Общие константы | `constants/regex/*`, `constants/*` | Правила паролей, общие енамы — один путь импорта для Nest-DTO и React-форм. |
+| Contract           | Location                                | Rule                                                                                                                                                                                                    |
+| ------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP paths         | `constants/routes.ts` → `API_ROUTES`    | Gateway `@Controller` roots and every client `apiFetch`/`authedFetch` call must use these (e.g. `API_ROUTES.chats.direct`). Builder functions (`byId(id)`, `read(id)`) instead of string interpolation. |
+| Client routes      | `constants/routes.ts` → `CLIENT_ROUTES` | React Router definitions and redirects use these (e.g. guards in `apps/client/messenger/src/app/router/guards.tsx`).                                                                                    |
+| Validation + types | `schemas/*` (zod)                       | **New contracts are created here first**, as zod schemas. Types are inferred (`z.infer`), never hand-duplicated. Each schema area has `index.ts` + colocated `*.spec.ts`.                               |
+| Shared constants   | `constants/regex/*`, `constants/*`      | Password rules, shared enums — same import path for Nest DTOs and React forms.                                                                                                                          |
 
-Принуждение: `scope:client` не может импортировать `scope:backend` и наоборот (границы Nx) —
-единственный легальный мост — `type:framework-agnostic` (`libs/common`, core-утилиты).
+Enforcement: `scope:client` cannot import `scope:backend` and vice versa (Nx boundaries) —
+the only legal bridge is `type:framework-agnostic` (`libs/common`, core utils).
 
-## 4. Как контракты расходятся по сторонам
+## 4. How Contracts Flow to Each Side
 
-Базовая схема в common — это минимальная (серверная) форма. Бэкенд её **оборачивает**,
-фронт **расширяет**. Копий-форков схемы не существует — один источник, два адаптера.
+The base schema in common is the minimal (server) shape. The backend **wraps** it,
+the frontend **extends** it. Forked copies of a schema do not exist — one source, two adapters.
 
-**Бэкенд (NestJS).** Nest нужны классы для метаданных `@Body()`/`@Payload()`, поэтому каждая DTO
-оборачивает общую схему, а не переописывает поля (`libs/backend/auth/src/dto/register.dto.ts`):
+**Backend (NestJS).** Nest needs classes for `@Body()`/`@Payload()` metadata, so each DTO wraps
+the common schema instead of redeclaring fields (`libs/backend/auth/src/dto/register.dto.ts`):
 
 ```ts
 import { registerSchema } from '@org/common';
@@ -60,28 +60,28 @@ import { createZodDto } from 'nestjs-zod';
 export class RegisterDto extends createZodDto(registerSchema) {}
 ```
 
-Gateway валидирует на входе (`ZodValidationPipe` / `schema.parse(...)`) и шлёт распарсенное
-по RMQ; строки RMQ-паттернов при этом живут в `libs/backend/core/src/constants/queues/*`
-(транспортная забота, не клиентский контракт).
+The Gateway validates at the edge (`ZodValidationPipe` / `schema.parse(...)`) and forwards the parsed
+shape over RMQ; RMQ pattern strings themselves stay in `libs/backend/core/src/constants/queues/*`
+(transport concern, not a client contract).
 
-**Фронт (FSD).** Слайсы импортируют только нужное своему слою из `@org/common`:
+**Frontend (FSD).** Slices import only what their layer needs from `@org/common`:
 
 ```ts
-// entities/chat: серверное состояние + пути из common
+// entities/chat: server state + paths from common
 import { API_ROUTES } from '@org/common';
 import type { Chat } from '@org/common';
 getChats: () => authedFetch<Chat[]>(API_ROUTES.chats.root),
 ```
 
-- `entities/*` — API-функции + React Query-хуки + типы из common (без строк роутов).
-- `features/*` — мутации/интеракции поверх entity-API.
-- `pages/*` + `app/router` — композиция + только `CLIENT_ROUTES`; `API_ROUTES` в компонентах
-  страниц запрещены.
-- Формы стартуют от общей схемы и расширяют её UI-полями через zod
+- `entities/*` — API functions + React Query hooks + types from common (no route strings).
+- `features/*` — mutations/interactions on top of the entity API.
+- `pages/*` + `app/router` — composition + `CLIENT_ROUTES` only; `API_ROUTES` in page components
+  is forbidden.
+- Forms start from the common schema and extend it with UI-only fields via zod
   (`libs/client/features/auth/src/ui/register-form.tsx`):
 
 ```ts
-// в common — серверная правда: email + password + username
+// common holds the server truth: email + password + username
 import { registerSchema } from '@org/common';
 
 const registerFormSchema = registerSchema
@@ -92,33 +92,31 @@ const registerFormSchema = registerSchema
   });
 ```
 
-По сети уходит базовый тип (`use-register.ts`: `z.infer<typeof registerSchema>`) —
-`confirmPassword` форму не покидает.
+The request body sent over the wire stays the base type
+(`use-register.ts`: `z.infer<typeof registerSchema>`), so `confirmPassword` never leaves the form.
 
-## 5. Стандарты NestJS (бекенд-либы)
+## 5. NestJS Standards (Backend Libs)
 
-Внутри каждой бэкенд-либы одинаковый расклад (`controllers/`, `services/`, `database/`,
+Each backend lib follows the same inner layout (`controllers/`, `services/`, `database/`,
 `dto/`, `interfaces/`, `guards/`, `strategies/`, `cache/`, `admin/`):
 
-- **Паттерн репозиторий**: `database/prisma/schema.prisma` + `PrismaService` +
-  `database/repository/*.prisma.repo.ts`, реализующий интерфейс из `interfaces/`.
-  Сервисы зависят от интерфейса, никогда напрямую от Prisma. Ошибки маппятся централизованно
-  через `handlePrismaError` (`@org/core`).
-- **Без секретов в логах**: хеши токенов, provider id, client metadata не должны попадать в
-  `Logger.debug/verbose/log` (конвенция покрыта `auth.prisma.repo.spec.ts` — копировать).
-- **Гарды/декораторы** — из `@org/core` или `@org/auth` (`SessionGuard`, `ActiveAccountGuard`,
-  `RolesGuard`, `@CurrentUser()`, `@ClientMetadata()`); свои проверки авторизации в каждом
-  контроллере не изобретать.
-- **Моки переиспользуют тот же DI-механизм**: в тестах подменяются реализации за существующими
-  токенами (например, `libs/backend/user/src/Tests/__mocks__/core.mock.ts`), отдельных тестовых
-  путей проводки нет.
-- **Контроллеры разделены по транспорту**: Gateway — единственная HTTP-поверхность для фронта
-  (`@Controller` + `@Get/@Post/...` + Swagger в `apps/backend/gateway/src/controllers/`).
-  Контроллеры библиотек HTTP не знают — только `@MessagePattern` (запрос/ответ) и
-  `@EventPattern` (fire-and-forget) с `@Payload()`:
+- **Repository pattern**: `database/prisma/schema.prisma` + `PrismaService` +
+  `database/repository/*.prisma.repo.ts` implementing an interface from `interfaces/`.
+  Services depend on the interface, never on Prisma directly. Centralize error mapping in
+  `handlePrismaError` (`@org/core`).
+- **No secrets in logs**: token hashes, provider ids, client metadata must never reach
+  `Logger.debug/verbose/log` (covered by the `auth.prisma.repo.spec.ts` convention — copy it).
+- **Guards/decorators** come from `@org/core` or `@org/auth` (`SessionGuard`, `ActiveAccountGuard`,
+  `RolesGuard`, `@CurrentUser()`, `@ClientMetadata()`); don't reimplement auth checks per controller.
+- **Mocks reuse the same DI mechanism**: tests swap implementations behind the existing tokens
+  (e.g. `libs/backend/user/src/__mocks__/core.mock.ts`) instead of wiring special test paths.
+- **Controllers split by transport**: the Gateway is the only HTTP surface for the frontend
+  (`@Controller` + `@Get/@Post/...` + Swagger in `apps/backend/gateway/src/controllers/`).
+  Library controllers never speak HTTP — they use `@MessagePattern` (request/reply) and
+  `@EventPattern` (fire-and-forget) with `@Payload()`:
 
 ```ts
-// в либах нет HTTP: чистые RMQ-хендлеры за интерфейсом + DI-токеном
+// libs never see HTTP: pure RMQ handlers behind an interface + DI token
 export class UserController implements IUserController {
   constructor(@Inject(USER_SERVICE_TOKEN) private readonly userService: IUserService) {}
 
@@ -130,307 +128,338 @@ export class UserController implements IUserController {
 }
 ```
 
-### 5.1. `@org/core` — заменяемый бэкенд-plumbing
+### 5.1. `@org/core` — Swappable Backend Plumbing
 
 `libs/backend/core/src` (`config`, `redis`, `token`, `encryption`, `email`, `storage`, `search`,
-`guards`, `decorators`, `observability`, `prisma`, `constants/queues`, `constants/di`) — переиспользуемая
-логика только для бэкенда. Всё потребляется через **интерфейсы + DI-токены**
-(`USER_SERVICE_TOKEN`, `USER_CLIENT_TOKEN`, имена очередей), поэтому любой модуль заменяется
-(например, MinIO → S3, Meili → стаб в `__mocks__`) без правок потребителей. Новую общую
-бэкенд-способность класть в core за токеном — импортировать одну сервисную либу из другой нельзя.
+`guards`, `decorators`, `observability`, `prisma`, `constants/queues`, `constants/di`) holds
+reusable backend-only logic. Everything is consumed through **interfaces + DI tokens**
+(`USER_SERVICE_TOKEN`, `USER_CLIENT_TOKEN`, queue names), so any module can be replaced
+(e.g. MinIO → S3, Meili → stub in `__mocks__`) without touching consumers. When adding shared
+backend capability, put it in core behind a token — never import one service lib from another.
 
-### 5.2. Prisma: один сервис — одна база
+### 5.2. Prisma: One Service, One Database
 
-Продакшен-правило — отдельная база на сервис. В dev это изолированные базы на одном
-Postgres 17 (`infra/db/init` создаёт `polygon_auth/user/chat/media/notification`).
-У каждой Prisma-либы одинаковый `prisma.config.ts` — отличается только env-переменная datasource:
+Production rule is one database per service. In dev this runs as isolated databases on a single
+Postgres 17 instance (`infra/db/init` creates `polygon_auth/user/chat/media/notification`).
+Every Prisma lib repeats the same `prisma.config.ts` — only the datasource env var changes:
 
 ```ts
-// libs/backend/{auth,user,chat,...}/prisma.config.ts — идентичны, кроме url
-dotenv.config({ path: envFile }); // .env / .env.test / .env.production по NODE_ENV
+// libs/backend/{auth,user,chat,...}/prisma.config.ts — identical except url
+dotenv.config({ path: envFile }); // .env / .env.test / .env.production by NODE_ENV
 export default defineConfig({
   schema: 'src/database/prisma/schema.prisma',
   migrations: { path: 'src/database/prisma/migrations' },
-  datasource: { url: process.env['USER_DATABASE_URL'] }, // AUTH_ / CHAT_ / ... на сервис
+  datasource: { url: process.env['USER_DATABASE_URL'] }, // AUTH_ / CHAT_ / ... per service
 });
 ```
 
-Чеклист нового сервиса: константы очередей + DI-токены в core → `schema.prisma` + такой же
-`prisma.config.ts` со своим `*_DATABASE_URL` → база в `infra/db/init` →
-тонкая обёртка `apps/backend/*-service` → регистрация RMQ-клиента в Gateway + порт метрик.
+New-service checklist: queue constants + DI tokens in core → `schema.prisma` + identical
+`prisma.config.ts` with its own `*_DATABASE_URL` → database in `infra/db/init` →
+thin `apps/backend/*-service` wrapper → Gateway RMQ client registration + metrics port.
 
-## 6. Границы модулей (Nx)
+## 6. Module Boundaries (Nx)
 
 `nx.json → enforceModuleBoundaries` (`allow: []`):
 
-| Тег | Запрещено импортировать |
-|---|---|
-| `layer:entities`, `layer:features` | `layer:widgets`, `layer:pages`, `layer:layouts` |
-| `layer:layouts` | `layer:pages` |
-| `layer:shared` | `entities`, `features`, `widgets`, `pages`, `layouts` |
-| `scope:client` | `scope:backend` (и наоборот) |
-| `type:framework-agnostic` | всё, кроме `type:framework-agnostic` |
+| Tag                                | Must NOT import                                       |
+| ---------------------------------- | ----------------------------------------------------- |
+| `layer:entities`, `layer:features` | `layer:widgets`, `layer:pages`, `layer:layouts`       |
+| `layer:layouts`                    | `layer:pages`                                         |
+| `layer:shared`                     | `entities`, `features`, `widgets`, `pages`, `layouts` |
+| `scope:client`                     | `scope:backend` (and reverse)                         |
+| `type:framework-agnostic`          | anything except `type:framework-agnostic`             |
 
-Перед запуском тасков — скилл `nx-workspace`; флаги CLI не угадывать.
+Check before running tasks via the `nx-workspace` skill; never guess CLI flags.
 
-## 7. Воркспейсы и хойстинг
+## 7. Workspaces and Hoisting
 
-- Корневой `package.json → workspaces`: `apps/backend/*`, `apps/client/*`, `libs/*`,
+- Root `package.json → workspaces` covers `apps/backend/*`, `apps/client/*`, `libs/*`,
   `libs/backend/*`, `libs/client/*`, `features/*`, `pages/*/*`, `entities/*`, `layouts/*`, `widgets/*`.
-- Зависимости хойстятся в корневой `node_modules`; у каждого слайса свой `package.json`
-  (`@org/*`, теги `layer:*` / `scope:*`), `main: ./src/index.ts` и
-  `customConditions: ["@org/source"]` в tsconfig — Vite/Jest резолвят исходники, не `dist`.
-- Новый слайс подключать пакетным менеджером воркспейса (NPM) — руками кросс-пакетные пути
-  не править, линки не подделывать.
+- Dependencies hoist to the root `node_modules`; each slice keeps its own `package.json`
+  (`@org/*`, tags `layer:*` / `scope:*`) with `main: ./src/index.ts` and
+  `tsconfig` `customConditions: ["@org/source"]` so Vite/Jest resolve sources, not `dist`.
+- If you create a new slice, wire it with the workspace package manager (NPM) — never hand-edit
+  cross-package paths to fake a link.
 
-## 8. Env и Prisma-воркфлоу
+## 8. Env and Prisma Workflow
 
-- `.env` (dev) / `.env.test` / `.env.production` — один набор ключей: `*_DATABASE_URL` ×5,
-  `REDIS_*`, `RABBITMQ_*`, `MEILISEARCH_*`, `MINIO_*`, `JWT_*`, OAuth, SMTP, VAPID, URL, observability.
-- Один сервис — одна база, паттерн `prisma.config.ts` и `infra/db/init` — см. §5.2.
-- `build` зависит от `^build + ^prisma-generate`; входы `prisma-generate` —
+- `.env` (dev) / `.env.test` / `.env.production` share the same keys: `*_DATABASE_URL` ×5,
+  `REDIS_*`, `RABBITMQ_*`, `MEILISEARCH_*`, `MINIO_*`, `JWT_*`, OAuth, SMTP, VAPID, URLs, observability.
+- One service, one database — see §5.2 for the `prisma.config.ts` pattern and `infra/db/init`.
+- `build` depends on `^build + ^prisma-generate`; `prisma-generate` inputs are
   `prisma.config.ts + src/database/prisma/schema.prisma`.
 
-## 9. Частые команды
+### 8.1. New Environment Variable: Checklist
+
+Env without validation does not exist. A new variable is registered in four places at once:
+
+**Backend** (`libs/backend/core/src/config/`):
+
+1. `env.schema.ts` — a zod field with the right type (`z.coerce.number()` for ports,
+   `z.url()` for URLs, `preprocess` for booleans from strings — see `MINIO_USE_SSL`).
+   `CoreConfigModule` (`config.module.ts`) validates via `safeParse` at startup and crashes
+   with the field list — that is intended: fail at startup, not with `NaN` at runtime.
+2. `.env`, `.env.test`, `.env.production` — a value for each environment
+   (`resolveEnvFile()` picks the file by `NODE_ENV`).
+3. Infra, if the variable comes from there: `docker-compose.yml` / `infra/observability/*` /
+   `docker/demo` (which has its own overrides for `.env.production`).
+
+**Frontend** (`apps/client/<app>/src/app/config/env.ts`):
+
+1. A field in the local zod schema (`VITE_*` — only via `import.meta.env`, there is no other way).
+   The reference is messenger: `safeParse` + a clear dev error via `frontendLog`.
+   Known inconsistency: admin currently has no validation, only defaults — align it with
+   messenger when touching it.
+2. A default at the consumption site (`?? '/api'`), so dev through the proxy works without
+   extra keys.
+
+Verification: start the gateway and both clients from the repo root — zero env errors. If it
+crashes with a field list, don't fix the code, add the keys (see also GOTCHAS §3 on running
+outside the root).
+
+## 9. Common Commands
 
 ```bash
-npm run dev:docker:up        # инфра (postgres, redis, minio, rabbitmq, meilisearch)
-npm run dev:all              # gateway + messenger + admin + 6 сервисов (параллельно)
-npm run dev:all:skip-cache   # то же, с чисткой dist и --skip-nx-cache
-npm run observability:up     # grafana, prometheus, loki, tempo, alloy + экспортеры
+npm run dev:docker:up        # infra (postgres, redis, minio, rabbitmq, meilisearch)
+npm run dev:all              # gateway + messenger + admin + 6 services (parallel)
+npm run dev:all:skip-cache   # same, with dist cleanup + --skip-nx-cache
+npm run observability:up     # grafana, prometheus, loki, tempo, alloy + exporters
 
 npm exec nx -- run-many --target=build --exclude='@org/*-e2e'
 npm exec nx -- run-many --target=test
 npm exec nx -- run-many --target=lint
 npm exec nx -- affected --target=test
 npm run format:check         # nx format:check
-npm run demo:build && npm run demo:start   # продоподобный монолит в docker/demo
+npm run demo:build && npm run demo:start   # prod-like monolith in docker/demo
 ```
 
-## 10. Фронт — FSD, спроецированный на пакеты
+## 10. Frontend — FSD Projected onto Packages
 
-Слои FSD enforced как Nx-пакеты с тегами `layer:*` (§6), а не просто папки. Правило импорта
-классическое ([layers](https://feature-sliced.design/docs/reference/layers)): **слайс может
-импортировать только слои строго ниже** — `pages → features → entities → shared`.
-Кросс-импорты внутри одного слоя — запах: компоновать в верхнем слое (`pages`/`app`), либо
-мержить слайсы. Единственное терпимое исключение — сущности, ссылающиеся друг на друга,
-явно и по минимуму ([cross-imports](https://feature-sliced.design/docs/guides/issues/cross-imports)).
+FSD layers are enforced as Nx packages with `layer:*` tags (§6), not just folders. The import
+rule is the classic one ([layers](https://feature-sliced.design/docs/reference/layers)): **a slice
+may import only from layers strictly below it** — `pages → features → entities → shared`.
+Same-layer cross-imports are a code smell: compose in an upper layer (`pages`/`app`) instead,
+or merge the slices. The only tolerated exception is entities referencing each other, kept
+explicit and minimal ([cross-imports](https://feature-sliced.design/docs/guides/issues/cross-imports)).
 
-- **Внутри слайса**: относительные импорты полным путём (`../../lib/utils/cn`).
-  Через собственный barrel изнутри не импортировать — будут циклы.
-- **Между слайсами**: только абсолютные пакетные импорты (`@org/shared`, `@org/entities-user`)
-  через public API слайса (`index.ts`). Deep-импорты во внутренности чужого слайса запрещены
-  (граница Nx + правило ревью).
-- Новые приложения собираются из существующих слайсов: `messenger` и `admin` делят `@org/shared`,
-  `@org/entities-*`, `@org/common` и различаются только роутером/провайдерами/страницами.
+- **Within one slice**: relative imports with the full path (`../../lib/utils/cn`).
+  Never import through the slice's own barrel from inside — that creates cycles.
+- **Across slices**: absolute package imports (`@org/shared`, `@org/entities-user`) through the
+  slice's public API (`index.ts`) only. Deep imports into another slice's internals are forbidden
+  (Nx boundary + review rule).
+- New apps assemble from existing slices: `messenger` and `admin` share `@org/shared`,
+  `@org/entities-*`, `@org/common` and differ only in router/providers/pages.
 
-### 10.1. Всегда мелкие пакеты: переиспользование между приложениями
+### 10.1. Always Small Packages: Reuse Across Apps
 
-Делим на мелкие пакеты **всегда** — не ради сплита, а ради переиспользования:
-messenger / admin / будущий market собирают экраны из одних и тех же `entities` / `features` /
-`shared`. Отсюда правило: пакет обязан быть **app-agnostic** — ноль импортов из `apps/*`,
-только слои ниже + common + собственные deps в своём `package.json`. App-специфика живёт в
-`apps/<app>` и `pages/<app>/` и в общие пакеты не протекает. Конвенция «`pages/<app>` —
-специфика приложения, всё остальное — universal».
+Always split into small packages — not for splitting's sake, but for reuse:
+messenger / admin / a future market assemble screens from the same `entities` / `features` /
+`shared`. Hence the rule: a package must be **app-agnostic** — zero imports from `apps/*`,
+only lower layers + common + its own deps in its own `package.json`. App-specific code lives in
+`apps/<app>` and `pages/<app>/` and never leaks into shared packages. Convention: `pages/<app>`
+is app-specific, everything else is universal.
 
-### 10.2. `@org/shared` — переиспользуемый фундамент
+### 10.2. `@org/shared` — Reusable Foundation
 
-Всё переиспользуемое на клиенте — здесь: UI-кит, тема, api/socket/query-примитивы, хуки.
-В `package.json` стоит `"sideEffects": false`, чтобы сборка могла вытряхивать barrel.
+Everything reusable on the client lives here: UI kit, theme, api/socket/query primitives, hooks.
+`package.json` sets `"sideEffects": false` so the build can shake the barrel.
 
-- **Стили** (`src/styles/`) — фундамент дизайна. `global.css` только реэкспортит в фиксированном
-  порядке: `theme.css` (Tailwind v4 `@theme`-токены + `@source` на `apps/client` и `libs/client`,
-  чтобы утилиты генерились для всех слайсов), `base.css`, `animations.css`, `vendor.css`, затем
-  `components/*.css` (bubbles, media-viewer, chat-header). Приложение получает стили одной строкой:
+- **Styles** (`src/styles/`) — the design foundation. `global.css` only re-exports in a fixed
+  order: `theme.css` (Tailwind v4 `@theme` tokens + `@source` for `apps/client` and `libs/client`
+  so utilities are generated for all slices), `base.css`, `animations.css`, `vendor.css`, then
+  `components/*.css` (bubbles, media-viewer, chat-header). Apps receive styles in one line:
 
 ```css
-/* apps/client/messenger/src/app/styles/global.css (в admin так же) */
+/* apps/client/messenger/src/app/styles/global.css (same in admin) */
 @import '@org/shared/styles/global.css';
 ```
 
-CSS уровня приложения — только реэкспорт; стили компонентов — в `shared/styles/components/`,
-не россыпью по приложениям, иначе тема разъедется и сломается `@source`-сканирование Tailwind.
+App-level CSS must stay a re-export; component styles belong to `shared/styles/components/`,
+never scattered per app — otherwise theming diverges and Tailwind `@source` scanning breaks.
 
-- **UI-кит** (`src/ui/<компонент>/`): папка на блок, у каждой свой `index.ts` (button/, input/,
-  avatar/, modal/, typography/, …). Блоки — чистый внешний вид, без бизнес-логики: экраны
-  собираются как конструктор из готовых деталей. Не строить «станок, который делает детали для
-  конструктора» — никаких умных обёрток и сползания логики в кит.
-- **Варианты через `cn`** (`src/lib/utils/cn.ts` = `clsx` + `tailwind-merge`): каждый компонент
-  складывает `cva`-варианты через `cn(...)` и принимает `className` последним словом для
-  оверрайдов в месте вызова (`button.tsx`: `cn(buttonVariants({ variant, size }), className)`).
-- **Типографика** (`src/ui/typography/`): `Heading` (уровни 1–6 с респонсив-размерами
-  `text-3xl md:text-4xl lg:text-5xl…`, семантический оверрайд через `as`, `srOnly`) и `Text`
-  держат все шрифты/размеры десктоп–мобайл в одном месте. Размер текста вне этих компонентов —
-  баг: чинить кит, а не инлайнить размеры в местах вызова.
-- **Storybook обязателен**: каждый `ui/`-блок идёт с лежащим рядом `*.stories.tsx`
-  (`title: 'UI / …'`, `autodocs`, все варианты сторисами — см. `heading.stories.tsx`).
-  Сейчас покрытие неполное (12 сторисов; нет у `dropdown`, `modal`, `toast`, `media-viewer`,
-  `virtual-feed`, …) — новые компоненты без стори ревью не проходят; недостающие дописывать
-  по ходу.
+- **UI kit** (`src/ui/<component>/`): one folder per block, each with its own `index.ts` (button/,
+  input/, avatar/, modal/, typography/, …). Blocks are pure appearance, no business logic: screens
+  assemble like a constructor from ready parts. Never build "a machine that builds constructor
+  parts" — no smart wrappers, no logic creeping into the kit.
+- **Variants via `cn`** (`src/lib/utils/cn.ts` = `clsx` + `tailwind-merge`): every component
+  composes `cva` variants with `cn(...)` and accepts `className` as the last word for call-site
+  overrides (`button.tsx`: `cn(buttonVariants({ variant, size }), className)`).
+- **Typography** (`src/ui/typography/`): `Heading` (levels 1–6 with responsive sizes
+  `text-3xl md:text-4xl lg:text-5xl…`, semantic override via `as`, `srOnly`) and `Text`
+  hold all fonts/sizes for desktop–mobile in one place. Text sizing outside these components is
+  a bug — fix the kit, don't inline sizes at call sites.
+- **Storybook is mandatory**: every `ui/` block ships a colocated `*.stories.tsx`
+  (`title: 'UI / …'`, `autodocs`, all variants as stories — see `heading.stories.tsx`).
+  Coverage is currently incomplete (12 stories; missing for `dropdown`, `modal`, `toast`,
+  `media-viewer`, `virtual-feed`, …) — new components without a story fail review; backfill the
+  missing ones opportunistically.
 
-### 10.3. Импорты и кодсплиттинг
+### 10.3. Imports and Code-Splitting
 
-Сейчас `@org/shared` отдаёт только два сабпути: `.` (весь barrel) и `./styles/global.css` —
-слайсы тянут UI через barrel (`import { Button } from '@org/shared'`). По официальной
-[FSD-доке про public API](https://feature-sliced.design/docs/reference/public-api) единый
-barrel на `shared/ui` — ровно то, что ломает tree-shaking и раздувает бандлы. Правила:
+Today `@org/shared` exposes only two subpaths: `.` (the whole barrel) and `./styles/global.css` —
+slices pull UI through the barrel (`import { Button } from '@org/shared'`). Per the official
+[FSD public-API guidance](https://feature-sliced.design/docs/reference/public-api), a single
+`shared/ui` barrel is exactly what breaks tree-shaking and bloats bundles. Rules to stay safe:
 
-1. `sideEffects: false` держать на каждом клиентском пакете — только он позволяет Rollup
-   выкидывать неиспользуемые реэкспорты barrel в билде.
-2. Не импортировать серверно-тяжёлое (socket, query-клиент, audio) через UI-чанки:
-   `manualChunks` в `apps/client/messenger/vite.config.mts` (`chunk-virtuoso`, `chunk-auth-vendor`,
-   `chunk-socket`) предполагает их разделимость — UI-компонент, импортящий `socket`, молча
-   склеивает чанки.
-3. Роутовый сплит: страницы — `lazy()`-импорты по слайсам (`@org/pages-*`); в слайсах страниц
-   не держать eager-кросс-импортов, чтобы чанк роута оставался худым.
-4. Если barrel измеримо раздувает чанк — дробить по рекомендации FSD: `index.ts` на каждый
-   `ui/<компонент>` уже есть, добавить subpath-экспорты (`@org/shared/ui/button`) и перевести
-   тяжёлых потребителей первыми. Цена dev-сервера (TkDodo) приемлема, выигрыш бандла важнее.
+1. Keep `sideEffects: false` on every client package — it is what lets Rollup drop unused barrel
+   exports in the build.
+2. Never import server-heavy modules (socket, query client, audio) through UI-only chunks:
+   `manualChunks` in `apps/client/messenger/vite.config.mts` (`chunk-virtuoso`, `chunk-auth-vendor`,
+   `chunk-socket`) assumes they stay separable — a UI component importing `socket` silently merges
+   the chunks.
+3. Route-level splitting: pages are `lazy()`-imported per slice (`@org/pages-*`); keep page
+   slices free of eager cross-imports so each route chunk stays lean.
+4. If the barrel measurably bloats a chunk, split per the FSD recommendation: one `index.ts`
+   per `ui/<component>` already exists, so add subpath exports (`@org/shared/ui/button`) and
+   migrate heavy consumers first. Dev-server cost of many barrels (TkDodo) is acceptable here;
+   bundle size wins.
 
-При сомнениях — билд с `rollup-plugin-visualizer` (уже в зависимостях) и смотреть, какой чанк
-вырос, до мержа.
+When in doubt, run the build with `rollup-plugin-visualizer` (already a dependency) and check
+which chunk grew before merging.
 
-### 10.4. Кейс: почему `lazy()` не сплитил markdown
+### 10.4. Case Study: Why `lazy()` Did Not Split Markdown
 
-Реальный инцидент (коммиты `efcbba7` → `045884e`, разобран в `REFACTORING_PLAN.md`): рендерер
-markdown (`react-markdown` + `react-syntax-highlighter`, ~200 КБ) лежал внутри монолитного
-`libs/client/features` рядом со всем остальным. `lazy()` на странице ничего не давал —
-сработал только вынос в отдельный пакет. Механика:
+Real incident (commits `efcbba7` → `045884e`): the markdown renderer (`react-markdown` +
+`react-syntax-highlighter`, ~200 KB) lived inside the monolithic `libs/client/features`
+alongside everything else. `lazy()` on the page did nothing — only extracting it into a
+separate package produced a separate chunk. Mechanics:
 
-1. **Nx-пакеты — не границы бандла.** При `@org/source` Vite собирает исходники либ как плоский
-   граф модулей. `package.json` на папке сам по себе ничего не сплитит — решают только рёбра
-   импортов. Сплитит не Nx, а Rollup внутри Vite-билда.
-2. **Статика всегда бьёт динамику.** Правило Rollup (Vite пишет дословно:
-   *«dynamically imported but also statically imported, dynamic import will not move module
-   into another chunk»*). Markdown был статически достижим — список сообщений рендерит его
-   для каждого сообщения (`message-list.tsx` статически импортировал `MarkdownMessage` из
-   barrel `@org/features`) — и любой `lazy()` резолвился в уже собранное.
-3. **Lazy на barrel грузит barrel.** Все 9 роутов делали `lazy(() => import('@org/pages'))`,
-   а `pages/src/index.ts` реэкспортил auth- и messenger-страницы — Rollup собрал один чанк
-   ~430 КБ с формами, virtuoso и всем markdown-стеком.
+1. **Nx packages are not bundle boundaries.** With the `@org/source` condition Vite bundles
+   workspace lib sources as a flat module graph. A `package.json` on a folder splits nothing
+   by itself — only import edges decide. Nx doesn't split; Rollup inside the Vite build does.
+2. **Static always beats dynamic.** Rollup's rule (Vite prints it verbatim:
+   _"dynamically imported but also statically imported, dynamic import will not move module
+   into another chunk"_). Markdown was statically reachable — the message list renders it for
+   every message (`message-list.tsx` statically imported `MarkdownMessage` from the
+   `@org/features` barrel) — so every `lazy()` resolved against the already-bundled copy.
+3. **Lazy on a barrel loads the barrel.** All 9 routes did `lazy(() => import('@org/pages'))`
+   while `pages/src/index.ts` re-exported auth and messenger pages — Rollup built a single
+   ~430 KB chunk with forms, virtuoso, and the whole markdown stack.
 
-Отдельный пакет помог не магией, а дисциплиной: один leaf-вход (`@org/features-markdown`),
-ноль статических импортёров в eager-графе, единственная ссылка — вызов `lazy()`, плюс
-`manualChunks`-пин (`chunk-markdown`). Верни туда один статический импорт — проблема молча
-вернётся.
+The separate package fixed it not by magic but by forcing discipline: one leaf entry
+(`@org/features-markdown`), zero static importers in the eager graph, the only reference being
+the `lazy()` call, plus a `manualChunks` pin (`chunk-markdown`). Add one static import back and
+the problem silently returns.
 
-**Deep-импорты ничего не меняют.** Rollup чанкует резолвнутые модули (абсолютные пути файлов),
-а не спецификаторы: `import { X } from '@org/features'` (barrel) и
-`import { X } from '@org/features/lib/x'` резолвятся в один файл — один модуль. Обход `index.ts`
-влияет только на гранулярность tree-shaking, статическое ребро он не рвёт. Лечится только
-вырезанием **всех** статических путей из eager-графа до тяжёлого модуля.
+**Deep imports change nothing.** Rollup chunks resolved modules (absolute file paths), not
+specifiers: `import { X } from '@org/features'` (barrel) and
+`import { X } from '@org/features/lib/x'` resolve to one file — one module. Bypassing `index.ts`
+only affects tree-shaking granularity; it never breaks a static edge. The only cure is cutting
+**every** static path from the eager graph to the heavy module.
 
-Правила, чтобы не повторялось:
+Rules so this never recurs:
 
-1. Тяжёлая зависимость (>30 КБ) → свой пакет со своим public API, не папка внутри общего
-   barrel-пакета. (Тяжёлый вендор внутри обычного пакета заражает весь пакет.)
-2. `lazy()` — только на leaf-вход пакета, никогда на barrel с чужим кодом.
-3. После добавления: grep — статических импортёров тяжёлого пакета в eager-графе ноль;
-   чанк есть в билде И в Network грузится только по требованию. Lazy-чанк, который никогда
-   не запрашивается в рантайме, означает: содержимое уже в родителе.
-4. Тяжёлый вендор пинить через `manualChunks`, чтобы общие внутренности не дублировались
-   по асинк-чанкам.
-5. Триггер процесса: новая npm-зависимость в клиентском пакете = обязательный вопрос в ревью
-   + проверка visualizer/Network. Обычные фичи остаются eager без церемоний.
+1. Heavy dependency (>30 KB) → its own package with its own public API, not a folder inside a
+   shared barrel package. (Heavy vendor inside a regular package infects the whole package.)
+2. `lazy()` — only on the package leaf entry, never on a barrel with unrelated code.
+3. After adding: grep — zero static importers of the heavy package in the eager graph;
+   the chunk exists in the build AND loads on demand in the Network panel. A lazy chunk that is
+   never requested at runtime means its contents are already in the parent.
+4. Pin heavy vendor via `manualChunks` so shared internals don't get duplicated across
+   async chunks.
+5. Process trigger: a new npm dependency in a client package = a mandatory review question +
+   visualizer/Network check. Regular features stay eager with no ceremony.
 
-## 11. Бэкенд-блок: паттерны, события, оркестрация
+## 11. Backend Block: Patterns, Events, Orchestration
 
 ### 11.1. Patterns vs Events
 
-Всё межсервисное общение — RabbitMQ. Два примитива, путать нельзя:
+All inter-service communication is RabbitMQ. Two primitives — never confuse them:
 
-- **`client.send(PATTERN, payload)` + `@MessagePattern`** — запрос/ответ. Gateway ждёт результат
-  и отдаёт его фронту. Так делаются все чтения и команды: `chat.getChats`, `user.getById`,
-  `auth.login`, `media.initUpload`, `search.users`.
-- **`client.emit(EVENT, payload)` + `@EventPattern`** — fire-and-forget. Отправитель не ждёт,
-  ответа нет. Так делаются побочки: `user.registered/updated/deleted` → синхронизация
-  Meilisearch-индекса, `send-verification-email`, `send-push`, `push-subscribe/unsubscribe`.
+- **`client.send(PATTERN, payload)` + `@MessagePattern`** — request/reply. The Gateway waits for
+  the result and hands it to the frontend. All reads and commands work this way: `chat.getChats`,
+  `user.getById`, `auth.login`, `media.initUpload`, `search.users`.
+- **`client.emit(EVENT, payload)` + `@EventPattern`** — fire-and-forget. The sender doesn't wait,
+  there is no reply. Side effects work this way: `user.registered/updated/deleted` → Meilisearch
+  index sync, `send-verification-email`, `send-push`, `push-subscribe/unsubscribe`.
 
-Правила:
+Rules:
 
-1. Нужен результат для HTTP-ответа — только pattern. Не нужен — только event. Event в ответе
-   на запрос — баг (gateway вернёт пустоту до того, как работа выполнена).
-2. Хендлеры event обязаны переживать повторную доставку (ределивери брокера): идемпотентность
-   по ключу сущности, никаких «создать вслепую». Запрос/ответ идемпотентен по построению —
-   отправитель повторит `send` сам.
-3. Новые pattern/event определяются в `libs/backend/core/src/constants/queues/*.queue.ts`
-   (там же DI-токены клиентов в `constants/di/*`), хендлер — в контроллере либы, наружу для
-   фронта — только через gateway-контроллер. Сервис, торчащий наружу мимо gateway, запрещён.
+1. Result needed for the HTTP response — pattern only. Not needed — event only. An event in
+   response to a request is a bug (the gateway returns emptiness before the work is done).
+2. Event handlers must survive redelivery (broker redelivery): idempotency by entity key, never
+   "create blindly". Request/reply is idempotent by construction — the sender retries `send` itself.
+3. New patterns/events are defined in `libs/backend/core/src/constants/queues/*.queue.ts`
+   (client DI tokens alongside in `constants/di/*`), the handler lives in the lib controller, and
+   frontend exposure goes only through a gateway controller. A service exposed past the gateway
+   is forbidden.
 
-### 11.2. Оркестрация живёт в gateway
+### 11.2. Orchestration Lives in the Gateway
 
-Сервисы владеют только своим доменом и друг друга не знают: ни синхронных вызовов между
-либами, ни импортов чужого домена — только `@org/core` и `@org/common`. Сборка ответов из
-нескольких доменов — работа gateway:
+Services own only their domain and don't know each other: no sync calls between libs, no foreign
+domain imports — only `@org/core` and `@org/common`. Assembling multi-domain responses is the
+gateway's job:
 
-- список чатов: `chat.getChats` + обогащение участниками через `user.getManyByIds`;
-- профиль: `user.*` + роль из `auth.get-role-by-id`;
-- отправка сообщения: `chat.sendMessage` → broadcast по сокетам → push офлайну → инвалидация кэша.
+- chat list: `chat.getChats` + member enrichment via `user.getManyByIds`;
+- profile: `user.*` + role from `auth.get-role-by-id`;
+- message send: `chat.sendMessage` → socket broadcast → offline push → cache invalidation.
 
-Следствие: новая кросс-доменная фича = новый (или расширенный) gateway-контроллер + готовые
-доменные паттерны, а не связи между сервисами. Связность сервисов должна оставаться нулевой —
-проверяется тем, что либа собирается и тестируется изолированно, с замоканным core.
+Consequence: a new cross-domain feature = a new (or extended) gateway controller + ready-made
+domain patterns, not links between services. Service coupling must stay zero — verified by the
+fact that a lib builds and tests in isolation, with mocked core.
 
-### 11.3. Гарды и декораторы: порядок имеет значение
+### 11.3. Guards and Decorators: Order Matters
 
-Цепочка на gateway-контроллерах (снаружи внутрь):
+The chain on gateway controllers (outside in):
 
-1. `ThrottlerGuard` (глобально, `APP_GUARD`, 60с/100) — режет флуд до авторизации.
-2. `SessionGuard` (или `JwtGuard`) — JWT из `access_token` + существование сессии в Redis.
-3. `ActiveAccountGuard` — Redis-маркер `ban:{userId}` → 403 `ACCOUNT_BANNED`.
-4. `RolesGuard` + `@Roles(...)` — только там, где нужно (admin).
+1. `ThrottlerGuard` (global, `APP_GUARD`, 60s/100) — cuts flooding before auth.
+2. `SessionGuard` (or `JwtGuard`) — JWT from `access_token` + session existence in Redis.
+3. `ActiveAccountGuard` — Redis marker `ban:{userId}` → 403 `ACCOUNT_BANNED`.
+4. `RolesGuard` + `@Roles(...)` — only where needed (admin).
 
-Данные запроса — через декораторы, не руками: `@CurrentUser()` (JwtPayload),
-`@ClientMetadata()` (ip/country/os/browser/device). Проверки авторизации не дублировать
-в телах хендлеров — для этого есть слой гардов.
+Request data comes through decorators, never by hand: `@CurrentUser()` (JwtPayload),
+`@ClientMetadata()` (ip/country/os/browser/device). Don't duplicate auth checks in handler
+bodies — that's what the guard layer is for.
 
-### 11.4. Контракт ошибок
+### 11.4. Error Contract
 
-Сервис кидает RPC-ошибку с `{ message, status }`, gateway ловит и перевыбрасывает как
-`HttpException(message, status)` — фронт всегда получает нормальный HTTP-статус.
-Валидация входа — `ZodValidationPipe` по схемам из common (§4); ошибки валидации маппятся
-`ZodValidationExceptionFilter` в 400 с полями. Свои форматы ошибок не изобретать.
+Services throw RPC errors with `{ message, status }`; the gateway catches and rethrows them as
+`HttpException(message, status)` — the frontend always gets a proper HTTP status.
+Entry validation is `ZodValidationPipe` over common schemas (§4); validation errors map via
+`ZodValidationExceptionFilter` to 400 with fields. Don't invent custom error formats.
 
-## 12. Тестирование и кодстайл (черновик)
+## 12. Testing & Code Style (draft)
 
-**Раскладка — строго по местам, а не «где приткнётся»:**
+**Layout — strictly in place, never "wherever it lands":**
 
-- Юнит-спека лежит в `__tests__/` рядом с кодом: `controllers/user.controller.ts` →
-  `controllers/__tests__/user.controller.spec.ts`. Спеки вперемешку с исходниками запрещены.
-- Внутри `__tests__/` — плоский список юнит-спек; интеграционные — в `__tests__/integration/`,
-  фикстуры — в `__tests__/fixtures/`.
-- Моки — в строчном `__mocks__` рядом с мокаемым (`Tests` с большой буквы и прочие варианты
-  запрещены).
-- E2E бэкенда — `apps/backend/<name>-e2e` (уже исключены из `test`-таргета в `nx.json`, чтобы
-  юнит-прогон их не цеплял). E2E клиента (Playwright) — `apps/client/<app>/e2e`.
-- Общие клиентские стабы (`authedFetch`, socket, avatar, modal) — только в
-  `apps/client/messenger/src/test-stubs/shared.tsx`; по слайсам копии не растаскивать.
-- Пути, вычисляемые от расположения спеки (`__dirname`, `import.meta.url`), при переезде
-  правятся руками — механика `../` их не видит (кейс `global-css-contract.spec.ts`).
+- Unit specs live in `__tests__/` next to the code: `controllers/user.controller.ts` →
+  `controllers/__tests__/user.controller.spec.ts`. Specs mixed with sources are forbidden.
+- Inside `__tests__/` — a flat list of unit specs; integration specs go in
+  `__tests__/integration/`, fixtures in `__tests__/fixtures/`.
+- Mocks live in lowercase `__mocks__` next to the mocked module (capitalized `Tests` and other
+  variants are forbidden).
+- Backend E2E goes in `apps/backend/<name>-e2e` (already excluded from the `test` target in
+  `nx.json` so unit runs don't pick it up). Client E2E (Playwright) goes in
+  `apps/client/<app>/e2e`.
+- Shared client stubs (`authedFetch`, socket, avatar, modal) live only in
+  `apps/client/messenger/src/test-stubs/shared.tsx`; don't scatter copies across slices.
+- Paths computed from the spec location (`__dirname`, `import.meta.url`) must be fixed by hand
+  when moving — `../` mechanics can't see them (the `global-css-contract.spec.ts` case).
 
-- **Бэкенд — Jest:** конфиг `jest.config.cts` на приложение + общий `jest.preset.js`; запуск
-  `npm exec nx -- run-many --target=test` или `affected`. Сервисы тестируются через интерфейсы
-  с моками за DI-токенами (§5); Prisma-репозитории — с мокнутым `PrismaService`.
-- **Клиент — Vitest/Jest + стабы:** `test-setup.ts` на либу (`vi.restoreAllMocks`).
-  MSW есть в корневых зависимостях, но в клиентском коде не используется — сетевой слой
-  мокается стабами `authedFetch`/socket, а не перехватом HTTP.
-- **Кодстайл:** Prettier + ESLint (`npm run format:check`, `nx format:write`), TypeScript `strict`
-  (`noUnusedLocals` и др. — см. `tsconfig.base.json`). Импорты сортируются
-  (`@trivago/prettier-plugin-sort-imports`). Новое без спеки на поведение — на ревью возвращать.
+- **Backend — Jest:** per-app `jest.config.cts` + shared `jest.preset.js`; run
+  `npm exec nx -- run-many --target=test` or `affected`. Services are tested through interfaces
+  with mocks behind DI tokens (§5); Prisma repositories with a mocked `PrismaService`.
+- **Client — Vitest/Jest + stubs:** per-lib `test-setup.ts` (`vi.restoreAllMocks`).
+  MSW is in the root dependencies but unused in client code — the network layer is mocked with
+  `authedFetch`/socket stubs, not HTTP interception.
+- **Code style:** Prettier + ESLint (`npm run format:check`, `nx format:write`), TypeScript `strict`
+  (`noUnusedLocals` etc. — see `tsconfig.base.json`). Imports are sorted
+  (`@trivago/prettier-plugin-sort-imports`). New behavior without a spec gets returned from review.
 
-## 13. Логирование (черновик)
+## 13. Logging (draft)
 
-- **Бэкенд — Pino** (`nestjs-pino`, `ObservabilityModule.forService(...)` в каждом entry-модуле):
-  структурированные JSON-логи, уровни через `LOG_LEVEL`/`LOG_FORMAT`. Логи пошаговые, чтобы было
-  видно, где отвалилось: каждая значимая операция пишет `*_requested` → `*_started` →
-  `*_done`/`failed` с `eventType` (см. `chat.service.ts`: `message_attachment_access_requested`,
-  `media_reference_create_started`, …). Контекст — имя класса (`new Logger(X.name)`).
-  Сырые идентификаторы и секреты не логируются никогда — только факты наличия
-  (`hasUserId: !!userId`, `hasChatId: !!chatId`), см. §5.
-- **Клиент — `frontendLog` / `useLogger` из `@org/shared` по той же схеме** (уровни
-  `log/error/warn/debug/verbose`, контекст-имя, цвета в dev). В прод логи не попадают по
-  построению: оба хелпера — noop при `import.meta.env.PROD` (проверено в коде), никаких
-  рантайм-флагов и ручных `if` в местах вызова.
-- Пользователю — `toast`/`Toaster` (sonner) и `FormAlert` для форм; прямых `console.*` в слайсах
-  быть не должно, только через логгер. Сбор клиентских логов через gateway (`frontend-error`)
-  выпиливаем как оверинжиниринг: лишний трафик без пользы, dev-логов и серверных достаточно.
+- **Backend — Pino** (`nestjs-pino`, `ObservabilityModule.forService(...)` in every entry module):
+  structured JSON logs, levels via `LOG_LEVEL`/`LOG_FORMAT`. Logs are step-by-step so it's visible
+  where things break: every significant operation writes `*_requested` → `*_started` →
+  `*_done`/`failed` with `eventType` (see `chat.service.ts`: `message_attachment_access_requested`,
+  `media_reference_create_started`, …). Context is the class name (`new Logger(X.name)`).
+  Raw identifiers and secrets are never logged — only presence facts
+  (`hasUserId: !!userId`, `hasChatId: !!chatId`), see §5.
+- **Client — `frontendLog` / `useLogger` from `@org/shared` under the same scheme** (levels
+  `log/error/warn/debug/verbose`, context name, colors in dev). Logs never reach prod by
+  construction: both helpers are no-ops under `import.meta.env.PROD` (verified in code), no
+  runtime flags or manual `if`s at call sites.
+- User-facing feedback is `toast`/`Toaster` (sonner) and `FormAlert` for forms; bare `console.*`
+  must not appear in slices, only through the logger. Client log collection via the gateway
+  (`frontend-error`) is being removed as overengineering: extra traffic with no benefit, dev and
+  server logs are enough.
