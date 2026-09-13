@@ -1,4 +1,5 @@
 import type { Role } from '@org/common';
+import { API_ROUTES } from '@org/common';
 import { authedFetch } from '@org/shared';
 
 export interface UserProfile {
@@ -12,5 +13,5 @@ export interface UserProfile {
 }
 
 export function fetchUserProfile(userId: string): Promise<UserProfile> {
-  return authedFetch<UserProfile>(`users/${userId}/profile`);
+  return authedFetch<UserProfile>(API_ROUTES.users.profile(userId));
 }

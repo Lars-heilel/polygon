@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { updateUserSchema } from '@org/common';
 import { authApi, useMeQuery } from '@org/entities-user';
 import { AvatarUploader } from '@org/features-upload-avatar';
 import { Avatar, Button, Heading, Input, Textarea, queryClient } from '@org/shared';
@@ -21,7 +22,15 @@ export function EditProfilePage() {
     setSaving(true);
     setError(null);
     try {
-      await authApi.updateProfile({ displayName: displayName || undefined, bio: bio || undefined });
+      const parsed = updateUserSchema.safeParse({
+        displayName: displayName || undefined,
+        bio: bio || undefined,
+      });
+      if (!parsed.success) {
+        setError(parsed.error.issues[0]?.message ?? 'Invalid profile data');
+        return;
+      }
+      await authApi.updateProfile(parsed.data);
       queryClient.invalidateQueries({ queryKey: ['me'] });
       navigate('/chats/profile');
     } catch (e) {

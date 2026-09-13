@@ -1,4 +1,4 @@
-import { API_ROUTES, loginSchema, registerSchema } from '@org/common';
+import { API_ROUTES, loginSchema, registerSchema, updateUserSchema } from '@org/common';
 import type { User as UserBase } from '@org/common';
 import { apiFetch } from '@org/shared';
 import { authedFetch } from '@org/shared';
@@ -45,7 +45,7 @@ export const authApi = {
       body: JSON.stringify({ email }),
     }),
 
-  updateProfile: (data: { displayName?: string; bio?: string }) =>
+  updateProfile: (data: z.infer<typeof updateUserSchema>) =>
     authedFetch<void>(API_ROUTES.users.me, {
       method: 'PATCH',
       body: JSON.stringify(data),

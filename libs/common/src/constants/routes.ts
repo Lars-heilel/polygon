@@ -13,6 +13,7 @@ export const API_ROUTES = {
     root: 'users',
     me: 'users/me',
     byId: (id: string) => `users/${id}`,
+    profile: (id: string) => `users/${id}/profile`,
   },
   chats: {
     root: 'chats',
