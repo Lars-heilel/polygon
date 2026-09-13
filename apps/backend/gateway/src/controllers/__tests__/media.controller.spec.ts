@@ -1,5 +1,7 @@
 import type { ClientProxy } from '@nestjs/microservices';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { CHAT_PATTERNS, MEDIA_PATTERNS, type IStorageProvider } from '@org/core';
+import { ConfirmUploadDto } from '@org/media';
 import { of, throwError } from 'rxjs';
 
 type MediaGatewayControllerConstructor = typeof import('../media.controller').MediaGatewayController;
@@ -274,5 +276,69 @@ describe('MediaGatewayController chat attachment content', () => {
       expect.anything(),
     );
     expect(ctx.storage.getFileStream).toHaveBeenCalledWith('media-bucket', 'file.bin', undefined);
+  });
+});
+
+describe('MediaGatewayController upload validation', () => {
+  let MediaGatewayController: MediaGatewayControllerConstructor;
+
+  beforeAll(() => {
+    ({ MediaGatewayController } = jest.requireActual('../media.controller') as {
+      MediaGatewayController: MediaGatewayControllerConstructor;
+    });
+  });
+
+  function controller() {
+    const mediaClient = { send: jest.fn() };
+    const chatClient = { send: jest.fn() };
+    return {
+      controller: new MediaGatewayController(
+        mediaClient as unknown as ClientProxy,
+        chatClient as unknown as ClientProxy,
+        {} as unknown as IStorageProvider,
+        {} as unknown as ClientProxy,
+      ),
+      mediaClient,
+      chatClient,
+    };
+  }
+
+  it('rejects init-upload for non-members with 403', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValueOnce(of(false));
+    await expect(
+      ctx.controller.initUpload(
+        { originalName: 'a.jpg', mimeType: 'image/jpeg', size: 10, category: 'IMAGE', chatId: 'chat-1' },
+        { sub: 'user-1' } as never,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(ctx.mediaClient.send).not.toHaveBeenCalled();
+  });
+
+  it('forwards a valid init-upload with uploaderId', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValueOnce(of(true));
+    ctx.mediaClient.send.mockReturnValueOnce(of({ fileId: 'file-1', presignedUrl: 'https://x' }));
+    await expect(
+      ctx.controller.initUpload(
+        { originalName: 'a.jpg', mimeType: 'image/jpeg', size: 10, category: 'IMAGE', chatId: 'chat-1' },
+        { sub: 'user-1' } as never,
+      ),
+    ).resolves.toEqual({ fileId: 'file-1', presignedUrl: 'https://x' });
+    expect(ctx.mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.INIT_UPLOAD, {
+      originalName: 'a.jpg',
+      mimeType: 'image/jpeg',
+      size: 10,
+      category: 'IMAGE',
+      chatId: 'chat-1',
+      uploaderId: 'user-1',
+    });
+  });
+
+  it('rejects confirm with a non-uuid fileId at the validation layer', () => {
+    const pipe = new ZodValidationPipe();
+    expect(() =>
+      pipe.transform({ fileId: 'nope' }, { type: 'body', metatype: ConfirmUploadDto }),
+    ).toThrow();
   });
 });

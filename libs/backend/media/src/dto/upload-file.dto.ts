@@ -1,7 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-import { fileCategorySchema } from '@org/common';
+import { initUploadSchema } from '@org/common';
 
 export const MIME_TYPE_MAP: Record<string, RegExp> = {
   AVATAR: /^image\//,
@@ -23,23 +22,20 @@ export const FILE_SIZE_LIMITS: Record<string, number> = {
   CIRCLE: 30 * 1024 * 1024,
 };
 
-export const uploadFileSchema = z.object({
-  originalName: z.string().min(1),
-  mimeType: z.string().min(1),
-  size: z.number().int().positive(),
-  category: fileCategorySchema,
-}).refine(
-  (data) => {
-    const pattern = MIME_TYPE_MAP[data.category];
-    return pattern ? pattern.test(data.mimeType) : true;
-  },
-  { message: 'MIME type does not match the specified category' },
-).refine(
-  (data) => {
-    const limit = FILE_SIZE_LIMITS[data.category];
-    return limit ? data.size <= limit : true;
-  },
-  { message: 'File size exceeds the limit for the specified category' },
-);
+export const uploadFileSchema = initUploadSchema
+  .refine(
+    (data) => {
+      const pattern = MIME_TYPE_MAP[data.category];
+      return pattern ? pattern.test(data.mimeType) : true;
+    },
+    { message: 'MIME type does not match the specified category' },
+  )
+  .refine(
+    (data) => {
+      const limit = FILE_SIZE_LIMITS[data.category];
+      return limit ? data.size <= limit : true;
+    },
+    { message: 'File size exceeds the limit for the specified category' },
+  );
 
 export class UploadFileDto extends createZodDto(uploadFileSchema) {}

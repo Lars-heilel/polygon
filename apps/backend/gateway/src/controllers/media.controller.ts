@@ -15,6 +15,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  UsePipes,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
@@ -22,6 +23,7 @@ import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import { lastValueFrom, Observable } from 'rxjs';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 import { SessionGuard } from '@org/auth';
 import {
@@ -38,6 +40,8 @@ import {
 } from '@org/core';
 import type { IStorageProvider } from '@org/core';
 import type { FileCategory, LinkPreview } from '@org/common';
+import { API_ROUTES } from '@org/common';
+import { ConfirmUploadDto, UploadFileDto } from '@org/media';
 
 @Controller()
 @UseGuards(SessionGuard, ActiveAccountGuard)
@@ -51,9 +55,10 @@ export class MediaGatewayController {
     @Inject(USER_CLIENT_TOKEN) private readonly userClient: ClientProxy,
   ) {}
 
-  @Post('media/init-upload')
+  @Post(API_ROUTES.media.initUpload)
+  @UsePipes(ZodValidationPipe)
   async initUpload(
-    @Body() body: { originalName: string; mimeType: string; size: number; category: FileCategory; chatId?: string },
+    @Body() body: UploadFileDto,
     @CurrentUser() user: JwtPayload,
   ) {
     if (body.chatId) {
@@ -81,14 +86,15 @@ export class MediaGatewayController {
     );
   }
 
-  @Post('media/confirm')
-  async confirmUpload(@Body() body: { fileId: string }) {
+  @Post(API_ROUTES.media.confirm)
+  @UsePipes(ZodValidationPipe)
+  async confirmUpload(@Body() body: ConfirmUploadDto) {
     return this.send(
       this.mediaClient.send(MEDIA_PATTERNS.CONFIRM_UPLOAD, { fileId: body.fileId }),
     );
   }
 
-  @Post('media/upload-avatar')
+  @Post(API_ROUTES.media.uploadAvatar)
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
     @UploadedFile() file: Express.Multer.File,
@@ -132,7 +138,7 @@ export class MediaGatewayController {
     return created;
   }
 
-  @Get('media/files/:fileId/url')
+  @Get(API_ROUTES.media.fileUrl(':fileId'))
   async getFileUrl(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload) {
     const fileInfo = await this.send<{ id: string; chatId: string | null; uploaderId: string | null } | null>(
       this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id: fileId }),
@@ -155,10 +161,10 @@ export class MediaGatewayController {
       }
     }
 
-    return { url: `/api/media/files/${fileId}/content`, expiresIn: null };
+    return { url: `/api/${API_ROUTES.media.fileContent(fileId)}`, expiresIn: null };
   }
 
-  @Get('media/link-preview')
+  @Get(API_ROUTES.media.linkPreview)
   async getLinkPreview(@Query('url') rawUrl?: string): Promise<LinkPreview> {
     if (!rawUrl) {
       throw new HttpException('url query param is required', HttpStatus.BAD_REQUEST);
@@ -197,7 +203,7 @@ export class MediaGatewayController {
     }
   }
 
-  @Get('media/files/:fileId/content')
+  @Get(API_ROUTES.media.fileContent(':fileId'))
   async getFileContent(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload, @Req() req: Request, @Res() res: Response) {
     const fileInfo = await this.getMediaFile(fileId);
 
@@ -217,7 +223,7 @@ export class MediaGatewayController {
     return this.streamMediaFile(fileId, req, res, fileInfo);
   }
 
-  @Get('chats/:chatId/messages/:messageId/attachments/:attachmentId/content')
+  @Get(API_ROUTES.media.attachmentContent(':chatId', ':messageId', ':attachmentId'))
   async getChatAttachmentContent(
     @Param('chatId') chatId: string,
     @Param('messageId') messageId: string,
@@ -340,7 +346,7 @@ export class MediaGatewayController {
     });
   }
 
-  @Delete('media/:id')
+  @Delete(API_ROUTES.media.delete(':id'))
   async delete(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const fileInfo = await this.send<{
       id: string;
@@ -405,7 +411,7 @@ export class MediaGatewayController {
     return { success: true, previousAvatarUrl };
   }
 
-  @Get('media/history')
+  @Get(API_ROUTES.media.history)
   async getHistory(
     @CurrentUser() user: JwtPayload,
     @Query('category') category?: FileCategory,
@@ -415,7 +421,7 @@ export class MediaGatewayController {
     );
   }
 
-  @Get('chats/:chatId/media/history')
+  @Get(API_ROUTES.media.chatHistory(':chatId'))
   async getChatHistory(
     @Param('chatId') chatId: string,
     @CurrentUser() user: JwtPayload,
@@ -435,7 +441,7 @@ export class MediaGatewayController {
     }
 
     return this.send(
-      this.mediaClient.send('media.getChatHistory', {
+      this.mediaClient.send(MEDIA_PATTERNS.GET_CHAT_HISTORY, {
         chatId,
         uploaderId: user.sub,
         category,
@@ -445,7 +451,7 @@ export class MediaGatewayController {
     );
   }
 
-  @Get('users/:userId/avatars')
+  @Get(API_ROUTES.media.userAvatars(':userId'))
   async getUserAvatars(@Param('userId') userId: string) {
     return this.send(
       this.mediaClient.send(MEDIA_PATTERNS.GET_HISTORY, {

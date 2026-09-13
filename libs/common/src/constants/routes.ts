@@ -39,12 +39,16 @@ export const API_ROUTES = {
   media: {
     initUpload: 'media/init-upload',
     confirm: 'media/confirm',
+    uploadAvatar: 'media/upload-avatar',
     linkPreview: 'media/link-preview',
     fileUrl: (fileId: string) => `media/files/${fileId}/url`,
+    fileContent: (fileId: string) => `media/files/${fileId}/content`,
     delete: (id: string) => `media/${id}`,
     history: 'media/history',
     chatHistory: (chatId: string) => `chats/${chatId}/media/history`,
     userAvatars: (userId: string) => `users/${userId}/avatars`,
+    attachmentContent: (chatId: string, messageId: string, attachmentId: string) =>
+      `chats/${chatId}/messages/${messageId}/attachments/${attachmentId}/content`,
   },
   admin: {
     users: 'admin/users',

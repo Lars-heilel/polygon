@@ -30,6 +30,9 @@
       "path": "../../../libs/backend/notification/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/backend/media/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/backend/chat/tsconfig.lib.json"
     },
     {
