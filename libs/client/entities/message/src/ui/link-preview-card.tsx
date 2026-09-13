@@ -7,11 +7,7 @@ interface LinkPreviewCardProps {
   isMine?: boolean;
 }
 
-const LinkPreviewSkeleton = memo(function LinkPreviewSkeleton({
-  isMine,
-}: {
-  isMine: boolean;
-}) {
+const LinkPreviewSkeleton = memo(function LinkPreviewSkeleton({ isMine }: { isMine: boolean }) {
   return (
     <div
       data-testid="link-preview-skeleton"
@@ -82,7 +78,10 @@ export const LinkPreviewCard = memo(function LinkPreviewCard({
       >
         <Text
           size="xs"
-          className={cn('truncate font-medium tracking-wide uppercase', isMine ? 'text-white/70' : 'text-text-muted')}
+          className={cn(
+            'truncate font-medium tracking-wide uppercase',
+            isMine ? 'text-white/70' : 'text-text-muted',
+          )}
         >
           {previewHost}
         </Text>

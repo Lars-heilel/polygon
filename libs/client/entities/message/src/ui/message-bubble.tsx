@@ -25,22 +25,25 @@ export const MessageBubble = memo(function MessageBubble({
   children,
 }: MessageBubbleProps & { children: React.ReactNode }) {
   const hasForwardContext = !!message.forwardContext;
-  const forwardContextName = message.forwardContext?.originalAuthor.displayNameSnapshot
-    ?? message.forwardContext?.originalAuthor.nameSnapshot
-    ?? null;
+  const forwardContextName =
+    message.forwardContext?.originalAuthor.displayNameSnapshot ??
+    message.forwardContext?.originalAuthor.nameSnapshot ??
+    null;
   const originalAuthorName = forwardContextName;
   const forwardedPreview = getForwardedPreview(message);
   const displayCreatedAt = message.forwardContext?.originalMessageCreatedAt ?? message.createdAt;
 
   const mime = message.media?.mime ?? '';
-  const isVisualMedia = (message.type === 'IMAGE' && mime.startsWith('image/'))
-    || (message.media?.category === 'VIDEO' && mime.startsWith('video/'));
+  const isVisualMedia =
+    (message.type === 'IMAGE' && mime.startsWith('image/')) ||
+    (message.media?.category === 'VIDEO' && mime.startsWith('video/'));
   const hasCaption = !!message.text?.trim();
   const overlayMode = isVisualMedia && !hasCaption && !hasForwardContext;
   const isEmojiOnly = !message.media && !hasForwardContext && isEmojiOnlyText(message.text);
-  const actions = overlayMode && isValidElement(actionsSlot)
-    ? cloneElement(actionsSlot, { tone: 'onMedia' } as { tone: 'onMedia' })
-    : actionsSlot;
+  const actions =
+    overlayMode && isValidElement(actionsSlot)
+      ? cloneElement(actionsSlot, { tone: 'onMedia' } as { tone: 'onMedia' })
+      : actionsSlot;
 
   return (
     <div className="group flex min-w-0 items-end gap-2 flex-row">
@@ -51,7 +54,12 @@ export const MessageBubble = memo(function MessageBubble({
           size="sm"
         />
       )}
-      {!isMine && !showAvatar && <span aria-hidden="true" className="w-8 shrink-0" />}
+      {!isMine && !showAvatar && (
+        <span
+          aria-hidden="true"
+          className="w-8 shrink-0"
+        />
+      )}
       <div
         data-testid="message-bubble"
         className={cn(
@@ -79,7 +87,10 @@ export const MessageBubble = memo(function MessageBubble({
               {originalAuthorName}
             </div>
             {forwardedPreview ? (
-              <div data-testid="forwarded-preview" className="mt-0.5 line-clamp-2 break-words text-[12px] opacity-85">
+              <div
+                data-testid="forwarded-preview"
+                className="mt-0.5 line-clamp-2 break-words text-[12px] opacity-85"
+              >
                 {forwardedPreview}
               </div>
             ) : null}
@@ -87,7 +98,10 @@ export const MessageBubble = memo(function MessageBubble({
         ) : null}
         <div className="min-w-0 break-words [overflow-wrap:anywhere]">{children}</div>
         {overlayMode && (showTime || actions) ? (
-          <div data-testid="message-media-overlay" className="msg-media-overlay">
+          <div
+            data-testid="message-media-overlay"
+            className="msg-media-overlay"
+          >
             {message.editedAt ? <span>edited</span> : null}
             {showTime ? <span>{formatTime(displayCreatedAt)}</span> : null}
             {actions ? (

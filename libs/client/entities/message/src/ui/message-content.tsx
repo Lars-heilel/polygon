@@ -10,10 +10,7 @@ interface MessageContentProps {
   isMine: boolean;
 }
 
-export const MessageContent = memo(function MessageContent({
-  text,
-  isMine,
-}: MessageContentProps) {
+export const MessageContent = memo(function MessageContent({ text, isMine }: MessageContentProps) {
   const parts = splitTextByLinks(text);
   const links = extractLinks(text);
   const hasLinks = links.length > 0;
@@ -32,7 +29,11 @@ export const MessageContent = memo(function MessageContent({
           {links[0]}
         </span>
         {links.map((url) => (
-          <LinkPreviewCard key={url} url={url} isMine={isMine} />
+          <LinkPreviewCard
+            key={url}
+            url={url}
+            isMine={isMine}
+          />
         ))}
       </div>
     );
@@ -71,7 +72,11 @@ export const MessageContent = memo(function MessageContent({
       </span>
 
       {links.map((url) => (
-        <LinkPreviewCard key={url} url={url} isMine={isMine} />
+        <LinkPreviewCard
+          key={url}
+          url={url}
+          isMine={isMine}
+        />
       ))}
     </div>
   );

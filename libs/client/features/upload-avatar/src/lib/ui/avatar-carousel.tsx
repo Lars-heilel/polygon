@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import useEmblaCarousel from 'embla-carousel-react';
+
 import { EmptyState, queryClient } from '@org/shared';
+import useEmblaCarousel from 'embla-carousel-react';
+import { createPortal } from 'react-dom';
+
 import { deleteFile, fetchUserAvatarHistory, updateUserProfile } from '../api/upload-avatar.api.js';
-import { useAvatarStore } from '../model/avatar.store.js';
 import { useAvatarHistory } from '../hooks/use-avatar-history.js';
+import { useAvatarStore } from '../model/avatar.store.js';
 
 interface AvatarCarouselProps {
   isOpen: boolean;
@@ -35,7 +37,9 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
     if (!emblaApi) return;
     onSelect();
     emblaApi.on('select', onSelect);
-    return () => { emblaApi.off('select', onSelect); };
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
   }, [emblaApi, onSelect]);
 
   useEffect(() => {
@@ -140,8 +144,18 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
             className="rounded-full p-1.5 text-text-muted transition hover:bg-surface-elevated hover:text-text max-sm:text-white/70 max-sm:hover:bg-white/10 max-sm:hover:text-white"
             aria-label="Close"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -154,10 +168,16 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
         ) : (
           <>
             <div className="relative flex shrink-0 items-center justify-center bg-black px-0 py-0 max-sm:min-h-0 sm:px-8 sm:py-6">
-              <div className="h-full w-full overflow-hidden max-sm:flex max-sm:flex-1 sm:h-auto" ref={emblaRef}>
+              <div
+                className="h-full w-full overflow-hidden max-sm:flex max-sm:flex-1 sm:h-auto"
+                ref={emblaRef}
+              >
                 <div className="flex h-full sm:h-auto">
                   {files.map((file) => (
-                    <div key={file.id} className="flex h-full shrink-0 basis-full items-center justify-center max-sm:p-2 sm:h-auto">
+                    <div
+                      key={file.id}
+                      className="flex h-full shrink-0 basis-full items-center justify-center max-sm:p-2 sm:h-auto"
+                    >
                       <img
                         src={file.url}
                         alt={file.originalName}
@@ -173,8 +193,18 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
                 className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70 sm:left-4 sm:h-11 sm:w-11"
                 aria-label="Previous"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
               <button
@@ -182,8 +212,18 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
                 className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70 sm:right-4 sm:h-11 sm:w-11"
                 aria-label="Next"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </div>
@@ -220,8 +260,18 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
                   aria-label="Delete avatar"
                   className="rounded-xl bg-surface-elevated px-4 py-2.5 text-sm text-text-muted transition hover:bg-danger hover:text-white disabled:opacity-50"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                 </button>
               </div>

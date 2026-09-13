@@ -1,6 +1,14 @@
-import { createContext, useContext, type ButtonHTMLAttributes, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
-import { QueryClient } from '@tanstack/react-query';
+import {
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  type HTMLAttributes,
+  type ReactNode,
+  createContext,
+  useContext,
+} from 'react';
+
 import { jest } from '@jest/globals';
+import { QueryClient } from '@tanstack/react-query';
 
 const ModalCloseContext = createContext<(() => void) | null>(null);
 export const queryClient = new QueryClient();
@@ -23,7 +31,14 @@ export function Button({
   loading?: boolean;
   disabled?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button disabled={disabled || loading} {...props}>{loading ? 'Loading' : children}</button>;
+  return (
+    <button
+      disabled={disabled || loading}
+      {...props}
+    >
+      {loading ? 'Loading' : children}
+    </button>
+  );
 }
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
@@ -43,7 +58,14 @@ export function IconButton({
   icon?: ReactNode;
   label?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button aria-label={label ?? props['aria-label']} {...props}>{icon ?? children}</button>;
+  return (
+    <button
+      aria-label={label ?? props['aria-label']}
+      {...props}
+    >
+      {icon ?? children}
+    </button>
+  );
 }
 
 function DropdownRoot({
@@ -61,8 +83,21 @@ DropdownRoot.Trigger = function DropdownTrigger({ children }: { children: ReactN
   return <>{children}</>;
 };
 
-DropdownRoot.Menu = function DropdownMenu({ isOpen, children }: { isOpen?: boolean; children: ReactNode }) {
-  return <div role="menu" hidden={isOpen === false}>{children}</div>;
+DropdownRoot.Menu = function DropdownMenu({
+  isOpen,
+  children,
+}: {
+  isOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      role="menu"
+      hidden={isOpen === false}
+    >
+      {children}
+    </div>
+  );
 };
 
 DropdownRoot.Item = function DropdownItem({
@@ -75,7 +110,12 @@ DropdownRoot.Item = function DropdownItem({
   onClick?: () => void;
 }) {
   return (
-    <button type="button" role="menuitem" disabled={disabled} onClick={onClick}>
+    <button
+      type="button"
+      role="menuitem"
+      disabled={disabled}
+      onClick={onClick}
+    >
       {children}
     </button>
   );
@@ -96,7 +136,12 @@ export function Badge({ children }: { children: ReactNode }) {
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div data-testid="skeleton" className={className} />;
+  return (
+    <div
+      data-testid="skeleton"
+      className={className}
+    />
+  );
 }
 
 export function EmptyState({ title, description }: { title: string; description?: string }) {
@@ -173,7 +218,13 @@ Modal.Header = function ModalHeader({ title }: { title: string }) {
   return (
     <div>
       <h2>{title}</h2>
-      <button type="button" aria-label="Close" onClick={() => onClose?.()}>Close</button>
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => onClose?.()}
+      >
+        Close
+      </button>
     </div>
   );
 };
@@ -208,7 +259,9 @@ export function formatTime(value: string) {
 
 export function formatAudioTime(value: number) {
   const minutes = Math.floor(value / 60);
-  const seconds = Math.floor(value % 60).toString().padStart(2, '0');
+  const seconds = Math.floor(value % 60)
+    .toString()
+    .padStart(2, '0');
   return `${minutes}:${seconds}`;
 }
 

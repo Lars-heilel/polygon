@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-
 import type { File, FileCategory } from '@org/common';
 import { handlePrismaError } from '@org/core';
 
@@ -58,10 +57,7 @@ export class MediaPrismaRepository implements IMediaRepository {
     return rows.map((row) => this.toFile(row));
   }
 
-  async countByChatId(
-    chatId: string,
-    options?: { category?: FileCategory },
-  ): Promise<number> {
+  async countByChatId(chatId: string, options?: { category?: FileCategory }): Promise<number> {
     return this.prisma.file.count({
       where: {
         chatId,
@@ -145,9 +141,7 @@ export class MediaPrismaRepository implements IMediaRepository {
     }
   }
 
-  async deleteReference(
-    input: DeleteMediaReferenceInput,
-  ): Promise<MediaReferenceResponse | null> {
+  async deleteReference(input: DeleteMediaReferenceInput): Promise<MediaReferenceResponse | null> {
     try {
       const { ownerType, ownerId } = input;
       const reference = await this.prisma.mediaReference.findUnique({

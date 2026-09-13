@@ -51,7 +51,10 @@ export function UserProfileModal({
       >
         <Modal.Header title="Profile" />
 
-        <Modal.Body className="flex min-h-0 flex-1 flex-col p-0" scroll={activeTab !== 'media' || !chatId}>
+        <Modal.Body
+          className="flex min-h-0 flex-1 flex-col p-0"
+          scroll={activeTab !== 'media' || !chatId}
+        >
           {isLoading ? (
             <div
               data-testid="profile-modal-loading"
@@ -63,7 +66,12 @@ export function UserProfileModal({
             </div>
           ) : isError || !profile ? (
             <div className="flex h-full items-center justify-center px-6 py-8">
-              <Text size="sm" color="muted">Failed to load profile</Text>
+              <Text
+                size="sm"
+                color="muted"
+              >
+                Failed to load profile
+              </Text>
             </div>
           ) : activeTab === 'media' && chatId ? (
             <div className="h-full min-h-0 p-4">
@@ -79,16 +87,18 @@ export function UserProfileModal({
                 bio={profile.bio}
                 email={profile.email}
                 onAvatarClick={onAvatarClick ?? undefined}
-                actions={showSendButton ? (
-                  <Button
-                    type="button"
-                    loading={creatingChat}
-                    onClick={handleSendMessage}
-                    className="mt-3 w-full max-w-xs"
-                  >
-                    Send message
-                  </Button>
-                ) : undefined}
+                actions={
+                  showSendButton ? (
+                    <Button
+                      type="button"
+                      loading={creatingChat}
+                      onClick={handleSendMessage}
+                      className="mt-3 w-full max-w-xs"
+                    >
+                      Send message
+                    </Button>
+                  ) : undefined
+                }
               />
             </div>
           )}
@@ -123,7 +133,6 @@ export function UserProfileModal({
           </Modal.Footer>
         )}
       </Modal>
-
     </>
   );
 }

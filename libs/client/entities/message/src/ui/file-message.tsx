@@ -1,6 +1,13 @@
 import { memo, useEffect, useRef, useState } from 'react';
 
-import { cn, formatAudioTime, MediaFrame, MediaViewer, type MediaViewerItem, useAudioTrack } from '@org/shared';
+import {
+  MediaFrame,
+  MediaViewer,
+  type MediaViewerItem,
+  cn,
+  formatAudioTime,
+  useAudioTrack,
+} from '@org/shared';
 import type { AudioTrack } from '@org/shared';
 import type WaveSurfer from 'wavesurfer.js';
 
@@ -61,7 +68,12 @@ export const FileMessage = memo(function FileMessage({
   const mime = message.media?.mime ?? null;
 
   if (!getMessageMediaUrl(message)) {
-    return <PendingFileMessage message={message} isMine={isMine} />;
+    return (
+      <PendingFileMessage
+        message={message}
+        isMine={isMine}
+      />
+    );
   }
 
   if (category === 'VOICE') {
@@ -119,7 +131,10 @@ export const FileMessage = memo(function FileMessage({
   );
 });
 
-const PendingFileMessage = memo(function PendingFileMessage({ message, isMine }: Pick<FileMessageProps, 'message' | 'isMine'>) {
+const PendingFileMessage = memo(function PendingFileMessage({
+  message,
+  isMine,
+}: Pick<FileMessageProps, 'message' | 'isMine'>) {
   const fileName = message.media?.fileName ?? null;
   const fileSize = message.media?.size ?? null;
 
@@ -147,7 +162,11 @@ const PendingFileMessage = memo(function PendingFileMessage({ message, isMine }:
           {fileName ?? 'File'}
         </p>
         <p className={cn('text-xs', isMine ? 'text-white/70' : 'text-text-muted')}>
-          {message.localStatus === 'error' ? 'Failed to send' : fileSize ? formatFileSize(fileSize) : ''}
+          {message.localStatus === 'error'
+            ? 'Failed to send'
+            : fileSize
+              ? formatFileSize(fileSize)
+              : ''}
         </p>
       </div>
     </div>
@@ -157,13 +176,15 @@ const PendingFileMessage = memo(function PendingFileMessage({ message, isMine }:
 const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const imageUrl = getMessageMediaUrl(message);
-  const viewerItems: MediaViewerItem[] = [{
-    id: message.id,
-    type: 'image',
-    src: imageUrl,
-    alt: message.media?.fileName ?? 'Image',
-    label: message.media?.fileName ?? 'Image',
-  }];
+  const viewerItems: MediaViewerItem[] = [
+    {
+      id: message.id,
+      type: 'image',
+      src: imageUrl,
+      alt: message.media?.fileName ?? 'Image',
+      label: message.media?.fileName ?? 'Image',
+    },
+  ];
 
   const mediaDimensions = getMediaDimensions(message);
 
@@ -219,13 +240,15 @@ const CircleMessage = memo(function CircleMessage({ message }: FileMessageProps)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(true);
   const videoUrl = getMessageMediaUrl(message);
-  const viewerItems: MediaViewerItem[] = [{
-    id: message.id,
-    type: 'video',
-    src: videoUrl,
-    alt: message.media?.fileName ?? 'Circle video',
-    label: message.media?.fileName ?? 'Circle video',
-  }];
+  const viewerItems: MediaViewerItem[] = [
+    {
+      id: message.id,
+      type: 'video',
+      src: videoUrl,
+      alt: message.media?.fileName ?? 'Circle video',
+      label: message.media?.fileName ?? 'Circle video',
+    },
+  ];
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -323,13 +346,15 @@ const VideoMessage = memo(function VideoMessage({ message }: FileMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const videoUrl = getMessageMediaUrl(message);
   const mediaDimensions = getMediaDimensions(message);
-  const viewerItems: MediaViewerItem[] = [{
-    id: message.id,
-    type: 'video',
-    src: videoUrl,
-    alt: message.media?.fileName ?? 'Video',
-    label: message.media?.fileName ?? 'Video',
-  }];
+  const viewerItems: MediaViewerItem[] = [
+    {
+      id: message.id,
+      type: 'video',
+      src: videoUrl,
+      alt: message.media?.fileName ?? 'Video',
+      label: message.media?.fileName ?? 'Video',
+    },
+  ];
 
   return (
     <>
@@ -464,23 +489,31 @@ const AudioFileMessage = memo(function AudioFileMessage({
         )}
       >
         {player.isPlaying ? (
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-4 w-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
           </svg>
         ) : (
-          <svg className="ml-0.5 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="ml-0.5 h-5 w-5"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-sm font-medium text-text')}>
-          {track.title}
-        </p>
+        <p className={cn('truncate text-sm font-medium text-text')}>{track.title}</p>
         <p className={cn('mt-1 truncate text-xs text-text-muted')}>
           {player.duration > 0
             ? `${formatAudioTime(player.currentTime)} / ${formatAudioTime(player.duration)}`
-            : message.media?.size ? formatFileSize(message.media.size) : 'Audio file'}
+            : message.media?.size
+              ? formatFileSize(message.media.size)
+              : 'Audio file'}
         </p>
       </div>
     </div>
@@ -516,12 +549,18 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
       const [pr, pg, pb] = getThemePrimaryRgb();
       const ws = WaveSurferMod.default.create({
         container: waveformRef.current,
-        waveColor: variant === 'audio'
-          ? `rgba(${pr},${pg},${pb},0.48)`
-          : isMine ? 'rgba(255,255,255,0.34)' : `rgba(${pr},${pg},${pb},0.48)`,
-        progressColor: variant === 'audio'
-          ? `rgb(${pr},${pg},${pb})`
-          : isMine ? 'rgba(255,255,255,0.9)' : `rgb(${pr},${pg},${pb})`,
+        waveColor:
+          variant === 'audio'
+            ? `rgba(${pr},${pg},${pb},0.48)`
+            : isMine
+              ? 'rgba(255,255,255,0.34)'
+              : `rgba(${pr},${pg},${pb},0.48)`,
+        progressColor:
+          variant === 'audio'
+            ? `rgb(${pr},${pg},${pb})`
+            : isMine
+              ? 'rgba(255,255,255,0.9)'
+              : `rgb(${pr},${pg},${pb})`,
         barWidth: variant === 'voice' ? 2 : 3,
         barGap: 1.5,
         barRadius: 999,
@@ -587,7 +626,9 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
         variant === 'voice' ? 'min-h-[88px]' : 'min-h-[56px]',
         variant === 'audio'
           ? 'border-border bg-surface'
-          : isMine ? 'border-white/20 bg-white/10' : 'border-border bg-surface',
+          : isMine
+            ? 'border-white/20 bg-white/10'
+            : 'border-border bg-surface',
       )}
     >
       <button
@@ -602,18 +643,31 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
         )}
       >
         {isPlaying ? (
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-4 w-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
           </svg>
         ) : (
-          <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="ml-0.5 h-4 w-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
       </button>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={cn('w-8 text-[11px] font-medium tabular-nums', variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted')}>
+          <span
+            className={cn(
+              'w-8 text-[11px] font-medium tabular-nums',
+              variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted',
+            )}
+          >
             {formatAudioTime(displayCurrentTime)}
           </span>
           <div
@@ -639,7 +693,12 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
               className="sr-only"
             />
           </div>
-          <span className={cn('w-8 text-right text-[11px] font-medium tabular-nums', variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted')}>
+          <span
+            className={cn(
+              'w-8 text-right text-[11px] font-medium tabular-nums',
+              variant !== 'audio' && isMine ? 'text-white/70' : 'text-text-muted',
+            )}
+          >
             {formatAudioTime(displayDuration)}
           </span>
         </div>
