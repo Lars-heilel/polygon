@@ -13,24 +13,24 @@ export class PushController {
 
   @EventPattern(NOTIFICATION_EVENTS.PUSH_SUBSCRIBE)
   async subscribe(@Payload() payload: { userId: string; subscription: PushSubscriptionData }): Promise<void> {
-    this.logger.log(`RPC [PUSH_SUBSCRIBE]: userId=${payload.userId}, endpoint=${payload.subscription.endpoint.slice(0, 50)}...`);
+    this.logger.log({ eventType: 'push_subscribe_request' });
     await this.pushService.subscribe(payload.userId, payload.subscription);
-    this.logger.log(`RPC [PUSH_SUBSCRIBE]: subscription saved for userId=${payload.userId}`);
+    this.logger.log({ eventType: 'push_subscribe_done' });
   }
 
   @EventPattern(NOTIFICATION_EVENTS.PUSH_UNSUBSCRIBE)
   async unsubscribe(@Payload() payload: { userId: string; endpoint: string }): Promise<void> {
-    this.logger.log(`RPC [PUSH_UNSUBSCRIBE]: userId=${payload.userId}, endpoint=${payload.endpoint.slice(0, 50)}...`);
+    this.logger.log({ eventType: 'push_unsubscribe_request' });
     await this.pushService.unsubscribe(payload.userId, payload.endpoint);
+    this.logger.log({ eventType: 'push_unsubscribe_done' });
   }
 
   @EventPattern(NOTIFICATION_EVENTS.SEND_PUSH)
   async sendPush(@Payload() payload: PushPayload): Promise<void> {
-    this.logger.log(`RPC [SEND_PUSH]: userId=${payload.userId}, chatId=${(payload.data as Record<string, string> | undefined)?.chatId ?? 'unknown'}`);
-    this.logger.debug({ payload }, 'RPC [SEND_PUSH]: full payload');
+    this.logger.log({ eventType: 'push_send_request' });
     const results = await this.pushService.send(payload.userId, payload);
     const sent = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
-    this.logger.log(`RPC [SEND_PUSH]: done for userId=${payload.userId} — sent=${sent}, failed=${failed}`);
+    this.logger.log({ eventType: 'push_send_done', sent, failed });
   }
 }
