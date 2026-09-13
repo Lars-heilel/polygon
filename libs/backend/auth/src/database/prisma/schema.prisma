@@ -16,52 +16,57 @@ enum Role {
 }
 
 model Credentials {
-  id             String         @id @default(uuid()) @map("id")
-  email          String         @unique @map("email")
+  id             String         @id @default(uuid(7)) @db.Uuid @map("id")
+  email          String         @unique @db.VarChar(254) @map("email")
   role           Role           @default(USER) @map("role")
-  passwordHash   String?        @map("password_hash")
+  passwordHash   String?        @db.VarChar(255) @map("password_hash")
   isVerified     Boolean        @default(false) @map("is_verified")
-  lockedAt       DateTime?      @map("locked_at")
-  lockedUntil    DateTime?      @map("locked_until")
+  lockedAt       DateTime?      @db.Timestamptz(3) @map("locked_at")
+  lockedUntil    DateTime?      @db.Timestamptz(3) @map("locked_until")
   isBanned       Boolean        @default(false) @map("is_banned")
-  bannedUntil    DateTime?      @map("banned_until")
-  banReason      String?        @map("ban_reason")
-  bannedAt       DateTime?      @map("banned_at")
-  bannedBy       String?        @map("banned_by")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  bannedUntil    DateTime?      @db.Timestamptz(3) @map("banned_until")
+  banReason      String?        @db.VarChar(255) @map("ban_reason")
+  bannedAt       DateTime?      @db.Timestamptz(3) @map("banned_at")
+  bannedBy       String?        @db.Uuid @map("banned_by")
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(3) @map("updated_at")
   refreshTokens  Session[]
   oauthAccounts  OAuthAccount[]
+
+  @@map("credentials")
 }
 
 model OAuthAccount {
-  id            String      @id @default(uuid()) @map("id")
-  provider      String      @map("provider")
-  providerId    String      @map("provider_id")
+  id            String      @id @default(uuid(7)) @db.Uuid @map("id")
+  provider      String      @db.VarChar(32) @map("provider")
+  providerId    String      @db.VarChar(128) @map("provider_id")
   credentials   Credentials @relation(fields: [credentialsId], references: [id], onDelete: Cascade)
-  credentialsId String      @map("credentials_id")
-  createdAt     DateTime    @default(now()) @map("created_at")
+  credentialsId String      @db.Uuid @map("credentials_id")
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3) @map("created_at")
 
   @@unique([provider, providerId])
   @@index([credentialsId])
+  @@map("oauth_accounts")
 }
 
 model Session {
-  id            String    @id @default(uuid()) 
-  tokenHash     String    @unique           
-  credentialsId String
-  expiresAt     DateTime     
-  revokedAt     DateTime?
-  lastActiveAt  DateTime?
-  ip            String?
-  country       String?
-  os            String?
-  browser       String?
-  device        String?
-  userAgent     String?
-  createdAt     DateTime  @default(now())
+  id            String    @id @default(uuid(7)) @db.Uuid @map("id")
+  tokenHash     String    @unique @db.Char(64) @map("token_hash")
+  credentialsId String    @db.Uuid @map("credentials_id")
+  expiresAt     DateTime  @db.Timestamptz(3) @map("expires_at")
+  revokedAt     DateTime? @db.Timestamptz(3) @map("revoked_at")
+  lastActiveAt  DateTime? @db.Timestamptz(3) @map("last_active_at")
+  ip            String?   @db.VarChar(45) @map("ip")
+  country       String?   @db.VarChar(2) @map("country")
+  os            String?   @db.VarChar(64) @map("os")
+  browser       String?   @db.VarChar(64) @map("browser")
+  device        String?   @db.VarChar(64) @map("device")
+  userAgent     String?   @db.VarChar(512) @map("user_agent")
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")
 
   credentials   Credentials @relation(fields: [credentialsId], references: [id], onDelete: Cascade)
 
   @@index([credentialsId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
