@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+import { API_ROUTES } from '@org/common';
 import { authedFetch, useLogger } from '@org/shared';
 
-const VAPID_KEY_ENDPOINT = 'notifications/push/vapid-key';
-const SUBSCRIBE_ENDPOINT = 'notifications/push/subscribe';
-const UNSUBSCRIBE_ENDPOINT = 'notifications/push/unsubscribe';
+const VAPID_KEY_ENDPOINT = API_ROUTES.notifications.vapidKey;
+const SUBSCRIBE_ENDPOINT = API_ROUTES.notifications.pushSubscribe;
+const UNSUBSCRIBE_ENDPOINT = API_ROUTES.notifications.pushUnsubscribe;
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
