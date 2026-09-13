@@ -20,13 +20,6 @@
     "tags": [
       "scope:backend",
       "type:business"
-    ],
-    "targets": {
-      "test": {
-        "options": {
-          "passWithNoTests": true
-        }
-      }
-    }
+    ]
   }
 }
