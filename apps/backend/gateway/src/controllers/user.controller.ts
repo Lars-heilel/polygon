@@ -12,9 +12,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import {
-  SessionGuard,
-} from '@org/auth';
+import { SessionGuard } from '@org/auth';
 import { API_ROUTES } from '@org/common';
 import {
   AUTH_CLIENT_TOKEN,
@@ -73,9 +71,14 @@ export class UserGatewayController {
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getProfile(@Param('id') id: string) {
-    const user = await this.send<{ id: string; email: string; name: string; displayName: string | null; avatarUrl: string | null; bio: string | null }>(
-      this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }),
-    );
+    const user = await this.send<{
+      id: string;
+      email: string;
+      name: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+      bio: string | null;
+    }>(this.userClient.send(USER_PATTERNS.GET_BY_ID, { id }));
     const role = await this.send<'CREATOR' | 'ADMIN' | 'MODERATOR' | 'USER'>(
       this.authClient.send(AUTH_PATTERNS.GET_ROLE_BY_ID, { id }),
     );
@@ -123,7 +126,10 @@ export class UserGatewayController {
       const rpcErr = err as Record<string, unknown>;
       const response = rpcErr.response as Record<string, unknown> | undefined;
       const message = (rpcErr.message ?? response?.message ?? 'Internal server error') as string;
-      const rawStatus = (rpcErr.statusCode ?? rpcErr.status ?? response?.statusCode ?? 500) as number;
+      const rawStatus = (rpcErr.statusCode ??
+        rpcErr.status ??
+        response?.statusCode ??
+        500) as number;
       const status = typeof rawStatus === 'number' ? rawStatus : 500;
 
       this.logger.warn(`RPC failed [${status}]`);

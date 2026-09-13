@@ -2,11 +2,6 @@ import { HttpException } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
-import cookieParser from 'cookie-parser';
-import { ZodValidationPipe } from 'nestjs-zod';
-import request from 'supertest';
-import { of, throwError } from 'rxjs';
-
 import { SessionGuard } from '@org/auth';
 import {
   AUTH_CLIENT_TOKEN,
@@ -19,6 +14,10 @@ import {
   USER_CLIENT_TOKEN,
 } from '@org/core';
 import { UpdateUserDto } from '@org/user';
+import cookieParser from 'cookie-parser';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { of, throwError } from 'rxjs';
+import request from 'supertest';
 
 import { UserGatewayController } from '../user.controller';
 
@@ -64,7 +63,9 @@ describe('UserGatewayController', () => {
     expect(thrown).toBeInstanceOf(HttpException);
     expect((thrown as HttpException).getStatus()).toBe(404);
 
-    expect(searchClient.send).toHaveBeenCalledWith(SEARCH_PATTERNS.GET_USER_BY_ID, { id: 'user-1' });
+    expect(searchClient.send).toHaveBeenCalledWith(SEARCH_PATTERNS.GET_USER_BY_ID, {
+      id: 'user-1',
+    });
     const diagnosticPayload = JSON.stringify([
       logger.debug.mock.calls,
       logger.error.mock.calls,
@@ -128,10 +129,7 @@ describe('UserGatewayController validation', () => {
   it('rejects an oversized displayName at the validation layer', () => {
     const pipe = new ZodValidationPipe();
     expect(() =>
-      pipe.transform(
-        { displayName: 'd'.repeat(65) },
-        { type: 'body', metatype: UpdateUserDto },
-      ),
+      pipe.transform({ displayName: 'd'.repeat(65) }, { type: 'body', metatype: UpdateUserDto }),
     ).toThrow();
   });
 });

@@ -1,9 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 
+import { mockUserInput, mockUserReturn } from '../../__tests__/fixtures/user.fixtures';
 import { IUserRepository } from '../../interfaces/user.interface';
 import { UserService } from '../user.service';
-import { mockUserInput, mockUserReturn } from '../../__tests__/fixtures/user.fixtures';
 
 describe('UserService (unit)', () => {
   let service: UserService;

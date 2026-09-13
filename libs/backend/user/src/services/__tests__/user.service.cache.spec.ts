@@ -1,7 +1,7 @@
 import { mock } from 'jest-mock-extended';
 
-import type { IUserRepository } from '../../interfaces/user.interface';
 import { mockUserReturn } from '../../__tests__/fixtures/user.fixtures';
+import type { IUserRepository } from '../../interfaces/user.interface';
 import { UserService } from '../user.service';
 
 describe('UserService cache', () => {
@@ -29,12 +29,7 @@ describe('UserService cache', () => {
     redisMock.get.mockResolvedValue(null);
     repoMock.findById.mockResolvedValue(mockUserReturn);
     await service.getById('user-1');
-    expect(redisMock.set).toHaveBeenCalledWith(
-      'user:profile:user-1',
-      expect.any(String),
-      'EX',
-      60,
-    );
+    expect(redisMock.set).toHaveBeenCalledWith('user:profile:user-1', expect.any(String), 'EX', 60);
     repoMock.update.mockResolvedValue(mockUserReturn);
     await service.update('user-1', { displayName: 'New' });
     expect(redisMock.del).toHaveBeenCalledWith('user:profile:user-1');

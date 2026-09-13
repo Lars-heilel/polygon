@@ -1,3 +1,6 @@
+import type { IUserService } from '../../interfaces/user.interface';
+import { UserController } from '../user.controller';
+
 jest.mock('@org/core', () => ({
   USER_PATTERNS: {
     CREATE: 'user.create',
@@ -13,9 +16,6 @@ jest.mock('@org/core', () => ({
   },
   USER_SERVICE_TOKEN: Symbol('USER_SERVICE'),
 }));
-
-import type { IUserService } from '../../interfaces/user.interface';
-import { UserController } from '../user.controller';
 
 describe('UserController', () => {
   let userService: {

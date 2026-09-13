@@ -42,8 +42,7 @@ describe('user contract limits', () => {
 
   it('rejects an avatarUrl longer than 2048 characters', () => {
     expect(
-      updateUserSchema.safeParse({ avatarUrl: `https://example.test/${'a'.repeat(2048)}` })
-        .success,
+      updateUserSchema.safeParse({ avatarUrl: `https://example.test/${'a'.repeat(2048)}` }).success,
     ).toBe(false);
   });
 
