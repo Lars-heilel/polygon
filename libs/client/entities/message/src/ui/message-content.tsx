@@ -25,6 +25,12 @@ export const MessageContent = memo(function MessageContent({
         data-testid="message-content"
         className="w-full min-w-0 max-w-80"
       >
+        <span
+          data-testid="message-text"
+          className="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+        >
+          {links[0]}
+        </span>
         {links.map((url) => (
           <LinkPreviewCard key={url} url={url} isMine={isMine} />
         ))}

@@ -99,6 +99,15 @@ export function Skeleton({ className }: { className?: string }) {
   return <div data-testid="skeleton" className={className} />;
 }
 
+export function EmptyState({ title, description }: { title: string; description?: string }) {
+  return (
+    <div data-testid="empty-state">
+      <p>{title}</p>
+      {description ? <p>{description}</p> : null}
+    </div>
+  );
+}
+
 export function ErrorBoundary({ children }: { children: ReactNode }) {
   return children;
 }

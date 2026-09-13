@@ -77,6 +77,7 @@ export function UserProfileModal({
                 handleName={profile.name}
                 role={profile.role}
                 bio={profile.bio}
+                email={profile.email}
                 onAvatarClick={onAvatarClick ?? undefined}
                 actions={showSendButton ? (
                   <Button

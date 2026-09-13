@@ -130,7 +130,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
       onClick={onClose}
     >
       <div
-        className="relative mx-2 flex h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface text-text shadow-[var(--shadow-popover)] max-sm:mx-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-screen max-sm:rounded-none max-sm:border-0 sm:mx-4 sm:w-[min(96vw,56rem)] sm:max-h-[calc(100dvh-2rem)]"
+        className="relative mx-2 flex h-auto max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-surface text-text shadow-[var(--shadow-popover)] max-sm:mx-0 max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-screen max-sm:rounded-none max-sm:border-0 sm:mx-4 sm:w-[min(96vw,56rem)] sm:max-h-[calc(100dvh-2rem)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4 max-sm:bg-black max-sm:border-white/10 max-sm:text-white">
@@ -153,7 +153,7 @@ export function AvatarCarousel({ isOpen, onClose, userId, readOnly = false }: Av
           />
         ) : (
           <>
-            <div className="relative flex flex-1 items-center justify-center bg-black px-0 py-0 max-sm:min-h-0 sm:shrink-0 sm:px-8 sm:py-6">
+            <div className="relative flex shrink-0 items-center justify-center bg-black px-0 py-0 max-sm:min-h-0 sm:px-8 sm:py-6">
               <div className="h-full w-full overflow-hidden max-sm:flex max-sm:flex-1 sm:h-auto" ref={emblaRef}>
                 <div className="flex h-full sm:h-auto">
                   {files.map((file) => (

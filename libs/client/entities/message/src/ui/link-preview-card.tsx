@@ -60,7 +60,7 @@ export const LinkPreviewCard = memo(function LinkPreviewCard({
       target="_blank"
       rel="noreferrer"
       className={cn(
-        'mt-2 block w-full max-w-80 overflow-hidden rounded-lg border transition-colors',
+        'mt-2 block max-h-[236px] w-full max-w-80 overflow-hidden rounded-lg border transition-colors',
         isMine
           ? 'border-white/20 bg-black/15 hover:bg-black/25'
           : 'border-border bg-surface-elevated hover:bg-surface-muted',
@@ -71,14 +71,14 @@ export const LinkPreviewCard = memo(function LinkPreviewCard({
           data-testid="link-preview-image"
           src={preview.imageUrl}
           alt={title ?? previewHost}
-          className="aspect-[16/9] w-full bg-black/20 object-cover"
+          className="h-28 w-full bg-black/20 object-cover"
           loading="lazy"
           referrerPolicy="no-referrer"
         />
       )}
       <div
         data-testid="link-preview-body"
-        className="flex flex-col justify-center gap-0.5 px-3 py-2.5"
+        className="flex min-h-[96px] flex-col justify-center gap-0.5 px-3 py-2.5"
       >
         <Text
           size="xs"

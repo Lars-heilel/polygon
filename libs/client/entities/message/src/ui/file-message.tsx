@@ -203,11 +203,14 @@ const ImageMessage = memo(function ImageMessage({ message }: FileMessageProps) {
 
 const VoiceMessage = memo(function VoiceMessage({ message, isMine }: FileMessageProps) {
   return (
-    <WaveformAudioMessage
-      variant="voice"
-      url={getMessageMediaUrl(message)}
-      isMine={isMine}
-    />
+    <>
+      <span className="sr-only">Voice message</span>
+      <WaveformAudioMessage
+        variant="voice"
+        url={getMessageMediaUrl(message)}
+        isMine={isMine}
+      />
+    </>
   );
 });
 
@@ -431,7 +434,6 @@ const FileAttachmentMessage = memo(function FileAttachmentMessage({
 
 const AudioFileMessage = memo(function AudioFileMessage({
   message,
-  isMine,
   audioQueue,
   audioQueueIndex,
 }: FileMessageProps) {
@@ -450,10 +452,7 @@ const AudioFileMessage = memo(function AudioFileMessage({
     <div
       data-testid="audio-file-message"
       className={cn(
-        'flex min-h-[60px] w-[min(100%,300px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
-        isMine
-          ? 'border-white/20 bg-white/10 text-white'
-          : 'border-border bg-surface text-text',
+        'flex min-h-[60px] w-[min(100%,300px)] min-w-0 items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2 text-text shadow-sm',
       )}
     >
       <button
@@ -461,8 +460,7 @@ const AudioFileMessage = memo(function AudioFileMessage({
         aria-label={player.isPlaying ? 'Pause audio' : 'Play audio'}
         onClick={player.toggle}
         className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors',
-          isMine ? 'bg-white text-primary hover:bg-white/85' : 'bg-primary text-white hover:bg-primary-hover',
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover',
         )}
       >
         {player.isPlaying ? (
@@ -476,10 +474,10 @@ const AudioFileMessage = memo(function AudioFileMessage({
         )}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-sm font-medium', isMine ? 'text-white' : 'text-text')}>
+        <p className={cn('truncate text-sm font-medium text-text')}>
           {track.title}
         </p>
-        <p className={cn('mt-1 truncate text-xs', isMine ? 'text-white/70' : 'text-text-muted')}>
+        <p className={cn('mt-1 truncate text-xs text-text-muted')}>
           {player.duration > 0
             ? `${formatAudioTime(player.currentTime)} / ${formatAudioTime(player.duration)}`
             : message.media?.size ? formatFileSize(message.media.size) : 'Audio file'}
@@ -585,7 +583,8 @@ const WaveformAudioMessage = memo(function WaveformAudioMessage({
     <div
       data-testid={`${variant}-waveform-message`}
       className={cn(
-        'flex min-h-[56px] w-[clamp(220px,64vw,360px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        'flex w-[clamp(220px,64vw,360px)] min-w-0 items-center gap-3 rounded-xl border px-3 py-2 shadow-sm',
+        variant === 'voice' ? 'min-h-[88px]' : 'min-h-[56px]',
         variant === 'audio'
           ? 'border-border bg-surface'
           : isMine ? 'border-white/20 bg-white/10' : 'border-border bg-surface',
