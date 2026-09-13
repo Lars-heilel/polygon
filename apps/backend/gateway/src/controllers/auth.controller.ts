@@ -39,6 +39,7 @@ import {
 } from '@org/auth';
 import { LoginDto, RegisterDto, ResendVerificationDto } from '@org/auth';
 import { type CredentialsPayload, type TokenPair } from '@org/common';
+import { API_ROUTES } from '@org/common';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_PATTERNS,
@@ -101,7 +102,7 @@ const sessionResponseSchema = {
 };
 
 @ApiTags('auth')
-@Controller('auth')
+@Controller(API_ROUTES.auth.root)
 export class AuthGatewayController {
   private readonly logger = new Logger(AuthGatewayController.name);
 
