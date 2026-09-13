@@ -21,9 +21,9 @@ describe('userSearchResultSchema', () => {
   });
 
   it('rejects a displayName longer than 64 characters', () => {
-    expect(
-      userSearchResultSchema.safeParse({ ...base, displayName: 'd'.repeat(65) }).success,
-    ).toBe(false);
+    expect(userSearchResultSchema.safeParse({ ...base, displayName: 'd'.repeat(65) }).success).toBe(
+      false,
+    );
   });
 
   it('rejects an avatarUrl longer than 2048 characters', () => {

@@ -1,12 +1,12 @@
 import type { UserSearchResult } from '@org/common';
 import type { ISearchProvider } from '@org/core';
 
+import { SearchService } from '../search.service';
+
 jest.mock('@org/core', () => ({
   SEARCH_PROVIDER_TOKEN: Symbol('SEARCH_PROVIDER'),
   REDIS_CLIENT: 'REDIS_CLIENT',
 }));
-
-import { SearchService } from '../search.service';
 
 const user = (overrides: Partial<UserSearchResult> = {}): UserSearchResult => ({
   id: '0197f96c-b278-7f64-a32f-d44a57f6726b',

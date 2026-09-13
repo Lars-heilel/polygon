@@ -1,7 +1,6 @@
 import type { ClientProxy } from '@nestjs/microservices';
-import { of, throwError } from 'rxjs';
-
 import { SEARCH_PATTERNS } from '@org/core';
+import { of, throwError } from 'rxjs';
 
 import { SearchGatewayController } from '../search.controller';
 
@@ -25,9 +24,7 @@ describe('SearchGatewayController', () => {
 
   it('forwards a validated query to search.users', async () => {
     searchClient.send.mockReturnValue(of([]));
-    await expect(controller.searchUsers({ q: 'alice', limit: 20, offset: 0 })).resolves.toEqual(
-      [],
-    );
+    await expect(controller.searchUsers({ q: 'alice', limit: 20, offset: 0 })).resolves.toEqual([]);
     expect(searchClient.send).toHaveBeenCalledWith(SEARCH_PATTERNS.SEARCH_USERS, {
       q: 'alice',
       limit: 20,

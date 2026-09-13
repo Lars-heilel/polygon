@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import type { UserSearchResult } from '@org/common';
 import type { ISearchProvider } from '@org/core';
 import { REDIS_CLIENT, SEARCH_PROVIDER_TOKEN } from '@org/core';
 import type Redis from 'ioredis';
+import { randomUUID } from 'node:crypto';
 
 import type { IUserSearchService } from '../interfaces/search.interface';
 

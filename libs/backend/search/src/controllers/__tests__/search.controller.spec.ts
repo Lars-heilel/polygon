@@ -1,5 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 
+import type { SearchService } from '../../services/search.service';
+import { SearchController } from '../search.controller';
+
 jest.mock('@org/core', () => ({
   SEARCH_PATTERNS: {
     SEARCH_USERS: 'search.users',
@@ -12,9 +15,6 @@ jest.mock('@org/core', () => ({
     DELETED: 'user.deleted',
   },
 }));
-
-import type { SearchService } from '../../services/search.service';
-import { SearchController } from '../search.controller';
 
 describe('SearchController', () => {
   let searchService: {
