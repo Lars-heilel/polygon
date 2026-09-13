@@ -3,6 +3,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
+import { ZodValidationPipe } from 'nestjs-zod';
 import request from 'supertest';
 import { of, throwError } from 'rxjs';
 
@@ -17,6 +18,7 @@ import {
   TokenService,
   USER_CLIENT_TOKEN,
 } from '@org/core';
+import { UpdateUserDto } from '@org/user';
 
 import { UserGatewayController } from '../user.controller';
 
@@ -119,5 +121,17 @@ describe('UserGatewayController', () => {
     } finally {
       await app.close();
     }
+  });
+});
+
+describe('UserGatewayController validation', () => {
+  it('rejects an oversized displayName at the validation layer', () => {
+    const pipe = new ZodValidationPipe();
+    expect(() =>
+      pipe.transform(
+        { displayName: 'd'.repeat(65) },
+        { type: 'body', metatype: UpdateUserDto },
+      ),
+    ).toThrow();
   });
 });

@@ -8,12 +8,14 @@ import {
   Param,
   Patch,
   UseGuards,
+  UsePipes,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   SessionGuard,
 } from '@org/auth';
+import { API_ROUTES } from '@org/common';
 import {
   AUTH_CLIENT_TOKEN,
   AUTH_PATTERNS,
@@ -27,11 +29,12 @@ import {
   USER_PATTERNS,
 } from '@org/core';
 import { UpdateUserDto } from '@org/user';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
 
 @ApiTags('users')
 @ApiCookieAuth('access_token')
-@Controller('users')
+@Controller(API_ROUTES.users.root)
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class UserGatewayController {
   private readonly logger = new Logger(UserGatewayController.name);
@@ -92,6 +95,7 @@ export class UserGatewayController {
   @ApiResponse({ status: 200, description: 'Updated user profile' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @UsePipes(ZodValidationPipe)
   async updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto) {
     const updated = await this.send(
       this.userClient.send(USER_PATTERNS.UPDATE, { id: user.sub, dto }),
