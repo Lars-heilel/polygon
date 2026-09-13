@@ -15,4 +15,5 @@ export const MEDIA_PATTERNS = {
   CREATE_REFERENCE: 'media.references.create',
   DELETE_REFERENCE: 'media.references.delete',
   COUNT_REFERENCES: 'media.references.count',
+  GC_STALE: 'media.gcStale',
 } as const;

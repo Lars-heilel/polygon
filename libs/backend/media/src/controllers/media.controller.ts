@@ -20,7 +20,7 @@ export class MediaController {
     @Inject(MEDIA_SERVICE_TOKEN) private readonly mediaService: IMediaService,
   ) {}
 
-  @MessagePattern('media.initUpload')
+  @MessagePattern(MEDIA_PATTERNS.INIT_UPLOAD)
   async initUpload(
     @Payload()
     payload: { originalName: string; mimeType: string; size: number; category: FileCategory; chatId?: string; uploaderId?: string },
@@ -37,7 +37,7 @@ export class MediaController {
     );
   }
 
-  @MessagePattern('media.confirmUpload')
+  @MessagePattern(MEDIA_PATTERNS.CONFIRM_UPLOAD)
   async confirmUpload(@Payload() { fileId }: { fileId: string }): Promise<FileResponseDto> {
     return this.mediaService.confirmUpload(fileId);
   }
@@ -47,17 +47,17 @@ export class MediaController {
     return this.mediaService.getFileContent(id);
   }
 
-  @MessagePattern('media.getById')
+  @MessagePattern(MEDIA_PATTERNS.GET_BY_ID)
   async getById(@Payload() { id }: { id: string }): Promise<FileResponseDto | null> {
     return this.mediaService.getById(id);
   }
 
-  @MessagePattern('media.delete')
+  @MessagePattern(MEDIA_PATTERNS.DELETE)
   async delete(@Payload() { id }: { id: string }): Promise<DeleteFileResult> {
     return this.mediaService.delete(id);
   }
 
-  @MessagePattern('media.getHistory')
+  @MessagePattern(MEDIA_PATTERNS.GET_HISTORY)
   async getHistory(
     @Payload() { uploaderId, category }: { uploaderId: string; category?: FileCategory },
   ): Promise<FileResponseDto[]> {
@@ -71,7 +71,7 @@ export class MediaController {
     return this.mediaService.getHistory(targetId, 'AVATAR');
   }
 
-  @MessagePattern('media.getChatHistory')
+  @MessagePattern(MEDIA_PATTERNS.GET_CHAT_HISTORY)
   async getChatHistory(
     @Payload() payload: { chatId: string; uploaderId: string; category?: FileCategory; take?: number; skip?: number },
   ): Promise<{ files: FileResponseDto[]; total: number }> {
@@ -104,5 +104,12 @@ export class MediaController {
   @MessagePattern(MEDIA_PATTERNS.COUNT_REFERENCES)
   async countReferences(@Payload() { fileId }: { fileId: string }): Promise<number> {
     return this.mediaService.countReferences(fileId);
+  }
+
+  @MessagePattern(MEDIA_PATTERNS.GC_STALE)
+  async gcStale(
+    @Payload() payload: { olderThanHours: number; take: number },
+  ): Promise<{ deleted: number; failed: number }> {
+    return this.mediaService.gcStalePending(payload.olderThanHours, payload.take);
   }
 }
