@@ -16,12 +16,20 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MediaPrismaRepository implements IMediaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Interim bridge: File.size is BIGINT in Postgres, the domain/wire contract
+  // stays `number` (safe while sizes fit into 2^53). SPEC-4 switches the wire
+  // format to a BigInt-safe representation.
+  private toFile(row: Omit<File, 'size'> & { size: bigint }): File {
+    return { ...row, size: Number(row.size) };
+  }
+
   async findById(id: string): Promise<File | null> {
-    return this.prisma.file.findUnique({ where: { id } });
+    const row = await this.prisma.file.findUnique({ where: { id } });
+    return row ? this.toFile(row) : null;
   }
 
   async findByUploaderId(uploaderId: string, category?: FileCategory): Promise<File[]> {
-    return this.prisma.file.findMany({
+    const rows = await this.prisma.file.findMany({
       where: {
         uploaderId,
         status: 'READY',
@@ -29,13 +37,14 @@ export class MediaPrismaRepository implements IMediaRepository {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return rows.map((row) => this.toFile(row));
   }
 
   async findByChatId(
     chatId: string,
     options?: { uploaderId?: string; category?: FileCategory; take?: number; skip?: number },
   ): Promise<File[]> {
-    return this.prisma.file.findMany({
+    const rows = await this.prisma.file.findMany({
       where: {
         chatId,
         status: 'READY',
@@ -46,6 +55,7 @@ export class MediaPrismaRepository implements IMediaRepository {
       take: options?.take ?? 50,
       skip: options?.skip ?? 0,
     });
+    return rows.map((row) => this.toFile(row));
   }
 
   async countByChatId(
@@ -74,13 +84,13 @@ export class MediaPrismaRepository implements IMediaRepository {
     category: FileCategory;
   }): Promise<File> {
     try {
-      return await this.prisma.file.create({
+      const row = await this.prisma.file.create({
         data: {
           bucket: data.bucket,
           key: data.key,
           originalName: data.originalName,
           mimeType: data.mimeType,
-          size: data.size,
+          size: BigInt(data.size),
           url: data.url ?? null,
           uploaderId: data.uploaderId ?? null,
           status: data.status ?? 'PENDING',
@@ -88,6 +98,7 @@ export class MediaPrismaRepository implements IMediaRepository {
           category: data.category,
         },
       });
+      return this.toFile(row);
     } catch (error) {
       handlePrismaError(error);
     }
@@ -95,10 +106,11 @@ export class MediaPrismaRepository implements IMediaRepository {
 
   async updateStatus(id: string, status: 'PENDING' | 'READY'): Promise<File> {
     try {
-      return await this.prisma.file.update({
+      const row = await this.prisma.file.update({
         where: { id },
         data: { status },
       });
+      return this.toFile(row);
     } catch (error) {
       handlePrismaError(error);
     }
@@ -117,7 +129,7 @@ export class MediaPrismaRepository implements IMediaRepository {
       return await this.prisma.$transaction(async (tx) => {
         const [file] = await tx.$queryRaw<Array<{ id: string; status: string }>>`
           SELECT "id", "status"::text AS "status"
-          FROM "File"
+          FROM "files"
           WHERE "id" = ${input.fileId}
           FOR UPDATE
         `;
@@ -167,7 +179,7 @@ export class MediaPrismaRepository implements IMediaRepository {
       return await this.prisma.$transaction(async (tx) => {
         const [file] = await tx.$queryRaw<Array<{ id: string; status: string }>>`
           SELECT "id", "status"::text AS "status"
-          FROM "File"
+          FROM "files"
           WHERE "id" = ${fileId}
           FOR UPDATE
         `;
@@ -184,7 +196,7 @@ export class MediaPrismaRepository implements IMediaRepository {
           where: { id: fileId },
           data: { status: 'DELETING' },
         });
-        return { outcome: 'CLAIMED', file: claimedFile, referenceCount: 0 };
+        return { outcome: 'CLAIMED', file: this.toFile(claimedFile), referenceCount: 0 };
       });
     } catch (error) {
       handlePrismaError(error);

@@ -28,28 +28,33 @@ enum MediaReferenceOwnerType {
 }
 
 model File {
-  id           String       @id @default(uuid()) @map("id")
-  bucket       String       @map("bucket")
-  key          String       @unique @map("key")
-  originalName String       @map("original_name")
-  mimeType     String       @map("mime_type")
-  size         Int          @map("size")
-  url          String?      @map("url")
-  uploaderId   String?      @map("uploader_id")
+  id           String       @id @default(uuid(7)) @db.Uuid @map("id")
+  bucket       String       @db.VarChar(63) @map("bucket")
+  key          String       @unique @db.VarChar(1024) @map("key")
+  originalName String       @db.VarChar(255) @map("original_name")
+  mimeType     String       @db.VarChar(127) @map("mime_type")
+  size         BigInt       @map("size")
+  url          String?      @db.VarChar(2048) @map("url")
+  uploaderId   String?      @db.Uuid @map("uploader_id")
   status       FileStatus   @default(PENDING) @map("status")
-  chatId       String?      @map("chat_id")
+  chatId       String?      @db.Uuid @map("chat_id")
   category     FileCategory @map("category")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3) @map("updated_at")
   references   MediaReference[]
+
+  @@index([uploaderId])
+  @@index([chatId, category])
+  @@index([status])
+  @@map("files")
 }
 
 model MediaReference {
-  id        String                  @id @default(uuid())
-  fileId    String                  @map("file_id")
+  id        String                  @id @default(uuid(7)) @db.Uuid
+  fileId    String                  @db.Uuid @map("file_id")
   ownerType MediaReferenceOwnerType @map("owner_type")
-  ownerId   String                  @map("owner_id")
-  createdAt DateTime                @default(now()) @map("created_at")
+  ownerId   String                  @db.Uuid @map("owner_id")
+  createdAt DateTime                @default(now()) @db.Timestamptz(3) @map("created_at")
 
   file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
