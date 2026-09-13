@@ -8,73 +8,63 @@ datasource db {
   provider = "postgresql"
 }
 
-enum ChatType {
-  DIRECT
-  GROUP
-  CHANNEL
-}
-
 enum ChatRole {
   ADMIN
   MODERATOR
   MEMBER
 }
 
-enum MessageType {
-  TEXT
-  IMAGE
-  AUDIO
-  VIDEO
-  VOICE
-  FILE
-  SYSTEM
-}
-
 model Chat {
-  id          String   @id @default(uuid())
-  type        ChatType @map("type")
-  name        String?  @map("name")
-  avatarUrl   String?  @map("avatar_url")
-  selfOwnerId String?  @unique @map("self_owner_id")
-  lastMessageId String?   @map("last_message_id")
-  lastMessageAt DateTime? @map("last_message_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(uuid(7)) @db.Uuid @map("id")
+  type          String    @map("type")
+  name          String?   @db.VarChar(128) @map("name")
+  avatarUrl     String?   @db.VarChar(2048) @map("avatar_url")
+  selfOwnerId   String?   @unique @db.Uuid @map("self_owner_id")
+  directKey     String?   @db.VarChar(128) @map("direct_key")
+  lastMessageId BigInt?   @map("last_message_id")
+  lastMessageAt DateTime? @db.Timestamptz(3) @map("last_message_at")
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3) @map("updated_at")
 
   members  ChatMember[]
   messages Message[]
 
   @@index([type])
-  @@index([lastMessageAt])
+  @@index([lastMessageAt, id])
+  @@unique([directKey])
+  @@map("chats")
 }
 
 model ChatMember {
-  chatId            String    @map("chat_id")
-  userId            String    @map("user_id")
+  chatId            String    @db.Uuid @map("chat_id")
+  userId            String    @db.Uuid @map("user_id")
   role              ChatRole  @default(MEMBER) @map("role")
-  joinedAt          DateTime  @default(now()) @map("joined_at")
-  lastReadMessageId String?   @map("last_read_message_id")
-  lastReadAt        DateTime? @map("last_read_at")
+  joinedAt          DateTime  @default(now()) @db.Timestamptz(3) @map("joined_at")
+  lastReadMessageId BigInt?   @map("last_read_message_id")
+  lastReadAt        DateTime? @db.Timestamptz(3) @map("last_read_at")
 
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@id([chatId, userId])
   @@index([userId])
+  @@index([userId, chatId])
   @@index([chatId, lastReadAt])
+  @@map("chat_members")
 }
 
 model Message {
-  id              String      @id @default(uuid())
-  clientId        String?     @map("client_id")
-  chatId          String      @map("chat_id")
-  senderId        String      @map("sender_id")
-  type            MessageType @default(TEXT) @map("type")
-  text            String?     @map("text")
-  editedAt        DateTime?   @map("edited_at")
-  deletedAt       DateTime?   @map("deleted_at")
-  deletedById     String?     @map("deleted_by_id")
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+  id              BigInt    @id @default(autoincrement()) @map("id")
+  clientId        String?   @db.VarChar(128) @map("client_id")
+  chatId          String    @db.Uuid @map("chat_id")
+  senderId        String    @db.Uuid @map("sender_id")
+  type            String    @default("TEXT") @map("type")
+  text            String?   @db.Text @map("text")
+  hasLink         Boolean   @default(false) @map("has_link")
+  editedAt        DateTime? @db.Timestamptz(3) @map("edited_at")
+  deletedAt       DateTime? @db.Timestamptz(3) @map("deleted_at")
+  deletedById     String?   @db.Uuid @map("deleted_by_id")
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3) @map("updated_at")
 
   chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
   deletions MessageDeletion[]
@@ -84,17 +74,19 @@ model Message {
   @@index([chatId, createdAt, id])
   @@unique([chatId, clientId])
   @@index([deletedAt])
+  @@index([senderId])
+  @@map("messages")
 }
 
 model MessageAttachment {
-  id               String   @id @default(uuid())
-  messageId        String   @map("message_id")
-  mediaId          String   @map("media_id")
-  fileNameSnapshot String?  @map("file_name_snapshot")
-  fileSizeSnapshot Int?     @map("file_size_snapshot")
-  mimeSnapshot     String?  @map("mime_snapshot")
+  id               String   @id @default(uuid(7)) @db.Uuid @map("id")
+  messageId        BigInt   @map("message_id")
+  mediaId          String   @db.Uuid @map("media_id")
+  fileNameSnapshot String?  @db.VarChar(255) @map("file_name_snapshot")
+  fileSizeSnapshot BigInt?  @map("file_size_snapshot")
+  mimeSnapshot     String?  @db.VarChar(127) @map("mime_snapshot")
   category         String   @map("category")
-  createdAt        DateTime @default(now()) @map("created_at")
+  createdAt        DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
@@ -104,18 +96,18 @@ model MessageAttachment {
 }
 
 model MessageForwardContext {
-  messageId                         String      @id @map("message_id")
-  originalMessageId                 String?     @map("original_message_id")
-  originalChatId                    String?     @map("original_chat_id")
-  originalAuthorId                  String      @map("original_author_id")
-  originalAuthorNameSnapshot        String      @map("original_author_name_snapshot")
-  originalAuthorDisplayNameSnapshot String?     @map("original_author_display_name_snapshot")
-  originalMessageCreatedAt          DateTime    @map("original_message_created_at")
-  originalMessageType               MessageType @map("original_message_type")
-  originalTextPreview               String?     @map("original_text_preview")
-  originalFileNamePreview           String?     @map("original_file_name_preview")
-  snapshotVersion                   Int         @default(1) @map("snapshot_version")
-  createdAt                         DateTime    @default(now()) @map("created_at")
+  messageId                         BigInt   @id @map("message_id")
+  originalMessageId                 BigInt?  @map("original_message_id")
+  originalChatId                    String?  @db.Uuid @map("original_chat_id")
+  originalAuthorId                  String   @db.Uuid @map("original_author_id")
+  originalAuthorNameSnapshot        String   @db.VarChar(32) @map("original_author_name_snapshot")
+  originalAuthorDisplayNameSnapshot String?  @db.VarChar(64) @map("original_author_display_name_snapshot")
+  originalMessageCreatedAt          DateTime @db.Timestamptz(3) @map("original_message_created_at")
+  originalMessageType               String   @map("original_message_type")
+  originalTextPreview               String?  @db.VarChar(280) @map("original_text_preview")
+  originalFileNamePreview           String?  @db.VarChar(255) @map("original_file_name_preview")
+  snapshotVersion                   Int      @default(1) @map("snapshot_version")
+  createdAt                         DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
@@ -125,9 +117,9 @@ model MessageForwardContext {
 }
 
 model MessageDeletion {
-  messageId String   @map("message_id")
-  userId    String   @map("user_id")
-  deletedAt DateTime @default(now()) @map("deleted_at")
+  messageId BigInt   @map("message_id")
+  userId    String   @db.Uuid @map("user_id")
+  deletedAt DateTime @default(now()) @db.Timestamptz(3) @map("deleted_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
