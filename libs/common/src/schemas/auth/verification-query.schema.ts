@@ -1,7 +1,7 @@
 import * as z from 'zod';
 
 export const verifyEmailQuerySchema = z.object({
-  token: z.string().min(1),
+  token: z.string().min(1).max(512),
 });
 
 export type VerifyEmailQueryInput = z.infer<typeof verifyEmailQuerySchema>;

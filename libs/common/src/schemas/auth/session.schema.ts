@@ -3,11 +3,11 @@ import * as z from 'zod';
 
 export const BaseSessionSchema = z.object({
   id: z.uuid(),
-  device: z.string().nullable(),
-  os: z.string().nullable(),
-  browser: z.string().nullable(),
-  ip: z.string().nullable(),
-  country: z.string().nullable(),
+  device: z.string().max(64).nullable(),
+  os: z.string().max(64).nullable(),
+  browser: z.string().max(64).nullable(),
+  ip: z.string().max(45).nullable(),
+  country: z.string().max(2).nullable(),
   lastActiveAt: z.date().nullable(),
   createdAt: z.date(),
 });
@@ -22,7 +22,7 @@ export const DatabaseSessionSchema = BaseSessionSchema.extend({
   credentialsId: z.string(),
   expiresAt: z.date(),
   revokedAt: z.date().nullable(),
-  userAgent: z.string().nullable(),
+  userAgent: z.string().max(512).nullable(),
 });
 
 export type DatabaseSession = z.infer<typeof DatabaseSessionSchema>;
