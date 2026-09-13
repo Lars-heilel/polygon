@@ -8,10 +8,11 @@ import { mockUserInput, mockUserReturn } from '../../__tests__/fixtures/user.fix
 describe('UserService (unit)', () => {
   let service: UserService;
   let repoMock: MockProxy<IUserRepository>;
+  const redisMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
 
   beforeEach(() => {
     repoMock = mock<IUserRepository>();
-    service = new UserService(repoMock);
+    service = new UserService(repoMock, redisMock as never);
   });
 
   afterEach(() => {
