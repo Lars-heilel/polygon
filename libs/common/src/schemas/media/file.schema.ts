@@ -8,12 +8,12 @@ export type FileCategory = z.infer<typeof fileCategorySchema>;
 
 export const fileSchema = z.object({
   id: z.string().uuid(),
-  bucket: z.string(),
-  key: z.string(),
-  originalName: z.string(),
-  mimeType: z.string(),
+  bucket: z.string().min(1).max(63),
+  key: z.string().min(1).max(1024),
+  originalName: z.string().min(1).max(255),
+  mimeType: z.string().min(1).max(127),
   size: z.number().int().positive(),
-  url: z.string().nullable(),
+  url: z.string().max(2048).nullable(),
   uploaderId: z.string().uuid().nullable(),
   status: fileStatusSchema,
   chatId: z.string().uuid().nullable(),
