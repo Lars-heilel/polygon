@@ -8,15 +8,14 @@ datasource db {
 }
 
 model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
-  endpoint  String
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @db.Uuid
+  endpoint  String   @unique @db.VarChar(2048)
+  p256dh    String   @db.VarChar(128)
+  auth      String   @db.VarChar(128)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  @@unique([userId, endpoint])
-  @@unique([endpoint])
   @@index([userId])
+  @@map("push_subscriptions")
 }
