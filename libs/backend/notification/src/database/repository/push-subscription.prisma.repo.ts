@@ -11,11 +11,21 @@ export class PushSubscriptionPrismaRepository implements IPushSubscriptionReposi
   }
 
   async findByEndpoint(endpoint: string): Promise<PushSubscriptionRecord | null> {
-    return this.prisma.pushSubscription.findFirst({ where: { endpoint } });
+    return this.prisma.pushSubscription.findUnique({ where: { endpoint } });
   }
 
   async create(data: PushSubscriptionData & { userId: string }): Promise<PushSubscriptionRecord> {
     return this.prisma.pushSubscription.create({ data });
+  }
+
+  async upsertByEndpoint(
+    data: PushSubscriptionData & { userId: string },
+  ): Promise<PushSubscriptionRecord> {
+    return this.prisma.pushSubscription.upsert({
+      where: { endpoint: data.endpoint },
+      update: { userId: data.userId, p256dh: data.p256dh, auth: data.auth },
+      create: data,
+    });
   }
 
   async delete(id: string): Promise<void> {
@@ -23,9 +33,6 @@ export class PushSubscriptionPrismaRepository implements IPushSubscriptionReposi
   }
 
   async deleteByEndpoint(endpoint: string): Promise<void> {
-    const sub = await this.findByEndpoint(endpoint);
-    if (sub) {
-      await this.prisma.pushSubscription.delete({ where: { id: sub.id } });
-    }
+    await this.prisma.pushSubscription.deleteMany({ where: { endpoint } });
   }
 }

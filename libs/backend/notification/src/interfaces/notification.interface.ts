@@ -18,6 +18,7 @@ export interface IPushSubscriptionRepository {
   findByUserId(userId: string): Promise<PushSubscriptionRecord[]>;
   findByEndpoint(endpoint: string): Promise<PushSubscriptionRecord | null>;
   create(data: PushSubscriptionData & { userId: string }): Promise<PushSubscriptionRecord>;
+  upsertByEndpoint(data: PushSubscriptionData & { userId: string }): Promise<PushSubscriptionRecord>;
   delete(id: string): Promise<void>;
   deleteByEndpoint(endpoint: string): Promise<void>;
 }
