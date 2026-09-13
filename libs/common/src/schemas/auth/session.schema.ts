@@ -1,4 +1,3 @@
-
 import * as z from 'zod';
 
 export const BaseSessionSchema = z.object({
@@ -16,7 +15,6 @@ export const SessionResponseSchema = BaseSessionSchema.extend({
   isCurrent: z.boolean(),
 });
 
-
 export const DatabaseSessionSchema = BaseSessionSchema.extend({
   tokenHash: z.string(),
   credentialsId: z.string(),
@@ -26,4 +24,3 @@ export const DatabaseSessionSchema = BaseSessionSchema.extend({
 });
 
 export type DatabaseSession = z.infer<typeof DatabaseSessionSchema>;
-

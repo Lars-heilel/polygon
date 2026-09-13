@@ -29,9 +29,9 @@ import {
 import { createHash, randomUUID } from 'crypto';
 import { lastValueFrom } from 'rxjs';
 
+import { AdminBanService } from '../admin/admin-ban.service';
 import type { IAuthCacheRepository } from '../cache/auth.cache.interface';
 import type { ISessionCacheRepository } from '../cache/session.cache.interface';
-import { AdminBanService } from '../admin/admin-ban.service';
 import { SessionResponse } from '../dto';
 import type { RegisterDto } from '../dto/register.dto';
 import type {
@@ -251,7 +251,9 @@ export class AuthService implements IAuthService {
 
     const credentials = await this.repo.findByEmail(email);
     if (!credentials || !credentials.passwordHash) {
-      this.logger.warn('Service: Forgot password aborted. Email is not registered or lacks password');
+      this.logger.warn(
+        'Service: Forgot password aborted. Email is not registered or lacks password',
+      );
       return;
     }
 
@@ -398,7 +400,10 @@ export class AuthService implements IAuthService {
       payload = this.tokenService.verifyRefreshToken(refreshToken);
     } catch (err) {
       this.logger.warn('Service: Refresh failed. Token is invalid or expired');
-      this.logger.debug(this.errorDiagnostic(err), 'Service: Invalid refresh token signature context');
+      this.logger.debug(
+        this.errorDiagnostic(err),
+        'Service: Invalid refresh token signature context',
+      );
       throw new UnauthorizedException();
     }
 
@@ -484,9 +489,7 @@ export class AuthService implements IAuthService {
 
     const session = await this.repo.findSessionById(sessionId);
     if (!session || session.credentialsId !== credentialsId) {
-      this.logger.warn(
-        'Service: Unauthorized revocation attempt of session by user',
-      );
+      this.logger.warn('Service: Unauthorized revocation attempt of session by user');
       throw new UnauthorizedException();
     }
 
@@ -525,7 +528,10 @@ export class AuthService implements IAuthService {
     this.logger.log('Service: All sessions terminated for user');
   }
 
-  private async clearCachedSessions(credentialsId: string, preserveSessionId?: string): Promise<void> {
+  private async clearCachedSessions(
+    credentialsId: string,
+    preserveSessionId?: string,
+  ): Promise<void> {
     const sessionIds = await this.sessionCache.getUserSessionIds(credentialsId);
     const sessionIdsToClear = preserveSessionId
       ? sessionIds.filter((sessionId) => sessionId !== preserveSessionId)

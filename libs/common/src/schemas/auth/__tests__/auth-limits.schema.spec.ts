@@ -1,8 +1,8 @@
 import { loginSchema } from '../login.schema';
 import { oauthLoginSchema } from '../oauth-login.schema';
-import { forgotPasswordSchema, resetPasswordSchema } from '../reset-password.schema';
 import { registerSchema } from '../register.schema';
 import { resendVerificationSchema } from '../resend-verification.schema';
+import { forgotPasswordSchema, resetPasswordSchema } from '../reset-password.schema';
 
 describe('auth contract limits', () => {
   it('caps registration fields', () => {
@@ -30,9 +30,9 @@ describe('auth contract limits', () => {
   });
 
   it('caps login fields', () => {
-    expect(loginSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com`, password: 'x' }).success).toBe(
-      false,
-    );
+    expect(
+      loginSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com`, password: 'x' }).success,
+    ).toBe(false);
     expect(
       loginSchema.safeParse({ email: 'a@example.com', password: 'p'.repeat(129) }).success,
     ).toBe(false);
@@ -58,18 +58,17 @@ describe('auth contract limits', () => {
   });
 
   it('caps recovery emails', () => {
-    expect(
-      forgotPasswordSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com` }).success,
-    ).toBe(false);
-    expect(
-      resendVerificationSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com` }).success,
-    ).toBe(false);
+    expect(forgotPasswordSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com` }).success).toBe(
+      false,
+    );
+    expect(resendVerificationSchema.safeParse({ email: `${'a'.repeat(250)}@ex.com` }).success).toBe(
+      false,
+    );
   });
 
   it('caps the new password', () => {
     expect(
-      resetPasswordSchema.safeParse({ token: 't', newPassword: `Aa1!${'a'.repeat(125)}` })
-        .success,
+      resetPasswordSchema.safeParse({ token: 't', newPassword: `Aa1!${'a'.repeat(125)}` }).success,
     ).toBe(false);
   });
 });

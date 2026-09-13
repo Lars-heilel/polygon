@@ -4,14 +4,14 @@ import {
   type AdminBanRequest,
   type AdminSessionsResponse,
   type CredentialsPayload,
+  type OAuthLoginDto,
+  type Role,
+  type TokenPair,
   forgotPasswordSchema,
   loginSchema,
-  type OAuthLoginDto,
   oauthLoginSchema,
-  type Role,
   resendVerificationSchema,
   resetPasswordSchema,
-  type TokenPair,
   verifyEmailQuerySchema,
 } from '@org/common';
 import type { ClientMetadata } from '@org/core';
@@ -74,7 +74,10 @@ export class AuthController implements IAuthController {
   @UsePipes(new ZodValidationPipe(RegisterDto))
   async register(@Payload() dto: RegisterDto): Promise<null> {
     this.logger.log('RPC [REGISTER]: Received registration request');
-    this.logger.debug({ hasEmail: !!dto.email, hasUsername: !!dto.username }, 'RPC [REGISTER]: Payload diagnostic');
+    this.logger.debug(
+      { hasEmail: !!dto.email, hasUsername: !!dto.username },
+      'RPC [REGISTER]: Payload diagnostic',
+    );
 
     await this.rpc(() => this.authService.register(dto));
     this.logger.verbose('RPC [REGISTER]: Success response generated');
@@ -124,7 +127,10 @@ export class AuthController implements IAuthController {
   async logout(@Payload() payload: { refreshToken: string }): Promise<null> {
     const dto = this.parseRpcPayload(refreshTokenPayloadSchema, payload);
     this.logger.log('RPC [LOGOUT]: Received request to terminate session');
-    this.logger.verbose({ hasRefreshToken: !!dto.refreshToken }, 'RPC [LOGOUT]: Refresh token context');
+    this.logger.verbose(
+      { hasRefreshToken: !!dto.refreshToken },
+      'RPC [LOGOUT]: Refresh token context',
+    );
 
     await this.rpc(() => this.authService.logout(dto.refreshToken));
     return null;
@@ -134,7 +140,10 @@ export class AuthController implements IAuthController {
   async refresh(@Payload() payload: { refreshToken: string }): Promise<TokenPair> {
     const dto = this.parseRpcPayload(refreshTokenPayloadSchema, payload);
     this.logger.log('RPC [REFRESH]: Session token rotation request received');
-    this.logger.verbose({ hasRefreshToken: !!dto.refreshToken }, 'RPC [REFRESH]: Received token parameters');
+    this.logger.verbose(
+      { hasRefreshToken: !!dto.refreshToken },
+      'RPC [REFRESH]: Received token parameters',
+    );
 
     return await this.rpc(() => this.authService.refresh(dto.refreshToken));
   }
@@ -189,7 +198,11 @@ export class AuthController implements IAuthController {
     const payload = this.parseRpcPayload(oauthLoginRpcPayloadSchema, dto);
     this.logger.log({ eventType: 'oauth_login_request', provider: payload.provider });
     this.logger.debug(
-      { provider: payload.provider, hasEmail: !!payload.email, hasClientMetadata: !!payload.clientMetadata },
+      {
+        provider: payload.provider,
+        hasEmail: !!payload.email,
+        hasClientMetadata: !!payload.clientMetadata,
+      },
       'RPC [OAUTH_LOGIN]: OAuth payload and metadata details',
     );
 
@@ -229,14 +242,18 @@ export class AuthController implements IAuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_SESSIONS)
-  async revokeAllSessions(@Payload() payload: { credentialsId: string; currentSessionId?: string }): Promise<null> {
+  async revokeAllSessions(
+    @Payload() payload: { credentialsId: string; currentSessionId?: string },
+  ): Promise<null> {
     const dto = this.parseRpcPayload(revokeAllSessionsPayloadSchema, payload);
     this.logger.log('RPC [REVOKE_ALL_SESSIONS]: Revoking sessions');
     this.logger.debug(
       { hasCredentialsId: !!dto.credentialsId, preserveCurrentSession: !!dto.currentSessionId },
       'RPC [REVOKE_ALL_SESSIONS]: Payload diagnostic',
     );
-    await this.rpc(() => this.authService.revokeAllSessions(dto.credentialsId, dto.currentSessionId));
+    await this.rpc(() =>
+      this.authService.revokeAllSessions(dto.credentialsId, dto.currentSessionId),
+    );
     return null;
   }
 

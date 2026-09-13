@@ -32,8 +32,8 @@ import {
   GoogleGuard,
   LocalGuard,
   ResetPasswordDto,
-  SessionIdParamDto,
   SessionGuard,
+  SessionIdParamDto,
   SessionResponse,
   VerifyEmailQueryDto,
 } from '@org/auth';
@@ -98,7 +98,17 @@ const sessionResponseSchema = {
     createdAt: { type: 'string', format: 'date-time' },
     isCurrent: { type: 'boolean' },
   },
-  required: ['id', 'device', 'os', 'browser', 'ip', 'country', 'lastActiveAt', 'createdAt', 'isCurrent'],
+  required: [
+    'id',
+    'device',
+    'os',
+    'browser',
+    'ip',
+    'country',
+    'lastActiveAt',
+    'createdAt',
+    'isCurrent',
+  ],
 };
 
 @ApiTags('auth')

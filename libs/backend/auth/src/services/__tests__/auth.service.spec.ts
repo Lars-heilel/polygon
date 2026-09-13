@@ -1,15 +1,14 @@
-jest.mock('geoip-lite', () => ({ lookup: jest.fn() }));
-
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { of } from 'rxjs';
-
 import { EncryptionService, TokenService, USER_EVENTS, USER_PATTERNS } from '@org/core';
+import { of } from 'rxjs';
 
 import { AdminBanService } from '../../admin/admin-ban.service';
 import type { IAuthRepository, IVerificationService } from '../../interfaces/auth.interface';
 import { AuthService } from '../auth.service';
+
+jest.mock('geoip-lite', () => ({ lookup: jest.fn() }));
 
 const mockConfig = {
   get: jest.fn((key: string) => {
@@ -273,20 +272,26 @@ describe('AuthService', () => {
   });
 
   it.each([
-    ['credential validation', async () => {
-      repo.findByEmail.mockResolvedValue(mockCredentials);
-      await service.validateCredentials(mockCredentials.email, 'password');
-    }],
+    [
+      'credential validation',
+      async () => {
+        repo.findByEmail.mockResolvedValue(mockCredentials);
+        await service.validateCredentials(mockCredentials.email, 'password');
+      },
+    ],
     ['login', async () => service.login('creds-1')],
-    ['OAuth login', async () => {
-      repo.findOAuthAccount.mockResolvedValue({ credentials: mockCredentials });
-      await service.oauthLogin({
-        provider: 'google',
-        providerId: 'provider-1',
-        email: mockCredentials.email,
-        name: 'Test',
-      });
-    }],
+    [
+      'OAuth login',
+      async () => {
+        repo.findOAuthAccount.mockResolvedValue({ credentials: mockCredentials });
+        await service.oauthLogin({
+          provider: 'google',
+          providerId: 'provider-1',
+          email: mockCredentials.email,
+          name: 'Test',
+        });
+      },
+    ],
     ['refresh', async () => service.refresh(mockRefreshToken)],
   ] as const)('normalizes/rejects bans on %s', async (_name, invoke) => {
     await invoke();
@@ -294,9 +299,7 @@ describe('AuthService', () => {
   });
 
   it('stops login before session creation when the account is actively banned', async () => {
-    adminBans.assertAccountActive.mockRejectedValue(
-      new Error('ACCOUNT_BANNED'),
-    );
+    adminBans.assertAccountActive.mockRejectedValue(new Error('ACCOUNT_BANNED'));
     await expect(service.login('creds-1')).rejects.toThrow('ACCOUNT_BANNED');
     expect(repo.saveSession).not.toHaveBeenCalled();
   });
@@ -310,7 +313,9 @@ describe('AuthService', () => {
       }),
     );
 
-    await expect(service.validateCredentials(mockCredentials.email, 'password')).rejects.toMatchObject({
+    await expect(
+      service.validateCredentials(mockCredentials.email, 'password'),
+    ).rejects.toMatchObject({
       response: { code: 'ACCOUNT_BANNED', reason: 'Spam', bannedUntil: null },
     });
     expect(encryption.compare).not.toHaveBeenCalled();
@@ -319,25 +324,30 @@ describe('AuthService', () => {
   it.each([
     ['non-banned', mockCredentials],
     ['unknown', null],
-  ] as const)('preserves the 429 response for an over-limit %s account', async (_name, credentials) => {
-    repo.findByEmail.mockResolvedValue(credentials);
-    authCache.incrementLoginAttempts.mockResolvedValue(6);
+  ] as const)(
+    'preserves the 429 response for an over-limit %s account',
+    async (_name, credentials) => {
+      repo.findByEmail.mockResolvedValue(credentials);
+      authCache.incrementLoginAttempts.mockResolvedValue(6);
 
-    await expect(service.validateCredentials(mockCredentials.email, 'password')).rejects.toMatchObject({
-      status: 429,
-    });
-    expect(authCache.incrementLoginAttempts).toHaveBeenCalledWith(mockCredentials.email);
-    expect(encryption.compare).not.toHaveBeenCalled();
-  });
+      await expect(
+        service.validateCredentials(mockCredentials.email, 'password'),
+      ).rejects.toMatchObject({
+        status: 429,
+      });
+      expect(authCache.incrementLoginAttempts).toHaveBeenCalledWith(mockCredentials.email);
+      expect(encryption.compare).not.toHaveBeenCalled();
+    },
+  );
 
   it('allows password validation on the fourth failed login attempt', async () => {
     repo.findByEmail.mockResolvedValue(mockCredentials);
     authCache.incrementLoginAttempts.mockResolvedValue(4);
     encryption.compare.mockResolvedValue(false);
 
-    await expect(service.validateCredentials(mockCredentials.email, 'wrong-password')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.validateCredentials(mockCredentials.email, 'wrong-password'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
 
     expect(encryption.compare).toHaveBeenCalledWith('wrong-password', mockCredentials.passwordHash);
   });
@@ -346,7 +356,9 @@ describe('AuthService', () => {
     repo.findByEmail.mockResolvedValue(mockCredentials);
     authCache.incrementLoginAttempts.mockResolvedValue(5);
 
-    await expect(service.validateCredentials(mockCredentials.email, 'password')).rejects.toMatchObject({
+    await expect(
+      service.validateCredentials(mockCredentials.email, 'password'),
+    ).rejects.toMatchObject({
       status: 429,
     });
 
@@ -427,7 +439,9 @@ describe('AuthService', () => {
         credentialsId: 'oauth-creds',
       });
       expect(repo.verifyCredentials).toHaveBeenCalledWith('oauth-creds');
-      expect(repo.saveSession).toHaveBeenCalledWith(expect.objectContaining({ credentialsId: 'oauth-creds' }));
+      expect(repo.saveSession).toHaveBeenCalledWith(
+        expect.objectContaining({ credentialsId: 'oauth-creds' }),
+      );
     });
 
     it('links an existing email credential without emitting a duplicate search registration event', async () => {
@@ -745,12 +759,16 @@ describe('AuthService', () => {
 
     it('throws if session not found', async () => {
       repo.findSessionById.mockResolvedValue(null);
-      await expect(service.revokeSession('nonexistent', 'creds-1')).rejects.toThrow(UnauthorizedException);
+      await expect(service.revokeSession('nonexistent', 'creds-1')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws if session belongs to another user', async () => {
       repo.findSessionById.mockResolvedValue({ ...mockSession, credentialsId: 'other-user' });
-      await expect(service.revokeSession('session-1', 'creds-1')).rejects.toThrow(UnauthorizedException);
+      await expect(service.revokeSession('session-1', 'creds-1')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
