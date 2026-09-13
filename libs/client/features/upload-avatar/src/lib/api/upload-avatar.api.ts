@@ -1,3 +1,4 @@
+import { API_ROUTES } from '@org/common';
 import { authedFetch } from '@org/shared';
 import type { AvatarItem } from '../model/types.js';
 
@@ -22,7 +23,7 @@ export async function initUpload(
   mimeType: string,
   size: number,
 ): Promise<InitUploadResponse> {
-  return authedFetch<InitUploadResponse>('media/init-upload', {
+  return authedFetch<InitUploadResponse>(API_ROUTES.media.initUpload, {
     method: 'POST',
     body: JSON.stringify({ originalName, mimeType, size, category: 'AVATAR' }),
   });
@@ -55,36 +56,38 @@ export async function uploadToMinio(
 }
 
 export async function confirmUpload(fileId: string): Promise<ConfirmUploadResponse> {
-  return authedFetch<ConfirmUploadResponse>('media/confirm', {
+  return authedFetch<ConfirmUploadResponse>(API_ROUTES.media.confirm, {
     method: 'POST',
     body: JSON.stringify({ fileId }),
   });
 }
 
 export async function updateUserProfile(data: { displayName?: string; bio?: string; avatarUrl?: string }): Promise<void> {
-  await authedFetch<void>('users/me', {
+  await authedFetch<void>(API_ROUTES.users.me, {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
 
 export async function fetchHistory(): Promise<AvatarItem[]> {
-  return authedFetch<AvatarItem[]>('media/history?category=AVATAR');
+  return authedFetch<AvatarItem[]>(`${API_ROUTES.media.history}?category=AVATAR`);
 }
 
 export async function fetchUserAvatarHistory(userId: string): Promise<AvatarItem[]> {
-  return authedFetch<AvatarItem[]>(`users/${userId}/avatars`);
+  return authedFetch<AvatarItem[]>(API_ROUTES.media.userAvatars(userId));
 }
 
 export async function deleteFile(fileId: string): Promise<void> {
-  await authedFetch<void>(`media/${fileId}`, { method: 'DELETE' });
+  await authedFetch<void>(API_ROUTES.media.delete(fileId), { method: 'DELETE' });
 }
 
 export async function uploadAvatar(file: File): Promise<AvatarItem> {
+  // Raw fetch (not authedFetch): multipart FormData needs a browser-generated
+  // boundary, while apiFetch forces `Content-Type: application/json`.
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch('/api/media/upload-avatar', {
+  const res = await fetch(`/api/${API_ROUTES.media.uploadAvatar}`, {
     method: 'POST',
     credentials: 'include',
     body: formData,
