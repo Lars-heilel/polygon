@@ -3,7 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SessionGuard } from '@org/auth';
 import type { UserPublic, UserSearchResult } from '@org/common';
-import { searchUsersQuerySchema } from '@org/common';
+import { API_ROUTES, searchUsersQuerySchema } from '@org/common';
 import {
   ActiveAccountGuard,
   SEARCH_CLIENT_TOKEN,
@@ -16,7 +16,7 @@ import { Observable, lastValueFrom } from 'rxjs';
 
 @ApiTags('search')
 @ApiCookieAuth('access_token')
-@Controller('search')
+@Controller(API_ROUTES.search.root)
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class SearchGatewayController {
   constructor(

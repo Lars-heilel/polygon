@@ -26,6 +26,7 @@ export const API_ROUTES = {
     mediaMessages: (id: string) => `chats/${id}/media/messages`,
   },
   search: {
+    root: 'search',
     users: 'search/users',
   },
   notifications: {
