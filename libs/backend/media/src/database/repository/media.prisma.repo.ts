@@ -120,6 +120,15 @@ export class MediaPrismaRepository implements IMediaRepository {
     }
   }
 
+  async listStalePending(olderThan: Date, take: number): Promise<File[]> {
+    const rows = await this.prisma.file.findMany({
+      where: { status: 'PENDING', createdAt: { lt: olderThan } },
+      orderBy: { createdAt: 'asc' },
+      take,
+    });
+    return rows.map((row) => this.toFile(row));
+  }
+
   async createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse> {
     try {
       return await this.prisma.$transaction(async (tx) => {

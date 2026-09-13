@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 
@@ -73,7 +73,7 @@ export class MediaService implements IMediaService {
   async confirmUpload(fileId: string): Promise<FileResponse> {
     const file = await this.repo.findById(fileId);
     if (!file) {
-      throw new Error('File not found');
+      throw new NotFoundException('File not found');
     }
 
     const updated = await this.repo.updateStatus(fileId, 'READY');
@@ -114,7 +114,7 @@ export class MediaService implements IMediaService {
   async getFileContent(id: string): Promise<FileContentResult> {
     const file = await this.repo.findById(id);
     if (!file) {
-      throw new Error('File not found');
+      throw new NotFoundException('File not found');
     }
     const result = await this.storage.getFileStream(file.bucket, file.key);
     return {
@@ -356,5 +356,29 @@ export class MediaService implements IMediaService {
       chatId: file.chatId,
       createdAt: file.createdAt,
     };
+  }
+
+  async gcStalePending(
+    olderThanHours: number,
+    take: number,
+  ): Promise<{ deleted: number; failed: number }> {
+    this.logger.log({ eventType: 'media_gc_requested', olderThanHours, take });
+    const stale = await this.repo.listStalePending(
+      new Date(Date.now() - olderThanHours * 3_600_000),
+      take,
+    );
+    let deleted = 0;
+    let failed = 0;
+    for (const file of stale) {
+      try {
+        await this.storage.delete(file.bucket, file.key);
+        await this.repo.delete(file.id);
+        deleted += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    this.logger.log({ eventType: 'media_gc_done', deleted, failed });
+    return { deleted, failed };
   }
 }

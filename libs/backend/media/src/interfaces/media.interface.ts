@@ -59,6 +59,7 @@ export interface IMediaRepository {
   }): Promise<File>;
   updateStatus(id: string, status: 'PENDING' | 'READY'): Promise<File>;
   delete(id: string): Promise<void>;
+  listStalePending(olderThan: Date, take: number): Promise<File[]>;
   createReference(input: CreateMediaReferenceInput): Promise<MediaReferenceResponse>;
   deleteReference(input: DeleteMediaReferenceInput): Promise<MediaReferenceResponse | null>;
   countReferences(fileId: string): Promise<number>;
@@ -137,4 +138,5 @@ export interface IMediaService {
     options?: { category?: FileCategory; take?: number; skip?: number },
   ): Promise<{ files: FileResponse[]; total: number }>;
   create(input: CreateFileInput): Promise<FileResponse>;
+  gcStalePending(olderThanHours: number, take: number): Promise<{ deleted: number; failed: number }>;
 }
