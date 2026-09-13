@@ -7,15 +7,16 @@ datasource db {
   provider = "postgresql"
 }
 
-model User{
-  id          String   @id @map("id")
-  email       String   @unique @map("email")
-  name        String   @map("name")
-  displayName String?  @map("display_name")
-  avatarUrl   String?  @map("avatar_url")
-  bio         String?  @map("bio")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+model User {
+  id          String   @id @map("id") @db.Uuid
+  email       String   @unique @map("email") @db.VarChar(254)
+  name        String   @map("name") @db.VarChar(32)
+  displayName String?  @map("display_name") @db.VarChar(64)
+  avatarUrl   String?  @map("avatar_url") @db.VarChar(2048)
+  bio         String?  @map("bio") @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([name])
+  @@map("users")
 }
