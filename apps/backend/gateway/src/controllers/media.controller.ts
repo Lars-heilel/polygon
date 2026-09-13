@@ -17,19 +17,15 @@ import {
   UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
-import type { Request, Response } from 'express';
-import { randomUUID } from 'node:crypto';
-import { extname } from 'node:path';
-import { lastValueFrom, Observable } from 'rxjs';
-import { ZodValidationPipe } from 'nestjs-zod';
-
+import { FileInterceptor } from '@nestjs/platform-express';
 import { SessionGuard } from '@org/auth';
+import type { FileCategory, LinkPreview } from '@org/common';
+import { API_ROUTES } from '@org/common';
 import {
+  ActiveAccountGuard,
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
-  ActiveAccountGuard,
   CurrentUser,
   type JwtPayload,
   MEDIA_CLIENT_TOKEN,
@@ -39,9 +35,12 @@ import {
   USER_PATTERNS,
 } from '@org/core';
 import type { IStorageProvider } from '@org/core';
-import type { FileCategory, LinkPreview } from '@org/common';
-import { API_ROUTES } from '@org/common';
 import { ConfirmUploadDto, UploadFileDto } from '@org/media';
+import type { Request, Response } from 'express';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
+import { Observable, lastValueFrom } from 'rxjs';
 
 @Controller()
 @UseGuards(SessionGuard, ActiveAccountGuard)
@@ -57,10 +56,7 @@ export class MediaGatewayController {
 
   @Post(API_ROUTES.media.initUpload)
   @UsePipes(ZodValidationPipe)
-  async initUpload(
-    @Body() body: UploadFileDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async initUpload(@Body() body: UploadFileDto, @CurrentUser() user: JwtPayload) {
     if (body.chatId) {
       const isMember = await this.send<boolean>(
         this.chatClient.send(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
@@ -89,17 +85,12 @@ export class MediaGatewayController {
   @Post(API_ROUTES.media.confirm)
   @UsePipes(ZodValidationPipe)
   async confirmUpload(@Body() body: ConfirmUploadDto) {
-    return this.send(
-      this.mediaClient.send(MEDIA_PATTERNS.CONFIRM_UPLOAD, { fileId: body.fileId }),
-    );
+    return this.send(this.mediaClient.send(MEDIA_PATTERNS.CONFIRM_UPLOAD, { fileId: body.fileId }));
   }
 
   @Post(API_ROUTES.media.uploadAvatar)
   @UseInterceptors(FileInterceptor('file'))
-  async uploadAvatar(
-    @UploadedFile() file: Express.Multer.File,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async uploadAvatar(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: JwtPayload) {
     if (!file) {
       throw new HttpException('File is required', HttpStatus.BAD_REQUEST);
     }
@@ -140,9 +131,11 @@ export class MediaGatewayController {
 
   @Get(API_ROUTES.media.fileUrl(':fileId'))
   async getFileUrl(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload) {
-    const fileInfo = await this.send<{ id: string; chatId: string | null; uploaderId: string | null } | null>(
-      this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id: fileId }),
-    );
+    const fileInfo = await this.send<{
+      id: string;
+      chatId: string | null;
+      uploaderId: string | null;
+    } | null>(this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id: fileId }));
 
     if (!fileInfo) {
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
@@ -204,7 +197,12 @@ export class MediaGatewayController {
   }
 
   @Get(API_ROUTES.media.fileContent(':fileId'))
-  async getFileContent(@Param('fileId') fileId: string, @CurrentUser() user: JwtPayload, @Req() req: Request, @Res() res: Response) {
+  async getFileContent(
+    @Param('fileId') fileId: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     const fileInfo = await this.getMediaFile(fileId);
 
     if (fileInfo.chatId) {
@@ -250,16 +248,34 @@ export class MediaGatewayController {
         }),
       );
 
-      this.logger.debug({ eventType: 'message_attachment_content_started', ...logContext, hasMediaId: !!attachment.mediaId });
+      this.logger.debug({
+        eventType: 'message_attachment_content_started',
+        ...logContext,
+        hasMediaId: !!attachment.mediaId,
+      });
       await this.streamMediaFile(attachment.mediaId, req, res);
-      this.logger.log({ eventType: 'message_attachment_content_success', ...logContext, status: 'stream_started' });
+      this.logger.log({
+        eventType: 'message_attachment_content_success',
+        ...logContext,
+        status: 'stream_started',
+      });
     } catch (error) {
-      const status = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-      const eventType = status === HttpStatus.FORBIDDEN
-        ? 'message_attachment_content_denied'
-        : 'message_attachment_content_failed';
-      const logMethod = status === HttpStatus.FORBIDDEN ? this.logger.warn.bind(this.logger) : this.logger.error.bind(this.logger);
-      logMethod({ eventType, ...logContext, status, reason: status === HttpStatus.FORBIDDEN ? 'chat_access_denied' : 'content_unavailable' });
+      const status =
+        error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+      const eventType =
+        status === HttpStatus.FORBIDDEN
+          ? 'message_attachment_content_denied'
+          : 'message_attachment_content_failed';
+      const logMethod =
+        status === HttpStatus.FORBIDDEN
+          ? this.logger.warn.bind(this.logger)
+          : this.logger.error.bind(this.logger);
+      logMethod({
+        eventType,
+        ...logContext,
+        status,
+        reason: status === HttpStatus.FORBIDDEN ? 'chat_access_denied' : 'content_unavailable',
+      });
       throw error;
     }
   }
@@ -301,7 +317,7 @@ export class MediaGatewayController {
       chatId: string | null;
     },
   ): Promise<void> {
-    const mediaFile = fileInfo ?? await this.getMediaFile(fileId);
+    const mediaFile = fileInfo ?? (await this.getMediaFile(fileId));
 
     const etag = `"${fileId}-${mediaFile.size}"`;
 
@@ -328,7 +344,10 @@ export class MediaGatewayController {
 
     if (range) {
       res.status(HttpStatus.PARTIAL_CONTENT);
-      res.setHeader('Content-Range', `bytes ${range.start}-${Math.min(range.end, fileStream.size - 1)}/${fileStream.size}`);
+      res.setHeader(
+        'Content-Range',
+        `bytes ${range.start}-${Math.min(range.end, fileStream.size - 1)}/${fileStream.size}`,
+      );
       res.setHeader('Content-Length', Math.min(range.end, fileStream.size - 1) - range.start + 1);
     } else {
       res.setHeader('Content-Length', fileStream.size);
@@ -354,9 +373,7 @@ export class MediaGatewayController {
       uploaderId: string | null;
       url: string | null;
       category: string | null;
-    } | null>(
-      this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id }),
-    );
+    } | null>(this.mediaClient.send(MEDIA_PATTERNS.GET_BY_ID, { id }));
 
     if (!fileInfo) {
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
@@ -412,10 +429,7 @@ export class MediaGatewayController {
   }
 
   @Get(API_ROUTES.media.history)
-  async getHistory(
-    @CurrentUser() user: JwtPayload,
-    @Query('category') category?: FileCategory,
-  ) {
+  async getHistory(@CurrentUser() user: JwtPayload, @Query('category') category?: FileCategory) {
     return this.send(
       this.mediaClient.send(MEDIA_PATTERNS.GET_HISTORY, { uploaderId: user.sub, category }),
     );
@@ -487,10 +501,10 @@ function normalizeExternalUrl(rawUrl: string): URL {
 
   const hostname = url.hostname.toLowerCase();
   if (
-    hostname === 'localhost'
-    || hostname === '127.0.0.1'
-    || hostname === '::1'
-    || hostname.endsWith('.local')
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname.endsWith('.local')
   ) {
     throw new HttpException('Preview is not allowed for local addresses', HttpStatus.BAD_REQUEST);
   }
@@ -516,10 +530,16 @@ function buildPreviewFromHtml(finalUrl: string, html: string): LinkPreview {
   const url = new URL(finalUrl);
   const youtubePreview = getYouTubePreview(url);
   const title = readMetaContent(html, ['og:title', 'twitter:title']) ?? readTitle(html);
-  const description = readMetaContent(html, ['og:description', 'description', 'twitter:description']);
-  const image = youtubePreview?.imageUrl ?? readMetaContent(html, ['og:image', 'twitter:image', 'image']);
+  const description = readMetaContent(html, [
+    'og:description',
+    'description',
+    'twitter:description',
+  ]);
+  const image =
+    youtubePreview?.imageUrl ?? readMetaContent(html, ['og:image', 'twitter:image', 'image']);
   const canonicalUrl = readCanonicalUrl(html, url);
-  const siteName = youtubePreview?.siteName ?? readMetaContent(html, ['og:site_name']) ?? url.hostname;
+  const siteName =
+    youtubePreview?.siteName ?? readMetaContent(html, ['og:site_name']) ?? url.hostname;
 
   return {
     url: url.toString(),
@@ -590,9 +610,12 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function getYouTubePreview(url: URL): { imageUrl: string; title: string | null; siteName: string } | null {
+function getYouTubePreview(
+  url: URL,
+): { imageUrl: string; title: string | null; siteName: string } | null {
   const hostname = url.hostname.toLowerCase();
-  const isYouTube = hostname.includes('youtube.com') || hostname === 'youtu.be' || hostname.endsWith('.youtu.be');
+  const isYouTube =
+    hostname.includes('youtube.com') || hostname === 'youtu.be' || hostname.endsWith('.youtu.be');
 
   if (!isYouTube) {
     return null;

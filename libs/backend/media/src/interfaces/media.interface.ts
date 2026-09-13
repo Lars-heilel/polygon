@@ -22,9 +22,7 @@ export interface MediaReferenceResponse {
   createdAt: Date;
 }
 
-export type DeleteFileResult =
-  | { success: true }
-  | { success: false; reason?: 'REFERENCED' };
+export type DeleteFileResult = { success: true } | { success: false; reason?: 'REFERENCED' };
 
 export type DeleteMediaReferenceResult = {
   deleted: boolean;
@@ -120,10 +118,7 @@ export interface CreateFileInput {
 }
 
 export interface IMediaService {
-  initUpload(
-    input: UploadInput,
-    uploaderId?: string,
-  ): Promise<InitUploadResult>;
+  initUpload(input: UploadInput, uploaderId?: string): Promise<InitUploadResult>;
   confirmUpload(fileId: string): Promise<FileResponse>;
   getById(id: string): Promise<FileResponse | null>;
   getFileContent(id: string): Promise<FileContentResult>;
@@ -138,5 +133,8 @@ export interface IMediaService {
     options?: { category?: FileCategory; take?: number; skip?: number },
   ): Promise<{ files: FileResponse[]; total: number }>;
   create(input: CreateFileInput): Promise<FileResponse>;
-  gcStalePending(olderThanHours: number, take: number): Promise<{ deleted: number; failed: number }>;
+  gcStalePending(
+    olderThanHours: number,
+    take: number,
+  ): Promise<{ deleted: number; failed: number }>;
 }

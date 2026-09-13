@@ -1,8 +1,9 @@
 import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-
-import { MEDIA_PATTERNS, MEDIA_SERVICE_TOKEN } from '@org/core';
 import type { FileCategory } from '@org/common';
+import { MEDIA_PATTERNS, MEDIA_SERVICE_TOKEN } from '@org/core';
+
+import { FileResponseDto } from '../dto/file-response.dto';
 import type {
   CreateFileInput,
   CreateMediaReferenceInput,
@@ -12,18 +13,22 @@ import type {
   IMediaService,
   MediaReferenceResponse,
 } from '../interfaces/media.interface';
-import { FileResponseDto } from '../dto/file-response.dto';
 
 @Controller()
 export class MediaController {
-  constructor(
-    @Inject(MEDIA_SERVICE_TOKEN) private readonly mediaService: IMediaService,
-  ) {}
+  constructor(@Inject(MEDIA_SERVICE_TOKEN) private readonly mediaService: IMediaService) {}
 
   @MessagePattern(MEDIA_PATTERNS.INIT_UPLOAD)
   async initUpload(
     @Payload()
-    payload: { originalName: string; mimeType: string; size: number; category: FileCategory; chatId?: string; uploaderId?: string },
+    payload: {
+      originalName: string;
+      mimeType: string;
+      size: number;
+      category: FileCategory;
+      chatId?: string;
+      uploaderId?: string;
+    },
   ) {
     return this.mediaService.initUpload(
       {
@@ -73,7 +78,14 @@ export class MediaController {
 
   @MessagePattern(MEDIA_PATTERNS.GET_CHAT_HISTORY)
   async getChatHistory(
-    @Payload() payload: { chatId: string; uploaderId: string; category?: FileCategory; take?: number; skip?: number },
+    @Payload()
+    payload: {
+      chatId: string;
+      uploaderId: string;
+      category?: FileCategory;
+      take?: number;
+      skip?: number;
+    },
   ): Promise<{ files: FileResponseDto[]; total: number }> {
     return this.mediaService.getChatHistory(payload.chatId, payload.uploaderId, {
       category: payload.category,

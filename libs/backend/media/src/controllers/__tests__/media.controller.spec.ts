@@ -1,3 +1,6 @@
+import type { IMediaService } from '../../interfaces/media.interface';
+import { MediaController } from '../media.controller';
+
 jest.mock('@org/core', () => ({
   MEDIA_PATTERNS: {
     INIT_UPLOAD: 'media.initUpload',
@@ -17,9 +20,6 @@ jest.mock('@org/core', () => ({
   },
   MEDIA_SERVICE_TOKEN: Symbol('MEDIA_SERVICE'),
 }));
-
-import type { IMediaService } from '../../interfaces/media.interface';
-import { MediaController } from '../media.controller';
 
 describe('MediaController', () => {
   let mediaService: {

@@ -3,7 +3,15 @@ import { z } from 'zod';
 export const fileStatusSchema = z.enum(['PENDING', 'READY', 'DELETING']);
 export type FileStatus = z.infer<typeof fileStatusSchema>;
 
-export const fileCategorySchema = z.enum(['AVATAR', 'IMAGE', 'AUDIO', 'VIDEO', 'FILE', 'VOICE', 'CIRCLE']);
+export const fileCategorySchema = z.enum([
+  'AVATAR',
+  'IMAGE',
+  'AUDIO',
+  'VIDEO',
+  'FILE',
+  'VOICE',
+  'CIRCLE',
+]);
 export type FileCategory = z.infer<typeof fileCategorySchema>;
 
 export const fileSchema = z.object({

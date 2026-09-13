@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { FileCategory } from '@org/common';
+import { MEDIA_PRISMA_REPOSITORY_TOKEN, STORAGE_PROVIDER_TOKEN } from '@org/core';
+import type { IStorageProvider } from '@org/core';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 
-import { MEDIA_PRISMA_REPOSITORY_TOKEN, STORAGE_PROVIDER_TOKEN } from '@org/core';
-import type { IStorageProvider } from '@org/core';
-import type { FileCategory } from '@org/common';
 import type {
   CreateFileInput,
   CreateMediaReferenceInput,
@@ -39,10 +39,7 @@ export class MediaService implements IMediaService {
     @Inject(STORAGE_PROVIDER_TOKEN) private readonly storage: IStorageProvider,
   ) {}
 
-  async initUpload(
-    input: UploadInput,
-    uploaderId?: string,
-  ): Promise<InitUploadResult> {
+  async initUpload(input: UploadInput, uploaderId?: string): Promise<InitUploadResult> {
     const ext = extname(input.originalName);
     const prefix = CATEGORY_PREFIX[input.category];
     const key = input.chatId
@@ -134,11 +131,19 @@ export class MediaService implements IMediaService {
     try {
       const claim = await this.repo.claimForDeletion(id);
       if (claim.outcome === 'MISSING') {
-        this.logger.log({ eventType: 'media_file_delete_skipped', hasFileId: !!id, reason: 'FILE_NOT_FOUND' });
+        this.logger.log({
+          eventType: 'media_file_delete_skipped',
+          hasFileId: !!id,
+          reason: 'FILE_NOT_FOUND',
+        });
         return { success: false };
       }
       if (claim.outcome === 'UNAVAILABLE') {
-        this.logger.log({ eventType: 'media_file_delete_skipped', hasFileId: !!id, reason: 'FILE_NOT_READY' });
+        this.logger.log({
+          eventType: 'media_file_delete_skipped',
+          hasFileId: !!id,
+          reason: 'FILE_NOT_READY',
+        });
         return { success: false };
       }
       if (claim.outcome === 'REFERENCED') {
@@ -164,7 +169,11 @@ export class MediaService implements IMediaService {
         try {
           await this.repo.releaseDeletionClaim(id);
         } catch {
-          this.logger.error({ eventType: 'media_file_delete_failed', hasFileId: !!id, stage: 'RELEASE_CLAIM' });
+          this.logger.error({
+            eventType: 'media_file_delete_failed',
+            hasFileId: !!id,
+            stage: 'RELEASE_CLAIM',
+          });
         }
         throw error;
       }
@@ -219,9 +228,7 @@ export class MediaService implements IMediaService {
     }
   }
 
-  async deleteReference(
-    input: DeleteMediaReferenceInput,
-  ): Promise<DeleteMediaReferenceResult> {
+  async deleteReference(input: DeleteMediaReferenceInput): Promise<DeleteMediaReferenceResult> {
     this.logger.log({
       eventType: 'media_reference_delete_requested',
       hasOwnerId: !!input.ownerId,
@@ -236,9 +243,7 @@ export class MediaService implements IMediaService {
     try {
       const reference = await this.repo.deleteReference(input);
       if (!reference) {
-        const remainingCount = input.fileId
-          ? await this.repo.countReferences(input.fileId)
-          : null;
+        const remainingCount = input.fileId ? await this.repo.countReferences(input.fileId) : null;
         this.logger.log({
           eventType: 'media_reference_delete_skipped',
           hasFileId: !!input.fileId,
@@ -309,7 +314,12 @@ export class MediaService implements IMediaService {
     options?: { category?: FileCategory; take?: number; skip?: number },
   ): Promise<{ files: FileResponse[]; total: number }> {
     const [files, total] = await Promise.all([
-      this.repo.findByChatId(chatId, { uploaderId, category: options?.category, take: options?.take, skip: options?.skip }),
+      this.repo.findByChatId(chatId, {
+        uploaderId,
+        category: options?.category,
+        take: options?.take,
+        skip: options?.skip,
+      }),
       this.repo.countByChatId(chatId, { category: options?.category }),
     ]);
     return {

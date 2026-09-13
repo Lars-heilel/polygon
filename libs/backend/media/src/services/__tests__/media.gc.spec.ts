@@ -1,13 +1,13 @@
 import { NotFoundException } from '@nestjs/common';
+import type { IStorageProvider } from '@org/core';
+
+import type { IMediaRepository } from '../../interfaces/media.interface';
+import { MediaService } from '../media.service';
 
 jest.mock('@org/core', () => ({
   MEDIA_PRISMA_REPOSITORY_TOKEN: Symbol('MEDIA_PRISMA_REPOSITORY_TOKEN'),
   STORAGE_PROVIDER_TOKEN: Symbol('STORAGE_PROVIDER_TOKEN'),
 }));
-
-import type { IStorageProvider } from '@org/core';
-import type { IMediaRepository } from '../../interfaces/media.interface';
-import { MediaService } from '../media.service';
 
 const file = (overrides = {}) => ({
   id: 'file-1',

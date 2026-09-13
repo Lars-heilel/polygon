@@ -1,10 +1,11 @@
 import type { ClientProxy } from '@nestjs/microservices';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { CHAT_PATTERNS, MEDIA_PATTERNS, type IStorageProvider } from '@org/core';
+import { CHAT_PATTERNS, type IStorageProvider, MEDIA_PATTERNS } from '@org/core';
 import { ConfirmUploadDto } from '@org/media';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { of, throwError } from 'rxjs';
 
-type MediaGatewayControllerConstructor = typeof import('../media.controller').MediaGatewayController;
+type MediaGatewayControllerConstructor =
+  typeof import('../media.controller').MediaGatewayController;
 
 describe('MediaGatewayController link previews', () => {
   let MediaGatewayController: MediaGatewayControllerConstructor;
@@ -62,7 +63,9 @@ describe('MediaGatewayController link previews', () => {
   });
 
   it('returns the YouTube fallback without fetching the page', async () => {
-    const fetchSpy = jest.spyOn(global, 'fetch').mockRejectedValue(new Error('fetch should not run'));
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockRejectedValue(new Error('fetch should not run'));
     const controller = new MediaGatewayController(
       {} as ClientProxy,
       {} as ClientProxy,
@@ -140,14 +143,16 @@ describe('MediaGatewayController chat attachment content', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(ctx.controller, 'logger', { value: logger });
     ctx.chatClient.send.mockReturnValueOnce(of({ mediaId }));
-    ctx.mediaClient.send.mockReturnValueOnce(of({
-      id: mediaId,
-      bucket: 'chat-media',
-      key: 'voice.ogg',
-      mimeType: 'audio/ogg',
-      size: 33000,
-      chatId,
-    }));
+    ctx.mediaClient.send.mockReturnValueOnce(
+      of({
+        id: mediaId,
+        bucket: 'chat-media',
+        key: 'voice.ogg',
+        mimeType: 'audio/ogg',
+        size: 33000,
+        chatId,
+      }),
+    );
 
     await (
       ctx.controller as typeof ctx.controller & {
@@ -160,7 +165,14 @@ describe('MediaGatewayController chat attachment content', () => {
           res: ReturnType<typeof resMock>,
         ) => Promise<void>;
       }
-    ).getChatAttachmentContent(chatId, messageId, attachmentId, { sub: userId }, reqMock(), resMock());
+    ).getChatAttachmentContent(
+      chatId,
+      messageId,
+      attachmentId,
+      { sub: userId },
+      reqMock(),
+      resMock(),
+    );
 
     expect(ctx.chatClient.send).toHaveBeenCalledWith(
       CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS,
@@ -200,7 +212,9 @@ describe('MediaGatewayController chat attachment content', () => {
     const userId = '33333333-3333-4333-8333-333333333333';
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(ctx.controller, 'logger', { value: logger });
-    ctx.chatClient.send.mockReturnValueOnce(throwError(() => ({ statusCode: 403, message: 'Forbidden' } as never)));
+    ctx.chatClient.send.mockReturnValueOnce(
+      throwError(() => ({ statusCode: 403, message: 'Forbidden' }) as never),
+    );
 
     await expect(
       (
@@ -214,7 +228,14 @@ describe('MediaGatewayController chat attachment content', () => {
             res: ReturnType<typeof resMock>,
           ) => Promise<void>;
         }
-      ).getChatAttachmentContent(chatId, messageId, attachmentId, { sub: userId }, reqMock(), resMock()),
+      ).getChatAttachmentContent(
+        chatId,
+        messageId,
+        attachmentId,
+        { sub: userId },
+        reqMock(),
+        resMock(),
+      ),
     ).rejects.toMatchObject({ status: 403 });
 
     expect(ctx.chatClient.send).toHaveBeenCalledWith(
@@ -250,14 +271,16 @@ describe('MediaGatewayController chat attachment content', () => {
     const ctx = controller();
     const fileId = '55555555-5555-4555-8555-555555555555';
     const userId = '33333333-3333-4333-8333-333333333333';
-    ctx.mediaClient.send.mockReturnValueOnce(of({
-      id: fileId,
-      bucket: 'media-bucket',
-      key: 'file.bin',
-      mimeType: 'application/octet-stream',
-      size: 10,
-      chatId: null,
-    }));
+    ctx.mediaClient.send.mockReturnValueOnce(
+      of({
+        id: fileId,
+        bucket: 'media-bucket',
+        key: 'file.bin',
+        mimeType: 'application/octet-stream',
+        size: 10,
+        chatId: null,
+      }),
+    );
 
     await (
       ctx.controller as typeof ctx.controller & {
@@ -308,7 +331,13 @@ describe('MediaGatewayController upload validation', () => {
     ctx.chatClient.send.mockReturnValueOnce(of(false));
     await expect(
       ctx.controller.initUpload(
-        { originalName: 'a.jpg', mimeType: 'image/jpeg', size: 10, category: 'IMAGE', chatId: 'chat-1' },
+        {
+          originalName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          size: 10,
+          category: 'IMAGE',
+          chatId: 'chat-1',
+        },
         { sub: 'user-1' } as never,
       ),
     ).rejects.toMatchObject({ status: 403 });
@@ -321,7 +350,13 @@ describe('MediaGatewayController upload validation', () => {
     ctx.mediaClient.send.mockReturnValueOnce(of({ fileId: 'file-1', presignedUrl: 'https://x' }));
     await expect(
       ctx.controller.initUpload(
-        { originalName: 'a.jpg', mimeType: 'image/jpeg', size: 10, category: 'IMAGE', chatId: 'chat-1' },
+        {
+          originalName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          size: 10,
+          category: 'IMAGE',
+          chatId: 'chat-1',
+        },
         { sub: 'user-1' } as never,
       ),
     ).resolves.toEqual({ fileId: 'file-1', presignedUrl: 'https://x' });

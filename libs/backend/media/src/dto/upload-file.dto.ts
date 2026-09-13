@@ -1,6 +1,5 @@
-import { createZodDto } from 'nestjs-zod';
-
 import { initUploadSchema } from '@org/common';
+import { createZodDto } from 'nestjs-zod';
 
 export const MIME_TYPE_MAP: Record<string, RegExp> = {
   AVATAR: /^image\//,

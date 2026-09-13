@@ -1,5 +1,6 @@
 import { API_ROUTES } from '@org/common';
 import { authedFetch } from '@org/shared';
+
 import type { AvatarItem } from '../model/types.js';
 
 interface InitUploadResponse {
@@ -62,7 +63,11 @@ export async function confirmUpload(fileId: string): Promise<ConfirmUploadRespon
   });
 }
 
-export async function updateUserProfile(data: { displayName?: string; bio?: string; avatarUrl?: string }): Promise<void> {
+export async function updateUserProfile(data: {
+  displayName?: string;
+  bio?: string;
+  avatarUrl?: string;
+}): Promise<void> {
   await authedFetch<void>(API_ROUTES.users.me, {
     method: 'PATCH',
     body: JSON.stringify(data),

@@ -23,9 +23,7 @@ describe('initUploadSchema', () => {
   });
 
   it('rejects an overlong mimeType', () => {
-    expect(initUploadSchema.safeParse({ ...base, mimeType: 'm'.repeat(128) }).success).toBe(
-      false,
-    );
+    expect(initUploadSchema.safeParse({ ...base, mimeType: 'm'.repeat(128) }).success).toBe(false);
   });
 
   it('rejects a non-positive size', () => {
@@ -67,9 +65,7 @@ describe('fileSchema limits', () => {
       updatedAt: new Date('2026-09-13T00:00:00.000Z'),
     };
     expect(fileSchema.safeParse({ ...base, bucket: 'b'.repeat(64) }).success).toBe(false);
-    expect(fileSchema.safeParse({ ...base, originalName: 'n'.repeat(256) }).success).toBe(
-      false,
-    );
+    expect(fileSchema.safeParse({ ...base, originalName: 'n'.repeat(256) }).success).toBe(false);
     expect(fileSchema.safeParse(base).success).toBe(true);
   });
 });
