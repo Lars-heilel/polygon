@@ -1,12 +1,31 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Logger, Post, UseGuards, UsePipes } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Logger,
+  Post,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { SessionGuard } from '@org/auth';
 import { API_ROUTES } from '@org/common';
+import {
+  ActiveAccountGuard,
+  CurrentUser,
+  type Env,
+  type JwtPayload,
+  NOTIFICATION_CLIENT_TOKEN,
+  NOTIFICATION_EVENTS,
+} from '@org/core';
 import { SubscribePushDto, UnsubscribePushDto } from '@org/notification';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { ActiveAccountGuard, CurrentUser, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
 
 @ApiTags('notifications')
 @ApiCookieAuth('access_token')
@@ -25,10 +44,7 @@ export class NotificationGatewayController {
   @ApiResponse({ status: 201, description: 'Subscribed successfully' })
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(ZodValidationPipe)
-  async subscribe(
-    @CurrentUser() user: JwtPayload,
-    @Body() body: SubscribePushDto,
-  ): Promise<void> {
+  async subscribe(@CurrentUser() user: JwtPayload, @Body() body: SubscribePushDto): Promise<void> {
     this.logger.log({
       eventType: 'push_subscribe_request',
       route: '/notifications/push/subscribe',

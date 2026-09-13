@@ -1,5 +1,6 @@
 import type { PushPayload, PushSubscriptionData } from '../../interfaces/notification.interface';
 import type { PushService } from '../../services/push.service';
+import { PushController } from '../push.controller';
 
 jest.mock('@org/core', () => ({
   NOTIFICATION_EVENTS: {
@@ -10,8 +11,6 @@ jest.mock('@org/core', () => ({
     PUSH_UNSUBSCRIBE: 'notification.push-unsubscribe',
   },
 }));
-
-import { PushController } from '../push.controller';
 
 describe('PushController', () => {
   let pushService: {

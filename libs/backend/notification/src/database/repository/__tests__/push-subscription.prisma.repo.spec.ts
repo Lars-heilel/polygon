@@ -1,11 +1,11 @@
+import type { PrismaService } from '../../prisma/prisma.service';
+import { PushSubscriptionPrismaRepository } from '../push-subscription.prisma.repo';
+
 jest.mock('@org/core', () => ({
   handlePrismaError: (error: unknown) => {
     throw error;
   },
 }));
-
-import type { PrismaService } from '../../prisma/prisma.service';
-import { PushSubscriptionPrismaRepository } from '../push-subscription.prisma.repo';
 
 describe('PushSubscriptionPrismaRepository', () => {
   const pushSubscription = {

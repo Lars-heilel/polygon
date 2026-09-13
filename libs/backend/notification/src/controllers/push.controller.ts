@@ -12,7 +12,9 @@ export class PushController {
   constructor(private readonly pushService: PushService) {}
 
   @EventPattern(NOTIFICATION_EVENTS.PUSH_SUBSCRIBE)
-  async subscribe(@Payload() payload: { userId: string; subscription: PushSubscriptionData }): Promise<void> {
+  async subscribe(
+    @Payload() payload: { userId: string; subscription: PushSubscriptionData },
+  ): Promise<void> {
     this.logger.log({ eventType: 'push_subscribe_request' });
     await this.pushService.subscribe(payload.userId, payload.subscription);
     this.logger.log({ eventType: 'push_subscribe_done' });

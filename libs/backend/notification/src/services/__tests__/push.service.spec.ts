@@ -1,16 +1,16 @@
 import type { ConfigService } from '@nestjs/config';
 import type { Env } from '@org/core';
 
-jest.mock('web-push', () => ({
-  setVapidDetails: jest.fn(),
-  sendNotification: jest.fn(),
-}));
-
 import type {
   IPushSubscriptionRepository,
   PushSubscriptionRecord,
 } from '../../interfaces/notification.interface';
 import { PushService } from '../push.service';
+
+jest.mock('web-push', () => ({
+  setVapidDetails: jest.fn(),
+  sendNotification: jest.fn(),
+}));
 
 const record = (overrides: Partial<PushSubscriptionRecord> = {}): PushSubscriptionRecord => ({
   id: 'sub-1',

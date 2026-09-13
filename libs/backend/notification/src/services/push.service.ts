@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '@org/core';
 import * as webpush from 'web-push';
 
-import type { IPushSubscriptionRepository, PushPayload, PushSubscriptionData } from '../interfaces/notification.interface';
+import type {
+  IPushSubscriptionRepository,
+  PushPayload,
+  PushSubscriptionData,
+} from '../interfaces/notification.interface';
 import { PUSH_SUBSCRIPTION_REPOSITORY_TOKEN } from '../tokens/push.tokens';
 
 export interface PushResult {
@@ -51,9 +55,7 @@ export class PushService {
 
   async send(userId: string, payload: PushPayload): Promise<PushResult[]> {
     const subs = await this.repo.findByUserId(userId);
-    this.logger.log(
-      `Service: send() requested, subscriptionsFound=${subs.length}`,
-    );
+    this.logger.log(`Service: send() requested, subscriptionsFound=${subs.length}`);
 
     if (subs.length === 0) {
       this.logger.warn('Service: send() — no push subscriptions');

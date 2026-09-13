@@ -1,10 +1,9 @@
 import type { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
+import { type Env, type JwtPayload, NOTIFICATION_EVENTS } from '@org/core';
+import { SubscribePushDto } from '@org/notification';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { of } from 'rxjs';
-
-import { NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
-import { SubscribePushDto } from '@org/notification';
 
 import { NotificationGatewayController } from '../notification.controller';
 

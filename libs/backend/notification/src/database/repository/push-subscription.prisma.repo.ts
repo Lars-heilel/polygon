@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { IPushSubscriptionRepository, PushSubscriptionData, PushSubscriptionRecord } from '../../interfaces/notification.interface';
+
+import type {
+  IPushSubscriptionRepository,
+  PushSubscriptionData,
+  PushSubscriptionRecord,
+} from '../../interfaces/notification.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
