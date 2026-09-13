@@ -27,6 +27,9 @@
       "path": "../../../libs/backend/user/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/backend/notification/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/backend/chat/tsconfig.lib.json"
     },
     {

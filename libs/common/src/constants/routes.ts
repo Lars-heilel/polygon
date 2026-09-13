@@ -28,6 +28,12 @@ export const API_ROUTES = {
   search: {
     users: 'search/users',
   },
+  notifications: {
+    root: 'notifications/push',
+    pushSubscribe: 'notifications/push/subscribe',
+    pushUnsubscribe: 'notifications/push/unsubscribe',
+    vapidKey: 'notifications/push/vapid-key',
+  },
   media: {
     initUpload: 'media/init-upload',
     confirm: 'media/confirm',

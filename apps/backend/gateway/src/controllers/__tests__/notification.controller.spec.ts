@@ -1,8 +1,10 @@
 import type { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { of } from 'rxjs';
 
 import { NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
+import { SubscribePushDto } from '@org/notification';
 
 import { NotificationGatewayController } from '../notification.controller';
 
@@ -80,5 +82,19 @@ describe('NotificationGatewayController', () => {
     const diagnosticPayload = JSON.stringify(logger.log.mock.calls);
     expect(diagnosticPayload).not.toContain('user-secret-id');
     expect(diagnosticPayload).not.toContain('unsubscribe-secret-endpoint');
+  });
+
+  it('rejects an oversized endpoint at the validation layer', async () => {
+    const pipe = new ZodValidationPipe();
+    expect(() =>
+      pipe.transform(
+        {
+          endpoint: `https://push.example.test/${'a'.repeat(2048)}`,
+          p256dh: 'k',
+          auth: 'a',
+        },
+        { type: 'body', metatype: SubscribePushDto },
+      ),
+    ).toThrow();
   });
 });
