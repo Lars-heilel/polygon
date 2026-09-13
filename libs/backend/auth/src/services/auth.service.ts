@@ -110,7 +110,7 @@ export class AuthService implements IAuthService {
   async getRoleById(id: string): Promise<Role> {
     const credentials = await this.repo.findById(id);
     if (!credentials) {
-      this.logger.warn(`Service: Role lookup failed. User ID not found: ${id}`);
+      this.logger.warn({ eventType: 'role_lookup_not_found', hasUserId: !!id });
       throw new NotFoundException('User not found');
     }
 
@@ -170,7 +170,7 @@ export class AuthService implements IAuthService {
 
     const credentials = await this.repo.findById(id);
     if (!credentials) {
-      this.logger.error(`Service: Failed to establish session. User ID not found: ${id}`);
+      this.logger.error({ eventType: 'session_establish_user_not_found', hasUserId: !!id });
       throw new UnauthorizedException();
     }
 
@@ -289,7 +289,7 @@ export class AuthService implements IAuthService {
   }
 
   async oauthLogin(dto: OAuthLoginDto, clientMetadata?: ClientMetadata): Promise<TokenPair> {
-    this.logger.log(`Service: Processing OAuth pipeline for provider: ${dto.provider}`);
+    this.logger.log({ eventType: 'oauth_pipeline_started', provider: dto.provider });
     this.logger.debug(
       {
         provider: dto.provider,

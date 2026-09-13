@@ -187,7 +187,7 @@ export class AuthController implements IAuthController {
     @Payload() dto: OAuthLoginDto & { clientMetadata?: ClientMetadata },
   ): Promise<TokenPair> {
     const payload = this.parseRpcPayload(oauthLoginRpcPayloadSchema, dto);
-    this.logger.log(`RPC [OAUTH_LOGIN]: Authenticating via provider: ${payload.provider}`);
+    this.logger.log({ eventType: 'oauth_login_request', provider: payload.provider });
     this.logger.debug(
       { provider: payload.provider, hasEmail: !!payload.email, hasClientMetadata: !!payload.clientMetadata },
       'RPC [OAUTH_LOGIN]: OAuth payload and metadata details',

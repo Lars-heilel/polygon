@@ -783,4 +783,43 @@ describe('AuthService', () => {
       expect(sessionCache.removeFromUserSessions).toHaveBeenCalledWith('creds-1', 'session-2');
     });
   });
+
+  describe('log hygiene', () => {
+    function loggedPayload(): string {
+      return JSON.stringify([
+        logger.debug.mock.calls,
+        logger.error.mock.calls,
+        logger.log.mock.calls,
+        logger.verbose.mock.calls,
+        logger.warn.mock.calls,
+      ]);
+    }
+
+    it('never writes raw identifiers on role lookup miss', async () => {
+      repo.findById.mockResolvedValue(null);
+      await expect(service.getRoleById('user-secret-id')).rejects.toThrow();
+      const payload = loggedPayload();
+      expect(payload).not.toContain('user-secret-id');
+    });
+
+    it('never writes raw identifiers on oauth pipeline start', async () => {
+      repo.findByEmail.mockResolvedValue(null);
+      repo.createCredentials.mockResolvedValue({ ...mockCredentials, id: 'oauth-secret-id' });
+      repo.createOAuthAccount.mockResolvedValue({});
+      tokenService.generateTokenPair.mockReturnValue({
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
+      });
+      await service.oauthLogin({
+        provider: 'github',
+        providerId: 'provider-secret-id',
+        email: 'oauth-secret@example.com',
+        name: 'oauth-name',
+      });
+      const payload = loggedPayload();
+      expect(payload).not.toContain('provider-secret-id');
+      expect(payload).not.toContain('oauth-secret@example.com');
+      expect(payload).not.toContain('oauth-secret-id');
+    });
+  });
 });
