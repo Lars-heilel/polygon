@@ -72,7 +72,6 @@ model Message {
   forwardContext MessageForwardContext?
 
   @@index([chatId, createdAt, id])
-  @@unique([chatId, clientId])
   @@index([deletedAt])
   @@index([senderId])
   @@map("messages")

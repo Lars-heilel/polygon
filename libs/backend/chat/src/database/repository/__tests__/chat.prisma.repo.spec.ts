@@ -26,6 +26,7 @@ describe('ChatPrismaRepository', () => {
   };
   const messageDeletion = {
     upsert: jest.fn(),
+    findMany: jest.fn(),
   };
   type RepositoryPrismaMock = {
     chat: typeof chat;
@@ -104,7 +105,7 @@ describe('ChatPrismaRepository', () => {
     chat.findMany.mockResolvedValue([
       {
         id: 'chat-1',
-        members: [{ userId: 'user-1', lastReadAt, lastReadMessageId: 'message-1' }],
+        members: [{ userId: 'user-1', lastReadAt, lastReadMessageId: '101' }],
         messages: [],
       },
     ]);
@@ -122,7 +123,7 @@ describe('ChatPrismaRepository', () => {
         deletions: { none: { userId: 'user-1' } },
         OR: [
           { createdAt: { gt: lastReadAt } },
-          { createdAt: lastReadAt, id: { gt: 'message-1' } },
+          { createdAt: lastReadAt, id: { gt: 101n } },
         ],
       },
     });
@@ -156,7 +157,7 @@ describe('ChatPrismaRepository', () => {
     const lastReadAt = new Date('2026-07-14T10:00:00.000Z');
     message.count.mockResolvedValue(2);
 
-    await expect(repository.countUnreadMessages('chat-1', 'user-1', lastReadAt, 'message-1')).resolves.toBe(2);
+    await expect(repository.countUnreadMessages('chat-1', 'user-1', lastReadAt, '101')).resolves.toBe(2);
 
     expect(message.count).toHaveBeenCalledWith({
       where: {
@@ -166,7 +167,7 @@ describe('ChatPrismaRepository', () => {
         deletions: { none: { userId: 'user-1' } },
         OR: [
           { createdAt: { gt: lastReadAt } },
-          { createdAt: lastReadAt, id: { gt: 'message-1' } },
+          { createdAt: lastReadAt, id: { gt: 101n } },
         ],
       },
     });
@@ -174,7 +175,7 @@ describe('ChatPrismaRepository', () => {
 
   it('persists the supplied message as the server read marker', async () => {
     const readAt = new Date('2026-07-14T10:01:00.000Z');
-    message.findUnique.mockResolvedValue({ id: 'message-1', chatId: 'chat-1', createdAt: readAt });
+    message.findUnique.mockResolvedValue({ id: 101n, chatId: 'chat-1', createdAt: readAt });
     chatMember.findUnique.mockResolvedValue({
       chatId: 'chat-1',
       userId: 'user-1',
@@ -186,15 +187,15 @@ describe('ChatPrismaRepository', () => {
     chatMember.updateMany.mockResolvedValue({ count: 1 });
     chatMember.findUnique.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' });
 
-    await repository.markChatRead('chat-1', 'user-1', 'message-1');
+    await repository.markChatRead('chat-1', 'user-1', '101');
 
     expect(message.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'message-1' } }),
+      expect.objectContaining({ where: { id: 101n } }),
     );
     expect(chatMember.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ chatId: 'chat-1', userId: 'user-1' }),
-        data: { lastReadMessageId: 'message-1', lastReadAt: readAt },
+        data: { lastReadMessageId: 101n, lastReadAt: readAt },
       }),
     );
   });
@@ -202,7 +203,7 @@ describe('ChatPrismaRepository', () => {
   it('does not move the read marker backwards for delayed read requests', async () => {
     const currentReadAt = new Date('2026-07-14T10:02:00.000Z');
     message.findUnique.mockResolvedValue({
-      id: 'message-1',
+      id: 101n,
       chatId: 'chat-1',
       createdAt: new Date('2026-07-14T10:01:00.000Z'),
     });
@@ -211,12 +212,12 @@ describe('ChatPrismaRepository', () => {
       userId: 'user-1',
       role: 'MEMBER',
       joinedAt: new Date('2026-07-14T09:00:00.000Z'),
-      lastReadMessageId: 'message-2',
+      lastReadMessageId: '102',
       lastReadAt: currentReadAt,
     };
     chatMember.findUnique.mockResolvedValue(currentMember);
 
-    await expect(repository.markChatRead('chat-1', 'user-1', 'message-1')).resolves.toEqual(
+    await expect(repository.markChatRead('chat-1', 'user-1', '101')).resolves.toEqual(
       currentMember,
     );
 
@@ -233,12 +234,12 @@ describe('ChatPrismaRepository', () => {
 
   it('rejects a read marker from another chat without updating the member', async () => {
     message.findUnique.mockResolvedValue({
-      id: 'message-2',
+      id: 102n,
       chatId: 'chat-2',
       createdAt: new Date('2026-07-14T10:01:00.000Z'),
     });
 
-    await expect(repository.markChatRead('chat-1', 'user-1', 'message-2')).rejects.toThrow(
+    await expect(repository.markChatRead('chat-1', 'user-1', '102')).rejects.toThrow(
       'Message does not belong to chat',
     );
 
@@ -246,13 +247,13 @@ describe('ChatPrismaRepository', () => {
   });
 
   it('uses a stable cursor query and returns messages in chronological order', async () => {
-    const newer = { id: 'message-2' };
-    const older = { id: 'message-1' };
+    const newer = { id: 102n };
+    const older = { id: 101n };
     message.findMany.mockResolvedValue([newer, older]);
 
-    await expect(repository.findMessagesByChat('chat-1', 'message-3', 2, 'user-1')).resolves.toEqual({
-      messages: [older, newer],
-      nextCursor: 'message-1',
+    await expect(repository.findMessagesByChat('chat-1', '103', 2, 'user-1')).resolves.toEqual({
+      messages: [{ id: '101' }, { id: '102' }],
+      nextCursor: '101',
     });
 
     expect(message.findMany).toHaveBeenCalledWith(
@@ -262,7 +263,7 @@ describe('ChatPrismaRepository', () => {
           deletedAt: null,
           deletions: { none: { userId: 'user-1' } },
         },
-        cursor: { id: 'message-3' },
+        cursor: { id: 103n },
         skip: 1,
         take: 2,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -271,9 +272,9 @@ describe('ChatPrismaRepository', () => {
   });
 
   it('returns persisted media messages with attachments from chat history', async () => {
-    const createdAt = new Date('2026-07-22T10:00:00.000Z');
+    const createdAt = new Date('2026-07-22T00:00:00.000Z');
     const mediaMessage = {
-      id: 'message-media',
+      id: 104n,
       clientId: '44444444-4444-4444-8444-444444444444',
       chatId: 'chat-1',
       senderId: 'user-1',
@@ -282,7 +283,7 @@ describe('ChatPrismaRepository', () => {
       attachments: [
         {
           id: 'attachment-1',
-          messageId: 'message-media',
+          messageId: 104n,
           mediaId: '55555555-5555-4555-8555-555555555555',
           fileNameSnapshot: 'image.png',
           fileSizeSnapshot: 4096,
@@ -301,7 +302,13 @@ describe('ChatPrismaRepository', () => {
     message.findMany.mockResolvedValue([mediaMessage]);
 
     await expect(repository.findMessagesByChat('chat-1', undefined, 50, 'user-1')).resolves.toEqual({
-      messages: [mediaMessage],
+      messages: [
+        {
+          ...mediaMessage,
+          id: '104',
+          attachments: [{ ...mediaMessage.attachments[0], messageId: '104' }],
+        },
+      ],
       nextCursor: null,
     });
 
@@ -320,10 +327,10 @@ describe('ChatPrismaRepository', () => {
   });
 
   it('creates a message with attachments and forward context in one repository call', async () => {
-    const createdAt = new Date('2026-07-22T10:00:00.000Z');
+    const createdAt = new Date('2026-07-22T00:00:00.000Z');
     const originalMessageCreatedAt = new Date('2026-07-22T09:00:00.000Z');
     const createdMessage = {
-      id: 'message-1',
+      id: 105n,
       chatId: 'target-chat',
       senderId: 'user-1',
       type: 'VOICE',
@@ -331,7 +338,7 @@ describe('ChatPrismaRepository', () => {
       attachments: [
         {
           id: 'attachment-1',
-          messageId: 'message-1',
+          messageId: 105n,
           mediaId: 'media-1',
           fileNameSnapshot: 'voice.ogg',
           fileSizeSnapshot: 33000,
@@ -341,8 +348,8 @@ describe('ChatPrismaRepository', () => {
         },
       ],
       forwardContext: {
-        messageId: 'message-1',
-        originalMessageId: 'source-message-1',
+        messageId: 105n,
+        originalMessageId: 106n,
         originalChatId: 'source-chat',
         originalAuthorId: 'author-1',
         originalAuthorNameSnapshot: 'tamilka',
@@ -373,7 +380,7 @@ describe('ChatPrismaRepository', () => {
           },
         ],
         forwardContext: {
-          originalMessageId: 'source-message-1',
+          originalMessageId: '106',
           originalChatId: 'source-chat',
           originalAuthorId: 'author-1',
           originalAuthorNameSnapshot: 'tamilka',
@@ -384,7 +391,16 @@ describe('ChatPrismaRepository', () => {
           originalFileNamePreview: 'voice.ogg',
         },
       }),
-    ).resolves.toEqual(createdMessage);
+    ).resolves.toEqual({
+      ...createdMessage,
+      id: '105',
+      attachments: [{ ...createdMessage.attachments[0], messageId: '105' }],
+      forwardContext: {
+        ...createdMessage.forwardContext,
+        messageId: '105',
+        originalMessageId: '106',
+      },
+    });
 
     expect(message.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -394,7 +410,7 @@ describe('ChatPrismaRepository', () => {
               {
                 mediaId: 'media-1',
                 fileNameSnapshot: 'voice.ogg',
-                fileSizeSnapshot: 33000,
+                fileSizeSnapshot: 33000n,
                 mimeSnapshot: 'audio/ogg',
                 category: 'VOICE',
               },
@@ -402,7 +418,7 @@ describe('ChatPrismaRepository', () => {
           },
           forwardContext: {
             create: {
-              originalMessageId: 'source-message-1',
+              originalMessageId: 106n,
               originalChatId: 'source-chat',
               originalAuthorId: 'author-1',
               originalAuthorNameSnapshot: 'tamilka',
@@ -424,20 +440,21 @@ describe('ChatPrismaRepository', () => {
 
   it('updates message text and editedAt', async () => {
     message.update.mockResolvedValue({
-      id: 'message-1',
+      id: 101n,
       text: 'after',
       editedAt: new Date('2026-07-22T00:00:00.000Z'),
     });
 
-    await expect(repository.updateMessageText('message-1', 'after')).resolves.toEqual(
-      expect.objectContaining({ id: 'message-1', text: 'after' }),
+    await expect(repository.updateMessageText('101', 'after', false)).resolves.toEqual(
+      expect.objectContaining({ id: '101', text: 'after' }),
     );
 
     expect(message.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'message-1' },
+        where: { id: 101n },
         data: {
           text: 'after',
+          hasLink: false,
           editedAt: expect.any(Date),
         },
       }),
@@ -446,19 +463,19 @@ describe('ChatPrismaRepository', () => {
 
   it('marks a message globally deleted with actor metadata', async () => {
     message.update.mockResolvedValue({
-      id: 'message-1',
+      id: 101n,
       chatId: 'chat-1',
       deletedById: 'user-1',
       deletedAt: new Date('2026-07-22T00:00:00.000Z'),
     });
 
-    await expect(repository.deleteMessageForEveryone('message-1', 'user-1')).resolves.toEqual(
-      expect.objectContaining({ id: 'message-1', deletedById: 'user-1' }),
+    await expect(repository.deleteMessageForEveryone('101', 'user-1')).resolves.toEqual(
+      expect.objectContaining({ id: '101', deletedById: 'user-1' }),
     );
 
     expect(message.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'message-1' },
+        where: { id: 101n },
         data: {
           deletedAt: expect.any(Date),
           deletedById: 'user-1',
@@ -468,16 +485,16 @@ describe('ChatPrismaRepository', () => {
   });
 
   it('stores per-user hidden message state idempotently', async () => {    messageDeletion.upsert.mockResolvedValue({
-      messageId: 'message-1',
+      messageId: 101n,
       userId: 'user-1',
     });
 
-    await expect(repository.hideMessageForUser('message-1', 'user-1')).resolves.toBeUndefined();
+    await expect(repository.hideMessageForUser('101', 'user-1')).resolves.toBeUndefined();
 
     expect(messageDeletion.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { messageId_userId: { messageId: 'message-1', userId: 'user-1' } },
-        create: { messageId: 'message-1', userId: 'user-1' },
+        where: { messageId_userId: { messageId: 101n, userId: 'user-1' } },
+        create: { messageId: 101n, userId: 'user-1' },
         update: { deletedAt: expect.any(Date) },
       }),
     );
@@ -485,7 +502,7 @@ describe('ChatPrismaRepository', () => {
 
   it('creates a message and touches chat lastMessage plus sender lastRead in one transaction', async () => {
     const createdAt = new Date('2026-07-22T00:00:00.000Z');
-    message.create.mockResolvedValue({ id: 'message-1', chatId: 'chat-1', createdAt });
+    message.create.mockResolvedValue({ id: 101n, chatId: 'chat-1', createdAt });
     chat.update.mockResolvedValue({ id: 'chat-1' });
     chatMember.updateMany.mockResolvedValue({ count: 1 });
 
@@ -498,19 +515,19 @@ describe('ChatPrismaRepository', () => {
         text: 'hi',
         attachments: [],
       }),
-    ).resolves.toEqual({ id: 'message-1', chatId: 'chat-1', createdAt });
+    ).resolves.toEqual({ id: '101', chatId: 'chat-1', createdAt });
 
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(chat.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'chat-1' },
-        data: { lastMessageId: 'message-1', lastMessageAt: createdAt, updatedAt: createdAt },
+        data: { lastMessageId: 101n, lastMessageAt: createdAt, updatedAt: createdAt },
       }),
     );
     expect(chatMember.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { chatId: 'chat-1', userId: 'user-1' },
-        data: { lastReadMessageId: 'message-1', lastReadAt: createdAt },
+        data: { lastReadMessageId: 101n, lastReadAt: createdAt },
       }),
     );
   });
@@ -519,17 +536,17 @@ describe('ChatPrismaRepository', () => {
     const at = new Date('2026-07-22T00:00:00.000Z');
     chat.update.mockResolvedValue({ id: 'chat-1' });
 
-    await expect(repository.touchChatLastMessage('chat-1', 'message-1', at)).resolves.toBeUndefined();
+    await expect(repository.touchChatLastMessage('chat-1', '101', at)).resolves.toBeUndefined();
 
     expect(chat.update).toHaveBeenCalledWith({
       where: { id: 'chat-1' },
-      data: { lastMessageId: 'message-1', lastMessageAt: at, updatedAt: at },
+      data: { lastMessageId: 101n, lastMessageAt: at, updatedAt: at },
     });
   });
 
   it('persists forwardContext and touches chat lastMessage on forward clone', async () => {
     const createdAt = new Date('2026-07-22T00:00:00.000Z');
-    message.create.mockResolvedValue({ id: 'cloned-1', chatId: 'target-chat', createdAt });
+    message.create.mockResolvedValue({ id: 108n, chatId: 'target-chat', createdAt });
     chat.update.mockResolvedValue({ id: 'target-chat' });
     chatMember.updateMany.mockResolvedValue({ count: 1 });
 
@@ -542,7 +559,7 @@ describe('ChatPrismaRepository', () => {
         text: 'forwarded',
         attachments: [],
         forwardContext: {
-          originalMessageId: 'original-1',
+          originalMessageId: '107',
           originalChatId: 'source-chat',
           originalAuthorId: 'author-1',
           originalAuthorNameSnapshot: 'Alice',
@@ -553,7 +570,7 @@ describe('ChatPrismaRepository', () => {
           originalFileNamePreview: null,
         },
       }),
-    ).resolves.toEqual({ id: 'cloned-1', chatId: 'target-chat', createdAt });
+    ).resolves.toEqual({ id: '108', chatId: 'target-chat', createdAt });
 
     expect(message.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -561,7 +578,7 @@ describe('ChatPrismaRepository', () => {
           chatId: 'target-chat',
           forwardContext: expect.objectContaining({
             create: expect.objectContaining({
-              originalMessageId: 'original-1',
+              originalMessageId: 107n,
               originalAuthorId: 'author-1',
             }),
           }),
@@ -571,19 +588,57 @@ describe('ChatPrismaRepository', () => {
     expect(chat.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'target-chat' },
-        data: { lastMessageId: 'cloned-1', lastMessageAt: createdAt, updatedAt: createdAt },
+        data: { lastMessageId: 108n, lastMessageAt: createdAt, updatedAt: createdAt },
       }),
     );
   });
 
   it('findMessageByClientId returns message by scoped clientId', async () => {
-    message.findFirst.mockResolvedValue({ id: 'msg-1' });
+    message.findFirst.mockResolvedValue({ id: 109n });
 
     const found = await repository.findMessageByClientId('chat-1', 'c-1');
 
-    expect(found?.id).toBe('msg-1');
+    expect(found?.id).toBe('109');
     expect(message.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { chatId: 'chat-1', clientId: 'c-1' } }),
+    );
+  });
+
+  it('finds a direct chat by deterministic key', async () => {
+    chat.findUnique.mockResolvedValue({ id: 'chat-1', directKey: 'direct:a:b' });
+
+    await expect(repository.findDirectChatByKey('direct:a:b')).resolves.toEqual({
+      id: 'chat-1',
+      directKey: 'direct:a:b',
+    });
+    expect(chat.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { directKey: 'direct:a:b' } }),
+    );
+  });
+
+  it('returns changed messages and deleted ids for delta sync', async () => {
+    const since = new Date('2026-09-13T00:00:00.000Z');
+    message.findMany.mockResolvedValue([{ id: 110n, updatedAt: since }]);
+    messageDeletion.findMany.mockResolvedValue([{ messageId: 111n }]);
+
+    await expect(
+      repository.findMessagesDelta('chat-1', 'user-1', since, '109', 50),
+    ).resolves.toEqual({ messages: [{ id: '110', updatedAt: since }], deletedIds: ['111'] });
+
+    expect(message.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [
+            { updatedAt: { gt: since } },
+            { updatedAt: since, id: { gt: 109n } },
+          ],
+        }),
+        orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+        take: 50,
+      }),
+    );
+    expect(messageDeletion.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'user-1', deletedAt: { gt: since } } }),
     );
   });
 });

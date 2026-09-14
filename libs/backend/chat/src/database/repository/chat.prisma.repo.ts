@@ -19,19 +19,106 @@ import type {
 } from '../../interfaces/chat.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
+// Translation boundary: message-scoped ids are BIGINT in Postgres but travel
+// the stack as decimal strings. Convert on the way in, stringify on the way out.
+// Chat/user ids stay UUID strings end to end. Mappers preserve row shape
+// (no keys added) so partial mocks keep passing through untouched.
+const toMessageId = (id: string | bigint): bigint => {
+  if (typeof id === 'bigint') return id;
+  try {
+    return BigInt(id);
+  } catch {
+    throw new BadRequestException('Invalid message id');
+  }
+};
+
+const fromMessageId = (id: bigint | string | null | undefined): string | null | undefined => {
+  if (id === null || id === undefined) return id;
+  return String(id);
+};
+
+const toFileSize = (size: bigint | number | null | undefined): bigint | null | undefined => {
+  if (size === null || size === undefined) return size;
+  return typeof size === 'bigint' ? size : BigInt(size);
+};
+
+const fromFileSize = (size: bigint | number | null | undefined): number | null | undefined => {
+  if (size === null || size === undefined) return size;
+  return Number(size);
+};
+
+type MessageRow = Omit<Message, 'id' | 'attachments' | 'forwardContext'> & {
+  id: bigint | string;
+  attachments: Array<
+    Omit<Message['attachments'][number], 'messageId' | 'fileSizeSnapshot'> & {
+      messageId: bigint | string;
+      fileSizeSnapshot: bigint | number | null;
+    }
+  >;
+  forwardContext: null | (Omit<
+    NonNullable<Message['forwardContext']>,
+    'messageId' | 'originalMessageId'
+  > & {
+    messageId: bigint | string;
+    originalMessageId: bigint | string | null;
+  });
+};
+
+const toMessage = (row: MessageRow): Message => {
+  const mapped: Record<string, unknown> = { ...row };
+  if ('id' in mapped) mapped['id'] = fromMessageId(mapped['id'] as bigint | string);
+  if (Array.isArray(mapped['attachments'])) {
+    mapped['attachments'] = (mapped['attachments'] as MessageRow['attachments']).map(
+      (attachment) => {
+        const result: Record<string, unknown> = { ...attachment };
+        if ('messageId' in result) result['messageId'] = fromMessageId(result['messageId'] as bigint | string);
+        if ('fileSizeSnapshot' in result) {
+          result['fileSizeSnapshot'] = fromFileSize(
+            result['fileSizeSnapshot'] as bigint | number | null,
+          );
+        }
+        return result;
+      },
+    );
+  }
+  const forwardContext = mapped['forwardContext'] as MessageRow['forwardContext'];
+  if (forwardContext) {
+    const result: Record<string, unknown> = { ...forwardContext };
+    if ('messageId' in result) result['messageId'] = fromMessageId(result['messageId'] as bigint | string);
+    if ('originalMessageId' in result && result['originalMessageId'] !== null) {
+      result['originalMessageId'] = fromMessageId(result['originalMessageId'] as bigint | string);
+    }
+    mapped['forwardContext'] = result;
+  }
+  return mapped as unknown as Message;
+};
+
+const toChat = <T extends { lastMessageId?: bigint | string | null }>(row: T): T => {
+  if (!('lastMessageId' in row)) return row;
+  return { ...row, lastMessageId: fromMessageId(row.lastMessageId) };
+};
+
+const toChatMember = <T extends { lastReadMessageId?: bigint | string | null }>(
+  row: T,
+): T => {
+  if (!('lastReadMessageId' in row)) return row;
+  return { ...row, lastReadMessageId: fromMessageId(row.lastReadMessageId) };
+};
+
 @Injectable()
 export class ChatPrismaRepository implements IChatRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findChatById(id: string): Promise<Chat | null> {
-    return this.prisma.chat.findUnique({
+    const chat = await this.prisma.chat.findUnique({
       where: { id },
       select: CHAT_SELECT_FIELDS,
     });
+    return chat ? toChat(chat) : null;
   }
 
   async findDirectChatBetween(userId1: string, userId2: string): Promise<Chat | null> {
-    return this.prisma.chat.findFirst({
+    const chat = await this.prisma.chat.findFirst({
       where: {
         type: 'DIRECT',
         AND: [
@@ -42,10 +129,19 @@ export class ChatPrismaRepository implements IChatRepository {
       },
       select: CHAT_SELECT_FIELDS,
     });
+    return chat ? toChat(chat) : null;
+  }
+
+  async findDirectChatByKey(directKey: string): Promise<Chat | null> {
+    const chat = await this.prisma.chat.findUnique({
+      where: { directKey },
+      select: CHAT_SELECT_FIELDS,
+    });
+    return chat ? toChat(chat) : null;
   }
 
   async findSelfChat(userId: string): Promise<Chat | null> {
-    return this.prisma.chat.findFirst({
+    const chat = await this.prisma.chat.findFirst({
       where: {
         type: 'DIRECT',
         selfOwnerId: userId,
@@ -56,6 +152,7 @@ export class ChatPrismaRepository implements IChatRepository {
       },
       select: CHAT_SELECT_FIELDS,
     });
+    return chat ? toChat(chat) : null;
   }
 
   async createSelfChat(userId: string): Promise<Chat> {
@@ -73,7 +170,7 @@ export class ChatPrismaRepository implements IChatRepository {
           select: CHAT_SELECT_FIELDS,
         });
 
-        return chat;
+        return toChat(chat);
       });
     } catch (error) {
       const existing = await this.findChatBySelfOwner(userId);
@@ -83,10 +180,11 @@ export class ChatPrismaRepository implements IChatRepository {
   }
 
   private async findChatBySelfOwner(userId: string): Promise<Chat | null> {
-    return this.prisma.chat.findUnique({
+    const chat = await this.prisma.chat.findUnique({
       where: { selfOwnerId: userId },
       select: CHAT_SELECT_FIELDS,
     });
+    return chat ? toChat(chat) : null;
   }
 
   async findChatsForUser(userId: string): Promise<ChatWithPreview[]> {
@@ -115,8 +213,9 @@ export class ChatPrismaRepository implements IChatRepository {
         );
 
         return {
-          ...chat,
-          lastMessage: messages[0] ?? null,
+          ...toChat(chat),
+          members: chat.members.map((member) => toChatMember(member)),
+          lastMessage: messages[0] ? toMessage(messages[0] as MessageRow) : null,
           unreadCount,
         };
       }),
@@ -128,8 +227,10 @@ export class ChatPrismaRepository implements IChatRepository {
     name?: string | null;
     avatarUrl?: string | null;
     selfOwnerId?: string | null;
+    directKey?: string | null;
   }): Promise<Chat> {
-    return this.prisma.chat.create({ data, select: CHAT_SELECT_FIELDS });
+    const chat = await this.prisma.chat.create({ data, select: CHAT_SELECT_FIELDS });
+    return toChat(chat);
   }
 
   async deleteChat(id: string): Promise<void> {
@@ -184,14 +285,14 @@ export class ChatPrismaRepository implements IChatRepository {
     const messages = await this.prisma.message.findMany({
       where: buildVisibleMessagesWhere(chatId, userId),
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(cursor ? { cursor: { id: toMessageId(cursor) }, skip: 1 } : {}),
       take,
       select: MESSAGE_SELECT_FIELDS,
     });
 
     return {
-      messages: messages.reverse(),
-      nextCursor: messages.length === take ? messages[0].id : null,
+      messages: messages.reverse().map((message) => toMessage(message as MessageRow)),
+      nextCursor: messages.length === take ? fromMessageId(messages[0].id) : null,
     };
   }
 
@@ -209,29 +310,62 @@ export class ChatPrismaRepository implements IChatRepository {
         deletions: { none: { userId } },
       },
       orderBy: { createdAt: 'desc' },
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(cursor ? { cursor: { id: toMessageId(cursor) }, skip: 1 } : {}),
       take,
       select: MESSAGE_SELECT_FIELDS,
     });
 
     return {
-      messages: messages.reverse(),
-      nextCursor: messages.length === take ? messages[0].id : null,
+      messages: messages.reverse().map((message) => toMessage(message as MessageRow)),
+      nextCursor: messages.length === take ? fromMessageId(messages[0].id) : null,
+    };
+  }
+
+  async findMessagesDelta(
+    chatId: string,
+    userId: string,
+    since: Date,
+    sinceId: string | null,
+    take: number,
+  ): Promise<{ messages: Message[]; deletedIds: string[] }> {
+    const changed = await this.prisma.message.findMany({
+      where: {
+        ...buildVisibleMessagesWhere(chatId, userId),
+        OR: [
+          { updatedAt: { gt: since } },
+          ...(sinceId ? [{ updatedAt: since, id: { gt: toMessageId(sinceId) } }] : []),
+        ],
+      },
+      orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+      take,
+      select: MESSAGE_SELECT_FIELDS,
+    });
+
+    const deletions = await this.prisma.messageDeletion.findMany({
+      where: { userId, deletedAt: { gt: since } },
+      select: { messageId: true },
+    });
+
+    return {
+      messages: changed.map((message) => toMessage(message as MessageRow)),
+      deletedIds: deletions.map((deletion) => fromMessageId(deletion.messageId)),
     };
   }
 
   async findMessageById(id: string): Promise<Message | null> {
-    return this.prisma.message.findUnique({
-      where: { id },
+    const message = await this.prisma.message.findUnique({
+      where: { id: toMessageId(id) },
       select: MESSAGE_SELECT_FIELDS,
     });
+    return message ? toMessage(message as MessageRow) : null;
   }
 
   async findMessageByClientId(chatId: string, clientId: string): Promise<Message | null> {
-    return this.prisma.message.findFirst({
+    const message = await this.prisma.message.findFirst({
       where: { chatId, clientId },
       select: MESSAGE_SELECT_FIELDS,
     });
+    return message ? toMessage(message as MessageRow) : null;
   }
 
   async findVisibleMessagesByIds(
@@ -241,13 +375,14 @@ export class ChatPrismaRepository implements IChatRepository {
   ): Promise<Message[]> {
     if (messageIds.length === 0) return [];
 
-    return this.prisma.message.findMany({
+    const messages = await this.prisma.message.findMany({
       where: {
         ...buildVisibleMessagesWhere(chatId, userId),
-        id: { in: messageIds },
+        id: { in: messageIds.map(toMessageId) },
       },
       select: MESSAGE_SELECT_FIELDS,
     });
+    return messages.map((message) => toMessage(message as MessageRow));
   }
 
   async findMessageAttachmentForAccess(
@@ -256,7 +391,7 @@ export class ChatPrismaRepository implements IChatRepository {
     return this.prisma.messageAttachment.findFirst({
       where: {
         id: input.attachmentId,
-        messageId: input.messageId,
+        messageId: toMessageId(input.messageId),
         message: {
           is: {
             chatId: input.chatId,
@@ -274,19 +409,20 @@ export class ChatPrismaRepository implements IChatRepository {
 
   async createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message> {
     try {
-      return await this.prisma.message.create({
+      const created = await this.prisma.message.create({
         data: {
           chatId: data.chatId,
           clientId: data.clientId ?? null,
           senderId: data.senderId,
           type: data.type ?? 'TEXT',
           text: data.text ?? null,
+          hasLink: data.hasLink ?? false,
           attachments: data.attachments
             ? {
                 create: data.attachments.map((attachment) => ({
                   mediaId: attachment.mediaId,
                   fileNameSnapshot: attachment.fileNameSnapshot ?? null,
-                  fileSizeSnapshot: attachment.fileSizeSnapshot ?? null,
+                  fileSizeSnapshot: toFileSize(attachment.fileSizeSnapshot ?? null),
                   mimeSnapshot: attachment.mimeSnapshot ?? null,
                   category: attachment.category,
                 })),
@@ -295,7 +431,9 @@ export class ChatPrismaRepository implements IChatRepository {
           forwardContext: data.forwardContext
             ? {
                 create: {
-                  originalMessageId: data.forwardContext.originalMessageId ?? null,
+                  originalMessageId: data.forwardContext.originalMessageId
+                    ? toMessageId(data.forwardContext.originalMessageId)
+                    : null,
                   originalChatId: data.forwardContext.originalChatId ?? null,
                   originalAuthorId: data.forwardContext.originalAuthorId,
                   originalAuthorNameSnapshot: data.forwardContext.originalAuthorNameSnapshot,
@@ -311,6 +449,7 @@ export class ChatPrismaRepository implements IChatRepository {
         },
         select: MESSAGE_SELECT_FIELDS,
       });
+      return toMessage(created as MessageRow);
     } catch (error) {
       handlePrismaError(error);
     }
@@ -318,19 +457,20 @@ export class ChatPrismaRepository implements IChatRepository {
 
   async createMessageWithTouch(data: CreateMessageWithRelationsData): Promise<Message> {
     return this.prisma.$transaction(async (tx) => {
-      const message = await tx.message.create({
+      const created = await tx.message.create({
         data: {
           chatId: data.chatId,
           clientId: data.clientId ?? null,
           senderId: data.senderId,
           type: data.type ?? 'TEXT',
           text: data.text ?? null,
+          hasLink: data.hasLink ?? false,
           attachments: data.attachments?.length
             ? {
                 create: data.attachments.map((attachment) => ({
                   mediaId: attachment.mediaId,
                   fileNameSnapshot: attachment.fileNameSnapshot ?? null,
-                  fileSizeSnapshot: attachment.fileSizeSnapshot ?? null,
+                  fileSizeSnapshot: toFileSize(attachment.fileSizeSnapshot ?? null),
                   mimeSnapshot: attachment.mimeSnapshot ?? null,
                   category: attachment.category,
                 })),
@@ -339,7 +479,9 @@ export class ChatPrismaRepository implements IChatRepository {
           forwardContext: data.forwardContext
             ? {
                 create: {
-                  originalMessageId: data.forwardContext.originalMessageId ?? null,
+                  originalMessageId: data.forwardContext.originalMessageId
+                    ? toMessageId(data.forwardContext.originalMessageId)
+                    : null,
                   originalChatId: data.forwardContext.originalChatId ?? null,
                   originalAuthorId: data.forwardContext.originalAuthorId,
                   originalAuthorNameSnapshot: data.forwardContext.originalAuthorNameSnapshot,
@@ -355,17 +497,18 @@ export class ChatPrismaRepository implements IChatRepository {
         },
         select: MESSAGE_SELECT_FIELDS,
       });
+      const message = toMessage(created as MessageRow);
       await tx.chat.update({
         where: { id: data.chatId },
         data: {
-          lastMessageId: message.id,
+          lastMessageId: toMessageId(message.id),
           lastMessageAt: message.createdAt,
           updatedAt: message.createdAt,
         },
       });
       await tx.chatMember.updateMany({
         where: { chatId: data.chatId, userId: data.senderId },
-        data: { lastReadMessageId: message.id, lastReadAt: message.createdAt },
+        data: { lastReadMessageId: toMessageId(message.id), lastReadAt: message.createdAt },
       });
       return message;
     });
@@ -374,25 +517,26 @@ export class ChatPrismaRepository implements IChatRepository {
   async touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void> {
     await this.prisma.chat.update({
       where: { id: chatId },
-      data: { lastMessageId: messageId, lastMessageAt: at, updatedAt: at },
+      data: { lastMessageId: toMessageId(messageId), lastMessageAt: at, updatedAt: at },
     });
   }
 
   async deleteCreatedMessage(messageId: string): Promise<void> {
     try {
-      await this.prisma.message.delete({ where: { id: messageId } });
+      await this.prisma.message.delete({ where: { id: toMessageId(messageId) } });
     } catch (error) {
       handlePrismaError(error);
     }
   }
 
-  async updateMessageText(messageId: string, text: string): Promise<Message> {
+  async updateMessageText(messageId: string, text: string, hasLink: boolean): Promise<Message> {
     try {
-      return await this.prisma.message.update({
-        where: { id: messageId },
-        data: { text, editedAt: new Date() },
+      const updated = await this.prisma.message.update({
+        where: { id: toMessageId(messageId) },
+        data: { text, hasLink, editedAt: new Date() },
         select: MESSAGE_SELECT_FIELDS,
       });
+      return toMessage(updated as MessageRow);
     } catch (error) {
       return handlePrismaError(error);
     }
@@ -400,11 +544,12 @@ export class ChatPrismaRepository implements IChatRepository {
 
   async deleteMessageForEveryone(messageId: string, userId: string): Promise<Message> {
     try {
-      return await this.prisma.message.update({
-        where: { id: messageId },
+      const deleted = await this.prisma.message.update({
+        where: { id: toMessageId(messageId) },
         data: { deletedAt: new Date(), deletedById: userId },
         select: MESSAGE_SELECT_FIELDS,
       });
+      return toMessage(deleted as MessageRow);
     } catch (error) {
       return handlePrismaError(error);
     }
@@ -413,8 +558,8 @@ export class ChatPrismaRepository implements IChatRepository {
   async hideMessageForUser(messageId: string, userId: string): Promise<void> {
     try {
       await this.prisma.messageDeletion.upsert({
-        where: { messageId_userId: { messageId, userId } },
-        create: { messageId, userId },
+        where: { messageId_userId: { messageId: toMessageId(messageId), userId } },
+        create: { messageId: toMessageId(messageId), userId },
         update: { deletedAt: new Date() },
       });
     } catch (error) {
@@ -426,7 +571,7 @@ export class ChatPrismaRepository implements IChatRepository {
     chatId: string,
     userId: string,
     lastReadAt?: Date | null,
-    lastReadMessageId?: string | null,
+    lastReadMessageId?: string | bigint | null,
   ): Promise<number> {
     return this.prisma.message.count({
       where: {
@@ -438,9 +583,9 @@ export class ChatPrismaRepository implements IChatRepository {
           ? {
               OR: [
                 { createdAt: { gt: lastReadAt } },
-                ...(lastReadMessageId
-                  ? [{ createdAt: lastReadAt, id: { gt: lastReadMessageId } }]
-                  : []),
+                ...(lastReadMessageId === null || lastReadMessageId === undefined
+                  ? []
+                  : [{ createdAt: lastReadAt, id: { gt: toMessageId(lastReadMessageId) } }]),
               ],
             }
           : {}),
@@ -454,12 +599,12 @@ export class ChatPrismaRepository implements IChatRepository {
     messageId?: string | null,
   ): Promise<ChatMember> {
     try {
-      let nextReadMessageId: string | null = null;
+      let nextReadMessageId: bigint | null = null;
       let nextReadAt = new Date();
 
       if (messageId) {
         const message = await this.prisma.message.findUnique({
-          where: { id: messageId },
+          where: { id: toMessageId(messageId) },
           select: { id: true, chatId: true, createdAt: true },
         });
 
@@ -510,7 +655,7 @@ export class ChatPrismaRepository implements IChatRepository {
       });
 
       if (!member) throw new NotFoundException('Chat member not found');
-      return member;
+      return toChatMember(member);
     } catch (error) {
       return handlePrismaError(error);
     }
