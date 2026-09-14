@@ -35,14 +35,14 @@ flowchart LR
 
 ## 2. Backend Services
 
-| Service | Queue | Owns |
-|---|---|---|
-| `auth-service` (`libs/backend/auth`) | `auth_queue` | Credentials, OAuth (GitHub/Google), sessions, bans, roles |
-| `user-service` (`libs/backend/user`) | `user_queue` | User profiles; emits `user.registered/updated/deleted` |
-| `chat-service` (`libs/backend/chat`) | `chat_queue` | Chats, members, messages, forwards, read state, attachment access checks |
-| `media-service` (`libs/backend/media`) | `media_queue` | Upload init/confirm, MinIO files, avatars, link previews (gateway fetches), history |
-| `notification-service` (`libs/backend/notification`) | `notification_queue` (events only) | Verification/password emails (Nodemailer), WebPush subscriptions + send |
-| `search-service` (`libs/backend/search`) | `search_queue` | Meilisearch user index; syncs on user events |
+| Service                                              | Queue                              | Owns                                                                                |
+| ---------------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `auth-service` (`libs/backend/auth`)                 | `auth_queue`                       | Credentials, OAuth (GitHub/Google), sessions, bans, roles                           |
+| `user-service` (`libs/backend/user`)                 | `user_queue`                       | User profiles; emits `user.registered/updated/deleted`                              |
+| `chat-service` (`libs/backend/chat`)                 | `chat_queue`                       | Chats, members, messages, forwards, read state, attachment access checks            |
+| `media-service` (`libs/backend/media`)               | `media_queue`                      | Upload init/confirm, MinIO files, avatars, link previews (gateway fetches), history |
+| `notification-service` (`libs/backend/notification`) | `notification_queue` (events only) | Verification/password emails (Nodemailer), WebPush subscriptions + send             |
+| `search-service` (`libs/backend/search`)             | `search_queue`                     | Meilisearch user index; syncs on user events                                        |
 
 Pattern/token constants live in `libs/backend/core/src/constants/queues/*.queue.ts` and
 `libs/backend/core/src/constants/di/*.di.ts`. Shared zod contracts live in `libs/common/src/schemas/*`.
@@ -57,8 +57,7 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
 - Proxy idiom in every HTTP controller: `lastValueFrom(client.send(...))`, map RPC errors to
   `HttpException(message, status)`.
 - Controllers: `auth` (register/login/logout/refresh/verify/forgot/reset/OAuth/sessions),
-  `chats`, `users`, `media`, `search`, `notifications/push`, `admin` (creator/admin only),
-  `frontend-error`.
+  `chats`, `users`, `media`, `search`, `notifications/push`, `admin` (creator/admin only).
 - Auth cookies: HttpOnly `access_token` + `refresh_token`, `SameSite=strict`, `secure` in prod only.
 - Chat reads use `GatewayChatCacheService`: read-through Redis `chat:list:{userId}` (30s) and
   `chat:msgs:{chatId}:*` (60s) with `X-Cache` HIT/MISS headers and silent Redis fallback.
@@ -69,7 +68,7 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
   access/refresh secrets and expiries; every access/refresh pair gets a fresh `jti`.
 - Login: `LocalGuard` validates credentials (`auth.validate-credentials`, 5-attempt Redis limit) →
   `auth.login { id, clientMetadata }` creates `sessionId`, stores `sha256(refresh)` in Prisma `Session`
-  + Redis session cache, sets the cookie pair.
+  - Redis session cache, sets the cookie pair.
 - Request auth: `SessionGuard` verifies the `access_token` JWT **and** Redis session existence (401 if
   missing); `ActiveAccountGuard` checks Redis `ban:{userId}` (403 `ACCOUNT_BANNED`).
 - Refresh rotation: verify refresh JWT → look up by token hash → reuse detected ⇒ revoke-all → rotate
@@ -95,7 +94,7 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
 
 ## 6. Data
 
-- **Postgres 17, database-per-service on one instance**: `polygon_auth/user/chat/media/notification`
+- **Postgres 18, database-per-service on one instance**: `polygon_auth/user/chat/media/notification`
   (+ base `polygon`), created by `infra/db/init/01-create-databases.sql`. Each backend lib owns
   `src/database/prisma/schema.prisma` + `PrismaService` + repository (auth credentials/sessions,
   users, chats/members/messages/attachments/forwards, files/references, push subscriptions).

@@ -140,7 +140,7 @@ backend capability, put it in core behind a token — never import one service l
 ### 5.2. Prisma: One Service, One Database
 
 Production rule is one database per service. In dev this runs as isolated databases on a single
-Postgres 17 instance (`infra/db/init` creates `polygon_auth/user/chat/media/notification`).
+Postgres 18 instance (`infra/db/init` creates `polygon_auth/user/chat/media/notification`).
 Every Prisma lib repeats the same `prisma.config.ts` — only the datasource env var changes:
 
 ```ts
@@ -461,5 +461,5 @@ Entry validation is `ZodValidationPipe` over common schemas (§4); validation er
   runtime flags or manual `if`s at call sites.
 - User-facing feedback is `toast`/`Toaster` (sonner) and `FormAlert` for forms; bare `console.*`
   must not appear in slices, only through the logger. Client log collection via the gateway
-  (`frontend-error`) is being removed as overengineering: extra traffic with no benefit, dev and
+  (`frontend-error`) was removed as overengineering: extra traffic with no benefit, dev and
   server logs are enough.
