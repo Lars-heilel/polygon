@@ -7,7 +7,6 @@ import type {
 } from '@org/common';
 import { publishPrekeysSchema, registerDeviceSchema } from '@org/common';
 import { E2EE_KEY_REPOSITORY_TOKEN } from '@org/core';
-import { randomUUID } from 'crypto';
 
 import { InMemoryE2eeKeyRepository } from '../database/repository/e2ee-key.memory.repo';
 import type { IE2eeKeyRepository, IE2eeKeyService } from '../interfaces/chat.interface';
@@ -16,15 +15,14 @@ import type { IE2eeKeyRepository, IE2eeKeyService } from '../interfaces/chat.int
  * Device + prekey registry for E2EE (X3DH reachability material only —
  * the service never sees plaintext or private keys).
  *
- * Registration seeds one server-noted one-time prekey placeholder so a fresh
- * device is immediately reachable; clients replace it with real key material
- * via {@link publishPrekeys}.
+ * Registration stores the device only. A device becomes reachable once it
+ * publishes real key material via {@link publishPrekeys}; until then
+ * {@link consumePrekeyBundle} returns `null` ("not enrolled yet").
  */
 @Injectable()
 export class E2eeKeyService implements IE2eeKeyService {
   private readonly logger = new Logger(E2eeKeyService.name);
   private readonly repo: IE2eeKeyRepository;
-  private readonly seededDevices = new Set<string>();
 
   constructor(
     @Optional()
@@ -44,15 +42,6 @@ export class E2eeKeyService implements IE2eeKeyService {
     });
     const parsed = registerDeviceSchema.parse(input);
     const record = await this.repo.upsertDevice(parsed);
-    if (!this.seededDevices.has(parsed.deviceId)) {
-      this.seededDevices.add(parsed.deviceId);
-      await this.repo.saveSignedPrekey(
-        parsed.deviceId,
-        randomUUID().replace(/-/g, ''),
-        randomUUID().replace(/-/g, ''),
-      );
-      await this.repo.addOneTimePrekeys(parsed.deviceId, [randomUUID().replace(/-/g, '')]);
-    }
     this.logger.log({
       eventType: 'device_register_done',
       hasUserId: !!parsed.userId,
@@ -64,7 +53,6 @@ export class E2eeKeyService implements IE2eeKeyService {
   async revokeDevice(deviceId: string): Promise<void> {
     this.logger.log({ eventType: 'device_revoke_requested', hasDeviceId: !!deviceId });
     await this.repo.deleteDevice(deviceId);
-    this.seededDevices.delete(deviceId);
     this.logger.log({ eventType: 'device_revoke_done', hasDeviceId: !!deviceId });
   }
 
@@ -83,7 +71,6 @@ export class E2eeKeyService implements IE2eeKeyService {
       parsed.signedPrekeySignature,
     );
     await this.repo.addOneTimePrekeys(parsed.deviceId, parsed.oneTimePrekeys);
-    this.seededDevices.add(parsed.deviceId);
     this.logger.log({
       eventType: 'prekeys_publish_done',
       hasDeviceId: !!parsed.deviceId,
@@ -99,12 +86,16 @@ export class E2eeKeyService implements IE2eeKeyService {
       return null;
     }
     const signed = await this.repo.findSignedPrekey(deviceId);
+    if (!signed) {
+      this.logger.log({ eventType: 'prekeys_consume_done', hasDeviceId: !!deviceId, found: false });
+      return null;
+    }
     const oneTimePrekey = await this.repo.consumeOneTimePrekey(deviceId);
     const bundle: PrekeyBundleRecord = {
       deviceId: device.deviceId,
       identityKey: device.identityKey,
-      signedPrekey: signed?.signedPrekey ?? '',
-      signedPrekeySignature: signed?.signedPrekeySignature ?? '',
+      signedPrekey: signed.signedPrekey,
+      signedPrekeySignature: signed.signedPrekeySignature,
       oneTimePrekey,
     };
     this.logger.log({

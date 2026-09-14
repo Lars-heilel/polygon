@@ -94,16 +94,22 @@ export class E2eeKeyPrismaRepository implements IE2eeKeyRepository {
 
   async consumeOneTimePrekey(deviceId: string): Promise<string | null> {
     try {
-      const next = await this.prisma.oneTimePrekey.findFirst({
-        where: { deviceId, consumed: false },
-        orderBy: { id: 'asc' },
-      });
-      if (!next) return null;
-      await this.prisma.oneTimePrekey.update({
-        where: { id: next.id },
-        data: { consumed: true },
-      });
-      return next.prekey;
+      for (;;) {
+        const next = await this.prisma.oneTimePrekey.findFirst({
+          where: { deviceId, consumed: false },
+          orderBy: { id: 'asc' },
+        });
+        if (!next) return null;
+        // Atomic claim: only one concurrent initiation can flip
+        // consumed false→true. count === 0 means we lost the race, so
+        // retry with the next key (each retry implies another initiation
+        // made progress, so the loop is bounded).
+        const claimed = await this.prisma.oneTimePrekey.updateMany({
+          where: { id: next.id, consumed: false },
+          data: { consumed: true },
+        });
+        if (claimed.count > 0) return next.prekey;
+      }
     } catch (error) {
       handlePrismaError(error);
     }
