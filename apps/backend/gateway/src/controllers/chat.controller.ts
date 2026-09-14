@@ -34,7 +34,7 @@ import {
 } from '@org/chat';
 import { SessionGuard } from '@org/auth';
 import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
-import { chatMediaQuerySchema } from '@org/common';
+import { API_ROUTES, chatMediaQuerySchema, messagesDeltaQuerySchema } from '@org/common';
 import {
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
@@ -53,7 +53,7 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 @ApiTags('chats')
 @ApiCookieAuth('access_token')
-@Controller('chats')
+@Controller(API_ROUTES.chats.root)
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class ChatGatewayController {
   private readonly logger = new Logger(ChatGatewayController.name);
@@ -186,6 +186,36 @@ export class ChatGatewayController {
     await this.chatCache.setMessagesPage(chatId, cacheCursor, enriched, 60, user.sub, takeNum);
     res?.setHeader('X-Cache', 'MISS');
     return enriched;
+  }
+
+  @Get(':id/messages/delta')
+  @ApiOperation({ summary: 'Get changed messages since a checkpoint (delta sync)' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiResponse({ status: 200, description: '{ messages, deletedIds }' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not a member of this chat' })
+  async getMessagesDelta(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') chatId: string,
+    @Query(new ZodValidationPipe()) query: unknown,
+  ) {
+    const parsed = messagesDeltaQuerySchema.parse(query);
+    const isMember = await this.send<boolean>(
+      this.chatClient.send(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId,
+        userId: user.sub,
+      }),
+    );
+    if (!isMember) {
+      throw new HttpException('Not a member of this chat', 403);
+    }
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.GET_MESSAGES_DELTA, {
+        chatId,
+        userId: user.sub,
+        query: parsed,
+      }),
+    );
   }
 
   @Get(':id/media/messages')

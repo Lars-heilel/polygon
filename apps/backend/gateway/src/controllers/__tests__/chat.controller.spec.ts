@@ -573,4 +573,45 @@ describe('ChatGatewayController', () => {
       expect.objectContaining({ eventType: 'message_send_requested', hasChatId: true, hasUserId: true }),
     );
   });
+
+  it('GET /chats/:id/messages/delta forwards the parsed query', async () => {
+    const ctx = controller();
+    const delta = { messages: [], deletedIds: ['101'] };
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of(delta);
+    });
+
+    await expect(
+      ctx.controller.getMessagesDelta({ sub: 'user-1' } as never, 'chat-1', {
+        since: '2026-09-13T00:00:00.000Z',
+        limit: '50',
+      } as never),
+    ).resolves.toEqual(delta);
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(
+      CHAT_PATTERNS.GET_MESSAGES_DELTA,
+      expect.objectContaining({
+        chatId: 'chat-1',
+        userId: 'user-1',
+        query: expect.objectContaining({ limit: 50 }),
+      }),
+    );
+  });
+
+  it('GET /chats/:id/messages/delta rejects non-members', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(false);
+      return of({ messages: [], deletedIds: [] });
+    });
+
+    await expect(
+      ctx.controller.getMessagesDelta({ sub: 'user-1' } as never, 'chat-1', {
+        since: '2026-09-13T00:00:00.000Z',
+      } as never),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(
+      ctx.chatClient.send.mock.calls.filter(([pattern]) => pattern === CHAT_PATTERNS.GET_MESSAGES_DELTA),
+    ).toHaveLength(0);
+  });
 });

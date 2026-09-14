@@ -13,6 +13,7 @@ describe('ChatController', () => {
       createDirectChat: jest.fn(),
       getChats: jest.fn(),
       getMessages: jest.fn(),
+      getMessagesDelta: jest.fn(),
       getMediaMessages: jest.fn(),
       sendMessage: jest.fn(),
       editMessage: jest.fn(),
@@ -47,6 +48,17 @@ describe('ChatController', () => {
     ).resolves.toEqual(member);
 
     expect(service.markRead).toHaveBeenCalledWith('chat-1', 'user-1', 'message-1');
+  });
+
+  it('delegates delta sync with the parsed query', async () => {
+    const delta = { messages: [], deletedIds: ['101'] };
+    service.getMessagesDelta.mockResolvedValue(delta as never);
+    const query = { since: new Date('2026-09-13T00:00:00.000Z'), limit: 50 };
+
+    await expect(
+      controller.getMessagesDelta({ chatId: 'chat-1', userId: 'user-1', query }),
+    ).resolves.toEqual(delta);
+    expect(service.getMessagesDelta).toHaveBeenCalledWith('chat-1', 'user-1', query);
   });
 
   it('does not write raw RPC payloads to diagnostic logs', async () => {

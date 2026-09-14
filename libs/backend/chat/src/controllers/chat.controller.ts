@@ -1,6 +1,6 @@
 import { Controller, Inject, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import type { Chat, ChatMember, Message, MessagePage } from '@org/common';
+import type { Chat, ChatMember, Message, MessagePage, MessagesDelta, MessagesDeltaQuery } from '@org/common';
 import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
 
 import type {
@@ -51,6 +51,18 @@ export class ChatController implements IChatController {
       payload.cursor,
       payload.take ?? 50,
     );
+  }
+
+  @MessagePattern(CHAT_PATTERNS.GET_MESSAGES_DELTA)
+  getMessagesDelta(
+    @Payload()
+    payload: {
+      chatId: string;
+      userId: string;
+      query: MessagesDeltaQuery;
+    },
+  ): Promise<MessagesDelta> {
+    return this.chatService.getMessagesDelta(payload.chatId, payload.userId, payload.query);
   }
 
   @MessagePattern(CHAT_PATTERNS.GET_MEDIA_MESSAGES)

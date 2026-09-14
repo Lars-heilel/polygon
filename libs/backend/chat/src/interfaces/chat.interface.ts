@@ -214,6 +214,11 @@ export interface IChatController {
     cursor?: string;
     take?: number;
   }): Promise<MessagePage>;
+  getMessagesDelta(payload: {
+    chatId: string;
+    userId: string;
+    query: MessagesDeltaQuery;
+  }): Promise<MessagesDelta>;
   getMediaMessages(payload: {
     chatId: string;
     userId: string;
