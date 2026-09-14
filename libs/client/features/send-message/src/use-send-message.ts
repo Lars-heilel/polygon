@@ -79,6 +79,7 @@ function createOptimisticMessage(input: {
     kind: file ? getKindFromCategory(file.fileCategory) : 'text',
     type: file ? getMessageTypeFromCategory(file.fileCategory) : 'TEXT',
     text: input.text,
+    hasLink: /https?:\/\/|www\./i.test(input.text ?? ''),
     createdAt: now,
     updatedAt: now,
     media: file

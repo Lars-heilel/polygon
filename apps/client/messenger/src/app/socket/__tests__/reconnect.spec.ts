@@ -1,10 +1,16 @@
 import { renderHook } from '@testing-library/react';
 
 import { chatApi, useChatStore } from '@org/entities-chat';
+import { messageApi } from '@org/entities-message';
 import { useChatSocket } from '@org/features-chat-socket';
 import { queryClient, socket } from '@org/shared';
 
 import { initSocketMiddleware, rejoinAllChats } from '../socket-middleware';
+
+jest.mock('@org/entities-message', () => {
+  const actual = jest.requireActual('@org/entities-message');
+  return { ...actual, messageApi: { getDelta: jest.fn() } };
+});
 
 describe('socket reconnect rejoin', () => {
   beforeEach(() => {
@@ -68,5 +74,38 @@ describe('socket reconnect rejoin', () => {
     expect(socket.emit).toHaveBeenCalledWith('chat:join', { chatId: 'chat-9' });
 
     unmount();
+  });
+
+  it('fetches a delta for chats with cached messages on reconnect', async () => {
+    const getDelta = messageApi.getDelta as unknown as jest.Mock;
+    getDelta.mockReset();
+    getDelta.mockResolvedValue({ messages: [], deletedIds: [] });
+    queryClient.setQueryData(['chats'], [{ id: 'c1' }]);
+    queryClient.setQueryData(['messages', 'c1'], {
+      pages: [
+        {
+          messages: [
+            { id: '101', chatId: 'c1', createdAt: '2026-09-13T00:00:00.000Z', clientId: null },
+          ],
+          nextCursor: null,
+        },
+      ],
+      pageParams: [undefined],
+    });
+
+    const cleanup = initSocketMiddleware();
+    const onMock = socket.on as unknown as jest.Mock;
+    const handler = onMock.mock.calls.find(([event]) => event === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+    handler?.();
+    await Promise.resolve();
+
+    expect(getDelta).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ since: '2026-09-13T00:00:00.000Z', sinceId: '101' }),
+    );
+
+    cleanup();
   });
 });

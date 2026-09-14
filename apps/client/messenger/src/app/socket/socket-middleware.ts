@@ -3,7 +3,7 @@ import type { Chat } from '@org/entities-chat';
 import { useChatStore } from '@org/entities-chat';
 import { queryClient, socket } from '@org/shared';
 
-import { initChatSocketManager } from './chat-socket-manager';
+import { initChatSocketManager, resyncActiveChats } from './chat-socket-manager';
 
 export function rejoinAllChats(): void {
   const chats = queryClient.getQueryData<Chat[]>(['chats']) ?? [];
@@ -15,6 +15,7 @@ export function rejoinAllChats(): void {
   for (const chatId of ids) {
     socket.emit('chat:join', { chatId });
   }
+  void resyncActiveChats().catch(() => undefined);
 }
 
 export function initSocketMiddleware(): () => void {

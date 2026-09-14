@@ -20,6 +20,7 @@ export function normalizeMessage(raw: RawMessage): Message {
   return {
     ...raw,
     clientId: raw.clientId ?? null,
+    hasLink: raw.hasLink ?? false,
     editedAt: raw.editedAt ?? null,
     deletedAt: raw.deletedAt ?? null,
     deletedById: raw.deletedById ?? null,

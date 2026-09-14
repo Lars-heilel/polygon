@@ -2,6 +2,7 @@ import type { Chat } from '@org/entities-chat';
 import { chatApi, useChatStore } from '@org/entities-chat';
 import { usePresenceStore } from '@org/entities-chat';
 import type { Message, MessagePage } from '@org/entities-message';
+import { messageApi } from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
@@ -36,7 +37,6 @@ function handleNewMessage(msg: Message) {
     queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
       upsertMessageIntoPages(old, msg),
     );
-    queryClient.invalidateQueries({ queryKey: ['messages-flat', msg.chatId] });
 
     // Guarded inside: only moves the preview forward, never back.
     queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
@@ -99,7 +99,6 @@ function handleMessageUpdated(msg: Message) {
   queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
     updateMessageInPages(old, msg),
   );
-  queryClient.invalidateQueries({ queryKey: ['messages-flat', msg.chatId] });
 
   // Keep the list preview in sync when the edited message is the preview.
   const chats = queryClient.getQueryData<Chat[]>(['chats']);
@@ -121,7 +120,6 @@ function handleMessageRemoved(payload: { chatId: string; messageId: string }) {
     removeMessageFromPages(old, payload.messageId),
   );
   queryClient.invalidateQueries({ queryKey: ['chat-media-messages', payload.chatId] });
-  queryClient.invalidateQueries({ queryKey: ['messages-flat', payload.chatId] });
 
   // If the removed message was the list preview, clear it locally and let the
   // server refetch recompute the true tail (GET messages take:1 equivalent).
@@ -173,4 +171,52 @@ export function initChatSocketManager(): () => void {
 
 function hasMessageMedia(msg: Message): boolean {
   return Boolean(msg.media) || (Array.isArray(msg.attachments) && msg.attachments.length > 0);
+}
+
+function newestCachedMessage(chatId: string): Message | null {
+  const pages = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', chatId]);
+  const all = pages?.pages.flatMap((page) => page.messages) ?? [];
+  if (all.length === 0) return null;
+  return all.reduce((a, b) =>
+    a.createdAt > b.createdAt || (a.createdAt === b.createdAt && a.id > b.id) ? a : b,
+  );
+}
+
+export async function resyncActiveChats(): Promise<void> {
+  const chats = queryClient.getQueryData<Chat[]>(['chats']) ?? [];
+  const activeChatId = useChatStore.getState().activeChatId;
+  const ids = new Set(chats.map((chat) => chat.id));
+  if (activeChatId) ids.add(activeChatId);
+
+  for (const chatId of ids) {
+    const newest = newestCachedMessage(chatId);
+    if (!newest) continue;
+    try {
+      const delta = await messageApi.getDelta(chatId, {
+        since: newest.createdAt,
+        sinceId: newest.id,
+        limit: 100,
+      });
+      unstable_batchedUpdates(() => {
+        for (const message of delta.messages) {
+          queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
+            upsertMessageIntoPages(old, message),
+          );
+        }
+        for (const messageId of delta.deletedIds) {
+          queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
+            removeMessageFromPages(old, messageId),
+          );
+        }
+      });
+      frontendLog('debug', 'ChatSocket', 'chat_resynced', {
+        hasChatId: !!chatId,
+        changedCount: delta.messages.length,
+        deletedCount: delta.deletedIds.length,
+      });
+    } catch {
+      // Offline or gone — live events will converge on reconnect.
+    }
+  }
+  queryClient.invalidateQueries({ queryKey: ['chats'] });
 }

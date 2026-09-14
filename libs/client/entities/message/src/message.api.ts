@@ -5,7 +5,6 @@ import {
   useMutation,
   useQueryClient,
   useSuspenseInfiniteQuery,
-  useSuspenseQuery,
 } from '@tanstack/react-query';
 
 import { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
@@ -27,6 +26,22 @@ export const messageApi = {
       : API_ROUTES.chats.messages(chatId);
     const raw = await authedFetch<RawMessagePage>(url);
     return normalizeMessagePage(raw);
+  },
+
+  async getDelta(
+    chatId: string,
+    params: { since: string; sinceId?: string; limit?: number },
+  ): Promise<{ messages: Message[]; deletedIds: string[] }> {
+    const search = new URLSearchParams({ since: params.since });
+    if (params.sinceId) search.set('sinceId', params.sinceId);
+    if (params.limit !== undefined) search.set('limit', String(params.limit));
+    const raw = await authedFetch<RawMessagePage & { deletedIds: string[] }>(
+      `${API_ROUTES.chats.messagesDelta(chatId)}?${search.toString()}`,
+    );
+    return {
+      messages: raw.messages.map(normalizeMessage),
+      deletedIds: raw.deletedIds ?? [],
+    };
   },
 
   async editMessage(chatId: string, messageId: string, text: string): Promise<Message> {
@@ -68,14 +83,6 @@ export function useInfiniteMessagesQuery(chatId: string) {
   });
 }
 
-export function useMessagesQuery(chatId: string) {
-  return useSuspenseQuery({
-    queryKey: ['messages-flat', chatId],
-    queryFn: () => messageApi.getMessages(chatId),
-    select: (data) => data.messages,
-  });
-}
-
 export function useEditMessageMutation(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -85,7 +92,6 @@ export function useEditMessageMutation(chatId: string) {
       queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
         updateMessageInPages<InfiniteData<MessagePage>, Message>(old, message),
       );
-      queryClient.invalidateQueries({ queryKey: ['messages-flat', chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
@@ -100,7 +106,6 @@ export function useDeleteMessageMutation(chatId: string) {
       queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
         removeMessageFromPages(old, id),
       );
-      queryClient.invalidateQueries({ queryKey: ['messages-flat', chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
@@ -114,7 +119,6 @@ export function useForwardMessagesMutation() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       queryClient.invalidateQueries({ queryKey: ['messages', variables.targetChatId] });
-      queryClient.invalidateQueries({ queryKey: ['messages-flat', variables.targetChatId] });
     },
   });
 }

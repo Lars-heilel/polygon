@@ -97,6 +97,7 @@ export interface RawMessage {
   senderId: string;
   type: MessageType | string;
   text: string | null;
+  hasLink?: boolean | null;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;
@@ -116,6 +117,7 @@ export interface Message {
   kind: MessageKind;
   type: MessageType | string;
   text: string | null;
+  hasLink: boolean;
   createdAt: string;
   updatedAt: string;
   media: MessageMedia | null;
