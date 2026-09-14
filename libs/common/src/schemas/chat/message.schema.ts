@@ -5,7 +5,7 @@ export type MessageType = z.infer<typeof messageTypeSchema>;
 
 export const messageAttachmentSchema = z.object({
   id: z.uuid(),
-  messageId: z.uuid(),
+  messageId: z.string(),
   mediaId: z.uuid(),
   fileNameSnapshot: z.string().nullable(),
   fileSizeSnapshot: z.number().int().positive().nullable(),
@@ -16,8 +16,8 @@ export const messageAttachmentSchema = z.object({
 export type MessageAttachment = z.infer<typeof messageAttachmentSchema>;
 
 export const messageForwardContextSchema = z.object({
-  messageId: z.uuid(),
-  originalMessageId: z.uuid().nullable(),
+  messageId: z.string(),
+  originalMessageId: z.string().nullable(),
   originalChatId: z.uuid().nullable(),
   originalAuthorId: z.uuid(),
   originalAuthorNameSnapshot: z.string().min(1),
@@ -32,12 +32,13 @@ export const messageForwardContextSchema = z.object({
 export type MessageForwardContext = z.infer<typeof messageForwardContextSchema>;
 
 export const messageSchema = z.object({
-  id: z.uuid(),
+  id: z.string(),
   clientId: z.string().uuid().nullable(),
   chatId: z.uuid(),
   senderId: z.uuid(),
   type: messageTypeSchema,
   text: z.string().nullable(),
+  hasLink: z.boolean().default(false),
   attachments: z.array(messageAttachmentSchema).default([]),
   forwardContext: messageForwardContextSchema.nullable().default(null),
   editedAt: z.date().nullable(),
@@ -46,7 +47,6 @@ export const messageSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 });
-
 export type Message = z.infer<typeof messageSchema>;
 
 export type MessagePage = {

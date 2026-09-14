@@ -29,6 +29,7 @@ export const API_ROUTES = {
     byId: (id: string) => `chats/${id}`,
     read: (id: string) => `chats/${id}/read`,
     messages: (id: string) => `chats/${id}/messages`,
+    messagesDelta: (id: string) => `chats/${id}/messages/delta`,
     message: (chatId: string, messageId: string) => `chats/${chatId}/messages/${messageId}`,
     forward: (id: string) => `chats/${id}/forward`,
     mediaMessages: (id: string) => `chats/${id}/media/messages`,

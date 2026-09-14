@@ -7,7 +7,7 @@ export const chatMemberSchema = z.object({
   userId: z.uuid(),
   role: chatRoleSchema,
   joinedAt: z.date(),
-  lastReadMessageId: z.string().uuid().nullable(),
+  lastReadMessageId: z.string().nullable(),
   lastReadAt: z.date().nullable(),
 });
 

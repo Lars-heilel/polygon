@@ -9,3 +9,4 @@ export * from './forward-message.schema';
 export * from './edit-message.schema';
 export * from './delete-message.schema';
 export * from './read-chat.schema';
+export * from './message-delta.schema';
