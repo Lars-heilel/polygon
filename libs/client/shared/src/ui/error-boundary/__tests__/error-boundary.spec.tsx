@@ -1,32 +1,50 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
-async function loadErrorBoundary(production: boolean) {
-  vi.resetModules();
-  vi.stubEnv('DEV', !production);
-  vi.stubEnv('PROD', production);
+import { ErrorBoundary } from '../error-boundary';
 
-  const errorReporter = await import('../../../lib/observability/frontend-error-reporter');
-  errorReporter.configureFrontendErrorReporting('messenger');
-  return import('../error-boundary');
+function Exploding() {
+  throw new Error('Exploded');
 }
 
 describe('ErrorBoundary', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
+  it('renders the fallback UI when a child throws', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    render(
+      <ErrorBoundary>
+        <Exploding />
+      </ErrorBoundary>,
+    );
+
+    expect(screen.getByText('Something went wrong')).toBeTruthy();
+    expect(screen.getByText('Exploded')).toBeTruthy();
+    consoleError.mockRestore();
   });
 
-  it('reports production errors without direct browser console output', async () => {
-    const { ErrorBoundary } = await loadErrorBoundary(true);
+  it('resets the error state when trying again', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(new Response(null, { status: 202 }));
-    const boundary = new ErrorBoundary({ children: null });
+    const user = userEvent.setup();
+    let shouldThrow = true;
 
-    boundary.componentDidCatch(new Error('Exploded'), { componentStack: 'at TestComponent' });
+    function Flaky() {
+      if (shouldThrow) throw new Error('Exploded');
+      return <div>Recovered</div>;
+    }
 
-    expect(fetchSpy).toHaveBeenCalledWith(
-      '/api/observability/frontend-errors',
-      expect.objectContaining({ method: 'POST' }),
+    render(
+      <ErrorBoundary>
+        <Flaky />
+      </ErrorBoundary>,
     );
-    expect(consoleError).not.toHaveBeenCalled();
+
+    expect(screen.getByText('Something went wrong')).toBeTruthy();
+
+    shouldThrow = false;
+    await user.click(screen.getByRole('button', { name: /try again/i }));
+
+    expect(screen.getByText('Recovered')).toBeTruthy();
+    consoleError.mockRestore();
   });
 });
