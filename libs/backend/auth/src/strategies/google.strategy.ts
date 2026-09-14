@@ -5,7 +5,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import type { TokenPair } from '@org/common';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env, extractClientMetadata } from '@org/core';
 import type { Request } from 'express';
-import { Strategy, type Profile } from 'passport-google-oauth20';
+import { type Profile, Strategy } from 'passport-google-oauth20';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -33,13 +33,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ): Promise<TokenPair> {
     const email = profile.emails?.[0]?.value ?? `${profile.id}@google.noemail`;
     const clientMetadata = extractClientMetadata(req);
+    // Provider display names exceed our User.name limit (32) — truncate at the edge.
+    const name = (profile.displayName || email).slice(0, 32);
 
     return lastValueFrom(
       this.authClient.send<TokenPair>(AUTH_PATTERNS.OAUTH_LOGIN, {
         provider: 'google',
         providerId: profile.id,
         email,
-        name: profile.displayName || email,
+        name,
         clientMetadata,
       }),
     );

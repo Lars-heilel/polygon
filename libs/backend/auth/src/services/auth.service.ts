@@ -195,17 +195,20 @@ export class AuthService implements IAuthService {
     );
 
     this.logger.verbose('Service: Saving session record to relational database (Prisma)');
+    // Client metadata comes from untrusted headers/UA strings and bypasses zod
+    // (internal service call). Clamp to the Session column limits so exotic
+    // clients fail open with truncated display data instead of P2000.
     await this.repo.saveSession({
       id: sessionId,
       tokenHash,
       credentialsId: credentials.id,
       expiresAt,
-      ip: clientMetadata?.ip,
-      country: clientMetadata?.country,
-      os: clientMetadata?.os,
-      browser: clientMetadata?.browser,
-      device: clientMetadata?.device,
-      userAgent: clientMetadata?.userAgent,
+      ip: clientMetadata?.ip?.slice(0, 45),
+      country: clientMetadata?.country?.slice(0, 2),
+      os: clientMetadata?.os?.slice(0, 64),
+      browser: clientMetadata?.browser?.slice(0, 64),
+      device: clientMetadata?.device?.slice(0, 64),
+      userAgent: clientMetadata?.userAgent?.slice(0, 512),
     });
     this.logger.verbose('Service: Saving active session pointer to cache layer (Redis)');
     await this.sessionCache.save(

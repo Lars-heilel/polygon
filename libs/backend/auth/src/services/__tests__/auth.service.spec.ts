@@ -565,7 +565,7 @@ describe('AuthService', () => {
         expect.objectContaining({
           credentialsId: 'creds-1',
           ip: '127.0.0.1',
-          country: 'Test Country',
+          country: 'Te',
           os: 'Linux',
           browser: 'Chrome',
           device: 'Desktop',
@@ -598,6 +598,29 @@ describe('AuthService', () => {
     it('throws UnauthorizedException when credentials not found', async () => {
       repo.findById.mockResolvedValue(null);
       await expect(service.login('nonexistent')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('clamps overlong session metadata to column limits', async () => {
+      await service.login('creds-1', {
+        ip: '1'.repeat(100),
+        country: 'Wonderland',
+        os: 'o'.repeat(100),
+        browser: 'b'.repeat(100),
+        device: 'd'.repeat(100),
+        userAgent: 'u'.repeat(600),
+        loginTime: new Date().toISOString(),
+      });
+
+      expect(repo.saveSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ip: '1'.repeat(45),
+          country: 'Wo',
+          os: 'o'.repeat(64),
+          browser: 'b'.repeat(64),
+          device: 'd'.repeat(64),
+          userAgent: 'u'.repeat(512),
+        }),
+      );
     });
   });
 

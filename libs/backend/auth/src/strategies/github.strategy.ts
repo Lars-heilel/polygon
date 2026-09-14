@@ -5,7 +5,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import type { TokenPair } from '@org/common';
 import { AUTH_CLIENT_TOKEN, AUTH_PATTERNS, type Env, extractClientMetadata } from '@org/core';
 import type { Request } from 'express';
-import { Strategy, type Profile } from 'passport-github2';
+import { type Profile, Strategy } from 'passport-github2';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -33,13 +33,16 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   ): Promise<TokenPair> {
     const email = profile.emails?.[0]?.value ?? `${profile.id}@github.noemail`;
     const clientMetadata = extractClientMetadata(req);
+    // Provider display names (up to 255 chars) exceed our User.name limit (32).
+    // Truncate at the edge so federated login never dies on P2000.
+    const name = (profile.displayName || profile.username || email).slice(0, 32);
 
     return lastValueFrom(
       this.authClient.send<TokenPair>(AUTH_PATTERNS.OAUTH_LOGIN, {
         provider: 'github',
         providerId: profile.id,
         email,
-        name: profile.displayName || profile.username || email,
+        name,
         clientMetadata,
       }),
     );
