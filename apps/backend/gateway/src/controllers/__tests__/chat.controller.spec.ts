@@ -1,12 +1,14 @@
 import type { ClientProxy } from '@nestjs/microservices';
 import { CHAT_PATTERNS, USER_PATTERNS } from '@org/core';
-import { of, type Observable } from 'rxjs';
+import { type Observable, of } from 'rxjs';
 
 import { ChatGatewayController } from '../chat.controller';
 
 describe('ChatGatewayController', () => {
   function controller() {
-    const chatClient = { send: jest.fn<Observable<unknown>, [string, unknown?]>(() => of({ id: 'message-1' })) };
+    const chatClient = {
+      send: jest.fn<Observable<unknown>, [string, unknown?]>(() => of({ id: 'message-1' })),
+    };
     const userClient = { send: jest.fn<Observable<unknown>, [string, unknown?]>(() => of([])) };
     const socketGateway = {
       broadcastMessage: jest.fn(),
@@ -27,13 +29,27 @@ describe('ChatGatewayController', () => {
       invalidateChatList: jest.fn(async (userId: string) => {
         store.delete(`chat:list:${userId}`);
       }),
-      getMessagesPage: jest.fn(async (chatId: string, cursor: string, userId?: string, take?: number) => {
-        const raw = store.get(`chat:msgs:${chatId}:${userId ?? '-'}:${cursor}:${take ?? '-'}`);
-        return raw ? (JSON.parse(raw) as unknown) : null;
-      }),
-      setMessagesPage: jest.fn(async (chatId: string, cursor: string, page: unknown, _ttlSec = 60, userId?: string, take?: number) => {
-        store.set(`chat:msgs:${chatId}:${userId ?? '-'}:${cursor}:${take ?? '-'}`, JSON.stringify(page));
-      }),
+      getMessagesPage: jest.fn(
+        async (chatId: string, cursor: string, userId?: string, take?: number) => {
+          const raw = store.get(`chat:msgs:${chatId}:${userId ?? '-'}:${cursor}:${take ?? '-'}`);
+          return raw ? (JSON.parse(raw) as unknown) : null;
+        },
+      ),
+      setMessagesPage: jest.fn(
+        async (
+          chatId: string,
+          cursor: string,
+          page: unknown,
+          _ttlSec = 60,
+          userId?: string,
+          take?: number,
+        ) => {
+          store.set(
+            `chat:msgs:${chatId}:${userId ?? '-'}:${cursor}:${take ?? '-'}`,
+            JSON.stringify(page),
+          );
+        },
+      ),
       invalidateChatPages: jest.fn(async (chatId: string) => {
         for (const key of [...store.keys()]) {
           if (key.startsWith(`chat:msgs:${chatId}:`)) store.delete(key);
@@ -79,8 +95,20 @@ describe('ChatGatewayController', () => {
     const firstRes = ctx.res();
     const secondRes = ctx.res();
 
-    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, firstRes as never);
-    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, secondRes as never);
+    await ctx.controller.getMessages(
+      { sub: 'user-1' } as never,
+      'chat-1',
+      undefined,
+      undefined,
+      firstRes as never,
+    );
+    await ctx.controller.getMessages(
+      { sub: 'user-1' } as never,
+      'chat-1',
+      undefined,
+      undefined,
+      secondRes as never,
+    );
 
     expect(ctx.chatClient.send).toHaveBeenCalledWith(
       CHAT_PATTERNS.GET_MESSAGES,
@@ -101,9 +129,21 @@ describe('ChatGatewayController', () => {
       return of(page);
     });
 
-    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, ctx.res() as never);
+    await ctx.controller.getMessages(
+      { sub: 'user-1' } as never,
+      'chat-1',
+      undefined,
+      undefined,
+      ctx.res() as never,
+    );
     const secondRes = ctx.res();
-    await ctx.controller.getMessages({ sub: 'user-2' } as never, 'chat-1', undefined, undefined, secondRes as never);
+    await ctx.controller.getMessages(
+      { sub: 'user-2' } as never,
+      'chat-1',
+      undefined,
+      undefined,
+      secondRes as never,
+    );
 
     expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
     expect(
@@ -119,7 +159,13 @@ describe('ChatGatewayController', () => {
       return of(page);
     });
 
-    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, undefined, ctx.res() as never);
+    await ctx.controller.getMessages(
+      { sub: 'user-1' } as never,
+      'chat-1',
+      undefined,
+      undefined,
+      ctx.res() as never,
+    );
     expect(ctx.chatCache.getMessagesPage).toHaveBeenCalled();
 
     ctx.chatCache.getMessagesPage.mockClear();
@@ -129,7 +175,13 @@ describe('ChatGatewayController', () => {
     });
 
     await expect(
-      ctx.controller.getMessages({ sub: 'intruder' } as never, 'chat-1', undefined, undefined, ctx.res() as never),
+      ctx.controller.getMessages(
+        { sub: 'intruder' } as never,
+        'chat-1',
+        undefined,
+        undefined,
+        ctx.res() as never,
+      ),
     ).rejects.toMatchObject({ status: 403 });
     expect(ctx.chatCache.getMessagesPage).not.toHaveBeenCalled();
   });
@@ -142,9 +194,21 @@ describe('ChatGatewayController', () => {
       return of(page);
     });
 
-    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, '5', ctx.res() as never);
+    await ctx.controller.getMessages(
+      { sub: 'user-1' } as never,
+      'chat-1',
+      undefined,
+      '5',
+      ctx.res() as never,
+    );
     const secondRes = ctx.res();
-    await ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1', undefined, '50', secondRes as never);
+    await ctx.controller.getMessages(
+      { sub: 'user-1' } as never,
+      'chat-1',
+      undefined,
+      '50',
+      secondRes as never,
+    );
 
     expect(secondRes.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS');
     expect(ctx.chatCache.setMessagesPage).toHaveBeenCalledWith(
@@ -186,7 +250,8 @@ describe('ChatGatewayController', () => {
     const ctx = controller();
     ctx.chatClient.send.mockImplementation((pattern: string) => {
       if (pattern === CHAT_PATTERNS.SEND_MESSAGE) return of({ id: 'message-1', chatId: 'chat-1' });
-      if (pattern === CHAT_PATTERNS.GET_MEMBERS) return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
+      if (pattern === CHAT_PATTERNS.GET_MEMBERS)
+        return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
       return of([]);
     });
     ctx.socketGateway.triggerPushForOfflineRecipients.mockResolvedValue([]);
@@ -195,7 +260,9 @@ describe('ChatGatewayController', () => {
       text: 'hello',
     } as never);
 
-    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.GET_MEMBERS, { chatId: 'chat-1' });
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.GET_MEMBERS, {
+      chatId: 'chat-1',
+    });
     expect(ctx.chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
     expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-1');
     expect(ctx.chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
@@ -204,21 +271,17 @@ describe('ChatGatewayController', () => {
   it('passes fileCategory when sending a file message over HTTP', async () => {
     const ctx = controller();
 
-    await ctx.controller.sendMessage(
-      { sub: 'user-1' } as never,
-      'chat-1',
-      {
-        type: 'IMAGE',
-        text: null,
-        fileId: '11111111-1111-4111-8111-111111111111',
-        fileBucket: 'media',
-        fileKey: 'chat/file.png',
-        fileName: 'file.png',
-        fileSize: 123,
-        fileMime: 'image/png',
-        fileCategory: 'IMAGE',
-      } as never,
-    );
+    await ctx.controller.sendMessage({ sub: 'user-1' } as never, 'chat-1', {
+      type: 'IMAGE',
+      text: null,
+      fileId: '11111111-1111-4111-8111-111111111111',
+      fileBucket: 'media',
+      fileKey: 'chat/file.png',
+      fileName: 'file.png',
+      fileSize: 123,
+      fileMime: 'image/png',
+      fileCategory: 'IMAGE',
+    } as never);
 
     expect(ctx.chatClient.send).toHaveBeenCalledWith(
       CHAT_PATTERNS.SEND_MESSAGE,
@@ -231,7 +294,9 @@ describe('ChatGatewayController', () => {
 
     await ctx.controller.createSelf({ sub: 'user-1' } as never);
 
-    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.CREATE_SELF, { userId: 'user-1' });
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.CREATE_SELF, {
+      userId: 'user-1',
+    });
   });
 
   it('uses an explicit mark-read RPC pattern', async () => {
@@ -253,43 +318,51 @@ describe('ChatGatewayController', () => {
     ctx.chatClient.send.mockImplementation((pattern: string) => {
       if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
       return of({
-        messages: [{
-          id: 'message-1',
-          chatId: 'chat-1',
-          senderId: 'sender-1',
-          type: 'TEXT',
-          text: 'forwarded text',
-          attachments: [],
-          forwardContext: {
-            originalAuthorId: 'author-1',
-            originalAuthorNameSnapshot: 'author-1',
-            originalAuthorDisplayNameSnapshot: null,
+        messages: [
+          {
+            id: 'message-1',
+            chatId: 'chat-1',
+            senderId: 'sender-1',
+            type: 'TEXT',
+            text: 'forwarded text',
+            attachments: [],
+            forwardContext: {
+              originalAuthorId: 'author-1',
+              originalAuthorNameSnapshot: 'author-1',
+              originalAuthorDisplayNameSnapshot: null,
+            },
           },
-        }],
+        ],
         nextCursor: null,
       });
     });
-    ctx.userClient.send.mockReturnValue(of([{
-      id: 'author-1',
-      name: 'Alice',
-      displayName: 'Alice A.',
-      avatarUrl: null,
-      bio: null,
-    }]));
+    ctx.userClient.send.mockReturnValue(
+      of([
+        {
+          id: 'author-1',
+          name: 'Alice',
+          displayName: 'Alice A.',
+          avatarUrl: null,
+          bio: null,
+        },
+      ]),
+    );
 
-    await expect(
-      ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1'),
-    ).resolves.toEqual({
-      messages: [expect.objectContaining({
-        id: 'message-1',
-        forwardContext: expect.objectContaining({
-          originalAuthorId: 'author-1',
-          originalAuthorNameSnapshot: 'Alice',
-          originalAuthorDisplayNameSnapshot: 'Alice A.',
-        }),
-      })],
-      nextCursor: null,
-    });
+    await expect(ctx.controller.getMessages({ sub: 'user-1' } as never, 'chat-1')).resolves.toEqual(
+      {
+        messages: [
+          expect.objectContaining({
+            id: 'message-1',
+            forwardContext: expect.objectContaining({
+              originalAuthorId: 'author-1',
+              originalAuthorNameSnapshot: 'Alice',
+              originalAuthorDisplayNameSnapshot: 'Alice A.',
+            }),
+          }),
+        ],
+        nextCursor: null,
+      },
+    );
 
     expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.GET_MESSAGES, {
       chatId: 'chat-1',
@@ -362,38 +435,52 @@ describe('ChatGatewayController', () => {
   it('prepares source messages, snapshots original authors, and sends clone command', async () => {
     const ctx = controller();
     ctx.chatClient.send
-      .mockReturnValueOnce(of([{
-        messageId: '11111111-1111-4111-8111-111111111111',
-        chatId: '22222222-2222-4222-8222-222222222222',
-        senderId: '33333333-3333-4333-8333-333333333333',
-        type: 'VOICE',
-        text: null,
-        createdAt: new Date('2026-07-22T10:00:00.000Z'),
-        attachments: [{
-          mediaId: '44444444-4444-4444-8444-444444444444',
-          fileNameSnapshot: 'voice.ogg',
-          fileSizeSnapshot: 33000,
-          mimeSnapshot: 'audio/ogg',
-          category: 'VOICE',
-        }],
-        forwardContext: null,
-      }]))
-      .mockReturnValueOnce(of([{
-        id: 'cloned-message',
-        chatId: 'target-chat',
-        senderId: 'forwarder',
-        type: 'VOICE',
-        text: null,
-        attachments: [],
-        forwardContext: null,
-      }]));
-    ctx.userClient.send.mockReturnValue(of([{
-      id: '33333333-3333-4333-8333-333333333333',
-      name: 'tamilka',
-      displayName: 'Тамилка:3',
-      avatarUrl: null,
-      bio: null,
-    }]));
+      .mockReturnValueOnce(
+        of([
+          {
+            messageId: '11111111-1111-4111-8111-111111111111',
+            chatId: '22222222-2222-4222-8222-222222222222',
+            senderId: '33333333-3333-4333-8333-333333333333',
+            type: 'VOICE',
+            text: null,
+            createdAt: new Date('2026-07-22T10:00:00.000Z'),
+            attachments: [
+              {
+                mediaId: '44444444-4444-4444-8444-444444444444',
+                fileNameSnapshot: 'voice.ogg',
+                fileSizeSnapshot: 33000,
+                mimeSnapshot: 'audio/ogg',
+                category: 'VOICE',
+              },
+            ],
+            forwardContext: null,
+          },
+        ]),
+      )
+      .mockReturnValueOnce(
+        of([
+          {
+            id: 'cloned-message',
+            chatId: 'target-chat',
+            senderId: 'forwarder',
+            type: 'VOICE',
+            text: null,
+            attachments: [],
+            forwardContext: null,
+          },
+        ]),
+      );
+    ctx.userClient.send.mockReturnValue(
+      of([
+        {
+          id: '33333333-3333-4333-8333-333333333333',
+          name: 'tamilka',
+          displayName: 'Тамилка:3',
+          avatarUrl: null,
+          bio: null,
+        },
+      ]),
+    );
 
     await ctx.controller.forwardMessages({ sub: 'forwarder' } as never, 'target-chat', {
       sourceChatId: 'source-chat',
@@ -410,10 +497,12 @@ describe('ChatGatewayController', () => {
       2,
       CHAT_PATTERNS.CLONE_FORWARD_MESSAGES,
       expect.objectContaining({
-        messages: [expect.objectContaining({
-          originalAuthorNameSnapshot: 'tamilka',
-          originalAuthorDisplayNameSnapshot: 'Тамилка:3',
-        })],
+        messages: [
+          expect.objectContaining({
+            originalAuthorNameSnapshot: 'tamilka',
+            originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+          }),
+        ],
       }),
     );
   });
@@ -421,62 +510,78 @@ describe('ChatGatewayController', () => {
   it('preserves an existing root forward context when cloning', async () => {
     const ctx = controller();
     ctx.chatClient.send
-      .mockReturnValueOnce(of([{
-        messageId: '11111111-1111-4111-8111-111111111111',
-        chatId: '22222222-2222-4222-8222-222222222222',
-        senderId: '33333333-3333-4333-8333-333333333333',
-        type: 'TEXT',
-        text: 'visible copy',
-        createdAt: new Date('2026-07-21T10:15:00.000Z'),
-        attachments: [],
-        forwardContext: {
-          originalMessageId: '44444444-4444-4444-8444-444444444444',
-          originalChatId: 'source-chat',
-          originalAuthorId: '55555555-5555-4555-8555-555555555555',
-          originalAuthorNameSnapshot: 'Saved Alice',
-          originalAuthorDisplayNameSnapshot: 'Saved A.',
-          originalMessageCreatedAt: new Date('2026-07-20T10:15:00.000Z'),
-          originalMessageType: 'TEXT',
-          originalTextPreview: 'original visible copy',
-          originalFileNamePreview: null,
+      .mockReturnValueOnce(
+        of([
+          {
+            messageId: '11111111-1111-4111-8111-111111111111',
+            chatId: '22222222-2222-4222-8222-222222222222',
+            senderId: '33333333-3333-4333-8333-333333333333',
+            type: 'TEXT',
+            text: 'visible copy',
+            createdAt: new Date('2026-07-21T10:15:00.000Z'),
+            attachments: [],
+            forwardContext: {
+              originalMessageId: '44444444-4444-4444-8444-444444444444',
+              originalChatId: 'source-chat',
+              originalAuthorId: '55555555-5555-4555-8555-555555555555',
+              originalAuthorNameSnapshot: 'Saved Alice',
+              originalAuthorDisplayNameSnapshot: 'Saved A.',
+              originalMessageCreatedAt: new Date('2026-07-20T10:15:00.000Z'),
+              originalMessageType: 'TEXT',
+              originalTextPreview: 'original visible copy',
+              originalFileNamePreview: null,
+            },
+          },
+        ]),
+      )
+      .mockReturnValueOnce(
+        of([
+          {
+            id: 'cloned-message',
+            chatId: 'target-chat',
+            senderId: '33333333-3333-4333-8333-333333333333',
+            type: 'TEXT',
+            text: 'visible copy',
+            attachments: [],
+            forwardContext: null,
+          },
+        ]),
+      );
+    ctx.userClient.send.mockReturnValue(
+      of([
+        {
+          id: '55555555-5555-4555-8555-555555555555',
+          name: 'Updated Alice',
+          displayName: 'Updated A.',
+          avatarUrl: null,
+          bio: null,
         },
-      }]))
-      .mockReturnValueOnce(of([{
-        id: 'cloned-message',
-        chatId: 'target-chat',
-        senderId: '33333333-3333-4333-8333-333333333333',
-        type: 'TEXT',
-        text: 'visible copy',
-        attachments: [],
-        forwardContext: null,
-      }]));
-    ctx.userClient.send.mockReturnValue(of([
-      {
-        id: '55555555-5555-4555-8555-555555555555',
-        name: 'Updated Alice',
-        displayName: 'Updated A.',
-        avatarUrl: null,
-        bio: null,
-      },
-    ]));
+      ]),
+    );
 
     await expect(
-      ctx.controller.forwardMessages({ sub: '33333333-3333-4333-8333-333333333333' } as never, 'target-chat', {
-        sourceChatId: 'source-chat',
-        messageIds: ['44444444-4444-4444-8444-444444444444'],
-      }),
+      ctx.controller.forwardMessages(
+        { sub: '33333333-3333-4333-8333-333333333333' } as never,
+        'target-chat',
+        {
+          sourceChatId: 'source-chat',
+          messageIds: ['44444444-4444-4444-8444-444444444444'],
+        },
+      ),
     ).resolves.toEqual([expect.objectContaining({ id: 'cloned-message' })]);
 
     expect(ctx.chatClient.send).toHaveBeenNthCalledWith(
       2,
       CHAT_PATTERNS.CLONE_FORWARD_MESSAGES,
       expect.objectContaining({
-        messages: [expect.objectContaining({
-          forwardContext: expect.objectContaining({
-            originalAuthorNameSnapshot: 'Saved Alice',
-            originalAuthorDisplayNameSnapshot: 'Saved A.',
+        messages: [
+          expect.objectContaining({
+            forwardContext: expect.objectContaining({
+              originalAuthorNameSnapshot: 'Saved Alice',
+              originalAuthorDisplayNameSnapshot: 'Saved A.',
+            }),
           }),
-        })],
+        ],
       }),
     );
     expect(ctx.socketGateway.broadcastMessage).toHaveBeenCalledWith(
@@ -490,16 +595,20 @@ describe('ChatGatewayController', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(ctx.controller, 'logger', { value: logger });
     ctx.chatClient.send
-      .mockReturnValueOnce(of([{
-        messageId: '11111111-1111-4111-8111-111111111111',
-        chatId: '22222222-2222-4222-8222-222222222222',
-        senderId: '33333333-3333-4333-8333-333333333333',
-        text: 'secret forwarded text',
-        type: 'TEXT',
-        createdAt: new Date('2026-07-21T10:15:00.000Z'),
-        attachments: [],
-        forwardContext: null,
-      }]))
+      .mockReturnValueOnce(
+        of([
+          {
+            messageId: '11111111-1111-4111-8111-111111111111',
+            chatId: '22222222-2222-4222-8222-222222222222',
+            senderId: '33333333-3333-4333-8333-333333333333',
+            text: 'secret forwarded text',
+            type: 'TEXT',
+            createdAt: new Date('2026-07-21T10:15:00.000Z'),
+            attachments: [],
+            forwardContext: null,
+          },
+        ]),
+      )
       .mockReturnValueOnce(of([]));
     ctx.userClient.send.mockReturnValue(of([]));
 
@@ -512,19 +621,23 @@ describe('ChatGatewayController', () => {
       },
     );
 
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_requested',
-      hasTargetChatId: true,
-      hasSourceChatId: true,
-      hasUserId: true,
-      messageCount: 1,
-    }));
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_author_snapshot_missing',
-      authorCount: 1,
-      profileCount: 0,
-      missingCount: 1,
-    }));
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_requested',
+        hasTargetChatId: true,
+        hasSourceChatId: true,
+        hasUserId: true,
+        messageCount: 1,
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_author_snapshot_missing',
+        authorCount: 1,
+        profileCount: 0,
+        missingCount: 1,
+      }),
+    );
 
     const diagnosticPayload = JSON.stringify([
       logger.debug.mock.calls,
@@ -543,20 +656,14 @@ describe('ChatGatewayController', () => {
     Object.defineProperty(ctx.controller, 'logger', { value: logger });
 
     await ctx.controller.createSelf({ sub: 'user-secret-id' } as never);
-    await ctx.controller.sendMessage(
-      { sub: 'user-secret-id' } as never,
-      'chat-secret-id',
-      {
-        type: 'FILE',
-        text: 'message text token=secret',
-        fileName: 'file.png',
-      } as never,
-    );
-    await ctx.controller.markRead(
-      { sub: 'user-secret-id' } as never,
-      'chat-secret-id',
-      { messageId: 'message-secret-id' } as never,
-    );
+    await ctx.controller.sendMessage({ sub: 'user-secret-id' } as never, 'chat-secret-id', {
+      type: 'FILE',
+      text: 'message text token=secret',
+      fileName: 'file.png',
+    } as never);
+    await ctx.controller.markRead({ sub: 'user-secret-id' } as never, 'chat-secret-id', {
+      messageId: 'message-secret-id',
+    } as never);
 
     const diagnosticPayload = JSON.stringify([
       logger.debug.mock.calls,
@@ -570,7 +677,11 @@ describe('ChatGatewayController', () => {
     expect(diagnosticPayload).not.toContain('file.png');
     expect(diagnosticPayload).not.toContain('token=secret');
     expect(logger.debug).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'message_send_requested', hasChatId: true, hasUserId: true }),
+      expect.objectContaining({
+        eventType: 'message_send_requested',
+        hasChatId: true,
+        hasUserId: true,
+      }),
     );
   });
 
@@ -611,7 +722,9 @@ describe('ChatGatewayController', () => {
       } as never),
     ).rejects.toMatchObject({ status: 403 });
     expect(
-      ctx.chatClient.send.mock.calls.filter(([pattern]) => pattern === CHAT_PATTERNS.GET_MESSAGES_DELTA),
+      ctx.chatClient.send.mock.calls.filter(
+        ([pattern]) => pattern === CHAT_PATTERNS.GET_MESSAGES_DELTA,
+      ),
     ).toHaveLength(0);
   });
 });

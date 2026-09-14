@@ -148,7 +148,9 @@ export interface IChatRepository {
     messageIds: string[],
     userId: string,
   ): Promise<Message[]>;
-  findMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string } | null>;
+  findMessageAttachmentForAccess(
+    input: MessageAttachmentAccessInput,
+  ): Promise<{ mediaId: string } | null>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
   createMessageWithTouch(data: CreateMessageWithRelationsData): Promise<Message>;
   touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void>;
@@ -175,7 +177,11 @@ export interface IChatService {
     cursor: string | undefined,
     take: number,
   ): Promise<MessagePage>;
-  getMessagesDelta(chatId: string, userId: string, query: MessagesDeltaQuery): Promise<MessagesDelta>;
+  getMessagesDelta(
+    chatId: string,
+    userId: string,
+    query: MessagesDeltaQuery,
+  ): Promise<MessagesDelta>;
   getMediaMessages(
     chatId: string,
     userId: string,
@@ -183,11 +189,7 @@ export interface IChatService {
     take: number,
     filter: ChatMediaFilter,
   ): Promise<MessagePage>;
-  sendMessage(
-    chatId: string,
-    senderId: string,
-    input: SendMessageData,
-  ): Promise<Message>;
+  sendMessage(chatId: string, senderId: string, input: SendMessageData): Promise<Message>;
   editMessage(chatId: string, messageId: string, userId: string, text: string): Promise<Message>;
   deleteMessage(
     chatId: string,
@@ -226,14 +228,20 @@ export interface IChatController {
     take?: number;
     filter: ChatMediaFilter;
   }): Promise<MessagePage>;
-  sendMessage(payload: {
-    chatId: string;
-    senderId: string;
-  } & SendMessageData): Promise<Message>;
+  sendMessage(
+    payload: {
+      chatId: string;
+      senderId: string;
+    } & SendMessageData,
+  ): Promise<Message>;
   forwardMessages(payload: ForwardMessagesData): Promise<Message[]>;
   prepareForwardMessages(payload: ForwardMessagesData): Promise<PreparedForwardMessage[]>;
   cloneForwardMessages(payload: CloneForwardMessagesData): Promise<Message[]>;
-  markRead(payload: { chatId: string; userId: string; messageId?: string | null }): Promise<ChatMember>;
+  markRead(payload: {
+    chatId: string;
+    userId: string;
+    messageId?: string | null;
+  }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
   getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
   getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;

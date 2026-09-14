@@ -1,6 +1,6 @@
-import { useSessionStore } from '@org/entities-user';
 import type { Chat } from '@org/entities-chat';
 import { useChatStore } from '@org/entities-chat';
+import { useSessionStore } from '@org/entities-user';
 import { queryClient, socket } from '@org/shared';
 
 import { initChatSocketManager, resyncActiveChats } from './chat-socket-manager';

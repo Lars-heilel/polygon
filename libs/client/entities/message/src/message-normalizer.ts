@@ -6,8 +6,8 @@ import type {
   MessageMedia,
   MessageMediaCategory,
   MessagePage,
-  RawMessageAttachment,
   RawMessage,
+  RawMessageAttachment,
   RawMessagePage,
 } from './message.types.js';
 
@@ -65,10 +65,12 @@ function normalizeAttachments(attachments: RawMessageAttachment[]): MessageAttac
     const category = normalizeCategory(attachment.category);
     if (!category) return [];
 
-    return [{
-      ...attachment,
-      category,
-    }];
+    return [
+      {
+        ...attachment,
+        category,
+      },
+    ];
   });
 }
 

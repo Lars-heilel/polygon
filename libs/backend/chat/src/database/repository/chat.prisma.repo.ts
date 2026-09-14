@@ -55,13 +55,12 @@ type MessageRow = Omit<Message, 'id' | 'attachments' | 'forwardContext'> & {
       fileSizeSnapshot: bigint | number | null;
     }
   >;
-  forwardContext: null | (Omit<
-    NonNullable<Message['forwardContext']>,
-    'messageId' | 'originalMessageId'
-  > & {
-    messageId: bigint | string;
-    originalMessageId: bigint | string | null;
-  });
+  forwardContext:
+    | null
+    | (Omit<NonNullable<Message['forwardContext']>, 'messageId' | 'originalMessageId'> & {
+        messageId: bigint | string;
+        originalMessageId: bigint | string | null;
+      });
 };
 
 const toMessage = (row: MessageRow): Message => {
@@ -71,7 +70,8 @@ const toMessage = (row: MessageRow): Message => {
     mapped['attachments'] = (mapped['attachments'] as MessageRow['attachments']).map(
       (attachment) => {
         const result: Record<string, unknown> = { ...attachment };
-        if ('messageId' in result) result['messageId'] = fromMessageId(result['messageId'] as bigint | string);
+        if ('messageId' in result)
+          result['messageId'] = fromMessageId(result['messageId'] as bigint | string);
         if ('fileSizeSnapshot' in result) {
           result['fileSizeSnapshot'] = fromFileSize(
             result['fileSizeSnapshot'] as bigint | number | null,
@@ -84,7 +84,8 @@ const toMessage = (row: MessageRow): Message => {
   const forwardContext = mapped['forwardContext'] as MessageRow['forwardContext'];
   if (forwardContext) {
     const result: Record<string, unknown> = { ...forwardContext };
-    if ('messageId' in result) result['messageId'] = fromMessageId(result['messageId'] as bigint | string);
+    if ('messageId' in result)
+      result['messageId'] = fromMessageId(result['messageId'] as bigint | string);
     if ('originalMessageId' in result && result['originalMessageId'] !== null) {
       result['originalMessageId'] = fromMessageId(result['originalMessageId'] as bigint | string);
     }
@@ -98,9 +99,7 @@ const toChat = <T extends { lastMessageId?: bigint | string | null }>(row: T): T
   return { ...row, lastMessageId: fromMessageId(row.lastMessageId) };
 };
 
-const toChatMember = <T extends { lastReadMessageId?: bigint | string | null }>(
-  row: T,
-): T => {
+const toChatMember = <T extends { lastReadMessageId?: bigint | string | null }>(row: T): T => {
   if (!('lastReadMessageId' in row)) return row;
   return { ...row, lastReadMessageId: fromMessageId(row.lastReadMessageId) };
 };
@@ -609,7 +608,8 @@ export class ChatPrismaRepository implements IChatRepository {
         });
 
         if (!message) throw new NotFoundException('Message not found');
-        if (message.chatId !== chatId) throw new BadRequestException('Message does not belong to chat');
+        if (message.chatId !== chatId)
+          throw new BadRequestException('Message does not belong to chat');
 
         nextReadMessageId = message.id;
         nextReadAt = message.createdAt;
@@ -702,9 +702,6 @@ function buildMediaMessagesWhere(chatId: string, filter: ChatMediaFilter) {
 
   return {
     chatId,
-    OR: [
-      { attachments: { some: { category: { not: 'VOICE' } } } },
-      ...linkWhere,
-    ],
+    OR: [{ attachments: { some: { category: { not: 'VOICE' } } } }, ...linkWhere],
   };
 }

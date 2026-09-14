@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { InfiniteData } from '@tanstack/react-query';
 import type { Message, MessageMediaCategory, MessagePage } from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
+import type { InfiniteData } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 
 export interface FileAttachment {
@@ -25,12 +25,18 @@ interface MessageAttachmentPayload {
 
 export function getMessageTypeFromCategory(category: string): string {
   switch (category) {
-    case 'IMAGE': return 'IMAGE';
-    case 'AUDIO': return 'AUDIO';
-    case 'VIDEO': return 'VIDEO';
-    case 'VOICE': return 'VOICE';
-    case 'CIRCLE': return 'VIDEO';
-    default: return 'FILE';
+    case 'IMAGE':
+      return 'IMAGE';
+    case 'AUDIO':
+      return 'AUDIO';
+    case 'VIDEO':
+      return 'VIDEO';
+    case 'VOICE':
+      return 'VOICE';
+    case 'CIRCLE':
+      return 'VIDEO';
+    default:
+      return 'FILE';
   }
 }
 

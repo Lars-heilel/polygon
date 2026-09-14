@@ -1,6 +1,14 @@
 import * as z from 'zod';
 
-export const messageTypeSchema = z.enum(['TEXT', 'IMAGE', 'AUDIO', 'VIDEO', 'VOICE', 'FILE', 'SYSTEM']);
+export const messageTypeSchema = z.enum([
+  'TEXT',
+  'IMAGE',
+  'AUDIO',
+  'VIDEO',
+  'VOICE',
+  'FILE',
+  'SYSTEM',
+]);
 export type MessageType = z.infer<typeof messageTypeSchema>;
 
 export const messageAttachmentSchema = z.object({

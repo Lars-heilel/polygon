@@ -1,7 +1,7 @@
 import { chatSchema } from '../chat.schema';
 import { forwardMessageSchema } from '../forward-message.schema';
-import { messageSchema } from '../message.schema';
 import { messagesDeltaQuerySchema, messagesDeltaResponseSchema } from '../message-delta.schema';
+import { messageSchema } from '../message.schema';
 import { markChatReadSchema } from '../read-chat.schema';
 
 const V7 = '0197f96c-b278-7f64-a32f-d44a57f6726b';
@@ -51,12 +51,10 @@ describe('chat decimal ids', () => {
 
   it('validates the delta query and response', () => {
     expect(
-      messagesDeltaQuerySchema.safeParse({ since: '2026-09-13T00:00:00.000Z', limit: 100 })
-        .success,
+      messagesDeltaQuerySchema.safeParse({ since: '2026-09-13T00:00:00.000Z', limit: 100 }).success,
     ).toBe(true);
     expect(
-      messagesDeltaQuerySchema.safeParse({ since: '2026-09-13T00:00:00.000Z', limit: 101 })
-        .success,
+      messagesDeltaQuerySchema.safeParse({ since: '2026-09-13T00:00:00.000Z', limit: 101 }).success,
     ).toBe(false);
     expect(
       messagesDeltaResponseSchema.safeParse({ messages: [], deletedIds: ['42'] }).success,

@@ -1,12 +1,19 @@
 import { Controller, Inject, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import type { Chat, ChatMember, Message, MessagePage, MessagesDelta, MessagesDeltaQuery } from '@org/common';
+import type {
+  Chat,
+  ChatMember,
+  Message,
+  MessagePage,
+  MessagesDelta,
+  MessagesDeltaQuery,
+} from '@org/common';
 import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
 
 import type {
   ChatWithPreview,
-  CreateMessageAttachmentData,
   CloneForwardMessagesData,
+  CreateMessageAttachmentData,
   ForwardMessagesData,
   IChatController,
   IChatService,
@@ -134,7 +141,9 @@ export class ChatController implements IChatController {
   }
 
   @MessagePattern(CHAT_PATTERNS.PREPARE_FORWARD_MESSAGES)
-  prepareForwardMessages(@Payload() payload: ForwardMessagesData): Promise<PreparedForwardMessage[]> {
+  prepareForwardMessages(
+    @Payload() payload: ForwardMessagesData,
+  ): Promise<PreparedForwardMessage[]> {
     return this.chatService.prepareForwardMessages!(payload);
   }
 
@@ -153,7 +162,12 @@ export class ChatController implements IChatController {
       text: string;
     },
   ): Promise<Message> {
-    return this.chatService.editMessage(payload.chatId, payload.messageId, payload.userId, payload.text);
+    return this.chatService.editMessage(
+      payload.chatId,
+      payload.messageId,
+      payload.userId,
+      payload.text,
+    );
   }
 
   @MessagePattern(CHAT_PATTERNS.DELETE_MESSAGE)
@@ -166,7 +180,12 @@ export class ChatController implements IChatController {
       mode: 'ME' | 'EVERYONE';
     },
   ): Promise<Message | { id: string; chatId: string }> {
-    return this.chatService.deleteMessage(payload.chatId, payload.messageId, payload.userId, payload.mode);
+    return this.chatService.deleteMessage(
+      payload.chatId,
+      payload.messageId,
+      payload.userId,
+      payload.mode,
+    );
   }
 
   @MessagePattern(CHAT_PATTERNS.MARK_READ)

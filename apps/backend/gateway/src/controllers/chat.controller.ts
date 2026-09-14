@@ -23,30 +23,30 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SessionGuard } from '@org/auth';
 import {
+  type CloneForwardMessageInput,
   CreateDirectChatDto,
   DeleteMessageDto,
   EditMessageDto,
   MarkChatReadDto,
-  SendMessageDto,
-  type CloneForwardMessageInput,
   type PreparedForwardMessage,
+  SendMessageDto,
 } from '@org/chat';
-import { SessionGuard } from '@org/auth';
 import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
 import { API_ROUTES, chatMediaQuerySchema, messagesDeltaQuerySchema } from '@org/common';
 import {
+  ActiveAccountGuard,
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
-  ActiveAccountGuard,
   CurrentUser,
   type JwtPayload,
   USER_CLIENT_TOKEN,
   USER_PATTERNS,
 } from '@org/core';
+import type { Response } from 'express';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
-import type { Response } from 'express';
 
 import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
@@ -93,10 +93,7 @@ export class ChatGatewayController {
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  async getChats(
-    @CurrentUser() user: JwtPayload,
-    @Res({ passthrough: true }) res?: Response,
-  ) {
+  async getChats(@CurrentUser() user: JwtPayload, @Res({ passthrough: true }) res?: Response) {
     this.logger.log({ eventType: 'chat_list_requested', hasUserId: !!user.sub });
     const cached = await this.chatCache.getChatList(user.sub);
     if (cached) {
@@ -221,9 +218,17 @@ export class ChatGatewayController {
   @Get(':id/media/messages')
   @ApiOperation({ summary: 'Get media and link messages for a chat' })
   @ApiParam({ name: 'id', description: 'Chat UUID' })
-  @ApiQuery({ name: 'filter', required: false, description: 'ALL | IMAGE | VIDEO | AUDIO | FILE | LINK' })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    description: 'ALL | IMAGE | VIDEO | AUDIO | FILE | LINK',
+  })
   @ApiQuery({ name: 'cursor', required: false, description: 'ID of the last fetched message' })
-  @ApiQuery({ name: 'take', required: false, description: 'Number of messages to return (default 50)' })
+  @ApiQuery({
+    name: 'take',
+    required: false,
+    description: 'Number of messages to return (default 50)',
+  })
   async getMediaMessages(
     @CurrentUser() user: JwtPayload,
     @Param('id') chatId: string,
@@ -286,7 +291,11 @@ export class ChatGatewayController {
     );
 
     this.socketGateway.broadcastMessage(chatId, message);
-    const memberIds = await this.socketGateway.triggerPushForOfflineRecipients(chatId, user.sub, message);
+    const memberIds = await this.socketGateway.triggerPushForOfflineRecipients(
+      chatId,
+      user.sub,
+      message,
+    );
     await this.invalidateChatForMembers(chatId, memberIds);
 
     return message;
@@ -471,11 +480,13 @@ export class ChatGatewayController {
   private async enrichPreparedForwardMessages(
     messages: PreparedForwardMessage[],
   ): Promise<CloneForwardMessageInput[]> {
-    const originalAuthorIds = [...new Set(
-      messages
-        .map((message) => message.forwardContext?.originalAuthorId ?? message.senderId)
-        .filter((id): id is string => Boolean(id)),
-    )];
+    const originalAuthorIds = [
+      ...new Set(
+        messages
+          .map((message) => message.forwardContext?.originalAuthorId ?? message.senderId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
 
     if (originalAuthorIds.length === 0) {
       this.logger.debug({
@@ -517,21 +528,23 @@ export class ChatGatewayController {
     return messages.map((message) => ({
       ...message,
       originalAuthorId: message.forwardContext?.originalAuthorId ?? message.senderId,
-      originalAuthorNameSnapshot: profileMap.get(
-        message.forwardContext?.originalAuthorId ?? message.senderId,
-      )?.name ?? 'Deleted user',
-      originalAuthorDisplayNameSnapshot: profileMap.get(
-        message.forwardContext?.originalAuthorId ?? message.senderId,
-      )?.displayName ?? null,
+      originalAuthorNameSnapshot:
+        profileMap.get(message.forwardContext?.originalAuthorId ?? message.senderId)?.name ??
+        'Deleted user',
+      originalAuthorDisplayNameSnapshot:
+        profileMap.get(message.forwardContext?.originalAuthorId ?? message.senderId)?.displayName ??
+        null,
     }));
   }
 
   private async enrichForwardedMessages(messages: Message[]): Promise<Message[]> {
-    const originalAuthorIds = [...new Set(
-      messages
-        .map((message) => message.forwardContext?.originalAuthorId)
-        .filter((id): id is string => Boolean(id)),
-    )];
+    const originalAuthorIds = [
+      ...new Set(
+        messages
+          .map((message) => message.forwardContext?.originalAuthorId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
 
     if (originalAuthorIds.length === 0) return messages;
 

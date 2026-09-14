@@ -3,10 +3,10 @@ import type { Message } from '@org/common';
 import { MEDIA_PATTERNS } from '@org/core';
 import { of, throwError } from 'rxjs';
 
-jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
-
 import type { IChatRepository } from '../../interfaces/chat.interface';
 import { ChatService } from '../chat.service';
+
+jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
 
 const messageRelations: Pick<Message, 'attachments' | 'forwardContext'> = {
   attachments: [],
@@ -86,13 +86,17 @@ describe('ChatService', () => {
       fileCategory: 'VOICE',
     });
 
-    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(expect.objectContaining({
-      attachments: [expect.objectContaining({
-        mediaId: '55555555-5555-4555-8555-555555555555',
-        fileNameSnapshot: 'voice.ogg',
-        category: 'VOICE',
-      })],
-    }));
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({
+            mediaId: '55555555-5555-4555-8555-555555555555',
+            fileNameSnapshot: 'voice.ogg',
+            category: 'VOICE',
+          }),
+        ],
+      }),
+    );
   });
 
   it('creates a media reference for every attachment after sending a file message', async () => {
@@ -108,16 +112,18 @@ describe('ChatService', () => {
     });
     repo.createMessageWithTouch.mockResolvedValue({
       id: 'message-1',
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'message-1',
-        mediaId: '55555555-5555-4555-8555-555555555555',
-        fileNameSnapshot: 'voice.ogg',
-        fileSizeSnapshot: 33000,
-        mimeSnapshot: 'audio/ogg',
-        category: 'VOICE',
-        createdAt: new Date('2026-07-22T00:00:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-1',
+          mediaId: '55555555-5555-4555-8555-555555555555',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
     } as Message);
     const service = new ChatService(repo);
     Object.defineProperty(service, 'mediaClient', { value: mediaClient });
@@ -156,43 +162,55 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'IMAGE',
       text: null,
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'message-1',
-        mediaId: '55555555-5555-4555-8555-555555555555',
-        fileNameSnapshot: 'image.png',
-        fileSizeSnapshot: 4096,
-        mimeSnapshot: 'image/png',
-        category: 'IMAGE',
-        createdAt: new Date('2026-07-22T00:00:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-1',
+          mediaId: '55555555-5555-4555-8555-555555555555',
+          fileNameSnapshot: 'image.png',
+          fileSizeSnapshot: 4096,
+          mimeSnapshot: 'image/png',
+          category: 'IMAGE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
     } as Message);
     const service = new ChatService(repo, mediaClient as never);
 
-    await expect(service.sendMessage('chat-1', 'user-1', {
-      clientId: '44444444-4444-4444-8444-444444444444',
-      type: 'IMAGE',
-      text: null,
-      attachments: [{
-        mediaId: '55555555-5555-4555-8555-555555555555',
-        fileNameSnapshot: 'image.png',
-        fileSizeSnapshot: 4096,
-        mimeSnapshot: 'image/png',
-        category: 'IMAGE',
-      }],
-    })).resolves.toEqual(expect.objectContaining({
-      id: 'message-1',
-      attachments: [expect.objectContaining({ id: 'attachment-1' })],
-    }));
+    await expect(
+      service.sendMessage('chat-1', 'user-1', {
+        clientId: '44444444-4444-4444-8444-444444444444',
+        type: 'IMAGE',
+        text: null,
+        attachments: [
+          {
+            mediaId: '55555555-5555-4555-8555-555555555555',
+            fileNameSnapshot: 'image.png',
+            fileSizeSnapshot: 4096,
+            mimeSnapshot: 'image/png',
+            category: 'IMAGE',
+          },
+        ],
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'message-1',
+        attachments: [expect.objectContaining({ id: 'attachment-1' })],
+      }),
+    );
 
-    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(expect.objectContaining({
-      clientId: '44444444-4444-4444-8444-444444444444',
-      attachments: [expect.objectContaining({
-        mediaId: '55555555-5555-4555-8555-555555555555',
-        fileNameSnapshot: 'image.png',
-        category: 'IMAGE',
-      })],
-    }));
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: '44444444-4444-4444-8444-444444444444',
+        attachments: [
+          expect.objectContaining({
+            mediaId: '55555555-5555-4555-8555-555555555555',
+            fileNameSnapshot: 'image.png',
+            category: 'IMAGE',
+          }),
+        ],
+      }),
+    );
     expect(mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.CREATE_REFERENCE, {
       fileId: '55555555-5555-4555-8555-555555555555',
       ownerType: 'MESSAGE_ATTACHMENT',
@@ -214,44 +232,54 @@ describe('ChatService', () => {
     });
     repo.createMessageWithTouch.mockResolvedValue({
       id: 'message-1',
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'message-1',
-        mediaId: '55555555-5555-4555-8555-555555555555',
-        fileNameSnapshot: 'voice.ogg',
-        fileSizeSnapshot: 33000,
-        mimeSnapshot: 'audio/ogg',
-        category: 'VOICE',
-        createdAt: new Date('2026-07-22T00:00:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-1',
+          mediaId: '55555555-5555-4555-8555-555555555555',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
     } as Message);
     const service = new ChatService(repo);
     Object.defineProperty(service, 'mediaClient', { value: mediaClient });
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.sendMessage('chat-1', 'user-1', {
-      type: 'VOICE',
-      fileId: '55555555-5555-4555-8555-555555555555',
-      fileName: 'voice.ogg',
-      fileSize: 33000,
-      fileMime: 'audio/ogg',
-      fileCategory: 'VOICE',
-    })).rejects.toThrow('media unavailable');
+    await expect(
+      service.sendMessage('chat-1', 'user-1', {
+        type: 'VOICE',
+        fileId: '55555555-5555-4555-8555-555555555555',
+        fileName: 'voice.ogg',
+        fileSize: 33000,
+        fileMime: 'audio/ogg',
+        fileCategory: 'VOICE',
+      }),
+    ).rejects.toThrow('media unavailable');
 
     expect(repo.deleteCreatedMessage).toHaveBeenCalledWith('message-1');
-    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'media_reference_create_failed',
-      attachmentCount: 1,
-    }));
-    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_send_failed',
-      hasMessageId: true,
-    }));
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_send_compensated',
-      hasMessageId: true,
-    }));
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'media_reference_create_failed',
+        attachmentCount: 1,
+      }),
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_send_failed',
+        hasMessageId: true,
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_send_compensated',
+        hasMessageId: true,
+      }),
+    );
   });
 
   it('returns same message on retry with same clientId without duplicate', async () => {
@@ -319,7 +347,11 @@ describe('ChatService', () => {
     repo.createMessageWithTouch.mockResolvedValue(created);
     const service = new ChatService(repo);
 
-    const msg = await service.sendMessage('chat-1', 'user-1', { clientId: 'c-2', type: 'TEXT', text: 'yo' });
+    const msg = await service.sendMessage('chat-1', 'user-1', {
+      clientId: 'c-2',
+      type: 'TEXT',
+      text: 'yo',
+    });
 
     expect(msg.id).toBeDefined();
     expect(repo.createMessageWithTouch).toHaveBeenCalledTimes(1);
@@ -388,9 +420,9 @@ describe('ChatService', () => {
         fileName: 'file.png',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
-    await expect(service.markRead('chat-secret-id', 'user-secret-id', 'message-secret-id')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.markRead('chat-secret-id', 'user-secret-id', 'message-secret-id'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
 
     const diagnosticPayload = JSON.stringify([
       logger.debug.mock.calls,
@@ -404,7 +436,11 @@ describe('ChatService', () => {
     expect(diagnosticPayload).not.toContain('file.png');
     expect(diagnosticPayload).not.toContain('token=secret');
     expect(logger.debug).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'message_send_requested', hasChatId: true, hasSenderId: true }),
+      expect.objectContaining({
+        eventType: 'message_send_requested',
+        hasChatId: true,
+        hasSenderId: true,
+      }),
     );
   });
 
@@ -439,23 +475,29 @@ describe('ChatService', () => {
       userId: 'user-secret-id',
     });
 
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_requested',
-      hasSourceChatId: true,
-      hasTargetChatId: true,
-      hasUserId: true,
-      messageCount: 1,
-    }));
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_source_missing',
-      hasSourceChatId: true,
-      missingCount: 1,
-    }));
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'messages_forwarded',
-      requestedCount: 1,
-      createdCount: 0,
-    }));
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_requested',
+        hasSourceChatId: true,
+        hasTargetChatId: true,
+        hasUserId: true,
+        messageCount: 1,
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_source_missing',
+        hasSourceChatId: true,
+        missingCount: 1,
+      }),
+    );
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'messages_forwarded',
+        requestedCount: 1,
+        createdCount: 0,
+      }),
+    );
 
     const diagnosticPayload = JSON.stringify([
       logger.debug.mock.calls,
@@ -487,16 +529,18 @@ describe('ChatService', () => {
       senderId: 'original-sender',
       type: 'VOICE' as const,
       text: null,
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'visible-message',
-        mediaId: 'file-1',
-        fileNameSnapshot: 'voice.ogg',
-        fileSizeSnapshot: 33000,
-        mimeSnapshot: 'audio/ogg',
-        category: 'VOICE',
-        createdAt: new Date('2026-07-21T10:15:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'visible-message',
+          mediaId: 'file-1',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt: new Date('2026-07-21T10:15:00.000Z'),
+        },
+      ],
       forwardContext: null,
       editedAt: null,
       deletedAt: null,
@@ -510,12 +554,14 @@ describe('ChatService', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.prepareForwardMessages({
-      sourceChatId: 'source-chat',
-      targetChatId: 'target-chat',
-      messageIds: ['visible-message', 'hidden-message'],
-      userId: 'forwarder',
-    })).resolves.toEqual([
+    await expect(
+      service.prepareForwardMessages({
+        sourceChatId: 'source-chat',
+        targetChatId: 'target-chat',
+        messageIds: ['visible-message', 'hidden-message'],
+        userId: 'forwarder',
+      }),
+    ).resolves.toEqual([
       expect.objectContaining({
         messageId: 'visible-message',
         chatId: 'source-chat',
@@ -531,17 +577,21 @@ describe('ChatService', () => {
       'forwarder',
     );
     expect(repo.findMessageById).not.toHaveBeenCalled();
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_prepare_skipped',
-      messageCount: 2,
-      skippedCount: 1,
-    }));
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_prepare_completed',
-      messageCount: 2,
-      preparedCount: 1,
-      skippedCount: 1,
-    }));
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_prepare_skipped',
+        messageCount: 2,
+        skippedCount: 1,
+      }),
+    );
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_prepare_completed',
+        messageCount: 2,
+        preparedCount: 1,
+        skippedCount: 1,
+      }),
+    );
   });
 
   it('clones prepared forwarded messages with preserved root context and attachment references', async () => {
@@ -557,16 +607,18 @@ describe('ChatService', () => {
     });
     repo.createMessageWithTouch.mockResolvedValue({
       id: 'cloned-message',
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'cloned-message',
-        mediaId: 'media-1',
-        fileNameSnapshot: 'voice.ogg',
-        fileSizeSnapshot: 33000,
-        mimeSnapshot: 'audio/ogg',
-        category: 'VOICE',
-        createdAt: new Date('2026-07-22T00:00:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'cloned-message',
+          mediaId: 'media-1',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
       forwardContext: {
         messageId: 'cloned-message',
         originalMessageId: 'root-message',
@@ -586,39 +638,45 @@ describe('ChatService', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.cloneForwardMessages({
-      targetChatId: 'target-chat',
-      userId: 'forwarder',
-      messages: [{
-        messageId: 'source-message',
-        chatId: 'source-chat',
-        senderId: 'original-sender',
-        originalAuthorId: 'author-1',
-        originalAuthorNameSnapshot: 'tamilka',
-        originalAuthorDisplayNameSnapshot: 'Тамилка:3',
-        type: 'VOICE',
-        text: null,
-        createdAt: new Date('2026-07-21T10:15:00.000Z'),
-        attachments: [{
-          mediaId: 'media-1',
-          fileNameSnapshot: 'voice.ogg',
-          fileSizeSnapshot: 33000,
-          mimeSnapshot: 'audio/ogg',
-          category: 'VOICE',
-        }],
-        forwardContext: {
-          originalMessageId: 'root-message',
-          originalChatId: 'root-chat',
-          originalAuthorId: 'author-1',
-          originalAuthorNameSnapshot: 'tamilka',
-          originalAuthorDisplayNameSnapshot: 'Тамилка:3',
-          originalMessageCreatedAt: new Date('2026-07-20T10:15:00.000Z'),
-          originalMessageType: 'VOICE',
-          originalTextPreview: null,
-          originalFileNamePreview: 'voice.ogg',
-        },
-      }],
-    })).resolves.toEqual([
+    await expect(
+      service.cloneForwardMessages({
+        targetChatId: 'target-chat',
+        userId: 'forwarder',
+        messages: [
+          {
+            messageId: 'source-message',
+            chatId: 'source-chat',
+            senderId: 'original-sender',
+            originalAuthorId: 'author-1',
+            originalAuthorNameSnapshot: 'tamilka',
+            originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+            type: 'VOICE',
+            text: null,
+            createdAt: new Date('2026-07-21T10:15:00.000Z'),
+            attachments: [
+              {
+                mediaId: 'media-1',
+                fileNameSnapshot: 'voice.ogg',
+                fileSizeSnapshot: 33000,
+                mimeSnapshot: 'audio/ogg',
+                category: 'VOICE',
+              },
+            ],
+            forwardContext: {
+              originalMessageId: 'root-message',
+              originalChatId: 'root-chat',
+              originalAuthorId: 'author-1',
+              originalAuthorNameSnapshot: 'tamilka',
+              originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+              originalMessageCreatedAt: new Date('2026-07-20T10:15:00.000Z'),
+              originalMessageType: 'VOICE',
+              originalTextPreview: null,
+              originalFileNamePreview: 'voice.ogg',
+            },
+          },
+        ],
+      }),
+    ).resolves.toEqual([
       expect.objectContaining({
         id: 'cloned-message',
         attachments: expect.arrayContaining([
@@ -627,27 +685,31 @@ describe('ChatService', () => {
       }),
     ]);
 
-    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(expect.objectContaining({
-      chatId: 'target-chat',
-      senderId: 'forwarder',
-      attachments: [expect.objectContaining({ mediaId: 'media-1' })],
-      forwardContext: expect.objectContaining({
-        originalMessageId: 'root-message',
-        originalAuthorNameSnapshot: 'tamilka',
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatId: 'target-chat',
+        senderId: 'forwarder',
+        attachments: [expect.objectContaining({ mediaId: 'media-1' })],
+        forwardContext: expect.objectContaining({
+          originalMessageId: 'root-message',
+          originalAuthorNameSnapshot: 'tamilka',
+        }),
       }),
-    }));
+    );
     expect(mediaClient.send).toHaveBeenCalledWith(MEDIA_PATTERNS.CREATE_REFERENCE, {
       fileId: 'media-1',
       ownerType: 'MESSAGE_ATTACHMENT',
       ownerId: 'attachment-1',
     });
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_clone_created',
-      hasTargetChatId: true,
-      messageCount: 1,
-      createdCount: 1,
-      attachmentCount: 1,
-    }));
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_clone_created',
+        hasTargetChatId: true,
+        messageCount: 1,
+        createdCount: 1,
+        attachmentCount: 1,
+      }),
+    );
   });
 
   it('touches target chat lastMessage on forward clone via transactional create', async () => {
@@ -713,55 +775,65 @@ describe('ChatService', () => {
     });
     repo.createMessageWithTouch.mockResolvedValue({
       id: 'cloned-message',
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'cloned-message',
-        mediaId: 'media-1',
-        fileNameSnapshot: 'voice.ogg',
-        fileSizeSnapshot: 33000,
-        mimeSnapshot: 'audio/ogg',
-        category: 'VOICE',
-        createdAt: new Date('2026-07-22T00:00:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'cloned-message',
+          mediaId: 'media-1',
+          fileNameSnapshot: 'voice.ogg',
+          fileSizeSnapshot: 33000,
+          mimeSnapshot: 'audio/ogg',
+          category: 'VOICE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
     } as Message);
     repo.deleteCreatedMessage.mockResolvedValue(undefined);
     const service = new ChatService(repo, mediaClient as never);
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.cloneForwardMessages({
-      targetChatId: 'target-chat',
-      userId: 'forwarder',
-      messages: [{
-        messageId: 'source-message',
-        chatId: 'source-chat',
-        senderId: 'original-sender',
-        originalAuthorId: 'author-1',
-        originalAuthorNameSnapshot: 'tamilka',
-        originalAuthorDisplayNameSnapshot: 'Тамилка:3',
-        type: 'VOICE',
-        text: null,
-        createdAt: new Date('2026-07-21T10:15:00.000Z'),
-        attachments: [{
-          mediaId: 'media-1',
-          fileNameSnapshot: 'voice.ogg',
-          fileSizeSnapshot: 33000,
-          mimeSnapshot: 'audio/ogg',
-          category: 'VOICE',
-        }],
-        forwardContext: null,
-      }],
-    })).rejects.toThrow('media unavailable');
+    await expect(
+      service.cloneForwardMessages({
+        targetChatId: 'target-chat',
+        userId: 'forwarder',
+        messages: [
+          {
+            messageId: 'source-message',
+            chatId: 'source-chat',
+            senderId: 'original-sender',
+            originalAuthorId: 'author-1',
+            originalAuthorNameSnapshot: 'tamilka',
+            originalAuthorDisplayNameSnapshot: 'Тамилка:3',
+            type: 'VOICE',
+            text: null,
+            createdAt: new Date('2026-07-21T10:15:00.000Z'),
+            attachments: [
+              {
+                mediaId: 'media-1',
+                fileNameSnapshot: 'voice.ogg',
+                fileSizeSnapshot: 33000,
+                mimeSnapshot: 'audio/ogg',
+                category: 'VOICE',
+              },
+            ],
+            forwardContext: null,
+          },
+        ],
+      }),
+    ).rejects.toThrow('media unavailable');
 
     expect(repo.deleteCreatedMessage).toHaveBeenCalledWith('cloned-message');
-    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_forward_clone_failed',
-      hasTargetChatId: true,
-      hasUserId: true,
-      messageCount: 1,
-      createdCount: 0,
-      hasError: true,
-    }));
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_forward_clone_failed',
+        hasTargetChatId: true,
+        hasUserId: true,
+        messageCount: 1,
+        createdCount: 0,
+        hasError: true,
+      }),
+    );
   });
 
   it('returns attachment media access only for chat members and logs the redacted lifecycle', async () => {
@@ -779,12 +851,14 @@ describe('ChatService', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.getMessageAttachmentForAccess({
-      chatId: 'chat-secret-id',
-      messageId: 'message-secret-id',
-      attachmentId: 'attachment-secret-id',
-      userId: 'user-secret-id',
-    })).resolves.toEqual({ mediaId: 'media-secret-id' });
+    await expect(
+      service.getMessageAttachmentForAccess({
+        chatId: 'chat-secret-id',
+        messageId: 'message-secret-id',
+        attachmentId: 'attachment-secret-id',
+        userId: 'user-secret-id',
+      }),
+    ).resolves.toEqual({ mediaId: 'media-secret-id' });
 
     expect(repo.findMessageAttachmentForAccess).toHaveBeenCalledWith({
       chatId: 'chat-secret-id',
@@ -792,14 +866,16 @@ describe('ChatService', () => {
       attachmentId: 'attachment-secret-id',
       userId: 'user-secret-id',
     });
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_attachment_access_success',
-      hasChatId: true,
-      hasMessageId: true,
-      hasAttachmentId: true,
-      hasUserId: true,
-      hasMediaId: true,
-    }));
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_attachment_access_success',
+        hasChatId: true,
+        hasMessageId: true,
+        hasAttachmentId: true,
+        hasUserId: true,
+        hasMediaId: true,
+      }),
+    );
   });
 
   it('denies attachment access when the user is not a chat member', async () => {
@@ -809,22 +885,26 @@ describe('ChatService', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.getMessageAttachmentForAccess({
-      chatId: 'chat-secret-id',
-      messageId: 'message-secret-id',
-      attachmentId: 'attachment-secret-id',
-      userId: 'user-secret-id',
-    })).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      service.getMessageAttachmentForAccess({
+        chatId: 'chat-secret-id',
+        messageId: 'message-secret-id',
+        attachmentId: 'attachment-secret-id',
+        userId: 'user-secret-id',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(repo.findMessageAttachmentForAccess).not.toHaveBeenCalled();
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_attachment_access_denied',
-      hasChatId: true,
-      hasMessageId: true,
-      hasAttachmentId: true,
-      hasUserId: true,
-      reason: 'not_chat_member',
-    }));
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_attachment_access_denied',
+        hasChatId: true,
+        hasMessageId: true,
+        hasAttachmentId: true,
+        hasUserId: true,
+        reason: 'not_chat_member',
+      }),
+    );
   });
 
   it('rejects when the attachment does not belong to the requested chat message', async () => {
@@ -842,17 +922,21 @@ describe('ChatService', () => {
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(service, 'logger', { value: logger });
 
-    await expect(service.getMessageAttachmentForAccess({
-      chatId: 'chat-secret-id',
-      messageId: 'message-secret-id',
-      attachmentId: 'attachment-secret-id',
-      userId: 'user-secret-id',
-    })).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.getMessageAttachmentForAccess({
+        chatId: 'chat-secret-id',
+        messageId: 'message-secret-id',
+        attachmentId: 'attachment-secret-id',
+        userId: 'user-secret-id',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'message_attachment_access_denied',
-      reason: 'attachment_not_in_message_chat',
-    }));
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'message_attachment_access_denied',
+        reason: 'attachment_not_in_message_chat',
+      }),
+    );
   });
 
   it('gets chats without creating a self chat as a side effect', async () => {
@@ -920,9 +1004,7 @@ describe('ChatService', () => {
       updatedAt: originalCreatedAt,
     };
 
-    repo.findChatMember
-      .mockResolvedValueOnce(sourceMember)
-      .mockResolvedValueOnce(targetMember);
+    repo.findChatMember.mockResolvedValueOnce(sourceMember).mockResolvedValueOnce(targetMember);
     repo.findMessageById.mockResolvedValue(original);
     repo.createMessageWithRelations.mockResolvedValue({
       ...original,
@@ -953,17 +1035,19 @@ describe('ChatService', () => {
       userId: 'forwarder',
     });
 
-    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(expect.objectContaining({
-      forwardContext: expect.objectContaining({
-        originalMessageId: 'original-message',
-        originalChatId: 'source-chat',
-        originalAuthorId: 'original-sender',
-        originalMessageCreatedAt: originalCreatedAt,
-        originalMessageType: 'TEXT',
-        originalTextPreview: 'original text',
-        originalFileNamePreview: null,
+    expect(repo.createMessageWithRelations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        forwardContext: expect.objectContaining({
+          originalMessageId: 'original-message',
+          originalChatId: 'source-chat',
+          originalAuthorId: 'original-sender',
+          originalMessageCreatedAt: originalCreatedAt,
+          originalMessageType: 'TEXT',
+          originalTextPreview: 'original text',
+          originalFileNamePreview: null,
+        }),
       }),
-    }));
+    );
   });
 
   it('marks a chat read only for chat members', async () => {
@@ -1023,7 +1107,9 @@ describe('ChatService', () => {
     repo.updateMessageText.mockResolvedValue({ ...message, text: 'after', editedAt: new Date() });
     const service = new ChatService(repo);
 
-    await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).resolves.toMatchObject({
+    await expect(
+      service.editMessage('chat-1', 'message-1', 'user-1', 'after'),
+    ).resolves.toMatchObject({
       id: 'message-1',
       text: 'after',
     });
@@ -1048,16 +1134,18 @@ describe('ChatService', () => {
       senderId: 'user-1',
       type: 'TEXT',
       text: 'caption',
-      attachments: [{
-        id: 'attachment-1',
-        messageId: 'message-1',
-        mediaId: '11111111-1111-4111-8111-111111111111',
-        fileNameSnapshot: null,
-        fileSizeSnapshot: null,
-        mimeSnapshot: null,
-        category: 'FILE',
-        createdAt: new Date('2026-07-22T00:00:00.000Z'),
-      }],
+      attachments: [
+        {
+          id: 'attachment-1',
+          messageId: 'message-1',
+          mediaId: '11111111-1111-4111-8111-111111111111',
+          fileNameSnapshot: null,
+          fileSizeSnapshot: null,
+          mimeSnapshot: null,
+          category: 'FILE',
+          createdAt: new Date('2026-07-22T00:00:00.000Z'),
+        },
+      ],
       forwardContext: null,
       editedAt: null,
       deletedAt: null,
@@ -1067,9 +1155,9 @@ describe('ChatService', () => {
     });
     const service = new ChatService(repo);
 
-    await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.editMessage('chat-1', 'message-1', 'user-1', 'after'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
     expect(repo.updateMessageText).not.toHaveBeenCalled();
   });
 
@@ -1133,9 +1221,9 @@ describe('ChatService', () => {
     });
     const service = new ChatService(repo);
 
-    await expect(service.deleteMessage('chat-1', 'message-1', 'user-2', 'EVERYONE')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.deleteMessage('chat-1', 'message-1', 'user-2', 'EVERYONE'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
     expect(repo.deleteMessageForEveryone).not.toHaveBeenCalled();
   });
 
@@ -1165,9 +1253,9 @@ describe('ChatService', () => {
     });
     const service = new ChatService(repo);
 
-    await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.editMessage('chat-1', 'message-1', 'user-1', 'after'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('creates direct chats with an order-independent directKey', async () => {
@@ -1205,7 +1293,9 @@ describe('ChatService', () => {
     const repo = repoMock();
     repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
     repo.findMessageByClientId.mockResolvedValue(null);
-    repo.createMessageWithTouch.mockImplementation(async (data) => ({ id: '101', ...data }) as never);
+    repo.createMessageWithTouch.mockImplementation(
+      async (data) => ({ id: '101', ...data }) as never,
+    );
     const service = new ChatService(repo);
 
     await service.sendMessage('chat-1', 'user-1', {
@@ -1217,7 +1307,15 @@ describe('ChatService', () => {
       expect.objectContaining({ hasLink: true }),
     );
 
-    const plain = { id: '101', chatId: 'chat-1', senderId: 'user-1', type: 'TEXT', text: 'hi', attachments: [], deletedAt: null };
+    const plain = {
+      id: '101',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: 'hi',
+      attachments: [],
+      deletedAt: null,
+    };
     repo.findMessageById.mockResolvedValue(plain as never);
     repo.updateMessageText.mockResolvedValue({ ...plain, text: 'after' } as never);
 

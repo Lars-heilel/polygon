@@ -6,13 +6,14 @@ import { messageApi } from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
+
 import {
   markMessageSendError,
   removeMessageFromPages,
-  updateChatListUnreadCount,
-  upsertMessageIntoPages,
   updateChatListLastMessage,
+  updateChatListUnreadCount,
   updateMessageInPages,
+  upsertMessageIntoPages,
 } from './chat-cache-updaters';
 
 function getCurrentUserId(): string | null {
@@ -39,9 +40,7 @@ function handleNewMessage(msg: Message) {
     );
 
     // Guarded inside: only moves the preview forward, never back.
-    queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
-      updateChatListLastMessage(old, msg),
-    );
+    queryClient.setQueryData<Chat[]>(['chats'], (old = []) => updateChatListLastMessage(old, msg));
 
     if (hasMessageMedia(msg)) {
       queryClient.invalidateQueries({ queryKey: ['chat-media-messages', msg.chatId] });
@@ -104,9 +103,7 @@ function handleMessageUpdated(msg: Message) {
   const chats = queryClient.getQueryData<Chat[]>(['chats']);
   const target = chats?.find((chat) => chat.id === msg.chatId);
   if (target?.lastMessage && target.lastMessage.id === msg.id) {
-    queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
-      updateChatListLastMessage(old, msg),
-    );
+    queryClient.setQueryData<Chat[]>(['chats'], (old = []) => updateChatListLastMessage(old, msg));
   }
 }
 

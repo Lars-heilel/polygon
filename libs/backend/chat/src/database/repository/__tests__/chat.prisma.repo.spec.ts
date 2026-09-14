@@ -1,8 +1,7 @@
 import type { PrismaService } from '../../prisma/prisma.service';
+import { ChatPrismaRepository } from '../chat.prisma.repo';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
-
-import { ChatPrismaRepository } from '../chat.prisma.repo';
 
 describe('ChatPrismaRepository', () => {
   const chat = {
@@ -121,10 +120,7 @@ describe('ChatPrismaRepository', () => {
         senderId: { not: 'user-1' },
         deletedAt: null,
         deletions: { none: { userId: 'user-1' } },
-        OR: [
-          { createdAt: { gt: lastReadAt } },
-          { createdAt: lastReadAt, id: { gt: 101n } },
-        ],
+        OR: [{ createdAt: { gt: lastReadAt } }, { createdAt: lastReadAt, id: { gt: 101n } }],
       },
     });
   });
@@ -157,7 +153,9 @@ describe('ChatPrismaRepository', () => {
     const lastReadAt = new Date('2026-07-14T10:00:00.000Z');
     message.count.mockResolvedValue(2);
 
-    await expect(repository.countUnreadMessages('chat-1', 'user-1', lastReadAt, '101')).resolves.toBe(2);
+    await expect(
+      repository.countUnreadMessages('chat-1', 'user-1', lastReadAt, '101'),
+    ).resolves.toBe(2);
 
     expect(message.count).toHaveBeenCalledWith({
       where: {
@@ -165,10 +163,7 @@ describe('ChatPrismaRepository', () => {
         senderId: { not: 'user-1' },
         deletedAt: null,
         deletions: { none: { userId: 'user-1' } },
-        OR: [
-          { createdAt: { gt: lastReadAt } },
-          { createdAt: lastReadAt, id: { gt: 101n } },
-        ],
+        OR: [{ createdAt: { gt: lastReadAt } }, { createdAt: lastReadAt, id: { gt: 101n } }],
       },
     });
   });
@@ -301,16 +296,18 @@ describe('ChatPrismaRepository', () => {
     };
     message.findMany.mockResolvedValue([mediaMessage]);
 
-    await expect(repository.findMessagesByChat('chat-1', undefined, 50, 'user-1')).resolves.toEqual({
-      messages: [
-        {
-          ...mediaMessage,
-          id: '104',
-          attachments: [{ ...mediaMessage.attachments[0], messageId: '104' }],
-        },
-      ],
-      nextCursor: null,
-    });
+    await expect(repository.findMessagesByChat('chat-1', undefined, 50, 'user-1')).resolves.toEqual(
+      {
+        messages: [
+          {
+            ...mediaMessage,
+            id: '104',
+            attachments: [{ ...mediaMessage.attachments[0], messageId: '104' }],
+          },
+        ],
+        nextCursor: null,
+      },
+    );
 
     expect(message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -484,7 +481,8 @@ describe('ChatPrismaRepository', () => {
     );
   });
 
-  it('stores per-user hidden message state idempotently', async () => {    messageDeletion.upsert.mockResolvedValue({
+  it('stores per-user hidden message state idempotently', async () => {
+    messageDeletion.upsert.mockResolvedValue({
       messageId: 101n,
       userId: 'user-1',
     });
@@ -628,10 +626,7 @@ describe('ChatPrismaRepository', () => {
     expect(message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          OR: [
-            { updatedAt: { gt: since } },
-            { updatedAt: since, id: { gt: 109n } },
-          ],
+          OR: [{ updatedAt: { gt: since } }, { updatedAt: since, id: { gt: 109n } }],
         }),
         orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
         take: 50,

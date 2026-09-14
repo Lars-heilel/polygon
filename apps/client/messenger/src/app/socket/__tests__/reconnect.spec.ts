@@ -1,9 +1,8 @@
-import { renderHook } from '@testing-library/react';
-
 import { chatApi, useChatStore } from '@org/entities-chat';
 import { messageApi } from '@org/entities-message';
 import { useChatSocket } from '@org/features-chat-socket';
 import { queryClient, socket } from '@org/shared';
+import { renderHook } from '@testing-library/react';
 
 import { initSocketMiddleware, rejoinAllChats } from '../socket-middleware';
 
@@ -63,9 +62,9 @@ describe('socket reconnect rejoin', () => {
     const { unmount } = renderHook(() => useChatSocket('chat-9'));
 
     const onMock = socket.on as unknown as jest.Mock;
-    const retry = onMock.mock.calls.find(
-      ([event]) => event === 'connect',
-    )?.[1] as (() => void) | undefined;
+    const retry = onMock.mock.calls.find(([event]) => event === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
     expect(retry).toBeDefined();
 
     (socket.emit as unknown as jest.Mock).mockClear();

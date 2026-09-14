@@ -1,10 +1,4 @@
-import {
-  ForbiddenException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
 import type {
   Chat,
@@ -20,8 +14,8 @@ import { lastValueFrom } from 'rxjs';
 
 import type {
   ChatWithPreview,
-  CloneForwardMessagesData,
   CloneForwardMessageInput,
+  CloneForwardMessagesData,
   CreateMessageAttachmentData,
   CreateMessageForwardContextData,
   ForwardMessagesData,
@@ -36,13 +30,15 @@ function buildAttachmentInput(input: SendMessageData): CreateMessageAttachmentDa
   if (input.attachments?.length) return input.attachments;
   if (!input.fileId) return [];
 
-  return [{
-    mediaId: input.fileId,
-    fileNameSnapshot: input.fileName ?? null,
-    fileSizeSnapshot: input.fileSize ?? null,
-    mimeSnapshot: input.fileMime ?? null,
-    category: input.fileCategory ?? input.type ?? 'FILE',
-  }];
+  return [
+    {
+      mediaId: input.fileId,
+      fileNameSnapshot: input.fileName ?? null,
+      fileSizeSnapshot: input.fileSize ?? null,
+      mimeSnapshot: input.fileMime ?? null,
+      category: input.fileCategory ?? input.type ?? 'FILE',
+    },
+  ];
 }
 
 function isPrismaUniqueViolation(error: unknown): boolean {
@@ -183,12 +179,20 @@ export class ChatService implements IChatService {
     try {
       member = await this.repo.findChatMember(input.chatId, input.userId);
     } catch (error) {
-      this.logger.error({ eventType: 'message_attachment_access_failed', ...logContext, reason: 'membership_lookup_failed' });
+      this.logger.error({
+        eventType: 'message_attachment_access_failed',
+        ...logContext,
+        reason: 'membership_lookup_failed',
+      });
       throw error;
     }
 
     if (!member) {
-      this.logger.warn({ eventType: 'message_attachment_access_denied', ...logContext, reason: 'not_chat_member' });
+      this.logger.warn({
+        eventType: 'message_attachment_access_denied',
+        ...logContext,
+        reason: 'not_chat_member',
+      });
       throw new ForbiddenException('Not a member of this chat');
     }
 
@@ -215,16 +219,16 @@ export class ChatService implements IChatService {
         throw error;
       }
 
-      this.logger.error({ eventType: 'message_attachment_access_failed', ...logContext, reason: 'attachment_lookup_failed' });
+      this.logger.error({
+        eventType: 'message_attachment_access_failed',
+        ...logContext,
+        reason: 'attachment_lookup_failed',
+      });
       throw error;
     }
   }
 
-  async sendMessage(
-    chatId: string,
-    senderId: string,
-    input: SendMessageData,
-  ): Promise<Message> {
+  async sendMessage(chatId: string, senderId: string, input: SendMessageData): Promise<Message> {
     this.logger.debug({
       eventType: 'message_send_requested',
       hasChatId: !!chatId,
@@ -325,12 +329,17 @@ export class ChatService implements IChatService {
 
     try {
       for (const attachment of createdAttachments) {
-        this.logger.debug({ eventType: 'media_reference_create_started', hasMessageId: !!message.id });
-        await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.CREATE_REFERENCE, {
-          fileId: attachment.mediaId,
-          ownerType: 'MESSAGE_ATTACHMENT',
-          ownerId: attachment.id,
-        }));
+        this.logger.debug({
+          eventType: 'media_reference_create_started',
+          hasMessageId: !!message.id,
+        });
+        await lastValueFrom(
+          this.mediaClient.send(MEDIA_PATTERNS.CREATE_REFERENCE, {
+            fileId: attachment.mediaId,
+            ownerType: 'MESSAGE_ATTACHMENT',
+            ownerId: attachment.id,
+          }),
+        );
         createdReferences.push({
           mediaId: attachment.mediaId,
           fileNameSnapshot: null,
@@ -347,7 +356,10 @@ export class ChatService implements IChatService {
         createdReferenceCount: createdReferences.length,
         hasError: !!error,
       });
-      await this.compensateFailedMessageSend(message, createdAttachments.slice(0, createdReferences.length));
+      await this.compensateFailedMessageSend(
+        message,
+        createdAttachments.slice(0, createdReferences.length),
+      );
       this.logger.error({
         eventType: 'message_send_failed',
         hasMessageId: !!message.id,
@@ -371,11 +383,13 @@ export class ChatService implements IChatService {
     if (this.mediaClient) {
       for (const attachment of referencedAttachments) {
         try {
-          await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.DELETE_REFERENCE, {
-            fileId: attachment.mediaId,
-            ownerType: 'MESSAGE_ATTACHMENT',
-            ownerId: attachment.id,
-          }));
+          await lastValueFrom(
+            this.mediaClient.send(MEDIA_PATTERNS.DELETE_REFERENCE, {
+              fileId: attachment.mediaId,
+              ownerType: 'MESSAGE_ATTACHMENT',
+              ownerId: attachment.id,
+            }),
+          );
         } catch (error) {
           this.logger.warn({
             eventType: 'media_reference_delete_skipped',
@@ -413,7 +427,12 @@ export class ChatService implements IChatService {
     await this.requireMember(chatId, userId);
     const message = await this.requireMessageInChat(chatId, messageId);
 
-    if (message.senderId !== userId || message.type !== 'TEXT' || message.attachments.length > 0 || message.deletedAt) {
+    if (
+      message.senderId !== userId ||
+      message.type !== 'TEXT' ||
+      message.attachments.length > 0 ||
+      message.deletedAt
+    ) {
       this.logger.warn({
         eventType: 'message_edit_rejected',
         hasChatId: !!chatId,
@@ -792,11 +811,13 @@ export class ChatService implements IChatService {
     const referencedAttachments: Message['attachments'] = [];
     try {
       for (const attachment of attachments) {
-        await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.CREATE_REFERENCE, {
-          fileId: attachment.mediaId,
-          ownerType: 'MESSAGE_ATTACHMENT',
-          ownerId: attachment.id,
-        }));
+        await lastValueFrom(
+          this.mediaClient.send(MEDIA_PATTERNS.CREATE_REFERENCE, {
+            fileId: attachment.mediaId,
+            ownerType: 'MESSAGE_ATTACHMENT',
+            ownerId: attachment.id,
+          }),
+        );
         referencedAttachments.push(attachment);
       }
     } catch (error) {
@@ -818,11 +839,13 @@ export class ChatService implements IChatService {
     if (this.mediaClient) {
       for (const attachment of referencedAttachments) {
         try {
-          await lastValueFrom(this.mediaClient.send(MEDIA_PATTERNS.DELETE_REFERENCE, {
-            fileId: attachment.mediaId,
-            ownerType: 'MESSAGE_ATTACHMENT',
-            ownerId: attachment.id,
-          }));
+          await lastValueFrom(
+            this.mediaClient.send(MEDIA_PATTERNS.DELETE_REFERENCE, {
+              fileId: attachment.mediaId,
+              ownerType: 'MESSAGE_ATTACHMENT',
+              ownerId: attachment.id,
+            }),
+          );
         } catch (error) {
           this.logger.warn({
             eventType: 'media_reference_delete_skipped',
@@ -845,11 +868,7 @@ export class ChatService implements IChatService {
     }
   }
 
-  async markRead(
-    chatId: string,
-    userId: string,
-    messageId?: string | null,
-  ): Promise<ChatMember> {
+  async markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember> {
     this.logger.debug({
       eventType: 'chat_read_mark_requested',
       hasChatId: !!chatId,

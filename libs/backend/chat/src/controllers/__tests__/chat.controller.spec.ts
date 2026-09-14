@@ -1,8 +1,7 @@
 import type { IChatService } from '../../interfaces/chat.interface';
+import { ChatController } from '../chat.controller';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
-
-import { ChatController } from '../chat.controller';
 
 describe('ChatController', () => {
   let service: jest.Mocked<IChatService>;
@@ -92,19 +91,25 @@ describe('ChatController', () => {
     expect(diagnosticPayload).not.toContain('file.png');
     expect(diagnosticPayload).not.toContain('token=secret');
     expect(logger.debug).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'message_send_requested', hasChatId: true, hasSenderId: true }),
+      expect.objectContaining({
+        eventType: 'message_send_requested',
+        hasChatId: true,
+        hasSenderId: true,
+      }),
     );
   });
 
   it('delegates attachment access to the service', async () => {
     service.getMessageAttachmentForAccess.mockResolvedValue({ mediaId: 'media-1' } as never);
 
-    await expect(controller.getMessageAttachmentForAccess({
-      chatId: 'chat-1',
-      messageId: 'message-1',
-      attachmentId: 'attachment-1',
-      userId: 'user-1',
-    })).resolves.toEqual({ mediaId: 'media-1' });
+    await expect(
+      controller.getMessageAttachmentForAccess({
+        chatId: 'chat-1',
+        messageId: 'message-1',
+        attachmentId: 'attachment-1',
+        userId: 'user-1',
+      }),
+    ).resolves.toEqual({ mediaId: 'media-1' });
 
     expect(service.getMessageAttachmentForAccess).toHaveBeenCalledWith({
       chatId: 'chat-1',
@@ -118,17 +123,21 @@ describe('ChatController', () => {
     service.prepareForwardMessages.mockResolvedValue([{ messageId: 'message-1' }] as never);
     service.cloneForwardMessages.mockResolvedValue([{ id: 'cloned-message' }] as never);
 
-    await expect(controller.prepareForwardMessages({
-      sourceChatId: 'source-chat',
-      targetChatId: 'target-chat',
-      messageIds: ['message-1'],
-      userId: 'user-1',
-    })).resolves.toEqual([{ messageId: 'message-1' }]);
-    await expect(controller.cloneForwardMessages({
-      targetChatId: 'target-chat',
-      userId: 'user-1',
-      messages: [{ messageId: 'message-1' } as never],
-    })).resolves.toEqual([{ id: 'cloned-message' }]);
+    await expect(
+      controller.prepareForwardMessages({
+        sourceChatId: 'source-chat',
+        targetChatId: 'target-chat',
+        messageIds: ['message-1'],
+        userId: 'user-1',
+      }),
+    ).resolves.toEqual([{ messageId: 'message-1' }]);
+    await expect(
+      controller.cloneForwardMessages({
+        targetChatId: 'target-chat',
+        userId: 'user-1',
+        messages: [{ messageId: 'message-1' } as never],
+      }),
+    ).resolves.toEqual([{ id: 'cloned-message' }]);
 
     expect(service.prepareForwardMessages).toHaveBeenCalledWith({
       sourceChatId: 'source-chat',

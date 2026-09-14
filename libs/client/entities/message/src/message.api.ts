@@ -7,8 +7,8 @@ import {
   useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
 
-import { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
 import { removeMessageFromPages, updateMessageInPages } from './message-cache.js';
+import { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
 import type { Message, MessagePage, RawMessage, RawMessagePage } from './message.types.js';
 
 export type { Message, MessagePage, RawMessage, RawMessagePage };
@@ -57,10 +57,13 @@ export const messageApi = {
     messageId: string,
     mode: DeleteMessageMode,
   ): Promise<{ id: string; chatId: string }> {
-    return authedFetch<{ id: string; chatId: string }>(API_ROUTES.chats.message(chatId, messageId), {
-      method: 'DELETE',
-      body: JSON.stringify({ mode }),
-    });
+    return authedFetch<{ id: string; chatId: string }>(
+      API_ROUTES.chats.message(chatId, messageId),
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ mode }),
+      },
+    );
   },
 
   async forwardMessages(targetChatId: string, input: ForwardMessagesInput): Promise<Message[]> {
