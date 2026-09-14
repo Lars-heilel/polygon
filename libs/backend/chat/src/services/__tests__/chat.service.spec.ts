@@ -17,6 +17,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
   return {
     findChatById: jest.fn(),
     findDirectChatBetween: jest.fn(),
+    findDirectChatByKey: jest.fn(),
     findSelfChat: jest.fn(),
     createSelfChat: jest.fn(),
     findChatsForUser: jest.fn(),
@@ -28,6 +29,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     removeChatMember: jest.fn(),
     findMessagesByChat: jest.fn(),
     findMediaMessagesByChat: jest.fn(),
+    findMessagesDelta: jest.fn(),
     findMessageById: jest.fn(),
     findMessageByClientId: jest.fn(),
     findVisibleMessagesByIds: jest.fn(),
@@ -1026,7 +1028,7 @@ describe('ChatService', () => {
       text: 'after',
     });
 
-    expect(repo.updateMessageText).toHaveBeenCalledWith('message-1', 'after');
+    expect(repo.updateMessageText).toHaveBeenCalledWith('message-1', 'after', false);
   });
 
   it('rejects editing file-backed messages', async () => {
@@ -1166,5 +1168,87 @@ describe('ChatService', () => {
     await expect(service.editMessage('chat-1', 'message-1', 'user-1', 'after')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('creates direct chats with an order-independent directKey', async () => {
+    const repo = repoMock();
+    repo.findDirectChatBetween.mockResolvedValue(null);
+    repo.findDirectChatByKey.mockResolvedValue(null);
+    repo.createChat.mockImplementation(async (data) => ({ id: 'chat-new', ...data }) as never);
+    repo.findChatById.mockResolvedValue({ id: 'chat-new' } as never);
+    const service = new ChatService(repo);
+
+    await service.createDirectChat('user-b', 'user-a');
+
+    expect(repo.createChat).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'DIRECT', directKey: 'direct:user-a:user-b' }),
+    );
+    expect(repo.addChatMember).toHaveBeenCalledTimes(2);
+  });
+
+  it('recovers the race winner on directKey conflict', async () => {
+    const repo = repoMock();
+    repo.findDirectChatBetween.mockResolvedValue(null);
+    repo.findDirectChatByKey
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'chat-race' } as never);
+    repo.createChat.mockRejectedValue({ code: 'P2002' });
+    const service = new ChatService(repo);
+
+    await expect(service.createDirectChat('user-a', 'user-b')).resolves.toEqual({
+      id: 'chat-race',
+    });
+    expect(repo.addChatMember).not.toHaveBeenCalled();
+  });
+
+  it('marks hasLink on send and edit', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findMessageByClientId.mockResolvedValue(null);
+    repo.createMessageWithTouch.mockImplementation(async (data) => ({ id: '101', ...data }) as never);
+    const service = new ChatService(repo);
+
+    await service.sendMessage('chat-1', 'user-1', {
+      type: 'TEXT',
+      text: 'see https://example.com/x',
+    } as never);
+
+    expect(repo.createMessageWithTouch).toHaveBeenCalledWith(
+      expect.objectContaining({ hasLink: true }),
+    );
+
+    const plain = { id: '101', chatId: 'chat-1', senderId: 'user-1', type: 'TEXT', text: 'hi', attachments: [], deletedAt: null };
+    repo.findMessageById.mockResolvedValue(plain as never);
+    repo.updateMessageText.mockResolvedValue({ ...plain, text: 'after' } as never);
+
+    await service.editMessage('chat-1', '101', 'user-1', 'after');
+    expect(repo.updateMessageText).toHaveBeenCalledWith('101', 'after', false);
+  });
+
+  it('requires membership for delta sync', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue(null);
+    const service = new ChatService(repo);
+
+    await expect(
+      service.getMessagesDelta('chat-1', 'user-1', {
+        since: new Date('2026-09-13T00:00:00.000Z'),
+        limit: 50,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repo.findMessagesDelta).not.toHaveBeenCalled();
+  });
+
+  it('delegates delta sync with parsed query', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findMessagesDelta.mockResolvedValue({ messages: [], deletedIds: ['101'] });
+    const service = new ChatService(repo);
+
+    const since = new Date('2026-09-13T00:00:00.000Z');
+    await expect(
+      service.getMessagesDelta('chat-1', 'user-1', { since, sinceId: '100', limit: 50 }),
+    ).resolves.toEqual({ messages: [], deletedIds: ['101'] });
+    expect(repo.findMessagesDelta).toHaveBeenCalledWith('chat-1', 'user-1', since, '100', 50);
   });
 });

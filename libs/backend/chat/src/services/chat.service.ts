@@ -6,7 +6,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
-import type { Chat, ChatMediaFilter, ChatMember, Message, MessagePage } from '@org/common';
+import type {
+  Chat,
+  ChatMediaFilter,
+  ChatMember,
+  Message,
+  MessagePage,
+  MessagesDelta,
+  MessagesDeltaQuery,
+} from '@org/common';
 import { CHAT_PRISMA_REPOSITORY_TOKEN, MEDIA_CLIENT_TOKEN, MEDIA_PATTERNS } from '@org/core';
 import { lastValueFrom } from 'rxjs';
 
@@ -46,6 +54,14 @@ function isPrismaUniqueViolation(error: unknown): boolean {
   );
 }
 
+export const buildDirectKey = (userId1: string, userId2: string): string =>
+  `direct:${[userId1, userId2].sort().join(':')}`;
+
+const HAS_LINK_RE = /https?:\/\/|www\./i;
+
+export const containsLink = (text: string | null | undefined): boolean =>
+  HAS_LINK_RE.test(text ?? '');
+
 @Injectable()
 export class ChatService implements IChatService {
   private readonly logger = new Logger(ChatService.name);
@@ -66,17 +82,37 @@ export class ChatService implements IChatService {
       return this.repo.createSelfChat(userId);
     }
 
-    const chat = await this.repo.createChat({
-      type: 'DIRECT',
-      name: null,
-    });
-    await this.repo.addChatMember({ chatId: chat.id, userId });
-    await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
+    const directKey = buildDirectKey(userId, targetUserId);
+    const byKey = await this.repo.findDirectChatByKey(directKey);
+    if (byKey) return byKey;
 
-    return this.repo.findChatById(chat.id).then((c) => {
-      if (!c) throw new NotFoundException('Chat not found after creation');
-      return c;
-    });
+    try {
+      const chat = await this.repo.createChat({
+        type: 'DIRECT',
+        name: null,
+        directKey,
+      });
+      await this.repo.addChatMember({ chatId: chat.id, userId });
+      await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
+
+      return this.repo.findChatById(chat.id).then((c) => {
+        if (!c) throw new NotFoundException('Chat not found after creation');
+        return c;
+      });
+    } catch (error) {
+      if (isPrismaUniqueViolation(error)) {
+        const winner = await this.repo.findDirectChatByKey(directKey);
+        if (winner) {
+          this.logger.log({
+            eventType: 'direct_chat_create_skipped',
+            hasUserId: !!userId,
+            reason: 'duplicate_direct_key',
+          });
+          return winner;
+        }
+      }
+      throw error;
+    }
   }
 
   async getChats(userId: string): Promise<ChatWithPreview[]> {
@@ -98,6 +134,26 @@ export class ChatService implements IChatService {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
     return this.repo.findMessagesByChat(chatId, cursor, take, userId);
+  }
+
+  async getMessagesDelta(
+    chatId: string,
+    userId: string,
+    query: MessagesDeltaQuery,
+  ): Promise<MessagesDelta> {
+    this.logger.debug({
+      eventType: 'messages_delta_requested',
+      hasChatId: !!chatId,
+      hasUserId: !!userId,
+    });
+    await this.requireMember(chatId, userId);
+    return this.repo.findMessagesDelta(
+      chatId,
+      userId,
+      query.since,
+      query.sinceId ?? null,
+      query.limit,
+    );
   }
 
   async getMediaMessages(
@@ -211,6 +267,7 @@ export class ChatService implements IChatService {
         senderId,
         type: input.type as Message['type'],
         text: input.text ?? null,
+        hasLink: containsLink(input.text),
         attachments,
       });
     } catch (error) {
@@ -366,7 +423,7 @@ export class ChatService implements IChatService {
       throw new ForbiddenException('Message cannot be edited');
     }
 
-    const updated = await this.repo.updateMessageText(messageId, text);
+    const updated = await this.repo.updateMessageText(messageId, text, containsLink(text));
     this.logger.log({
       eventType: 'message_edited',
       hasChatId: !!chatId,
@@ -474,6 +531,7 @@ export class ChatService implements IChatService {
         senderId: userId,
         type: original.type,
         text: original.text,
+        hasLink: containsLink(original.text),
         attachments: original.attachments.map((attachment) => ({
           mediaId: attachment.mediaId,
           fileNameSnapshot: attachment.fileNameSnapshot,
@@ -630,6 +688,7 @@ export class ChatService implements IChatService {
           senderId: userId,
           type: message.type,
           text: message.text,
+          hasLink: containsLink(message.text),
           attachments: message.attachments,
           forwardContext: this.buildForwardContext(message),
         });

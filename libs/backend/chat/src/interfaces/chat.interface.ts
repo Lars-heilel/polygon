@@ -7,6 +7,8 @@ import type {
   Message,
   MessagePage,
   MessageType,
+  MessagesDelta,
+  MessagesDeltaQuery,
 } from '@org/common';
 
 export type ChatWithPreview = Chat & {
@@ -21,6 +23,7 @@ export interface CreateMessageData {
   senderId: string;
   type?: MessageType;
   text?: string | null;
+  hasLink?: boolean;
 }
 
 export interface CreateMessageAttachmentData {
@@ -102,6 +105,7 @@ export interface MessageAttachmentAccessInput {
 export interface IChatRepository {
   findChatById(id: string): Promise<Chat | null>;
   findDirectChatBetween(userId1: string, userId2: string): Promise<Chat | null>;
+  findDirectChatByKey(directKey: string): Promise<Chat | null>;
   findSelfChat(userId: string): Promise<Chat | null>;
   createSelfChat(userId: string): Promise<Chat>;
   findChatsForUser(userId: string): Promise<ChatWithPreview[]>;
@@ -110,6 +114,7 @@ export interface IChatRepository {
     name?: string | null;
     avatarUrl?: string | null;
     selfOwnerId?: string | null;
+    directKey?: string | null;
   }): Promise<Chat>;
   deleteChat(id: string): Promise<void>;
   findChatMember(chatId: string, userId: string): Promise<ChatMember | null>;
@@ -131,6 +136,13 @@ export interface IChatRepository {
   ): Promise<MessagePage>;
   findMessageById(id: string): Promise<Message | null>;
   findMessageByClientId(chatId: string, clientId: string): Promise<Message | null>;
+  findMessagesDelta(
+    chatId: string,
+    userId: string,
+    since: Date,
+    sinceId: string | null,
+    take: number,
+  ): Promise<{ messages: Message[]; deletedIds: string[] }>;
   findVisibleMessagesByIds(
     chatId: string,
     messageIds: string[],
@@ -141,7 +153,7 @@ export interface IChatRepository {
   createMessageWithTouch(data: CreateMessageWithRelationsData): Promise<Message>;
   touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void>;
   deleteCreatedMessage(messageId: string): Promise<void>;
-  updateMessageText(messageId: string, text: string): Promise<Message>;
+  updateMessageText(messageId: string, text: string, hasLink: boolean): Promise<Message>;
   deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;
   hideMessageForUser(messageId: string, userId: string): Promise<void>;
   countUnreadMessages(
@@ -163,6 +175,7 @@ export interface IChatService {
     cursor: string | undefined,
     take: number,
   ): Promise<MessagePage>;
+  getMessagesDelta(chatId: string, userId: string, query: MessagesDeltaQuery): Promise<MessagesDelta>;
   getMediaMessages(
     chatId: string,
     userId: string,
