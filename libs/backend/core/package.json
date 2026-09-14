@@ -12,7 +12,9 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {},
+  "dependencies": {
+    "uuid": "^11.1.0"
+  },
   "nx": {
     "tags": [
       "scope:backend",
