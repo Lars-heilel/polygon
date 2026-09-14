@@ -18,4 +18,8 @@ export const CHAT_PATTERNS = {
   GET_MEMBERS: 'chat.getMembers',
   GET_MESSAGE_ATTACHMENT_FOR_ACCESS: 'chat.messageAttachment.getForAccess',
   GET_MESSAGES_DELTA: 'chat.getMessagesDelta',
+  DEVICE_REGISTER: 'chat.deviceRegister',
+  DEVICE_REVOKE: 'chat.deviceRevoke',
+  PREKEYS_PUBLISH: 'chat.prekeysPublish',
+  PREKEYS_CONSUME: 'chat.prekeysConsume',
 } as const;

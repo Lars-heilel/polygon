@@ -4,11 +4,17 @@ import type {
   ChatMember,
   ChatRole,
   ChatType,
+  DeviceRecord,
+  GroupMessageEnvelope,
   Message,
+  MessageEnvelope,
   MessagePage,
   MessageType,
   MessagesDelta,
   MessagesDeltaQuery,
+  PrekeyBundleRecord,
+  PublishPrekeysInput,
+  RegisterDeviceInput,
 } from '@org/common';
 
 export type ChatWithPreview = Chat & {
@@ -55,6 +61,12 @@ export type SendMessageData = {
   clientId?: string | null;
   type: string;
   text?: string | null;
+  /**
+   * Opaque E2EE envelopes (per-device ciphertext). Not persisted to columns —
+   * the message shell is stored with null text and the envelopes ride along
+   * transiently for socket fan-out. No plaintext is visible server-side.
+   */
+  envelopes?: Array<GroupMessageEnvelope | MessageEnvelope> | null;
   attachments?: CreateMessageAttachmentData[];
   fileId?: string | null;
   fileBucket?: string | null;
@@ -100,6 +112,32 @@ export interface MessageAttachmentAccessInput {
   messageId: string;
   attachmentId: string;
   userId: string;
+}
+
+export interface SignedPrekeyPair {
+  signedPrekey: string;
+  signedPrekeySignature: string;
+}
+
+export interface IE2eeKeyRepository {
+  upsertDevice(input: RegisterDeviceInput): Promise<DeviceRecord>;
+  findDevice(deviceId: string): Promise<DeviceRecord | null>;
+  deleteDevice(deviceId: string): Promise<void>;
+  saveSignedPrekey(
+    deviceId: string,
+    signedPrekey: string,
+    signedPrekeySignature: string,
+  ): Promise<void>;
+  findSignedPrekey(deviceId: string): Promise<SignedPrekeyPair | null>;
+  addOneTimePrekeys(deviceId: string, prekeys: string[]): Promise<void>;
+  consumeOneTimePrekey(deviceId: string): Promise<string | null>;
+}
+
+export interface IE2eeKeyService {
+  registerDevice(input: RegisterDeviceInput): Promise<DeviceRecord>;
+  revokeDevice(deviceId: string): Promise<void>;
+  publishPrekeys(input: PublishPrekeysInput): Promise<void>;
+  consumePrekeyBundle(deviceId: string): Promise<PrekeyBundleRecord | null>;
 }
 
 export interface IChatRepository {

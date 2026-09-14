@@ -237,6 +237,7 @@ export class ChatService implements IChatService {
       type: input.type,
       hasText: !!input.text,
       hasFile: !!input.fileId || !!input.attachments?.length,
+      hasEnvelopes: !!input.envelopes?.length,
     });
     const member = await this.repo.findChatMember(chatId, senderId);
     if (!member) {
@@ -295,7 +296,12 @@ export class ChatService implements IChatService {
       eventType: 'message_attachment_created',
       hasMessageId: !!message.id,
       attachmentCount: attachments.length,
+      hasEnvelopes: !!input.envelopes?.length,
     });
+
+    if (input.envelopes?.length) {
+      return { ...message, envelopes: input.envelopes } as Message;
+    }
 
     if (attachments.length === 0) {
       this.logger.debug({ eventType: 'media_reference_create_skipped', attachmentCount: 0 });

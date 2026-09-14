@@ -33,6 +33,10 @@ export const API_ROUTES = {
     message: (chatId: string, messageId: string) => `chats/${chatId}/messages/${messageId}`,
     forward: (id: string) => `chats/${id}/forward`,
     mediaMessages: (id: string) => `chats/${id}/media/messages`,
+    devices: 'chats/devices',
+    deviceById: (deviceId: string) => `chats/devices/${deviceId}`,
+    prekeys: (deviceId: string) => `chats/devices/${deviceId}/prekeys`,
+    senderKeys: (chatId: string) => `chats/${chatId}/sender-keys`,
   },
   search: {
     root: 'search',

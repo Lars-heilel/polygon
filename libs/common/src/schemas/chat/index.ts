@@ -10,3 +10,6 @@ export * from './edit-message.schema';
 export * from './delete-message.schema';
 export * from './read-chat.schema';
 export * from './message-delta.schema';
+export * from './device.schema.js';
+export * from './prekey-bundle.schema.js';
+export * from './envelope.schema.js';

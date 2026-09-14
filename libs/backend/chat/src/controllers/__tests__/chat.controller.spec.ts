@@ -1,10 +1,11 @@
-import type { IChatService } from '../../interfaces/chat.interface';
+import type { IChatService, IE2eeKeyService } from '../../interfaces/chat.interface';
 import { ChatController } from '../chat.controller';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
 
 describe('ChatController', () => {
   let service: jest.Mocked<IChatService>;
+  let e2eeKeyService: jest.Mocked<IE2eeKeyService>;
   let controller: ChatController;
 
   beforeEach(() => {
@@ -26,7 +27,13 @@ describe('ChatController', () => {
       cloneForwardMessages: jest.fn(),
       getMessageAttachmentForAccess: jest.fn(),
     };
-    controller = new ChatController(service);
+    e2eeKeyService = {
+      registerDevice: jest.fn(),
+      revokeDevice: jest.fn(),
+      publishPrekeys: jest.fn(),
+      consumePrekeyBundle: jest.fn(),
+    };
+    controller = new ChatController(service, e2eeKeyService);
   });
 
   it('delegates explicit self-chat creation to the service', async () => {
@@ -119,6 +126,41 @@ describe('ChatController', () => {
     });
   });
 
+  it('delegates device registry and prekey operations to the e2ee key service', async () => {
+    const device = {
+      userId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c0',
+      deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      identityKey: 'aWtlaQ==',
+      registrationId: 7,
+    };
+    e2eeKeyService.registerDevice.mockResolvedValue(device);
+    e2eeKeyService.consumePrekeyBundle.mockResolvedValue({
+      deviceId: device.deviceId,
+      identityKey: device.identityKey,
+      signedPrekey: 'c3Bn',
+      signedPrekeySignature: 'c2ln',
+      oneTimePrekey: 'b3Rw',
+    });
+
+    await expect(controller.registerDevice(device)).resolves.toEqual(device);
+    expect(e2eeKeyService.registerDevice).toHaveBeenCalledWith(device);
+
+    await controller.revokeDevice({ deviceId: device.deviceId });
+    expect(e2eeKeyService.revokeDevice).toHaveBeenCalledWith(device.deviceId);
+
+    const publish = {
+      deviceId: device.deviceId,
+      signedPrekey: 'c3Bn',
+      signedPrekeySignature: 'c2ln',
+      oneTimePrekeys: ['b3Rw'],
+    };
+    await controller.publishPrekeys(publish);
+    expect(e2eeKeyService.publishPrekeys).toHaveBeenCalledWith(publish);
+
+    await expect(controller.consumePrekeyBundle({ deviceId: device.deviceId })).resolves.toEqual(
+      expect.objectContaining({ deviceId: device.deviceId, oneTimePrekey: 'b3Rw' }),
+    );
+  });
   it('delegates forward preparation and cloning to the service', async () => {
     service.prepareForwardMessages.mockResolvedValue([{ messageId: 'message-1' }] as never);
     service.cloneForwardMessages.mockResolvedValue([{ id: 'cloned-message' }] as never);

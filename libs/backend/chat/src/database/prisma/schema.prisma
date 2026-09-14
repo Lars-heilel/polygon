@@ -127,3 +127,24 @@ model MessageDeletion {
   @@index([userId])
   @@map("message_deletions")
 }
+
+model Device {
+  deviceId       String   @id @db.Uuid @map("device_id")
+  userId         String   @db.Uuid @map("user_id")
+  identityKey    String   @map("identity_key")
+  registrationId Int      @map("registration_id")
+  lastSeenAt     DateTime @default(now()) @db.Timestamptz(3) @map("last_seen_at")
+
+  @@index([userId])
+  @@map("devices")
+}
+
+model OneTimePrekey {
+  id        BigInt  @id @default(autoincrement()) @map("id")
+  deviceId  String  @db.Uuid @map("device_id")
+  prekey    String  @map("prekey")
+  consumed  Boolean @default(false) @map("consumed")
+
+  @@index([deviceId, consumed])
+  @@map("one_time_prekeys")
+}

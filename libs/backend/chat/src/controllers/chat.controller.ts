@@ -3,12 +3,18 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import type {
   Chat,
   ChatMember,
+  DeviceRecord,
+  GroupMessageEnvelope,
   Message,
+  MessageEnvelope,
   MessagePage,
   MessagesDelta,
   MessagesDeltaQuery,
+  PrekeyBundleRecord,
+  PublishPrekeysInput,
+  RegisterDeviceInput,
 } from '@org/common';
-import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN } from '@org/core';
+import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN, E2EE_KEY_SERVICE_TOKEN } from '@org/core';
 
 import type {
   ChatWithPreview,
@@ -17,6 +23,7 @@ import type {
   ForwardMessagesData,
   IChatController,
   IChatService,
+  IE2eeKeyService,
   MessageAttachmentAccessInput,
   PreparedForwardMessage,
 } from '../interfaces/chat.interface';
@@ -25,7 +32,11 @@ import type {
 export class ChatController implements IChatController {
   private readonly logger = new Logger(ChatController.name);
 
-  constructor(@Inject(CHAT_SERVICE_TOKEN) private readonly chatService: IChatService) {}
+  constructor(
+    @Inject(CHAT_SERVICE_TOKEN) private readonly chatService: IChatService,
+    @Inject(E2EE_KEY_SERVICE_TOKEN)
+    private readonly e2eeKeyService: IE2eeKeyService,
+  ) {}
 
   @MessagePattern(CHAT_PATTERNS.CREATE_DIRECT)
   createDirect(@Payload() payload: { userId: string; targetUserId: string }): Promise<Chat> {
@@ -101,6 +112,7 @@ export class ChatController implements IChatController {
       senderId: string;
       type: string;
       text?: string | null;
+      envelopes?: Array<GroupMessageEnvelope | MessageEnvelope> | null;
       attachments?: CreateMessageAttachmentData[];
       fileId?: string | null;
       fileBucket?: string | null;
@@ -119,11 +131,13 @@ export class ChatController implements IChatController {
       type: payload.type,
       hasText: !!payload.text,
       hasFile: !!payload.fileId || !!payload.attachments?.length,
+      hasEnvelopes: !!payload.envelopes?.length,
     });
     return this.chatService.sendMessage(payload.chatId, payload.senderId, {
       clientId: payload.clientId ?? null,
       type: payload.type,
       text: payload.text,
+      envelopes: payload.envelopes ?? null,
       attachments: payload.attachments,
       fileId: payload.fileId,
       fileBucket: payload.fileBucket,
@@ -216,5 +230,44 @@ export class ChatController implements IChatController {
     @Payload() payload: MessageAttachmentAccessInput,
   ): Promise<{ mediaId: string }> {
     return this.chatService.getMessageAttachmentForAccess(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.DEVICE_REGISTER)
+  registerDevice(@Payload() payload: RegisterDeviceInput): Promise<DeviceRecord> {
+    this.logger.debug({
+      eventType: 'device_register_requested',
+      hasUserId: !!payload.userId,
+      hasDeviceId: !!payload.deviceId,
+    });
+    return this.e2eeKeyService.registerDevice(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.DEVICE_REVOKE)
+  revokeDevice(@Payload() payload: { deviceId: string }): Promise<void> {
+    this.logger.debug({
+      eventType: 'device_revoke_requested',
+      hasDeviceId: !!payload.deviceId,
+    });
+    return this.e2eeKeyService.revokeDevice(payload.deviceId);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.PREKEYS_PUBLISH)
+  publishPrekeys(@Payload() payload: PublishPrekeysInput): Promise<void> {
+    this.logger.debug({
+      eventType: 'prekeys_publish_requested',
+      hasDeviceId: !!payload.deviceId,
+    });
+    return this.e2eeKeyService.publishPrekeys(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.PREKEYS_CONSUME)
+  consumePrekeyBundle(
+    @Payload() payload: { deviceId: string },
+  ): Promise<PrekeyBundleRecord | null> {
+    this.logger.debug({
+      eventType: 'prekeys_consume_requested',
+      hasDeviceId: !!payload.deviceId,
+    });
+    return this.e2eeKeyService.consumePrekeyBundle(payload.deviceId);
   }
 }

@@ -9,6 +9,8 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { envelopeSchema, groupEnvelopeSchema, sendMessageSchema } from '@org/common';
+import type { GroupMessageEnvelope, MessageEnvelope } from '@org/common';
 import {
   BanMarkerRepository,
   CHAT_CLIENT_TOKEN,
@@ -20,10 +22,9 @@ import {
   USER_CLIENT_TOKEN,
   USER_PATTERNS,
 } from '@org/core';
-import { sendMessageSchema } from '@org/common';
+import type Redis from 'ioredis';
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
-import type Redis from 'ioredis';
 
 import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';
 
@@ -298,11 +299,18 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       fileSize?: number;
       fileMime?: string;
       fileCategory?: string;
+      envelopes?: Array<MessageEnvelope | GroupMessageEnvelope>;
       attachments?: SocketMessageAttachmentPayload[];
     },
   ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
+
+    const envelopes = Array.isArray(payload.envelopes) ? payload.envelopes : [];
+    if (envelopes.length > 0) {
+      await this.handleEnvelopeSend(socket, userId, payload.chatId, payload.clientId, envelopes);
+      return;
+    }
 
     this.logger.debug({
       eventType: 'socket_message_send_requested',
@@ -423,6 +431,119 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     }
   }
 
+  /**
+   * E2EE envelope fan-out: the payload carries only opaque per-device
+   * ciphertext — no plaintext is visible server-side, so link-preview
+   * generation is skipped here (the client renders previews after decrypt).
+   */
+  private async handleEnvelopeSend(
+    socket: Socket,
+    userId: string,
+    chatId: string,
+    clientId: string | null | undefined,
+    envelopes: Array<MessageEnvelope | GroupMessageEnvelope>,
+  ): Promise<void> {
+    this.logger.debug({
+      eventType: 'socket_envelope_send_requested',
+      hasUserId: !!userId,
+      hasChatId: !!chatId,
+      hasClientId: !!clientId,
+      envelopeCount: envelopes.length,
+    });
+
+    const valid = envelopes.every(
+      (envelope) =>
+        envelopeSchema.safeParse(envelope).success ||
+        groupEnvelopeSchema.safeParse(envelope).success,
+    );
+    if (!valid) {
+      this.logger.warn({
+        eventType: 'socket_envelope_send_validation_failed',
+        hasUserId: !!userId,
+        hasChatId: !!chatId,
+        hasClientId: !!clientId,
+        envelopeCount: envelopes.length,
+      });
+      socket.emit('message:send:error', {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid envelope payload',
+        chatId,
+        clientId: clientId ?? null,
+      });
+      return;
+    }
+
+    const isMember = await lastValueFrom(
+      this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId,
+        userId,
+      }),
+    ).catch(() => false);
+
+    if (!isMember) {
+      this.logger.warn({
+        eventType: 'socket_envelope_send_denied',
+        hasUserId: !!userId,
+        hasChatId: !!chatId,
+        hasClientId: !!clientId,
+      });
+      socket.emit('message:send:error', {
+        code: 'FORBIDDEN',
+        message: 'Not a member of this chat',
+        chatId,
+        clientId: clientId ?? null,
+      });
+      return;
+    }
+
+    const message = await lastValueFrom(
+      this.chatClient.send(CHAT_PATTERNS.SEND_MESSAGE, {
+        chatId,
+        clientId: clientId ?? null,
+        senderId: userId,
+        type: 'TEXT',
+        text: null,
+        envelopes,
+      }),
+    ).catch((err: unknown) => {
+      this.logger.error({
+        eventType: 'envelope_send_failed',
+        hasChatId: !!chatId,
+        hasClientId: !!clientId,
+        hasError: !!err,
+      });
+      socket.emit('message:send:error', {
+        code: 'SEND_FAILED',
+        message: 'Failed to send message',
+        chatId,
+        clientId: clientId ?? null,
+      });
+      return null;
+    });
+
+    if (message) {
+      this.broadcastMessage(chatId, message);
+      let memberIds = await this.triggerPushForOfflineRecipients(chatId, userId, message);
+      if (memberIds.length === 0) {
+        memberIds = await lastValueFrom(
+          this.chatClient.send<{ userId: string }[]>(CHAT_PATTERNS.GET_MEMBERS, {
+            chatId,
+          }),
+        )
+          .then((members) =>
+            Array.isArray(members)
+              ? members.filter((m) => typeof m.userId === 'string').map((m) => m.userId)
+              : [],
+          )
+          .catch(() => [] as string[]);
+      }
+      await this.chatCache.invalidateChatPages(chatId);
+      for (const memberId of memberIds) {
+        await this.chatCache.invalidateChatList(memberId);
+      }
+    }
+  }
+
   async triggerPushForOfflineRecipients(
     chatId: string,
     senderId: string,
@@ -464,7 +585,9 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
           continue;
         }
 
-        const preview = getMessagePreview(message);
+        // E2EE chats: the gateway never sees plaintext, so offline push
+        // carries a fixed body with no text preview.
+        const preview = isE2eeMessage(message) ? 'Новое сообщение' : getMessagePreview(message);
 
         this.notificationClient.emit(NOTIFICATION_EVENTS.SEND_PUSH, {
           userId: member.userId,
@@ -495,17 +618,25 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   @SubscribeMessage('typing:start')
-  async handleTypingStart(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
+  async handleTypingStart(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatId: string },
+  ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
-    await this.redis.set(this.typingKey(payload.chatId, userId), '1', 'EX', 3).catch(() => undefined);
+    await this.redis
+      .set(this.typingKey(payload.chatId, userId), '1', 'EX', 3)
+      .catch(() => undefined);
     this.server
       .to(`chat:${payload.chatId}`)
       .emit('user:typing', { userId, chatId: payload.chatId, isTyping: true });
   }
 
   @SubscribeMessage('typing:stop')
-  async handleTypingStop(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
+  async handleTypingStop(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatId: string },
+  ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
     await this.redis.del(this.typingKey(payload.chatId, userId)).catch(() => undefined);
@@ -536,7 +667,15 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 }
 
-function getMessagePreview(message: { text?: string | null; fileCategory?: unknown; fileName?: unknown }): string {
+function isE2eeMessage(message: { envelopes?: unknown }): boolean {
+  return Array.isArray(message.envelopes) && message.envelopes.length > 0;
+}
+
+function getMessagePreview(message: {
+  text?: string | null;
+  fileCategory?: unknown;
+  fileName?: unknown;
+}): string {
   const text = typeof message.text === 'string' ? message.text.trim() : '';
   if (text) {
     return text.length > 100 ? `${text.slice(0, 100)}…` : text;

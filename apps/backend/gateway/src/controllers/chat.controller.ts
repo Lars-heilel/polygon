@@ -31,6 +31,7 @@ import {
   EditMessageDto,
   MarkChatReadDto,
   type PreparedForwardMessage,
+  RegisterDeviceDto,
   SendMessageDto,
 } from '@org/chat';
 import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
@@ -87,6 +88,59 @@ export class ChatGatewayController {
   createSelf(@CurrentUser() user: JwtPayload) {
     this.logger.log({ eventType: 'self_chat_create_requested', hasUserId: !!user.sub });
     return this.send(this.chatClient.send(CHAT_PATTERNS.CREATE_SELF, { userId: user.sub }));
+  }
+
+  @Post('devices')
+  @ApiOperation({ summary: 'Register an E2EE device for the current user' })
+  @ApiResponse({ status: 201, description: 'Device record' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  async registerDevice(@CurrentUser() user: JwtPayload, @Body() dto: RegisterDeviceDto) {
+    this.logger.log({
+      eventType: 'device_register_requested',
+      hasUserId: !!user.sub,
+      hasDeviceId: !!dto.deviceId,
+    });
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.DEVICE_REGISTER, {
+        userId: user.sub,
+        deviceId: dto.deviceId,
+        identityKey: dto.identityKey,
+        registrationId: dto.registrationId,
+      }),
+    );
+  }
+
+  @Delete('devices/:id')
+  @ApiOperation({ summary: 'Revoke an E2EE device of the current user' })
+  @ApiParam({ name: 'id', description: 'Device UUID' })
+  @ApiResponse({ status: 200, description: 'Revocation result' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  async revokeDevice(@CurrentUser() user: JwtPayload, @Param('id') deviceId: string) {
+    this.logger.log({
+      eventType: 'device_revoke_requested',
+      hasUserId: !!user.sub,
+      hasDeviceId: !!deviceId,
+    });
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.DEVICE_REVOKE, {
+        deviceId,
+        userId: user.sub,
+      }),
+    );
+  }
+
+  @Get('devices/:id/prekeys')
+  @ApiOperation({ summary: 'Consume a prekey bundle for a device (X3DH)' })
+  @ApiParam({ name: 'id', description: 'Device UUID' })
+  @ApiResponse({ status: 200, description: 'Prekey bundle or null' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  async consumePrekeys(@CurrentUser() user: JwtPayload, @Param('id') deviceId: string) {
+    this.logger.log({
+      eventType: 'prekeys_consume_requested',
+      hasUserId: !!user.sub,
+      hasDeviceId: !!deviceId,
+    });
+    return this.send(this.chatClient.send(CHAT_PATTERNS.PREKEYS_CONSUME, { deviceId }));
   }
 
   @Get()

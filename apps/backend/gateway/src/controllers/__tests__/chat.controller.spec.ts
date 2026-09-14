@@ -299,6 +299,92 @@ describe('ChatGatewayController', () => {
     });
   });
 
+  it('registers a device by proxying DEVICE_REGISTER with the current user', async () => {
+    const ctx = controller();
+    const device = {
+      deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      identityKey: 'aWtlaQ==',
+      registrationId: 7,
+    };
+    ctx.chatClient.send.mockReturnValue(of({ ...device, userId: 'user-1' }));
+
+    await expect(
+      ctx.controller.registerDevice({ sub: 'user-1' } as never, device as never),
+    ).resolves.toEqual(expect.objectContaining({ deviceId: device.deviceId }));
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DEVICE_REGISTER, {
+      userId: 'user-1',
+      deviceId: device.deviceId,
+      identityKey: device.identityKey,
+      registrationId: device.registrationId,
+    });
+  });
+
+  it('revokes a device by proxying DEVICE_REVOKE', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockReturnValue(of({ revoked: true }));
+
+    await ctx.controller.revokeDevice(
+      { sub: 'user-1' } as never,
+      '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+    );
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DEVICE_REVOKE, {
+      deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      userId: 'user-1',
+    });
+  });
+
+  it('consumes a prekey bundle by proxying PREKEYS_CONSUME', async () => {
+    const ctx = controller();
+    const bundle = {
+      deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      identityKey: 'aWtlaQ==',
+      signedPrekey: 'c3Bn',
+      signedPrekeySignature: 'c2ln',
+      oneTimePrekey: 'b3Rw',
+    };
+    ctx.chatClient.send.mockReturnValue(of(bundle));
+
+    await expect(
+      ctx.controller.consumePrekeys(
+        { sub: 'user-1' } as never,
+        '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      ),
+    ).resolves.toEqual(bundle);
+
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.PREKEYS_CONSUME, {
+      deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+    });
+  });
+
+  it('does not write raw device identifiers to diagnostic logs', async () => {
+    const ctx = controller();
+    const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
+    Object.defineProperty(ctx.controller, 'logger', { value: logger });
+
+    await ctx.controller.registerDevice(
+      { sub: 'user-secret-id' } as never,
+      {
+        deviceId: 'device-secret-id',
+        identityKey: 'aWtlaQ==',
+        registrationId: 7,
+      } as never,
+    );
+    await ctx.controller.revokeDevice({ sub: 'user-secret-id' } as never, 'device-secret-id');
+
+    const diagnosticPayload = JSON.stringify([
+      logger.debug.mock.calls,
+      logger.error.mock.calls,
+      logger.log.mock.calls,
+      logger.warn.mock.calls,
+    ]);
+    expect(diagnosticPayload).not.toContain('user-secret-id');
+    expect(diagnosticPayload).not.toContain('device-secret-id');
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'device_register_requested', hasUserId: true }),
+    );
+  });
   it('uses an explicit mark-read RPC pattern', async () => {
     const ctx = controller();
 

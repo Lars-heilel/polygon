@@ -15,5 +15,8 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
+  moduleNameMapper: {
+    '^vitest$': '<rootDir>/jest.vitest-shim.cjs',
+  },
   coverageDirectory: 'test-output/jest/coverage',
 };

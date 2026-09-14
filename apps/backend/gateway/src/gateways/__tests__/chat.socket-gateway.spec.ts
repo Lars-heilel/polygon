@@ -1,5 +1,5 @@
 import type { ClientProxy } from '@nestjs/microservices';
-import { of, type Observable } from 'rxjs';
+import { type Observable, of } from 'rxjs';
 
 function makeSocket(cookie = 'access_token=token') {
   return {
@@ -44,6 +44,7 @@ describe('ChatSocketGateway ban enforcement', () => {
         type?: string;
         fileName?: string;
         clientId?: string;
+        envelopes?: unknown[];
         attachments?: {
           mediaId: string;
           fileNameSnapshot: string | null;
@@ -110,7 +111,9 @@ describe('ChatSocketGateway ban enforcement', () => {
         return removed;
       }),
       scard: jest.fn(async (key: string) => sets.get(key)?.size ?? 0),
-      exists: jest.fn(async (key: string) => ((sets.get(key)?.size ?? 0) > 0 || strings.has(key) ? 1 : 0)),
+      exists: jest.fn(async (key: string) =>
+        (sets.get(key)?.size ?? 0) > 0 || strings.has(key) ? 1 : 0,
+      ),
       expire: jest.fn(async () => 1),
       set: jest.fn(async (key: string, value: string) => {
         strings.set(key, value);
@@ -214,7 +217,11 @@ describe('ChatSocketGateway ban enforcement', () => {
       redis,
       chatCache,
     );
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+    (
+      gateway as unknown as {
+        server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock };
+      }
+    ).server = {
       sockets: { sockets: new Map() },
       to: jest.fn(() => ({ emit: jest.fn() })),
     };
@@ -357,7 +364,9 @@ describe('ChatSocketGateway ban enforcement', () => {
   it('does not write raw socket message contents or file names to diagnostic logs', async () => {
     const socket = makeSocket();
     (socket.data as Record<string, string>)['userId'] = 'user-secret-id';
-    chatClient.send.mockReturnValue(of({ id: 'message-secret-id', text: 'message text token=secret' }));
+    chatClient.send.mockReturnValue(
+      of({ id: 'message-secret-id', text: 'message text token=secret' }),
+    );
 
     await gateway.handleSendMessage(socket as never, {
       chatId: 'chat-secret-id',
@@ -378,7 +387,11 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(diagnosticPayload).not.toContain('file.png');
     expect(diagnosticPayload).not.toContain('token=secret');
     expect(logger.debug).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'socket_message_send_requested', hasChatId: true, hasUserId: true }),
+      expect.objectContaining({
+        eventType: 'socket_message_send_requested',
+        hasChatId: true,
+        hasUserId: true,
+      }),
     );
   });
 
@@ -387,7 +400,11 @@ describe('ChatSocketGateway ban enforcement', () => {
     (socket.data as Record<string, string>)['userId'] = 'user-1';
     const emit = jest.fn();
     const to = jest.fn(() => ({ emit }));
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+    (
+      gateway as unknown as {
+        server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock };
+      }
+    ).server = {
       sockets: { sockets: new Map() },
       to,
     };
@@ -412,17 +429,23 @@ describe('ChatSocketGateway ban enforcement', () => {
       clientId: '44444444-4444-4444-8444-444444444444',
     });
 
-    expect(chatClient.send).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
-      chatId: 'chat-1',
-      senderId: 'user-1',
-      text: 'hello',
-      clientId: '44444444-4444-4444-8444-444444444444',
-    }));
+    expect(chatClient.send).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        chatId: 'chat-1',
+        senderId: 'user-1',
+        text: 'hello',
+        clientId: '44444444-4444-4444-8444-444444444444',
+      }),
+    );
     expect(to).toHaveBeenCalledWith('chat:chat-1');
-    expect(emit).toHaveBeenCalledWith('message:new', expect.objectContaining({
-      id: 'server-message-1',
-      clientId: '44444444-4444-4444-8444-444444444444',
-    }));
+    expect(emit).toHaveBeenCalledWith(
+      'message:new',
+      expect.objectContaining({
+        id: 'server-message-1',
+        clientId: '44444444-4444-4444-8444-444444444444',
+      }),
+    );
   });
 
   it('passes attachment payloads through socket media sends', async () => {
@@ -455,18 +478,25 @@ describe('ChatSocketGateway ban enforcement', () => {
       attachments,
     });
 
-    expect(chatClient.send).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
-      chatId: 'chat-1',
-      senderId: 'user-1',
-      type: 'IMAGE',
-      attachments,
-    }));
+    expect(chatClient.send).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        chatId: 'chat-1',
+        senderId: 'user-1',
+        type: 'IMAGE',
+        attachments,
+      }),
+    );
   });
 
   it('broadcasts updated and deleted message events to a chat room', () => {
     const emit = jest.fn();
     const to = jest.fn(() => ({ emit }));
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+    (
+      gateway as unknown as {
+        server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock };
+      }
+    ).server = {
       sockets: { sockets: new Map() },
       to,
     };
@@ -565,10 +595,7 @@ describe('ChatSocketGateway ban enforcement', () => {
       'message:send:error',
       expect.objectContaining({ code: 'FORBIDDEN', message: expect.any(String) }),
     );
-    expect(socket.emit).not.toHaveBeenCalledWith(
-      'message:new',
-      expect.anything(),
-    );
+    expect(socket.emit).not.toHaveBeenCalledWith('message:new', expect.anything());
   });
 
   it('invalidates chat cache pages and lists after a socket send', async () => {
@@ -622,7 +649,11 @@ describe('ChatSocketGateway ban enforcement', () => {
     secondSocket.id = 'socket-2';
     const emit = jest.fn();
     const to = jest.fn(() => ({ emit }));
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+    (
+      gateway as unknown as {
+        server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock };
+      }
+    ).server = {
       sockets: { sockets: new Map() },
       to,
     };
@@ -637,5 +668,96 @@ describe('ChatSocketGateway ban enforcement', () => {
       chatId: 'chat-1',
       messageId: 'message-1',
     });
+  });
+
+  it('fans out an envelope batch with identical envelopes to room members', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    const emit = jest.fn();
+    const to = jest.fn(() => ({ emit }));
+    (
+      gateway as unknown as {
+        server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock };
+      }
+    ).server = {
+      sockets: { sockets: new Map() },
+      to,
+    };
+    const envelopes = [
+      {
+        senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+        recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c4',
+        ciphertext: 'Y2lwaGVydGV4dA==',
+        iv: 'aXY=',
+        keyVersion: 0,
+        ratchetHeader: 'aGVhZGVy',
+      },
+    ];
+    const stored = {
+      id: 'message-1',
+      chatId: 'chat-1',
+      senderId: 'user-1',
+      type: 'TEXT',
+      text: null,
+      envelopes,
+    };
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.checkMembership') return of(true);
+      if (pattern === 'chat.getMembers') return of([{ userId: 'user-1' }, { userId: 'user-2' }]);
+      return of(stored);
+    });
+    userClient.send.mockReturnValue(of({ name: 'Sender', displayName: null }));
+
+    await gateway.handleSendMessage(socket as never, {
+      chatId: 'chat-1',
+      clientId: '44444444-4444-4444-8444-444444444444',
+      envelopes,
+    });
+
+    expect(chatClient.send).toHaveBeenCalledWith(
+      'chat.sendMessage',
+      expect.objectContaining({
+        chatId: 'chat-1',
+        senderId: 'user-1',
+        text: null,
+        envelopes,
+      }),
+    );
+    expect(to).toHaveBeenCalledWith('chat:chat-1');
+    expect(emit).toHaveBeenCalledWith('message:new', expect.objectContaining({ envelopes }));
+    expect(chatCache.invalidateChatPages).toHaveBeenCalledWith('chat-1');
+  });
+
+  it('degrades offline push to a fixed body for envelope messages without leaking text', async () => {
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.getMembers') {
+        return of([{ userId: 'sender-1' }, { userId: 'recipient-1' }]);
+      }
+      return of(true);
+    });
+    userClient.send.mockReturnValue(of({ name: 'Sender', displayName: null }));
+    const envelopes = [
+      {
+        senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+        recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c4',
+        ciphertext: 'Y2lwaGVydGV4dA==',
+        iv: 'aXY=',
+        keyVersion: 0,
+        ratchetHeader: 'aGVhZGVy',
+      },
+    ];
+
+    await gateway.triggerPushForOfflineRecipients('chat-1', 'sender-1', {
+      id: 'message-1',
+      text: 'plaintext secret must never leak',
+      envelopes,
+    });
+
+    expect(notificationClient.emit).toHaveBeenCalledWith(
+      'notification.send-push',
+      expect.objectContaining({ body: 'Новое сообщение' }),
+    );
+    const payload = JSON.stringify(notificationClient.emit.mock.calls);
+    expect(payload).not.toContain('plaintext secret must never leak');
   });
 });
