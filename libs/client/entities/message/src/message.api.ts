@@ -8,7 +8,8 @@ import {
 } from '@tanstack/react-query';
 
 import { removeMessageFromPages, updateMessageInPages } from './message-cache.js';
-import { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
+import { decryptIncomingMessage } from './message-e2ee.js';
+import { normalizeMessage } from './message-normalizer.js';
 import type { Message, MessagePage, RawMessage, RawMessagePage } from './message.types.js';
 
 export type { Message, MessagePage, RawMessage, RawMessagePage };
@@ -25,7 +26,8 @@ export const messageApi = {
       ? `${API_ROUTES.chats.messages(chatId)}?cursor=${cursor}`
       : API_ROUTES.chats.messages(chatId);
     const raw = await authedFetch<RawMessagePage>(url);
-    return normalizeMessagePage(raw);
+    const messages = await Promise.all(raw.messages.map((m) => decryptIncomingMessage(m)));
+    return { messages, nextCursor: raw.nextCursor };
   },
 
   async getDelta(
@@ -38,8 +40,9 @@ export const messageApi = {
     const raw = await authedFetch<RawMessagePage & { deletedIds: string[] }>(
       `${API_ROUTES.chats.messagesDelta(chatId)}?${search.toString()}`,
     );
+    const messages = await Promise.all(raw.messages.map((m) => decryptIncomingMessage(m)));
     return {
-      messages: raw.messages.map(normalizeMessage),
+      messages,
       deletedIds: raw.deletedIds ?? [],
     };
   },

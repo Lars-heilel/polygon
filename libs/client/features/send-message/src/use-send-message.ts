@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { API_ROUTES, type MessageEnvelope, type PrekeyBundleRecord } from '@org/common';
+import {
+  encryptToDevice,
+  getOrCreateDeviceId,
+  getOrInitSession,
+  listSessionDeviceIds,
+} from '@org/crypto-e2ee';
 import type { Message, MessageMediaCategory, MessagePage } from '@org/entities-message';
-import { frontendLog, queryClient, socket } from '@org/shared';
+import { authedFetch, frontendLog, queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 
@@ -153,6 +160,35 @@ export function removeOptimisticMessage(chatId: string, clientId: string) {
   });
 }
 
+export async function buildMessageEnvelopes(
+  plaintext: string,
+  senderDeviceId: string,
+): Promise<MessageEnvelope[]> {
+  const envelopes: MessageEnvelope[] = [];
+  for (const deviceId of listSessionDeviceIds()) {
+    if (deviceId === senderDeviceId) continue;
+    let bundle: PrekeyBundleRecord | null;
+    try {
+      bundle = await authedFetch<PrekeyBundleRecord | null>(API_ROUTES.chats.prekeys(deviceId));
+    } catch {
+      frontendLog('warn', 'SendMessage', 'e2ee_prekey_fetch_failed', {
+        hasDeviceId: !!deviceId,
+      });
+      continue;
+    }
+    if (!bundle) continue;
+    try {
+      const session = await getOrInitSession(bundle);
+      envelopes.push(await encryptToDevice(plaintext, session, senderDeviceId));
+    } catch {
+      frontendLog('warn', 'SendMessage', 'e2ee_encrypt_failed', {
+        hasDeviceId: !!deviceId,
+      });
+    }
+  }
+  return envelopes;
+}
+
 export function useSendMessage(chatId: string | null, senderId: string | null = null) {
   const [messageText, setMessageText] = useState('');
   const isTypingRef = useRef(false);
@@ -269,7 +305,18 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
       type: 'TEXT',
     });
     try {
-      socket.emit('message:send', { chatId, text: trimmed, clientId });
+      const senderDeviceId = getOrCreateDeviceId();
+      const envelopes = await buildMessageEnvelopes(trimmed, senderDeviceId);
+      if (envelopes.length > 0) {
+        frontendLog('debug', 'SendMessage', 'message_send_encrypted', {
+          hasChatId: !!chatId,
+          hasClientId: !!clientId,
+          envelopeCount: envelopes.length,
+        });
+        socket.emit('message:send', { chatId, clientId, envelopes });
+      } else {
+        socket.emit('message:send', { chatId, text: trimmed, clientId });
+      }
     } catch {
       if (snapshot) queryClient.setQueryData(['messages', chatId], snapshot);
       frontendLog('warn', 'SendMessage', 'message_send_failed', {

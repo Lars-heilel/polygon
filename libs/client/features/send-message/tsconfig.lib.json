@@ -31,6 +31,9 @@
       "path": "../../entities/message/tsconfig.lib.json"
     },
     {
+      "path": "../../crypto-e2ee/tsconfig.lib.json"
+    },
+    {
       "path": "../../../common/tsconfig.lib.json"
     }
   ]

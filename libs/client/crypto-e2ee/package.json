@@ -1,5 +1,5 @@
 {
-  "name": "@org/features-send-message",
+  "name": "@org/crypto-e2ee",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -12,15 +12,9 @@
   },
   "nx": {
     "tags": [
-      "layer:features",
+      "layer:shared",
       "scope:client"
     ]
   },
-  "sideEffects": false,
-  "dependencies": {
-    "@org/common": "*",
-    "@org/crypto-e2ee": "*",
-    "@org/entities-message": "*",
-    "@org/shared": "*"
-  }
+  "sideEffects": false
 }

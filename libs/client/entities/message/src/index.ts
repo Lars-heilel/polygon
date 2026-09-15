@@ -8,6 +8,11 @@ export {
 } from './message.api.js';
 export type { DeleteMessageMode, ForwardMessagesInput } from './message.api.js';
 export { removeMessageFromPages, updateMessageInPages } from './message-cache.js';
+export {
+  decryptIncomingMessage,
+  defaultSessionResolver,
+  type SessionResolver,
+} from './message-e2ee.js';
 export type {
   LinkPreview,
   LocalMessageStatus,

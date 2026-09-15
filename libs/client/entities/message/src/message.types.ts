@@ -1,4 +1,4 @@
-import type { MessageType } from '@org/common';
+import type { MessageEnvelope, MessageType } from '@org/common';
 
 export type MessageKind =
   | 'text'
@@ -107,6 +107,7 @@ export interface RawMessage {
   forwardContext?: RawMessageForwardContext | null;
   media?: MessageMedia | null;
   linkPreview?: LinkPreview | null;
+  envelopes?: MessageEnvelope[] | null;
 }
 
 export interface Message {
@@ -125,6 +126,7 @@ export interface Message {
   attachments: MessageAttachment[];
   forwardContext: MessageForwardContext | null;
   localStatus?: LocalMessageStatus;
+  undecryptable?: boolean;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;

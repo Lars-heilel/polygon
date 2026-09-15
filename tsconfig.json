@@ -176,6 +176,9 @@
     },
     {
       "path": "./libs/client/pages/system/pages-landing"
+    },
+    {
+      "path": "./libs/client/crypto-e2ee"
     }
   ]
 }

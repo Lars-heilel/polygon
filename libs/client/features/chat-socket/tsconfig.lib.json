@@ -28,10 +28,13 @@
       "path": "../../shared/tsconfig.lib.json"
     },
     {
+      "path": "../../entities/chat/tsconfig.lib.json"
+    },
+    {
       "path": "../../entities/message/tsconfig.lib.json"
     },
     {
-      "path": "../../entities/chat/tsconfig.lib.json"
+      "path": "../../crypto-e2ee/tsconfig.lib.json"
     }
   ]
 }

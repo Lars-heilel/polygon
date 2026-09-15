@@ -18,6 +18,9 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@org/common": "*",
+    "@org/crypto-e2ee": "*",
+    "@org/shared": "*",
     "wavesurfer.js": "*"
   }
 }
