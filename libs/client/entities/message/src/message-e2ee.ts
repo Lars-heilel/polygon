@@ -32,7 +32,10 @@ export async function decryptIncomingMessage(
   resolveSession: SessionResolver = defaultSessionResolver,
 ): Promise<Message> {
   const base = normalizeMessage(raw);
-  const envelope = raw.envelopes?.find((e) => e.recipientDeviceId === deviceId) ?? null;
+  const envelope =
+    raw.envelopes?.find(
+      (e): e is MessageEnvelope => 'recipientDeviceId' in e && e.recipientDeviceId === deviceId,
+    ) ?? null;
   if (!envelope) return base;
   const session = await resolveSession(envelope);
   if (!session) throw new Error('E2EE_NO_SESSION');

@@ -513,6 +513,46 @@ export class ChatPrismaRepository implements IChatRepository {
     });
   }
 
+  async createMessageEnvelopes(
+    rows: { messageId: string; recipientDeviceId: string; envelopeJson: string }[],
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    try {
+      await this.prisma.messageEnvelope.createMany({
+        data: rows.map((row) => ({
+          messageId: toMessageId(row.messageId),
+          recipientDeviceId: row.recipientDeviceId,
+          envelopeJson: row.envelopeJson,
+        })),
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
+  async findEnvelopesForMessages(
+    messageIds: string[],
+    recipientDeviceIds: string[],
+  ): Promise<{ messageId: string; recipientDeviceId: string; envelopeJson: string }[]> {
+    if (messageIds.length === 0 || recipientDeviceIds.length === 0) return [];
+    try {
+      const rows = await this.prisma.messageEnvelope.findMany({
+        where: {
+          messageId: { in: messageIds.map(toMessageId) },
+          recipientDeviceId: { in: recipientDeviceIds },
+        },
+        select: { messageId: true, recipientDeviceId: true, envelopeJson: true },
+      });
+      return rows.map((row) => ({
+        messageId: fromMessageId(row.messageId) as string,
+        recipientDeviceId: row.recipientDeviceId,
+        envelopeJson: row.envelopeJson,
+      }));
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
   async touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void> {
     await this.prisma.chat.update({
       where: { id: chatId },

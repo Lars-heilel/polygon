@@ -1,4 +1,5 @@
 export {
+  bytesToBase64,
   clearOwnDeviceKeys,
   exportPublicKey,
   generateDeviceKeys,

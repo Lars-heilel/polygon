@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { bytesToBase64 } from '../device-keys.js';
 import { createRecipientSession, createSessionFromPrekey } from '../ratchet-session.js';
 import {
   createSenderKeyContext,
@@ -110,5 +111,20 @@ describe('getCurrentSenderKeyContext', () => {
     expect(getCurrentSenderKeyContext(chatId)?.chainKeyId).toBe(ctx.chainKeyId);
     const next = await rotateSenderKey(chatId);
     expect(getCurrentSenderKeyContext(chatId)?.chainKeyId).toBe(next.chainKeyId);
+  });
+});
+
+describe('bytesToBase64', () => {
+  it('converts a 1MB buffer without stack overflow', () => {
+    const big = new Uint8Array(1024 * 1024);
+    for (let offset = 0; offset < big.length; offset += 65536) {
+      big.set(crypto.getRandomValues(new Uint8Array(Math.min(65536, big.length - offset))), offset);
+    }
+    const b64 = bytesToBase64(big);
+    expect(b64.length).toBe(Math.ceil(big.length / 3) * 4);
+    const back = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    expect(back.length).toBe(big.length);
+    expect(back.slice(0, 1024)).toEqual(big.slice(0, 1024));
+    expect(back.slice(-1024)).toEqual(big.slice(-1024));
   });
 });

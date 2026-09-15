@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   Optional,
@@ -12,12 +14,14 @@ import type {
   ChatMediaFilter,
   ChatMember,
   DeviceRecord,
+  GroupMessageEnvelope,
   Message,
+  MessageEnvelope,
   MessagePage,
   MessagesDelta,
   MessagesDeltaQuery,
 } from '@org/common';
-import { E2EE_NO_RECIPIENT_KEYS } from '@org/common';
+import { E2EE_NO_RECIPIENT_KEYS, envelopeSchema, groupEnvelopeSchema } from '@org/common';
 import {
   CHAT_PRISMA_REPOSITORY_TOKEN,
   E2EE_KEY_REPOSITORY_TOKEN,
@@ -147,7 +151,8 @@ export class ChatService implements IChatService {
   ): Promise<MessagePage> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
-    return this.repo.findMessagesByChat(chatId, cursor, take, userId);
+    const page = await this.repo.findMessagesByChat(chatId, cursor, take, userId);
+    return { ...page, messages: await this.attachEnvelopes(page.messages, userId) };
   }
 
   async getMessagesDelta(
@@ -161,13 +166,14 @@ export class ChatService implements IChatService {
       hasUserId: !!userId,
     });
     await this.requireMember(chatId, userId);
-    return this.repo.findMessagesDelta(
+    const delta = await this.repo.findMessagesDelta(
       chatId,
       userId,
       query.since,
       query.sinceId ?? null,
       query.limit,
     );
+    return { ...delta, messages: await this.attachEnvelopes(delta.messages, userId) };
   }
 
   async getMediaMessages(
@@ -268,8 +274,18 @@ export class ChatService implements IChatService {
     }
 
     // Fail-closed E2EE gating: an enabled chat must never silently accept a
-    // plaintext fallback. Envelope sends (text null) skip the chat lookup.
-    if (input.text && !input.envelopes?.length) {
+    // plaintext fallback. Envelope sends skip the chat lookup.
+    const hasContent =
+      !!input.text ||
+      !!input.fileId ||
+      !!input.attachments?.length ||
+      !!input.fileBucket ||
+      !!input.fileKey ||
+      !!input.fileName ||
+      !!input.fileSize ||
+      !!input.fileMime ||
+      !!input.fileCategory;
+    if (hasContent && !input.envelopes?.length) {
       const chat = await this.repo.findChatById(chatId);
       if (chat?.e2eeEnabled) {
         this.logger.warn({
@@ -283,6 +299,10 @@ export class ChatService implements IChatService {
     }
 
     const attachments = buildAttachmentInput(input);
+    // Service-side envelope validation: the RMQ/socket transports bypass the
+    // Gateway DTOs, so malformed envelopes must be rejected here, before the
+    // message shell is created.
+    const parsedEnvelopes = (input.envelopes ?? []).map((envelope) => this.parseEnvelope(envelope));
     if (input.clientId) {
       const existing = await this.repo.findMessageByClientId(chatId, input.clientId);
       if (existing) {
@@ -293,7 +313,8 @@ export class ChatService implements IChatService {
           hasClientId: !!input.clientId,
           reason: 'duplicate_client_id',
         });
-        return existing;
+        const [withEnvelopes] = await this.attachEnvelopes([existing], senderId);
+        return withEnvelopes ?? existing;
       }
     }
 
@@ -332,8 +353,9 @@ export class ChatService implements IChatService {
       hasEnvelopes: !!input.envelopes?.length,
     });
 
-    if (input.envelopes?.length) {
-      return { ...message, envelopes: input.envelopes } as Message;
+    if (parsedEnvelopes.length > 0) {
+      await this.persistEnvelopes(chatId, message.id, parsedEnvelopes);
+      return { ...message, envelopes: parsedEnvelopes };
     }
 
     if (attachments.length === 0) {
@@ -951,7 +973,9 @@ export class ChatService implements IChatService {
     });
     await this.requireMember(chatId, userId);
     const members = await this.repo.findMembersByChat(chatId);
-    if (!this.e2eeKeys) return [];
+    if (!this.e2eeKeys) {
+      throw new InternalServerErrorException('E2EE device registry unavailable');
+    }
     const devices = await this.e2eeKeys.findDevicesByUserIds(members.map((m) => m.userId));
     this.logger.log({
       eventType: 'chat_devices_done',
@@ -964,6 +988,104 @@ export class ChatService implements IChatService {
   private async requireMember(chatId: string, userId: string): Promise<void> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
+  }
+
+  /**
+   * Envelope discriminant: 1:1 envelopes carry `recipientDeviceId`, group
+   * (sender-key) envelopes carry `chainKeyId`. Zod strips unknown keys, so
+   * the discriminant must be checked before parsing.
+   */
+  private parseEnvelope(input: unknown): GroupMessageEnvelope | MessageEnvelope {
+    if (typeof input !== 'object' || input === null) {
+      throw new BadRequestException('Invalid message envelope');
+    }
+    try {
+      if ('recipientDeviceId' in input) return envelopeSchema.parse(input);
+      if ('chainKeyId' in input) return groupEnvelopeSchema.parse(input);
+    } catch {
+      throw new BadRequestException('Invalid message envelope');
+    }
+    throw new BadRequestException('Invalid message envelope');
+  }
+
+  /**
+   * Durable envelope fan-out: one row per addressed device. Group envelopes
+   * have no per-device address, so they fan out to every member device —
+   * offline members catch up via getMessages/getDelta instead of losing
+   * transient socket broadcasts.
+   */
+  private async persistEnvelopes(
+    chatId: string,
+    messageId: string,
+    envelopes: Array<GroupMessageEnvelope | MessageEnvelope>,
+  ): Promise<void> {
+    const rows: { messageId: string; recipientDeviceId: string; envelopeJson: string }[] = [];
+    for (const envelope of envelopes) {
+      if ('recipientDeviceId' in envelope) {
+        rows.push({
+          messageId,
+          recipientDeviceId: envelope.recipientDeviceId,
+          envelopeJson: JSON.stringify(envelope),
+        });
+        continue;
+      }
+      const members = await this.repo.findMembersByChat(chatId);
+      if (!this.e2eeKeys) {
+        throw new InternalServerErrorException('E2EE device registry unavailable');
+      }
+      const devices = await this.e2eeKeys.findDevicesByUserIds(members.map((m) => m.userId));
+      if (devices.length === 0) {
+        throw new ForbiddenException(E2EE_NO_RECIPIENT_KEYS);
+      }
+      for (const device of devices) {
+        rows.push({
+          messageId,
+          recipientDeviceId: device.deviceId,
+          envelopeJson: JSON.stringify(envelope),
+        });
+      }
+    }
+    await this.repo.createMessageEnvelopes(rows);
+    this.logger.log({
+      eventType: 'message_envelopes_persisted',
+      hasMessageId: !!messageId,
+      envelopeCount: rows.length,
+    });
+  }
+
+  /**
+   * Join persisted envelopes addressed to the requesting user's devices.
+   * Without a device registry (unit-test doubles) messages pass through
+   * untouched, preserving legacy read behavior.
+   */
+  private async attachEnvelopes(messages: Message[], userId: string): Promise<Message[]> {
+    if (messages.length === 0 || !this.e2eeKeys) return messages;
+    const devices = await this.e2eeKeys.findDevicesByUserIds([userId]);
+    if (devices.length === 0) {
+      return messages.map((message) => ({ ...message, envelopes: [] }));
+    }
+    const rows = await this.repo.findEnvelopesForMessages(
+      messages.map((message) => message.id),
+      devices.map((device) => device.deviceId),
+    );
+    const byMessage = new Map<string, Array<GroupMessageEnvelope | MessageEnvelope>>();
+    for (const row of rows) {
+      let envelope: GroupMessageEnvelope | MessageEnvelope;
+      try {
+        envelope = this.parseEnvelope(JSON.parse(row.envelopeJson));
+      } catch {
+        this.logger.warn({
+          eventType: 'message_envelope_skipped',
+          hasMessageId: !!row.messageId,
+          reason: 'corrupt_row',
+        });
+        continue;
+      }
+      const list = byMessage.get(row.messageId) ?? [];
+      list.push(envelope);
+      byMessage.set(row.messageId, list);
+    }
+    return messages.map((message) => ({ ...message, envelopes: byMessage.get(message.id) ?? [] }));
   }
 
   private async requireMessageInChat(chatId: string, messageId: string): Promise<Message> {

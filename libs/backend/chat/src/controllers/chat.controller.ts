@@ -1,4 +1,10 @@
-import { Controller, Inject, Logger, NotFoundException, Optional } from '@nestjs/common';
+import {
+  Controller,
+  Inject,
+  InternalServerErrorException,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import type {
   Chat,
@@ -50,7 +56,9 @@ export class ChatController implements IChatController, ISenderKeyController {
   ) {}
 
   private requireSenderKeys(): ISenderKeyService {
-    if (!this.senderKeys) throw new NotFoundException('Sender-key service unavailable');
+    if (!this.senderKeys) {
+      throw new InternalServerErrorException('Sender-key service unavailable');
+    }
     return this.senderKeys;
   }
 

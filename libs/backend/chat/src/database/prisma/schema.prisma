@@ -35,7 +35,6 @@ model Chat {
   @@unique([directKey])
   @@map("chats")
 }
-
 model ChatMember {
   chatId            String    @db.Uuid @map("chat_id")
   userId            String    @db.Uuid @map("user_id")
@@ -71,6 +70,7 @@ model Message {
   deletions MessageDeletion[]
   attachments    MessageAttachment[]
   forwardContext MessageForwardContext?
+  envelopes      MessageEnvelope[]
 
   @@index([chatId, createdAt, id])
   @@index([chatId, updatedAt, id])
@@ -129,6 +129,20 @@ model MessageDeletion {
   @@map("message_deletions")
 }
 
+model MessageEnvelope {
+  id                BigInt   @id @default(autoincrement()) @map("id")
+  messageId         BigInt   @map("message_id")
+  recipientDeviceId String   @db.Uuid @map("recipient_device_id")
+  envelopeJson      String   @db.Text @map("envelope_json")
+  createdAt         DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([recipientDeviceId])
+  @@map("message_envelopes")
+}
+
 model Device {
   deviceId       String   @id @db.Uuid @map("device_id")
   userId         String   @db.Uuid @map("user_id")
@@ -159,14 +173,16 @@ model SignedPrekey {
 }
 
 model SenderKeyShare {
-  chatId            String  @db.Uuid @map("chat_id")
-  chainKeyId        String  @db.Uuid @map("chain_key_id")
-  senderDeviceId    String  @db.Uuid @map("sender_device_id")
-  recipientDeviceId String  @db.Uuid @map("recipient_device_id")
-  wrappedChainKey   String  @map("wrapped_chain_key")
-  revoked           Boolean @default(false) @map("revoked")
+  chatId            String   @db.Uuid @map("chat_id")
+  chainKeyId        String   @db.Uuid @map("chain_key_id")
+  senderDeviceId    String   @db.Uuid @map("sender_device_id")
+  recipientDeviceId String   @db.Uuid @map("recipient_device_id")
+  wrappedChainKey   String   @map("wrapped_chain_key")
+  revoked           Boolean  @default(false) @map("revoked")
+  createdAt         DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
 
   @@id([chatId, chainKeyId, recipientDeviceId])
   @@index([chatId, recipientDeviceId])
+  @@index([chatId, senderDeviceId, createdAt])
   @@map("sender_key_shares")
 }

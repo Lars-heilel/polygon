@@ -1,5 +1,6 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Message } from '@org/common';
+import { E2EE_NO_RECIPIENT_KEYS } from '@org/common';
 import { MEDIA_PATTERNS } from '@org/core';
 import { of, throwError } from 'rxjs';
 
@@ -32,10 +33,12 @@ function repoMock(): jest.Mocked<IChatRepository> {
     findMessagesDelta: jest.fn(),
     findMessageById: jest.fn(),
     findMessageByClientId: jest.fn(),
+    findEnvelopesForMessages: jest.fn(),
     findVisibleMessagesByIds: jest.fn(),
     findMessageAttachmentForAccess: jest.fn(),
     createMessageWithRelations: jest.fn(),
     createMessageWithTouch: jest.fn(),
+    createMessageEnvelopes: jest.fn(),
     touchChatLastMessage: jest.fn(),
     deleteCreatedMessage: jest.fn(),
     updateMessageText: jest.fn(),
@@ -1351,7 +1354,6 @@ describe('ChatService', () => {
   });
 
   it('rejects a plaintext send in an E2EE chat with E2EE_NO_RECIPIENT_KEYS', async () => {
-    const { E2EE_NO_RECIPIENT_KEYS } = await import('@org/common');
     const repo = repoMock();
     repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
     repo.findChatById.mockResolvedValue({ id: 'chat-1', e2eeEnabled: true } as never);
@@ -1366,10 +1368,21 @@ describe('ChatService', () => {
   it('accepts an envelope send in an E2EE chat without loading the chat', async () => {
     const repo = repoMock();
     repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findMembersByChat.mockResolvedValue([{ chatId: 'chat-1', userId: 'user-1' }] as never);
     repo.createMessageWithTouch.mockImplementation(
       async (data) => ({ id: '101', ...data }) as never,
     );
-    const service = new ChatService(repo);
+    const e2eeKeys = {
+      findDevicesByUserIds: jest.fn().mockResolvedValue([
+        {
+          deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+          userId: 'user-1',
+          identityKey: 'aWtlaQ==',
+          registrationId: 7,
+        },
+      ]),
+    };
+    const service = new ChatService(repo, undefined, e2eeKeys as never);
 
     await service.sendMessage('chat-1', 'user-1', {
       type: 'TEXT',
@@ -1387,6 +1400,12 @@ describe('ChatService', () => {
 
     expect(repo.findChatById).not.toHaveBeenCalled();
     expect(repo.createMessageWithTouch).toHaveBeenCalled();
+    expect(repo.createMessageEnvelopes).toHaveBeenCalledWith([
+      expect.objectContaining({
+        messageId: '101',
+        recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      }),
+    ]);
   });
 
   it('lists member devices for sender-key distribution', async () => {
@@ -1420,5 +1439,214 @@ describe('ChatService', () => {
       ForbiddenException,
     );
     expect(repo.findMembersByChat).not.toHaveBeenCalled();
+  });
+
+  it('fails loudly when the device registry is not wired', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    const service = new ChatService(repo);
+
+    await expect(service.getChatDevices('chat-1', 'user-1')).rejects.toMatchObject({
+      status: 500,
+    });
+  });
+
+  it('rejects an attachment-only send in an E2EE chat', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findChatById.mockResolvedValue({ id: 'chat-1', e2eeEnabled: true } as never);
+    const service = new ChatService(repo);
+
+    await expect(
+      service.sendMessage('chat-1', 'user-1', {
+        type: 'FILE',
+        fileId: '55555555-5555-4555-8555-555555555555',
+        fileName: 'voice.ogg',
+      } as never),
+    ).rejects.toThrow(E2EE_NO_RECIPIENT_KEYS);
+    expect(repo.createMessageWithTouch).not.toHaveBeenCalled();
+  });
+
+  it('passes an attachment-only send in a legacy chat', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findChatById.mockResolvedValue({ id: 'chat-1' } as never);
+    repo.createMessageWithTouch.mockImplementation(
+      async (data) => ({ id: '101', ...data }) as never,
+    );
+    const mediaClient = { send: jest.fn(() => of({ id: 'reference-1' })) };
+    const service = new ChatService(repo, mediaClient as never);
+
+    await service.sendMessage('chat-1', 'user-1', {
+      type: 'FILE',
+      fileId: '55555555-5555-4555-8555-555555555555',
+      fileName: 'voice.ogg',
+      fileSize: 33000,
+      fileMime: 'audio/ogg',
+      fileCategory: 'VOICE',
+    } as never);
+
+    expect(repo.createMessageWithTouch).toHaveBeenCalled();
+  });
+
+  describe('offline envelope persistence', () => {
+    const SENDER_DEVICE = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1';
+    const DEVICE_A = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c4';
+    const DEVICE_B = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c5';
+    const ENVELOPE = {
+      senderDeviceId: SENDER_DEVICE,
+      recipientDeviceId: DEVICE_A,
+      ciphertext: 'Y3Q=',
+      iv: 'aXY=',
+      keyVersion: 0,
+      ratchetHeader: 'cmF0Y2hldA==',
+      ephemeralKey: 'ZXBo',
+    };
+
+    function offlineSetup() {
+      const repo = repoMock();
+      const e2eeKeys = {
+        findDevicesByUserIds: jest.fn(async (userIds: string[]) => [
+          ...(userIds.includes('user-1')
+            ? [{ deviceId: DEVICE_A, userId: 'user-1', identityKey: 'a2V5', registrationId: 1 }]
+            : []),
+        ]),
+      };
+      repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+      repo.createMessageWithTouch.mockImplementation(
+        async (data) => ({ id: '101', chatId: 'chat-1', ...data }) as never,
+      );
+      const service = new ChatService(repo, undefined, e2eeKeys as never);
+      return { repo, e2eeKeys, service };
+    }
+
+    it('persists a 1:1 envelope on send and returns it to the addressed device', async () => {
+      const { repo, service } = offlineSetup();
+
+      await service.sendMessage('chat-1', 'user-1', {
+        type: 'TEXT',
+        text: null,
+        envelopes: [ENVELOPE],
+      } as never);
+
+      expect(repo.createMessageEnvelopes).toHaveBeenCalledWith([
+        {
+          messageId: '101',
+          recipientDeviceId: DEVICE_A,
+          envelopeJson: JSON.stringify(ENVELOPE),
+        },
+      ]);
+
+      repo.findMessagesByChat.mockResolvedValue({
+        messages: [{ id: '101', chatId: 'chat-1' }],
+        nextCursor: null,
+      });
+      repo.findEnvelopesForMessages.mockResolvedValue([
+        {
+          messageId: '101',
+          recipientDeviceId: DEVICE_A,
+          envelopeJson: JSON.stringify(ENVELOPE),
+        },
+      ]);
+
+      const page = await service.getMessages('chat-1', 'user-1', undefined, 50);
+
+      expect(repo.findEnvelopesForMessages).toHaveBeenCalledWith(['101'], [DEVICE_A]);
+      expect(page.messages[0].envelopes).toEqual([ENVELOPE]);
+    });
+
+    it('returns persisted envelopes in getDelta', async () => {
+      const { repo, service } = offlineSetup();
+
+      repo.findMessagesDelta.mockResolvedValue({
+        messages: [{ id: '101', chatId: 'chat-1' }],
+        deletedIds: [],
+      });
+      repo.findEnvelopesForMessages.mockResolvedValue([
+        {
+          messageId: '101',
+          recipientDeviceId: DEVICE_A,
+          envelopeJson: JSON.stringify(ENVELOPE),
+        },
+      ]);
+
+      const delta = await service.getMessagesDelta('chat-1', 'user-1', {
+        since: new Date('2026-09-13T00:00:00.000Z'),
+        limit: 50,
+      });
+
+      expect(delta.messages[0].envelopes).toEqual([ENVELOPE]);
+    });
+
+    it('does not return envelopes addressed to another device', async () => {
+      const { repo, service } = offlineSetup();
+
+      repo.findMessagesByChat.mockResolvedValue({
+        messages: [{ id: '101', chatId: 'chat-1' }],
+        nextCursor: null,
+      });
+      // Storage layer enforces the device filter; nothing stored for DEVICE_A.
+      repo.findEnvelopesForMessages.mockImplementation(
+        async (_ids: string[], deviceIds: string[]) => {
+          expect(deviceIds).toEqual([DEVICE_A]);
+          return [];
+        },
+      );
+
+      const page = await service.getMessages('chat-1', 'user-1', undefined, 50);
+
+      expect(page.messages[0].envelopes).toEqual([]);
+    });
+
+    it('rejects malformed envelopes in the service without creating a message', async () => {
+      const { repo, service } = offlineSetup();
+
+      await expect(
+        service.sendMessage('chat-1', 'user-1', {
+          type: 'TEXT',
+          text: null,
+          envelopes: [{ senderDeviceId: SENDER_DEVICE, ciphertext: 'Y3Q=' }],
+        } as never),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repo.createMessageWithTouch).not.toHaveBeenCalled();
+    });
+
+    it('persists one row per recipient device for group envelopes', async () => {
+      const { repo, e2eeKeys, service } = offlineSetup();
+      e2eeKeys.findDevicesByUserIds.mockResolvedValue([
+        { deviceId: DEVICE_A, userId: 'user-1', identityKey: 'a2V5', registrationId: 1 },
+        { deviceId: DEVICE_B, userId: 'user-2', identityKey: 'a2V5', registrationId: 2 },
+      ]);
+      repo.findMembersByChat.mockResolvedValue([
+        { chatId: 'chat-1', userId: 'user-1' },
+        { chatId: 'chat-1', userId: 'user-2' },
+      ] as never);
+      const groupEnvelope = {
+        senderDeviceId: SENDER_DEVICE,
+        chainKeyId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c3',
+        counter: 0,
+        ciphertext: 'Z3JvdXA=',
+        iv: 'aXY=',
+      };
+
+      await service.sendMessage('chat-1', 'user-1', {
+        type: 'TEXT',
+        text: null,
+        envelopes: [groupEnvelope],
+      } as never);
+
+      expect(repo.createMessageEnvelopes).toHaveBeenCalledWith([
+        {
+          messageId: '101',
+          recipientDeviceId: DEVICE_A,
+          envelopeJson: JSON.stringify(groupEnvelope),
+        },
+        {
+          messageId: '101',
+          recipientDeviceId: DEVICE_B,
+          envelopeJson: JSON.stringify(groupEnvelope),
+        },
+      ]);
+    });
   });
 });

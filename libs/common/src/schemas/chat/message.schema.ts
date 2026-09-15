@@ -1,5 +1,7 @@
 import * as z from 'zod';
 
+import { envelopeSchema, groupEnvelopeSchema } from './envelope.schema.js';
+
 export const messageTypeSchema = z.enum([
   'TEXT',
   'IMAGE',
@@ -54,6 +56,9 @@ export const messageSchema = z.object({
   deletedById: z.string().uuid().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
+  // Transient E2EE payloads joined per requesting device (fix round 1/5);
+  // never persisted to message columns. Task 4 consumes this for decrypt.
+  envelopes: z.array(z.union([envelopeSchema, groupEnvelopeSchema])).optional(),
 });
 export type Message = z.infer<typeof messageSchema>;
 

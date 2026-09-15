@@ -146,14 +146,26 @@ export type SenderKeyShareRecord = SenderKeyDistribution & {
   revoked: boolean;
 };
 
+export interface ISenderKeyRepository {
+  upsertShare(input: SenderKeyDistribution): Promise<SenderKeyShareRecord>;
+  findShare(
+    chatId: string,
+    chainKeyId: string,
+    recipientDeviceId: string,
+  ): Promise<SenderKeyShareRecord | null>;
+  findLatestChainId(chatId: string, senderDeviceId: string): Promise<string | null>;
+  revokeShares(chatId: string, recipientDeviceIds: string[]): Promise<void>;
+}
+
 export interface ISenderKeyService {
   distributeShare(input: SenderKeyDistribution): Promise<SenderKeyDistribution>;
   distributeShares(inputs: SenderKeyDistribution[]): Promise<SenderKeyDistribution[]>;
   getShare(
     chatId: string,
+    chainKeyId: string,
     recipientDeviceId: string,
-    chainKeyId?: string,
   ): Promise<SenderKeyShareRecord | null>;
+  getLatestChainId(chatId: string, senderDeviceId: string): Promise<string | null>;
   rotateChain(chatId: string, removedDeviceIds?: string[]): Promise<{ chainKeyId: string }>;
   revokeShares(chatId: string, recipientDeviceId: string): Promise<void>;
 }
@@ -209,6 +221,13 @@ export interface IChatRepository {
   ): Promise<{ mediaId: string } | null>;
   createMessageWithRelations(data: CreateMessageWithRelationsData): Promise<Message>;
   createMessageWithTouch(data: CreateMessageWithRelationsData): Promise<Message>;
+  createMessageEnvelopes(
+    rows: { messageId: string; recipientDeviceId: string; envelopeJson: string }[],
+  ): Promise<void>;
+  findEnvelopesForMessages(
+    messageIds: string[],
+    recipientDeviceIds: string[],
+  ): Promise<{ messageId: string; recipientDeviceId: string; envelopeJson: string }[]>;
   touchChatLastMessage(chatId: string, messageId: string, at: Date): Promise<void>;
   deleteCreatedMessage(messageId: string): Promise<void>;
   updateMessageText(messageId: string, text: string, hasLink: boolean): Promise<Message>;

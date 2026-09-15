@@ -24,6 +24,19 @@ export async function exportPublicKey(key: CryptoKey): Promise<string> {
   return btoa(String.fromCharCode(...raw));
 }
 
+/**
+ * Chunked binary→base64: argument spreading (`String.fromCharCode(...bytes)`)
+ * overflows the call stack past ~100KB, so large ciphertexts must go through here.
+ */
+export function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+  }
+  return btoa(binary);
+}
+
 export function importPublicKey(b64: string): Promise<CryptoKey> {
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   return crypto.subtle.importKey('raw', bytes, { name: 'ECDH', namedCurve: 'P-256' }, true, []);

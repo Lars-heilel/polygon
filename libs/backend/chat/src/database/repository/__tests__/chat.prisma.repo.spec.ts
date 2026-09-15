@@ -27,11 +27,16 @@ describe('ChatPrismaRepository', () => {
     upsert: jest.fn(),
     findMany: jest.fn(),
   };
+  const messageEnvelope = {
+    createMany: jest.fn(),
+    findMany: jest.fn(),
+  };
   type RepositoryPrismaMock = {
     chat: typeof chat;
     chatMember: typeof chatMember;
     message: typeof message;
     messageDeletion: typeof messageDeletion;
+    messageEnvelope: typeof messageEnvelope;
     $transaction: jest.Mock;
   };
   const transaction = jest.fn();
@@ -40,6 +45,7 @@ describe('ChatPrismaRepository', () => {
     chatMember,
     message,
     messageDeletion,
+    messageEnvelope,
     $transaction: transaction,
   } satisfies RepositoryPrismaMock;
   const repository = new ChatPrismaRepository(repositoryPrisma as unknown as PrismaService);
@@ -635,5 +641,53 @@ describe('ChatPrismaRepository', () => {
     expect(messageDeletion.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: 'user-1', deletedAt: { gt: since } } }),
     );
+  });
+
+  it('persists envelope rows with BIGINT message ids', async () => {
+    messageEnvelope.createMany.mockResolvedValue({ count: 2 });
+
+    await repository.createMessageEnvelopes([
+      { messageId: '101', recipientDeviceId: 'device-a', envelopeJson: '{"ciphertext":"eA=="}' },
+      { messageId: '101', recipientDeviceId: 'device-b', envelopeJson: '{"ciphertext":"eA=="}' },
+    ]);
+
+    expect(messageEnvelope.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          messageId: 101n,
+          recipientDeviceId: 'device-a',
+          envelopeJson: '{"ciphertext":"eA=="}',
+        },
+        {
+          messageId: 101n,
+          recipientDeviceId: 'device-b',
+          envelopeJson: '{"ciphertext":"eA=="}',
+        },
+      ],
+    });
+
+    await repository.createMessageEnvelopes([]);
+    expect(messageEnvelope.createMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads envelopes for the requesting devices with string message ids', async () => {
+    messageEnvelope.findMany.mockResolvedValue([
+      { messageId: 101n, recipientDeviceId: 'device-a', envelopeJson: '{"ciphertext":"eA=="}' },
+    ]);
+
+    await expect(
+      repository.findEnvelopesForMessages(['101', '102'], ['device-a']),
+    ).resolves.toEqual([
+      { messageId: '101', recipientDeviceId: 'device-a', envelopeJson: '{"ciphertext":"eA=="}' },
+    ]);
+    expect(messageEnvelope.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { messageId: { in: [101n, 102n] }, recipientDeviceId: { in: ['device-a'] } },
+      }),
+    );
+
+    await expect(repository.findEnvelopesForMessages([], ['device-a'])).resolves.toEqual([]);
+    await expect(repository.findEnvelopesForMessages(['101'], [])).resolves.toEqual([]);
+    expect(messageEnvelope.findMany).toHaveBeenCalledTimes(1);
   });
 });

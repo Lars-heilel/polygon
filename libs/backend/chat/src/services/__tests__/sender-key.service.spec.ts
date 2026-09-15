@@ -37,17 +37,18 @@ describe('SenderKeyService', () => {
       },
     ]);
 
-    await expect(svc.getShare(CHAT_ID, RECIPIENT_A)).resolves.toMatchObject({
+    await expect(svc.getShare(CHAT_ID, CHAIN_KEY_ID, RECIPIENT_A)).resolves.toMatchObject({
       chainKeyId: CHAIN_KEY_ID,
       wrappedChainKey: 'd3JhcHBlZA==',
     });
-    await expect(svc.getShare(CHAT_ID, RECIPIENT_B)).resolves.toMatchObject({
+    await expect(svc.getShare(CHAT_ID, CHAIN_KEY_ID, RECIPIENT_B)).resolves.toMatchObject({
       chainKeyId: CHAIN_KEY_ID,
       wrappedChainKey: 'b3RoZXI=',
     });
+    await expect(svc.getLatestChainId(CHAT_ID, SENDER_DEVICE_ID)).resolves.toBe(CHAIN_KEY_ID);
   });
 
-  it('rotates to a new chainKeyId and revokes only the removed device', async () => {
+  it('scopes share lookups by chainKeyId after rotation', async () => {
     const svc = await service();
     await svc.distributeShares([
       {
@@ -69,9 +70,16 @@ describe('SenderKeyService', () => {
     const rotated = await svc.rotateChain(CHAT_ID, [RECIPIENT_A]);
 
     expect(rotated.chainKeyId).not.toBe(CHAIN_KEY_ID);
-    await expect(svc.getShare(CHAT_ID, RECIPIENT_A)).resolves.toBeNull();
-    await expect(svc.getShare(CHAT_ID, RECIPIENT_B)).resolves.toMatchObject({
-      chainKeyId: CHAIN_KEY_ID,
+    // Removed device resolves nothing, not even for the old chain.
+    await expect(svc.getShare(CHAT_ID, CHAIN_KEY_ID, RECIPIENT_A)).resolves.toBeNull();
+    // Remaining device still resolves the old chain…
+    await expect(svc.getShare(CHAT_ID, CHAIN_KEY_ID, RECIPIENT_B)).resolves.toMatchObject({
+      wrappedChainKey: 'b3RoZXI=',
     });
+    // …but the new chain has no share for them until redistribution.
+    await expect(svc.getShare(CHAT_ID, rotated.chainKeyId, RECIPIENT_B)).resolves.toBeNull();
+    // Latest chain with live shares is still the old one until redistribution.
+    await expect(svc.getLatestChainId(CHAT_ID, SENDER_DEVICE_ID)).resolves.toBe(CHAIN_KEY_ID);
+    await expect(svc.getLatestChainId(CHAT_ID, 'unknown-sender')).resolves.toBeNull();
   });
 });

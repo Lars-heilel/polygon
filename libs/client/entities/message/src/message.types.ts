@@ -1,4 +1,4 @@
-import type { MessageEnvelope, MessageType } from '@org/common';
+import type { GroupMessageEnvelope, MessageEnvelope, MessageType } from '@org/common';
 
 export type MessageKind =
   | 'text'
@@ -107,7 +107,7 @@ export interface RawMessage {
   forwardContext?: RawMessageForwardContext | null;
   media?: MessageMedia | null;
   linkPreview?: LinkPreview | null;
-  envelopes?: MessageEnvelope[] | null;
+  envelopes?: Array<MessageEnvelope | GroupMessageEnvelope> | null;
 }
 
 export interface Message {

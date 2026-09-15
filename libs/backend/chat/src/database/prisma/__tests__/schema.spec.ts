@@ -97,6 +97,7 @@ describe('chat prisma schema id and type contract', () => {
       'MessageAttachment',
       'MessageForwardContext',
       'MessageDeletion',
+      'MessageEnvelope',
       'Device',
       'OneTimePrekey',
       'SignedPrekey',
@@ -136,6 +137,20 @@ describe('chat prisma schema id and type contract', () => {
     const block = modelBlock('SenderKeyShare');
     expect(block).toMatch(/@@id\(\[chatId,\s*chainKeyId,\s*recipientDeviceId\]\)/);
     expect(block).toMatch(/@@index\(\[chatId,\s*recipientDeviceId\]\)/);
+    expect(block).toMatch(/@@index\(\[chatId,\s*senderDeviceId,\s*createdAt\]\)/);
     expect(fieldLine(block, 'revoked')).toContain('@default(false)');
+    expect(fieldLine(block, 'createdAt')).toContain('@db.Timestamptz');
+  });
+
+  it('stores one envelope row per addressed device with cascade delete', () => {
+    const block = modelBlock('MessageEnvelope');
+    expect(fieldLine(block, 'id')).toContain('BigInt');
+    expect(fieldLine(block, 'messageId')).toContain('BigInt');
+    expect(fieldLine(block, 'recipientDeviceId')).toContain('@db.Uuid');
+    expect(fieldLine(block, 'envelopeJson')).toContain('String');
+    expect(block).toMatch(/@@index\(\[messageId\]\)/);
+    expect(block).toMatch(/@@index\(\[recipientDeviceId\]\)/);
+    expect(block).toContain('onDelete: Cascade');
+    expect(block).toMatch(/@@map\("message_envelopes"\)/);
   });
 });

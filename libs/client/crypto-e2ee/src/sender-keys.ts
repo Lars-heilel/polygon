@@ -4,7 +4,7 @@ import {
   type MessageEnvelope,
 } from '@org/common';
 
-import { getOrCreateDeviceId, getOwnDeviceKeys } from './device-keys.js';
+import { bytesToBase64, getOrCreateDeviceId, getOwnDeviceKeys } from './device-keys.js';
 import {
   E2EE_DECRYPT_FAILED,
   type RatchetSession,
@@ -39,8 +39,6 @@ function resolveSenderDeviceId(): string {
   if (!fallbackSenderDeviceId) fallbackSenderDeviceId = getOrCreateDeviceId();
   return fallbackSenderDeviceId;
 }
-
-const toB64 = (bytes: Uint8Array): string => btoa(String.fromCharCode(...bytes));
 
 const fromB64 = (s: string): Uint8Array<ArrayBuffer> =>
   Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
@@ -110,8 +108,8 @@ export async function encryptForGroup(
     senderDeviceId: resolveSenderDeviceId(),
     chainKeyId: ctx.chainKeyId,
     counter: ctx.counter,
-    ciphertext: toB64(new Uint8Array(ct)),
-    iv: toB64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(ct)),
+    iv: bytesToBase64(iv),
   };
   ctx.counter += 1;
   chainsByChainKeyId.set(ctx.chainKeyId, ctx.chainKey);
@@ -178,7 +176,7 @@ export async function wrapChainKeyForDevice(
   if (!raw) throw new Error('E2EE_CHAIN_NOT_OWNED');
   const payload: WrappedChainKeyPayload = {
     chainKeyId: ctx.chainKeyId,
-    chainKey: toB64(raw),
+    chainKey: bytesToBase64(raw),
   };
   return encryptToDevice(JSON.stringify(payload), session, senderDeviceId);
 }

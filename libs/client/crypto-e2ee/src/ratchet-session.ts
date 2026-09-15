@@ -1,5 +1,7 @@
 import type { MessageEnvelope, PrekeyBundleRecord } from '@org/common';
 
+import { bytesToBase64 } from './device-keys.js';
+
 export const E2EE_DECRYPT_FAILED = 'E2EE_DECRYPT_FAILED';
 
 export interface RatchetSession {
@@ -141,7 +143,7 @@ export async function encryptToDevice(
     messageKey,
     new TextEncoder().encode(plaintext),
   );
-  const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+  const b64 = (bytes: Uint8Array) => bytesToBase64(bytes);
   const env: MessageEnvelope = {
     senderDeviceId,
     recipientDeviceId: session.theirDeviceId,
@@ -192,10 +194,8 @@ export async function getOrInitSession(theirBundle: PrekeyBundleRecord): Promise
   const ephemeral = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
     'deriveBits',
   ]);
-  const ephemeralPublicB64 = btoa(
-    String.fromCharCode(
-      ...new Uint8Array(await crypto.subtle.exportKey('raw', ephemeral.publicKey)),
-    ),
+  const ephemeralPublicB64 = bytesToBase64(
+    new Uint8Array(await crypto.subtle.exportKey('raw', ephemeral.publicKey)),
   );
   const session = await createSessionFromPrekey(
     theirBundle,

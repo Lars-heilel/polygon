@@ -11,6 +11,7 @@ import {
   type Env,
   MEDIA_CLIENT_TOKEN,
   MEDIA_QUEUE,
+  SENDER_KEY_REPOSITORY_TOKEN,
   SENDER_KEY_SERVICE_TOKEN,
 } from '@org/core';
 
@@ -19,6 +20,7 @@ import { ChatController } from '../controllers/chat.controller';
 import { PrismaService } from '../database/prisma/prisma.service';
 import { ChatPrismaRepository } from '../database/repository/chat.prisma.repo';
 import { E2eeKeyPrismaRepository } from '../database/repository/e2ee-key.prisma.repo';
+import { SenderKeyPrismaRepository } from '../database/repository/sender-key.prisma.repo';
 import { ChatService } from '../services/chat.service';
 import { E2eeKeyService } from '../services/e2ee-key.service';
 import { SenderKeyService } from '../services/sender-key.service';
@@ -47,6 +49,7 @@ const mediaClient = {
     { provide: CHAT_SERVICE_TOKEN, useClass: ChatService },
     { provide: E2EE_KEY_REPOSITORY_TOKEN, useClass: E2eeKeyPrismaRepository },
     { provide: E2EE_KEY_SERVICE_TOKEN, useClass: E2eeKeyService },
+    { provide: SENDER_KEY_REPOSITORY_TOKEN, useClass: SenderKeyPrismaRepository },
     { provide: SENDER_KEY_SERVICE_TOKEN, useClass: SenderKeyService },
   ],
   exports: [PrismaService, ChatCacheService],

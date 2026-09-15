@@ -1,25 +1,36 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type { SenderKeyDistribution } from '@org/common';
 import { senderKeyDistributionSchema } from '@org/common';
+import { SENDER_KEY_REPOSITORY_TOKEN } from '@org/core';
 import { randomUUID } from 'node:crypto';
 
-import type { ISenderKeyService, SenderKeyShareRecord } from '../interfaces/chat.interface';
-
-const shareKey = (chatId: string, chainKeyId: string, recipientDeviceId: string): string =>
-  `${chatId}|${chainKeyId}|${recipientDeviceId}`;
+import { InMemorySenderKeyRepository } from '../database/repository/sender-key.memory.repo';
+import type {
+  ISenderKeyRepository,
+  ISenderKeyService,
+  SenderKeyShareRecord,
+} from '../interfaces/chat.interface';
 
 /**
  * Server-side registry for group sender-key distribution shares.
  *
  * The service stores only opaque wrapped chain keys (ciphertext produced by
  * the sender with 1:1 sessions) — it never sees plaintext or raw chain keys.
- * Shares are process-local; the `SenderKeyShare` Prisma model reserves the
- * durable layout for a follow-up without changing this interface.
+ * Shares persist via the injected repository (Prisma `SenderKeyShare` in
+ * production, process-local memory in unit tests).
  */
 @Injectable()
 export class SenderKeyService implements ISenderKeyService {
   private readonly logger = new Logger(SenderKeyService.name);
-  private readonly shares = new Map<string, SenderKeyShareRecord>();
+  private readonly repo: ISenderKeyRepository;
+
+  constructor(
+    @Optional()
+    @Inject(SENDER_KEY_REPOSITORY_TOKEN)
+    repo?: ISenderKeyRepository,
+  ) {
+    this.repo = repo ?? new InMemorySenderKeyRepository();
+  }
 
   async distributeShare(input: SenderKeyDistribution): Promise<SenderKeyDistribution> {
     this.logger.log({
@@ -31,15 +42,13 @@ export class SenderKeyService implements ISenderKeyService {
       hasWrappedChainKey: !!input.wrappedChainKey,
     });
     const parsed = senderKeyDistributionSchema.parse(input);
-    const record: SenderKeyShareRecord = { ...parsed, revoked: false };
-    this.shares.set(shareKey(parsed.chatId, parsed.chainKeyId, parsed.recipientDeviceId), record);
+    const { revoked: _revoked, ...share } = await this.repo.upsertShare(parsed);
     this.logger.log({
       eventType: 'senderkey_distribute_done',
       hasChatId: !!parsed.chatId,
       hasChainKeyId: !!parsed.chainKeyId,
       hasRecipientDeviceId: !!parsed.recipientDeviceId,
     });
-    const { revoked: _revoked, ...share } = record;
     return share;
   }
 
@@ -53,16 +62,14 @@ export class SenderKeyService implements ISenderKeyService {
 
   async getShare(
     chatId: string,
+    chainKeyId: string,
     recipientDeviceId: string,
-    chainKeyId?: string,
   ): Promise<SenderKeyShareRecord | null> {
-    for (const share of this.shares.values()) {
-      if (share.chatId !== chatId || share.recipientDeviceId !== recipientDeviceId) continue;
-      if (share.revoked) continue;
-      if (chainKeyId && share.chainKeyId !== chainKeyId) continue;
-      return share;
-    }
-    return null;
+    return this.repo.findShare(chatId, chainKeyId, recipientDeviceId);
+  }
+
+  async getLatestChainId(chatId: string, senderDeviceId: string): Promise<string | null> {
+    return this.repo.findLatestChainId(chatId, senderDeviceId);
   }
 
   async rotateChain(
@@ -74,14 +81,9 @@ export class SenderKeyService implements ISenderKeyService {
       hasChatId: !!chatId,
       removedDeviceCount: removedDeviceIds.length,
     });
-    const removed = new Set(removedDeviceIds);
     // Revoke old shares for removed devices only — remaining members keep
     // reading history with their existing shares.
-    for (const share of this.shares.values()) {
-      if (share.chatId === chatId && removed.has(share.recipientDeviceId)) {
-        share.revoked = true;
-      }
-    }
+    await this.repo.revokeShares(chatId, removedDeviceIds);
     const chainKeyId = randomUUID();
     this.logger.log({
       eventType: 'senderkey_rotate_done',
@@ -98,11 +100,7 @@ export class SenderKeyService implements ISenderKeyService {
       hasChatId: !!chatId,
       hasRecipientDeviceId: !!recipientDeviceId,
     });
-    for (const share of this.shares.values()) {
-      if (share.chatId === chatId && share.recipientDeviceId === recipientDeviceId) {
-        share.revoked = true;
-      }
-    }
+    await this.repo.revokeShares(chatId, [recipientDeviceId]);
     this.logger.log({
       eventType: 'senderkey_revoke_done',
       hasChatId: !!chatId,
