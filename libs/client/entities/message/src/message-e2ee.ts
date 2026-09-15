@@ -1,25 +1,29 @@
-import { API_ROUTES, type PrekeyBundleRecord } from '@org/common';
+import type { MessageEnvelope } from '@org/common';
 import {
+  E2EE_DECRYPT_FAILED,
   type RatchetSession,
   decryptFromDevice,
   getOrCreateDeviceId,
-  getOrInitSession,
+  getOrInitReceiveSession,
+  getOwnDeviceKeys,
 } from '@org/crypto-e2ee';
-import { authedFetch, frontendLog } from '@org/shared';
+import { frontendLog } from '@org/shared';
 
 import { normalizeMessage } from './message-normalizer.js';
 import type { Message, RawMessage } from './message.types.js';
 
-export type SessionResolver = (senderDeviceId: string) => Promise<RatchetSession | null>;
+export type SessionResolver = (envelope: MessageEnvelope) => Promise<RatchetSession | null>;
 
 export async function defaultSessionResolver(
-  senderDeviceId: string,
+  envelope: MessageEnvelope,
 ): Promise<RatchetSession | null> {
-  const bundle = await authedFetch<PrekeyBundleRecord | null>(
-    API_ROUTES.chats.prekeys(senderDeviceId),
-  );
-  if (!bundle) return null;
-  return getOrInitSession(bundle);
+  const own = getOwnDeviceKeys();
+  if (!own) throw new Error('E2EE_NO_OWN_KEYS');
+  return getOrInitReceiveSession(envelope, {
+    identityPrivate: own.identityPrivate,
+    signedPrekeyPrivate: own.signedPrekeyPrivate,
+    oneTimePrivate: own.oneTimePrivate,
+  });
 }
 
 export async function decryptIncomingMessage(
@@ -30,17 +34,20 @@ export async function decryptIncomingMessage(
   const base = normalizeMessage(raw);
   const envelope = raw.envelopes?.find((e) => e.recipientDeviceId === deviceId) ?? null;
   if (!envelope) return base;
+  const session = await resolveSession(envelope);
+  if (!session) throw new Error('E2EE_NO_SESSION');
   try {
-    const session = await resolveSession(envelope.senderDeviceId);
-    if (!session) throw new Error('E2EE_NO_SESSION');
     const text = await decryptFromDevice(envelope, session);
     return { ...base, text, hasLink: /https?:\/\/|www\./i.test(text) };
-  } catch {
-    frontendLog('warn', 'MessageE2ee', 'e2ee_decrypt_failed', {
-      hasChatId: !!raw.chatId,
-      hasMessageId: !!raw.id,
-      hasSenderDeviceId: !!envelope.senderDeviceId,
-    });
-    return { ...base, text: null, undecryptable: true };
+  } catch (err) {
+    if (err instanceof Error && err.message === E2EE_DECRYPT_FAILED) {
+      frontendLog('warn', 'MessageE2ee', 'e2ee_decrypt_failed', {
+        hasChatId: !!raw.chatId,
+        hasMessageId: !!raw.id,
+        hasSenderDeviceId: !!envelope.senderDeviceId,
+      });
+      return { ...base, text: null, undecryptable: true };
+    }
+    throw err;
   }
 }

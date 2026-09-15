@@ -691,6 +691,7 @@ describe('ChatSocketGateway ban enforcement', () => {
         iv: 'aXY=',
         keyVersion: 0,
         ratchetHeader: 'aGVhZGVy',
+        ephemeralKey: 'ZXBoZW1lcmFs',
       },
     ];
     const stored = {
@@ -744,6 +745,7 @@ describe('ChatSocketGateway ban enforcement', () => {
         iv: 'aXY=',
         keyVersion: 0,
         ratchetHeader: 'aGVhZGVy',
+        ephemeralKey: 'ZXBoZW1lcmFs',
       },
     ];
 

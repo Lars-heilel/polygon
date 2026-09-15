@@ -315,6 +315,11 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
         });
         socket.emit('message:send', { chatId, clientId, envelopes });
       } else {
+        frontendLog('warn', 'SendMessage', 'message_send_plaintext_fallback', {
+          hasChatId: !!chatId,
+          hasClientId: !!clientId,
+          envelopeCount: 0,
+        });
         socket.emit('message:send', { chatId, text: trimmed, clientId });
       }
     } catch {

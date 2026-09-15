@@ -7,6 +7,7 @@ export const envelopeSchema = z.object({
   iv: z.string().min(1),
   keyVersion: z.number().int().nonnegative(),
   ratchetHeader: z.string().min(1),
+  ephemeralKey: z.string().min(1),
 });
 export type MessageEnvelope = z.infer<typeof envelopeSchema>;
 

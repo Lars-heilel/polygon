@@ -9,7 +9,12 @@ async function exportPub(key: CryptoKey): Promise<string> {
   return btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.exportKey('raw', key))));
 }
 
-function rawEnvelopeMessage(ciphertext: string, iv: string, keyVersion: number): RawMessage {
+function rawEnvelopeMessage(
+  ciphertext: string,
+  iv: string,
+  keyVersion: number,
+  ephemeralKey: string,
+): RawMessage {
   return {
     id: 'msg-1',
     clientId: null,
@@ -31,6 +36,7 @@ function rawEnvelopeMessage(ciphertext: string, iv: string, keyVersion: number):
         iv,
         keyVersion,
         ratchetHeader: 'session-1',
+        ephemeralKey,
       },
     ],
   };
@@ -65,7 +71,12 @@ describe('decrypt on message:new', () => {
     const envelope = await encryptToDevice('hello e2ee', session, SENDER_DEVICE_ID);
 
     const message = await decryptIncomingMessage(
-      rawEnvelopeMessage(envelope.ciphertext, envelope.iv, envelope.keyVersion),
+      rawEnvelopeMessage(
+        envelope.ciphertext,
+        envelope.iv,
+        envelope.keyVersion,
+        envelope.ephemeralKey,
+      ),
       RECIPIENT_DEVICE_ID,
       async () => session,
     );
@@ -102,12 +113,27 @@ describe('decrypt on message:new', () => {
     const envelope = await encryptToDevice('secret', session, SENDER_DEVICE_ID);
 
     const message = await decryptIncomingMessage(
-      rawEnvelopeMessage(`tampered${envelope.ciphertext}`, envelope.iv, envelope.keyVersion),
+      rawEnvelopeMessage(
+        `tampered${envelope.ciphertext}`,
+        envelope.iv,
+        envelope.keyVersion,
+        envelope.ephemeralKey,
+      ),
       RECIPIENT_DEVICE_ID,
       async () => session,
     );
 
     expect(message.text).toBeNull();
     expect(message.undecryptable).toBe(true);
+  });
+
+  it('propagates resolver network errors instead of masking them as undecryptable', async () => {
+    const raw = rawEnvelopeMessage('Y2lwaGVydGV4dA==', 'aXY=', 0, 'ZXBoZW1lcmFs');
+
+    await expect(
+      decryptIncomingMessage(raw, RECIPIENT_DEVICE_ID, async () => {
+        throw new Error('NETWORK_DOWN');
+      }),
+    ).rejects.toThrow('NETWORK_DOWN');
   });
 });

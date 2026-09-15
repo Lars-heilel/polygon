@@ -43,3 +43,24 @@ export function getOrCreateDeviceId(): string {
     return crypto.randomUUID();
   }
 }
+
+export interface OwnDeviceKeyRefs {
+  deviceId: string;
+  identityPrivate: CryptoKey;
+  signedPrekeyPrivate: CryptoKey;
+  oneTimePrivate?: CryptoKey;
+}
+
+let ownDeviceKeys: OwnDeviceKeyRefs | null = null;
+
+export function registerOwnDeviceKeys(keys: OwnDeviceKeyRefs): void {
+  ownDeviceKeys = keys;
+}
+
+export function getOwnDeviceKeys(): OwnDeviceKeyRefs | null {
+  return ownDeviceKeys;
+}
+
+export function clearOwnDeviceKeys(): void {
+  ownDeviceKeys = null;
+}
