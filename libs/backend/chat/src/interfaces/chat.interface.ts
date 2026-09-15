@@ -15,6 +15,7 @@ import type {
   PrekeyBundleRecord,
   PublishPrekeysInput,
   RegisterDeviceInput,
+  SenderKeyDistribution,
 } from '@org/common';
 
 export type ChatWithPreview = Chat & {
@@ -122,6 +123,7 @@ export interface SignedPrekeyPair {
 export interface IE2eeKeyRepository {
   upsertDevice(input: RegisterDeviceInput): Promise<DeviceRecord>;
   findDevice(deviceId: string): Promise<DeviceRecord | null>;
+  findDevicesByUserIds(userIds: string[]): Promise<DeviceRecord[]>;
   deleteDevice(deviceId: string): Promise<void>;
   saveSignedPrekey(
     deviceId: string,
@@ -138,6 +140,22 @@ export interface IE2eeKeyService {
   revokeDevice(deviceId: string): Promise<void>;
   publishPrekeys(input: PublishPrekeysInput): Promise<void>;
   consumePrekeyBundle(deviceId: string): Promise<PrekeyBundleRecord | null>;
+}
+
+export type SenderKeyShareRecord = SenderKeyDistribution & {
+  revoked: boolean;
+};
+
+export interface ISenderKeyService {
+  distributeShare(input: SenderKeyDistribution): Promise<SenderKeyDistribution>;
+  distributeShares(inputs: SenderKeyDistribution[]): Promise<SenderKeyDistribution[]>;
+  getShare(
+    chatId: string,
+    recipientDeviceId: string,
+    chainKeyId?: string,
+  ): Promise<SenderKeyShareRecord | null>;
+  rotateChain(chatId: string, removedDeviceIds?: string[]): Promise<{ chainKeyId: string }>;
+  revokeShares(chatId: string, recipientDeviceId: string): Promise<void>;
 }
 
 export interface IChatRepository {
@@ -241,6 +259,7 @@ export interface IChatService {
   markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
   getMembers(chatId: string): Promise<{ userId: string }[]>;
+  getChatDevices(chatId: string, userId: string): Promise<DeviceRecord[]>;
   getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
 }
 
@@ -282,5 +301,15 @@ export interface IChatController {
   }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
   getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
+  getChatDevices(payload: { chatId: string; userId: string }): Promise<DeviceRecord[]>;
   getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
+}
+
+export interface ISenderKeyController {
+  distributeShare(payload: SenderKeyDistribution): Promise<SenderKeyDistribution>;
+  rotateChain(payload: {
+    chatId: string;
+    removedDeviceIds?: string[];
+  }): Promise<{ chainKeyId: string }>;
+  revokeShares(payload: { chatId: string; recipientDeviceId: string }): Promise<void>;
 }

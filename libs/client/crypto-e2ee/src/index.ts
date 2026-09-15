@@ -22,3 +22,16 @@ export {
   type ReceiveSessionKeys,
   type RecipientSessionParams,
 } from './ratchet-session.js';
+export {
+  createSenderKeyContext,
+  decryptFromGroup,
+  decryptWithChainKey,
+  E2EE_NO_RECIPIENT_KEYS,
+  encryptForGroup,
+  ensureGroupRecipients,
+  getCurrentSenderKeyContext,
+  rotateSenderKey,
+  unwrapChainKey,
+  wrapChainKeyForDevice,
+  type SenderKeyContext,
+} from './sender-keys.js';

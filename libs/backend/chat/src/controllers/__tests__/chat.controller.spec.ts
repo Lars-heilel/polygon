@@ -1,4 +1,8 @@
-import type { IChatService, IE2eeKeyService } from '../../interfaces/chat.interface';
+import type {
+  IChatService,
+  IE2eeKeyService,
+  ISenderKeyService,
+} from '../../interfaces/chat.interface';
 import { ChatController } from '../chat.controller';
 
 jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
@@ -6,6 +10,7 @@ jest.mock('meilisearch', () => ({ Meilisearch: class Meilisearch {} }));
 describe('ChatController', () => {
   let service: jest.Mocked<IChatService>;
   let e2eeKeyService: jest.Mocked<IE2eeKeyService>;
+  let senderKeys: jest.Mocked<ISenderKeyService>;
   let controller: ChatController;
 
   beforeEach(() => {
@@ -21,6 +26,7 @@ describe('ChatController', () => {
       forwardMessages: jest.fn(),
       checkMembership: jest.fn(),
       getMembers: jest.fn(),
+      getChatDevices: jest.fn(),
       createSelfChat: jest.fn(),
       markRead: jest.fn(),
       prepareForwardMessages: jest.fn(),
@@ -33,7 +39,14 @@ describe('ChatController', () => {
       publishPrekeys: jest.fn(),
       consumePrekeyBundle: jest.fn(),
     };
-    controller = new ChatController(service, e2eeKeyService);
+    senderKeys = {
+      distributeShare: jest.fn(),
+      distributeShares: jest.fn(),
+      getShare: jest.fn(),
+      rotateChain: jest.fn(),
+      revokeShares: jest.fn(),
+    };
+    controller = new ChatController(service, e2eeKeyService, senderKeys);
   });
 
   it('delegates explicit self-chat creation to the service', async () => {
@@ -192,5 +205,45 @@ describe('ChatController', () => {
       userId: 'user-1',
       messages: [{ messageId: 'message-1' }],
     });
+  });
+
+  it('delegates chat device enumeration to the service', async () => {
+    const devices = [{ deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1' }];
+    service.getChatDevices.mockResolvedValue(devices as never);
+
+    await expect(
+      controller.getChatDevices({ chatId: 'chat-1', userId: 'user-1' }),
+    ).resolves.toEqual(devices);
+    expect(service.getChatDevices).toHaveBeenCalledWith('chat-1', 'user-1');
+  });
+
+  it('delegates sender-key distribution, rotation, and revocation', async () => {
+    const share = {
+      chatId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c2',
+      chainKeyId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c3',
+      senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c4',
+      wrappedChainKey: 'd3JhcHBlZA==',
+    };
+    senderKeys.distributeShare.mockResolvedValue(share);
+    senderKeys.rotateChain.mockResolvedValue({
+      chainKeyId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c6',
+    });
+    senderKeys.revokeShares.mockResolvedValue(undefined);
+
+    await expect(controller.distributeShare(share)).resolves.toEqual(share);
+    expect(senderKeys.distributeShare).toHaveBeenCalledWith(share);
+
+    await controller.rotateChain({
+      chatId: share.chatId,
+      removedDeviceIds: [share.recipientDeviceId],
+    });
+    expect(senderKeys.rotateChain).toHaveBeenCalledWith(share.chatId, [share.recipientDeviceId]);
+
+    await controller.revokeShares({
+      chatId: share.chatId,
+      recipientDeviceId: share.recipientDeviceId,
+    });
+    expect(senderKeys.revokeShares).toHaveBeenCalledWith(share.chatId, share.recipientDeviceId);
   });
 });

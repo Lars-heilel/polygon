@@ -5,6 +5,7 @@ export const CHAT_SELECT_FIELDS = {
   avatarUrl: true,
   selfOwnerId: true,
   directKey: true,
+  e2eeEnabled: true,
   lastMessageId: true,
   lastMessageAt: true,
   createdAt: true,

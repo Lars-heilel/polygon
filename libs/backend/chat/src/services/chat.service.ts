@@ -1,15 +1,29 @@
-import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
 import type {
   Chat,
   ChatMediaFilter,
   ChatMember,
+  DeviceRecord,
   Message,
   MessagePage,
   MessagesDelta,
   MessagesDeltaQuery,
 } from '@org/common';
-import { CHAT_PRISMA_REPOSITORY_TOKEN, MEDIA_CLIENT_TOKEN, MEDIA_PATTERNS } from '@org/core';
+import { E2EE_NO_RECIPIENT_KEYS } from '@org/common';
+import {
+  CHAT_PRISMA_REPOSITORY_TOKEN,
+  E2EE_KEY_REPOSITORY_TOKEN,
+  MEDIA_CLIENT_TOKEN,
+  MEDIA_PATTERNS,
+} from '@org/core';
 import { lastValueFrom } from 'rxjs';
 
 import type {
@@ -21,6 +35,7 @@ import type {
   ForwardMessagesData,
   IChatRepository,
   IChatService,
+  IE2eeKeyRepository,
   MessageAttachmentAccessInput,
   PreparedForwardMessage,
   SendMessageData,
@@ -65,6 +80,9 @@ export class ChatService implements IChatService {
   constructor(
     @Inject(CHAT_PRISMA_REPOSITORY_TOKEN) private readonly repo: IChatRepository,
     @Inject(MEDIA_CLIENT_TOKEN) private readonly mediaClient?: ClientProxy,
+    @Optional()
+    @Inject(E2EE_KEY_REPOSITORY_TOKEN)
+    private readonly e2eeKeys?: IE2eeKeyRepository,
   ) {}
 
   async createDirectChat(userId: string, targetUserId: string): Promise<Chat> {
@@ -247,6 +265,21 @@ export class ChatService implements IChatService {
         hasUserId: !!senderId,
       });
       throw new ForbiddenException('Not a member of this chat');
+    }
+
+    // Fail-closed E2EE gating: an enabled chat must never silently accept a
+    // plaintext fallback. Envelope sends (text null) skip the chat lookup.
+    if (input.text && !input.envelopes?.length) {
+      const chat = await this.repo.findChatById(chatId);
+      if (chat?.e2eeEnabled) {
+        this.logger.warn({
+          eventType: 'message_send_rejected',
+          hasChatId: !!chatId,
+          hasUserId: !!senderId,
+          reason: 'e2ee_plaintext_fallback',
+        });
+        throw new ForbiddenException(E2EE_NO_RECIPIENT_KEYS);
+      }
     }
 
     const attachments = buildAttachmentInput(input);
@@ -908,6 +941,24 @@ export class ChatService implements IChatService {
   async getMembers(chatId: string): Promise<{ userId: string }[]> {
     const members = await this.repo.findMembersByChat(chatId);
     return members.map((m) => ({ userId: m.userId }));
+  }
+
+  async getChatDevices(chatId: string, userId: string): Promise<DeviceRecord[]> {
+    this.logger.debug({
+      eventType: 'chat_devices_requested',
+      hasChatId: !!chatId,
+      hasUserId: !!userId,
+    });
+    await this.requireMember(chatId, userId);
+    const members = await this.repo.findMembersByChat(chatId);
+    if (!this.e2eeKeys) return [];
+    const devices = await this.e2eeKeys.findDevicesByUserIds(members.map((m) => m.userId));
+    this.logger.log({
+      eventType: 'chat_devices_done',
+      hasChatId: !!chatId,
+      deviceCount: devices.length,
+    });
+    return devices;
   }
 
   private async requireMember(chatId: string, userId: string): Promise<void> {

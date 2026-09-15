@@ -21,6 +21,7 @@ model Chat {
   avatarUrl     String?   @db.VarChar(2048) @map("avatar_url")
   selfOwnerId   String?   @unique @db.Uuid @map("self_owner_id")
   directKey     String?   @db.VarChar(128) @map("direct_key")
+  e2eeEnabled   Boolean   @default(false) @map("e2ee_enabled")
   lastMessageId BigInt?   @map("last_message_id")
   lastMessageAt DateTime? @db.Timestamptz(3) @map("last_message_at")
   createdAt     DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")
@@ -147,4 +148,25 @@ model OneTimePrekey {
 
   @@index([deviceId, consumed])
   @@map("one_time_prekeys")
+}
+
+model SignedPrekey {
+  deviceId              String @id @db.Uuid @map("device_id")
+  signedPrekey          String @map("signed_prekey")
+  signedPrekeySignature String @map("signed_prekey_signature")
+
+  @@map("signed_prekeys")
+}
+
+model SenderKeyShare {
+  chatId            String  @db.Uuid @map("chat_id")
+  chainKeyId        String  @db.Uuid @map("chain_key_id")
+  senderDeviceId    String  @db.Uuid @map("sender_device_id")
+  recipientDeviceId String  @db.Uuid @map("recipient_device_id")
+  wrappedChainKey   String  @map("wrapped_chain_key")
+  revoked           Boolean @default(false) @map("revoked")
+
+  @@id([chatId, chainKeyId, recipientDeviceId])
+  @@index([chatId, recipientDeviceId])
+  @@map("sender_key_shares")
 }

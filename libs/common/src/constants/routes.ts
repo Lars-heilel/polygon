@@ -37,6 +37,7 @@ export const API_ROUTES = {
     deviceById: (deviceId: string) => `chats/devices/${deviceId}`,
     prekeys: (deviceId: string) => `chats/devices/${deviceId}/prekeys`,
     senderKeys: (chatId: string) => `chats/${chatId}/sender-keys`,
+    chatDevices: (chatId: string) => `chats/${chatId}/devices`,
   },
   search: {
     root: 'search',

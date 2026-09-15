@@ -143,6 +143,32 @@ export class ChatGatewayController {
     return this.send(this.chatClient.send(CHAT_PATTERNS.PREKEYS_CONSUME, { deviceId }));
   }
 
+  @Get(':id/devices')
+  @ApiOperation({ summary: 'List E2EE devices of chat members (sender-key distribution)' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiResponse({ status: 200, description: 'Array of device records' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not a member of this chat' })
+  async getChatDevices(@CurrentUser() user: JwtPayload, @Param('id') chatId: string) {
+    this.logger.log({
+      eventType: 'chat_devices_requested',
+      hasUserId: !!user.sub,
+      hasChatId: !!chatId,
+    });
+    const isMember = await this.send<boolean>(
+      this.chatClient.send(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId,
+        userId: user.sub,
+      }),
+    );
+    if (!isMember) {
+      throw new HttpException('Not a member of this chat', 403);
+    }
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.GET_CHAT_DEVICES, { chatId, userId: user.sub }),
+    );
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })

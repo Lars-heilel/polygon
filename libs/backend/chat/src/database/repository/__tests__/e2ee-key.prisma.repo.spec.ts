@@ -7,6 +7,12 @@ describe('E2eeKeyPrismaRepository one-time prekey claim', () => {
   const device = {
     upsert: jest.fn(),
     findUnique: jest.fn(),
+    findMany: jest.fn(),
+    deleteMany: jest.fn(),
+  };
+  const signedPrekey = {
+    upsert: jest.fn(),
+    findUnique: jest.fn(),
     deleteMany: jest.fn(),
   };
   const oneTimePrekey = {
@@ -15,7 +21,7 @@ describe('E2eeKeyPrismaRepository one-time prekey claim', () => {
     findFirst: jest.fn(),
     updateMany: jest.fn(),
   };
-  const prisma = { device, oneTimePrekey };
+  const prisma = { device, signedPrekey, oneTimePrekey };
   const repository = new E2eeKeyPrismaRepository(prisma as unknown as PrismaService);
 
   beforeEach(() => {
@@ -64,5 +70,45 @@ describe('E2eeKeyPrismaRepository one-time prekey claim', () => {
     ]);
 
     expect([first, second].sort()).toEqual([null, 'otp-A']);
+  });
+
+  it('persists signed prekeys through Prisma so a fresh instance still finds them', async () => {
+    signedPrekey.findUnique.mockResolvedValue({
+      deviceId: 'device-1',
+      signedPrekey: 'c3Bn',
+      signedPrekeySignature: 'c2ln',
+    });
+
+    const writer = new E2eeKeyPrismaRepository(prisma as unknown as PrismaService);
+    await writer.saveSignedPrekey('device-1', 'c3Bn', 'c2ln');
+
+    expect(signedPrekey.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { deviceId: 'device-1' },
+        create: expect.objectContaining({ signedPrekey: 'c3Bn' }),
+        update: expect.objectContaining({ signedPrekey: 'c3Bn' }),
+      }),
+    );
+
+    // Restart-equivalent: a fresh repository instance over the same database
+    // still returns the signed material (no process-local map involved).
+    const reader = new E2eeKeyPrismaRepository(prisma as unknown as PrismaService);
+    await expect(reader.findSignedPrekey('device-1')).resolves.toEqual({
+      signedPrekey: 'c3Bn',
+      signedPrekeySignature: 'c2ln',
+    });
+    expect(signedPrekey.findUnique).toHaveBeenCalledWith({ where: { deviceId: 'device-1' } });
+  });
+
+  it('lists devices for every member user id', async () => {
+    const rows = [
+      { deviceId: 'd-1', userId: 'u-1', identityKey: 'a2V5', registrationId: 1 },
+      { deviceId: 'd-2', userId: 'u-2', identityKey: 'a2V5', registrationId: 2 },
+    ];
+    device.findMany.mockResolvedValue(rows);
+
+    await expect(repository.findDevicesByUserIds(['u-1', 'u-2'])).resolves.toEqual(rows);
+    expect(device.findMany).toHaveBeenCalledWith({ where: { userId: { in: ['u-1', 'u-2'] } } });
+    await expect(repository.findDevicesByUserIds([])).resolves.toEqual([]);
   });
 });

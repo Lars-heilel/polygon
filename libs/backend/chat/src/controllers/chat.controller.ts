@@ -1,4 +1,4 @@
-import { Controller, Inject, Logger } from '@nestjs/common';
+import { Controller, Inject, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import type {
   Chat,
@@ -13,8 +13,14 @@ import type {
   PrekeyBundleRecord,
   PublishPrekeysInput,
   RegisterDeviceInput,
+  SenderKeyDistribution,
 } from '@org/common';
-import { CHAT_PATTERNS, CHAT_SERVICE_TOKEN, E2EE_KEY_SERVICE_TOKEN } from '@org/core';
+import {
+  CHAT_PATTERNS,
+  CHAT_SERVICE_TOKEN,
+  E2EE_KEY_SERVICE_TOKEN,
+  SENDER_KEY_SERVICE_TOKEN,
+} from '@org/core';
 
 import type {
   ChatWithPreview,
@@ -24,19 +30,29 @@ import type {
   IChatController,
   IChatService,
   IE2eeKeyService,
+  ISenderKeyController,
+  ISenderKeyService,
   MessageAttachmentAccessInput,
   PreparedForwardMessage,
 } from '../interfaces/chat.interface';
 
 @Controller()
-export class ChatController implements IChatController {
+export class ChatController implements IChatController, ISenderKeyController {
   private readonly logger = new Logger(ChatController.name);
 
   constructor(
     @Inject(CHAT_SERVICE_TOKEN) private readonly chatService: IChatService,
     @Inject(E2EE_KEY_SERVICE_TOKEN)
     private readonly e2eeKeyService: IE2eeKeyService,
+    @Optional()
+    @Inject(SENDER_KEY_SERVICE_TOKEN)
+    private readonly senderKeys?: ISenderKeyService,
   ) {}
+
+  private requireSenderKeys(): ISenderKeyService {
+    if (!this.senderKeys) throw new NotFoundException('Sender-key service unavailable');
+    return this.senderKeys;
+  }
 
   @MessagePattern(CHAT_PATTERNS.CREATE_DIRECT)
   createDirect(@Payload() payload: { userId: string; targetUserId: string }): Promise<Chat> {
@@ -225,6 +241,16 @@ export class ChatController implements IChatController {
     return this.chatService.getMembers(payload.chatId);
   }
 
+  @MessagePattern(CHAT_PATTERNS.GET_CHAT_DEVICES)
+  getChatDevices(@Payload() payload: { chatId: string; userId: string }): Promise<DeviceRecord[]> {
+    this.logger.debug({
+      eventType: 'chat_devices_requested',
+      hasChatId: !!payload.chatId,
+      hasUserId: !!payload.userId,
+    });
+    return this.chatService.getChatDevices(payload.chatId, payload.userId);
+  }
+
   @MessagePattern(CHAT_PATTERNS.GET_MESSAGE_ATTACHMENT_FOR_ACCESS)
   getMessageAttachmentForAccess(
     @Payload() payload: MessageAttachmentAccessInput,
@@ -269,5 +295,36 @@ export class ChatController implements IChatController {
       hasDeviceId: !!payload.deviceId,
     });
     return this.e2eeKeyService.consumePrekeyBundle(payload.deviceId);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.SENDER_KEY_DISTRIBUTE)
+  distributeShare(@Payload() payload: SenderKeyDistribution): Promise<SenderKeyDistribution> {
+    this.logger.debug({
+      eventType: 'senderkey_distribute_requested',
+      hasChatId: !!payload.chatId,
+      hasRecipientDeviceId: !!payload.recipientDeviceId,
+    });
+    return this.requireSenderKeys().distributeShare(payload);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.SENDER_KEY_ROTATE)
+  rotateChain(
+    @Payload() payload: { chatId: string; removedDeviceIds?: string[] },
+  ): Promise<{ chainKeyId: string }> {
+    this.logger.debug({
+      eventType: 'senderkey_rotate_requested',
+      hasChatId: !!payload.chatId,
+    });
+    return this.requireSenderKeys().rotateChain(payload.chatId, payload.removedDeviceIds ?? []);
+  }
+
+  @MessagePattern(CHAT_PATTERNS.SENDER_KEY_REVOKE)
+  revokeShares(@Payload() payload: { chatId: string; recipientDeviceId: string }): Promise<void> {
+    this.logger.debug({
+      eventType: 'senderkey_revoke_requested',
+      hasChatId: !!payload.chatId,
+      hasRecipientDeviceId: !!payload.recipientDeviceId,
+    });
+    return this.requireSenderKeys().revokeShares(payload.chatId, payload.recipientDeviceId);
   }
 }

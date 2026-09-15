@@ -813,4 +813,38 @@ describe('ChatGatewayController', () => {
       ),
     ).toHaveLength(0);
   });
+
+  it('GET /chats/:id/devices proxies member device enumeration', async () => {
+    const ctx = controller();
+    const devices = [{ deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1' }];
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(true);
+      return of(devices);
+    });
+
+    await expect(
+      ctx.controller.getChatDevices({ sub: 'user-1' } as never, 'chat-1'),
+    ).resolves.toEqual(devices);
+    expect(ctx.chatClient.send).toHaveBeenCalledWith(
+      CHAT_PATTERNS.GET_CHAT_DEVICES,
+      expect.objectContaining({ chatId: 'chat-1', userId: 'user-1' }),
+    );
+  });
+
+  it('GET /chats/:id/devices rejects non-members without enumerating', async () => {
+    const ctx = controller();
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.CHECK_MEMBERSHIP) return of(false);
+      return of([]);
+    });
+
+    await expect(
+      ctx.controller.getChatDevices({ sub: 'user-1' } as never, 'chat-1'),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(
+      ctx.chatClient.send.mock.calls.filter(
+        ([pattern]) => pattern === CHAT_PATTERNS.GET_CHAT_DEVICES,
+      ),
+    ).toHaveLength(0);
+  });
 });

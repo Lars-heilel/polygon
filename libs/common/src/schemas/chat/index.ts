@@ -13,3 +13,4 @@ export * from './message-delta.schema';
 export * from './device.schema.js';
 export * from './prekey-bundle.schema.js';
 export * from './envelope.schema.js';
+export * from './sender-key.schema.js';

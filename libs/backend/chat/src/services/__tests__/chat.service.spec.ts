@@ -1349,4 +1349,76 @@ describe('ChatService', () => {
     ).resolves.toEqual({ messages: [], deletedIds: ['101'] });
     expect(repo.findMessagesDelta).toHaveBeenCalledWith('chat-1', 'user-1', since, '100', 50);
   });
+
+  it('rejects a plaintext send in an E2EE chat with E2EE_NO_RECIPIENT_KEYS', async () => {
+    const { E2EE_NO_RECIPIENT_KEYS } = await import('@org/common');
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findChatById.mockResolvedValue({ id: 'chat-1', e2eeEnabled: true } as never);
+    const service = new ChatService(repo);
+
+    await expect(
+      service.sendMessage('chat-1', 'user-1', { type: 'TEXT', text: 'hi' } as never),
+    ).rejects.toThrow(E2EE_NO_RECIPIENT_KEYS);
+    expect(repo.createMessageWithTouch).not.toHaveBeenCalled();
+  });
+
+  it('accepts an envelope send in an E2EE chat without loading the chat', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.createMessageWithTouch.mockImplementation(
+      async (data) => ({ id: '101', ...data }) as never,
+    );
+    const service = new ChatService(repo);
+
+    await service.sendMessage('chat-1', 'user-1', {
+      type: 'TEXT',
+      text: null,
+      envelopes: [
+        {
+          senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+          chainKeyId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c3',
+          counter: 0,
+          ciphertext: 'Y3Q=',
+          iv: 'aXY=',
+        },
+      ],
+    } as never);
+
+    expect(repo.findChatById).not.toHaveBeenCalled();
+    expect(repo.createMessageWithTouch).toHaveBeenCalled();
+  });
+
+  it('lists member devices for sender-key distribution', async () => {
+    const repo = repoMock();
+    const devices = [
+      {
+        deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+        userId: 'user-1',
+        identityKey: 'aWtlaQ==',
+        registrationId: 7,
+      },
+    ];
+    const e2eeKeys = { findDevicesByUserIds: jest.fn().mockResolvedValue(devices) };
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findMembersByChat.mockResolvedValue([
+      { chatId: 'chat-1', userId: 'user-1' },
+      { chatId: 'chat-1', userId: 'user-2' },
+    ] as never);
+    const service = new ChatService(repo, undefined, e2eeKeys as never);
+
+    await expect(service.getChatDevices('chat-1', 'user-1')).resolves.toEqual(devices);
+    expect(e2eeKeys.findDevicesByUserIds).toHaveBeenCalledWith(['user-1', 'user-2']);
+  });
+
+  it('requires membership for chat device enumeration', async () => {
+    const repo = repoMock();
+    repo.findChatMember.mockResolvedValue(null);
+    const service = new ChatService(repo);
+
+    await expect(service.getChatDevices('chat-1', 'user-1')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(repo.findMembersByChat).not.toHaveBeenCalled();
+  });
 });

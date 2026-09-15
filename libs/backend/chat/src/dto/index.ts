@@ -4,3 +4,4 @@ export * from './edit-message.dto';
 export * from './mark-chat-read.dto';
 export * from './send-message.dto';
 export * from './device.dto';
+export * from './sender-key.dto';

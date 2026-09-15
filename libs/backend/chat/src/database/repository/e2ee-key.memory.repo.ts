@@ -23,6 +23,12 @@ export class InMemoryE2eeKeyRepository implements IE2eeKeyRepository {
     return this.devices.get(deviceId) ?? null;
   }
 
+  async findDevicesByUserIds(userIds: string[]): Promise<DeviceRecord[]> {
+    if (userIds.length === 0) return [];
+    const wanted = new Set(userIds);
+    return [...this.devices.values()].filter((device) => wanted.has(device.userId));
+  }
+
   async deleteDevice(deviceId: string): Promise<void> {
     this.devices.delete(deviceId);
     this.signedPrekeys.delete(deviceId);

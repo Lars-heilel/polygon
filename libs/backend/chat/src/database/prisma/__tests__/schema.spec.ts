@@ -97,6 +97,10 @@ describe('chat prisma schema id and type contract', () => {
       'MessageAttachment',
       'MessageForwardContext',
       'MessageDeletion',
+      'Device',
+      'OneTimePrekey',
+      'SignedPrekey',
+      'SenderKeyShare',
     ]) {
       expect(modelBlock(model)).toMatch(/@@map\("[a-z_]+"\)/);
     }
@@ -114,5 +118,24 @@ describe('chat prisma schema id and type contract', () => {
     expect(modelBlock('Chat')).toMatch(/@@index\(\[lastMessageAt.*id.*\]\)/);
     expect(modelBlock('ChatMember')).toMatch(/@@index\(\[userId,\s*chatId\]\)/);
     expect(modelBlock('Message')).toMatch(/@@index\(\[chatId.*createdAt.*id.*\]\)/);
+  });
+
+  it('marks E2EE chats explicitly with a default-off flag', () => {
+    const line = fieldLine(modelBlock('Chat'), 'e2eeEnabled');
+    expect(line).toContain('Boolean');
+    expect(line).toContain('@default(false)');
+  });
+
+  it('stores one signed prekey per device for upsert-on-publish', () => {
+    const block = modelBlock('SignedPrekey');
+    expect(fieldLine(block, 'deviceId')).toContain('@id');
+    expect(fieldLine(block, 'signedPrekeySignature')).toContain('String');
+  });
+
+  it('identifies sender-key shares per chat, chain, and recipient device', () => {
+    const block = modelBlock('SenderKeyShare');
+    expect(block).toMatch(/@@id\(\[chatId,\s*chainKeyId,\s*recipientDeviceId\]\)/);
+    expect(block).toMatch(/@@index\(\[chatId,\s*recipientDeviceId\]\)/);
+    expect(fieldLine(block, 'revoked')).toContain('@default(false)');
   });
 });

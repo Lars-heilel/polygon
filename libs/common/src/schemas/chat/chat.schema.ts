@@ -13,6 +13,10 @@ export const chatSchema = z.object({
   avatarUrl: z.url().nullable(),
   selfOwnerId: z.uuid().nullable(),
   directKey: z.string().max(128).nullable().optional(),
+  // E2EE marker: only chats with e2eeEnabled send ciphertext. Optional so
+  // legacy rows/fixtures without the column keep parsing; group sends in
+  // enabled chats never silently fall back to plaintext (E2EE_NO_RECIPIENT_KEYS).
+  e2eeEnabled: z.boolean().optional(),
   lastMessageId: z.string().nullable(),
   lastMessageAt: z.date().nullable(),
   createdAt: z.date(),

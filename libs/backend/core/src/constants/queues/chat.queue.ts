@@ -22,4 +22,8 @@ export const CHAT_PATTERNS = {
   DEVICE_REVOKE: 'chat.deviceRevoke',
   PREKEYS_PUBLISH: 'chat.prekeysPublish',
   PREKEYS_CONSUME: 'chat.prekeysConsume',
+  GET_CHAT_DEVICES: 'chat.getChatDevices',
+  SENDER_KEY_DISTRIBUTE: 'chat.senderKeyDistribute',
+  SENDER_KEY_ROTATE: 'chat.senderKeyRotate',
+  SENDER_KEY_REVOKE: 'chat.senderKeyRevoke',
 } as const;

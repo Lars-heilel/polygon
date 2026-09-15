@@ -7,13 +7,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Prisma-backed E2EE key registry (chat-service database only).
- * Devices and one-time prekeys persist in Postgres; the signed prekey is
- * process-local until a dedicated model lands (see Task 1 report).
+ * Devices, signed prekeys, and one-time prekeys persist in Postgres.
  */
 @Injectable()
 export class E2eeKeyPrismaRepository implements IE2eeKeyRepository {
-  private readonly signedPrekeys = new Map<string, SignedPrekeyPair>();
-
   constructor(private readonly prisma: PrismaService) {}
 
   async upsertDevice(input: RegisterDeviceInput): Promise<DeviceRecord> {
@@ -59,11 +56,28 @@ export class E2eeKeyPrismaRepository implements IE2eeKeyRepository {
     }
   }
 
+  async findDevicesByUserIds(userIds: string[]): Promise<DeviceRecord[]> {
+    if (userIds.length === 0) return [];
+    try {
+      const rows = await this.prisma.device.findMany({
+        where: { userId: { in: userIds } },
+      });
+      return rows.map((row) => ({
+        userId: row.userId,
+        deviceId: row.deviceId,
+        identityKey: row.identityKey,
+        registrationId: row.registrationId,
+      }));
+    } catch (error) {
+      handlePrismaError(error);
+    }
+  }
+
   async deleteDevice(deviceId: string): Promise<void> {
     try {
       await this.prisma.oneTimePrekey.deleteMany({ where: { deviceId } });
+      await this.prisma.signedPrekey.deleteMany({ where: { deviceId } });
       await this.prisma.device.deleteMany({ where: { deviceId } });
-      this.signedPrekeys.delete(deviceId);
     } catch (error) {
       handlePrismaError(error);
     }
@@ -74,11 +88,28 @@ export class E2eeKeyPrismaRepository implements IE2eeKeyRepository {
     signedPrekey: string,
     signedPrekeySignature: string,
   ): Promise<void> {
-    this.signedPrekeys.set(deviceId, { signedPrekey, signedPrekeySignature });
+    try {
+      await this.prisma.signedPrekey.upsert({
+        where: { deviceId },
+        create: { deviceId, signedPrekey, signedPrekeySignature },
+        update: { signedPrekey, signedPrekeySignature },
+      });
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async findSignedPrekey(deviceId: string): Promise<SignedPrekeyPair | null> {
-    return this.signedPrekeys.get(deviceId) ?? null;
+    try {
+      const row = await this.prisma.signedPrekey.findUnique({ where: { deviceId } });
+      if (!row) return null;
+      return {
+        signedPrekey: row.signedPrekey,
+        signedPrekeySignature: row.signedPrekeySignature,
+      };
+    } catch (error) {
+      handlePrismaError(error);
+    }
   }
 
   async addOneTimePrekeys(deviceId: string, prekeys: string[]): Promise<void> {
