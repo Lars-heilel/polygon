@@ -279,7 +279,7 @@ export interface IChatService {
   cloneForwardMessages(data: CloneForwardMessagesData): Promise<Message[]>;
   markRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
   checkMembership(chatId: string, userId: string): Promise<boolean>;
-  getMembers(chatId: string): Promise<{ userId: string }[]>;
+  getMembers(chatId: string): Promise<{ userId: string; role: ChatRole }[]>;
   getChatDevices(chatId: string, userId: string): Promise<DeviceRecord[]>;
   getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
 }
@@ -325,7 +325,7 @@ export interface IChatController {
     messageId?: string | null;
   }): Promise<ChatMember>;
   checkMembership(payload: { chatId: string; userId: string }): Promise<boolean>;
-  getMembers(payload: { chatId: string }): Promise<{ userId: string }[]>;
+  getMembers(payload: { chatId: string }): Promise<{ userId: string; role: ChatRole }[]>;
   getChatDevices(payload: { chatId: string; userId: string }): Promise<DeviceRecord[]>;
   getMessageAttachmentForAccess(input: MessageAttachmentAccessInput): Promise<{ mediaId: string }>;
 }

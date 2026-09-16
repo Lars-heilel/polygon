@@ -1,5 +1,5 @@
 export { removeOptimisticMessage, useSendMessage } from './use-send-message';
-export { buildMessageEnvelopes } from './use-send-message';
+export { buildGroupEnvelopes, buildMessageEnvelopes } from './use-send-message';
 export { getMessageTypeFromCategory, type FileAttachment } from './use-send-message';
 export {
   getCategoryFromMime,

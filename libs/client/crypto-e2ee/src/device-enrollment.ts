@@ -20,11 +20,12 @@ export interface DeviceEnrollment {
 }
 
 /**
- * Generate device keys, register them as this device's own keys, and persist
- * the device id. Returns the payloads for `DEVICE_REGISTER` (deviceId,
- * identityKey, registrationId) and `PREKEYS_PUBLISH` (deviceId, signedPrekey,
- * signedPrekeySignature, oneTimePrekeys). Network stays with the caller so
- * this package keeps no HTTP dependency.
+ * Generate device keys, register them as this device's own keys (including
+ * the one-time private halves, retained until each prekey is consumed),
+ * and persist the device id. Returns the payloads for `DEVICE_REGISTER`
+ * (deviceId, identityKey, registrationId) and `PREKEYS_PUBLISH` (deviceId,
+ * signedPrekey, signedPrekeySignature, oneTimePrekeys). Network stays with
+ * the caller so this package keeps no HTTP dependency.
  */
 export async function prepareDeviceEnrollment(): Promise<DeviceEnrollment> {
   const deviceId = getOrCreateDeviceId();
@@ -34,10 +35,17 @@ export async function prepareDeviceEnrollment(): Promise<DeviceEnrollment> {
       crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']),
     ),
   );
+  const oneTimePublics = await Promise.all(
+    oneTimePairs.map((pair) => exportPublicKey(pair.publicKey)),
+  );
+  const oneTimePrivates = new Map<string, CryptoKey>(
+    oneTimePairs.map((pair, index) => [oneTimePublics[index] as string, pair.privateKey]),
+  );
   registerOwnDeviceKeys({
     deviceId,
     identityPrivate: identityKeyPair.privateKey,
     signedPrekeyPrivate: signedPrekeyPair.privateKey,
+    oneTimePrivates,
   });
   rememberDeviceId(deviceId);
   return {
@@ -46,6 +54,6 @@ export async function prepareDeviceEnrollment(): Promise<DeviceEnrollment> {
     registrationId,
     signedPrekey: await exportPublicKey(signedPrekeyPair.publicKey),
     signedPrekeySignature: ENROLLMENT_SIGNED_PREKEY_SIGNATURE,
-    oneTimePrekeys: await Promise.all(oneTimePairs.map((pair) => exportPublicKey(pair.publicKey))),
+    oneTimePrekeys: oneTimePublics,
   };
 }

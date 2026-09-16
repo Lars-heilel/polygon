@@ -12,7 +12,7 @@ import {
 const msg = (id: string, createdAt: string): Message => ({
   id,
   clientId: null,
-  chatId: 'chat-1',
+  chatId: 'idb-chat-1',
   senderId: 'user-1',
   kind: 'text',
   type: 'TEXT',
@@ -31,22 +31,22 @@ const msg = (id: string, createdAt: string): Message => ({
 
 describe('message-idb', () => {
   it('round-trips messages and evicts beyond the keep limit', async () => {
-    await writeMessagesToCache('chat-1', [
+    await writeMessagesToCache('idb-chat-1', [
       msg('1', '2026-09-14T10:00:00.000Z'),
       msg('2', '2026-09-14T10:01:00.000Z'),
       msg('3', '2026-09-14T10:02:00.000Z'),
     ]);
-    await evictOldMessages('chat-1', 2);
-    const back = await readCachedMessages('chat-1');
+    await evictOldMessages('idb-chat-1', 2);
+    const back = await readCachedMessages('idb-chat-1');
     expect(back.map((m) => m.id)).toEqual(['2', '3']);
   });
 
   it('mirrors writes synchronously for initialData peeks', async () => {
-    expect(peekCachedMessages('chat-mirror')).toBeUndefined();
-    await writeMessagesToCache('chat-mirror', [
+    expect(peekCachedMessages('idb-chat-mirror')).toBeUndefined();
+    await writeMessagesToCache('idb-chat-mirror', [
       msg('1', '2026-09-14T10:00:00.000Z'),
       msg('2', '2026-09-14T10:01:00.000Z'),
     ]);
-    expect(peekCachedMessages('chat-mirror')?.map((m) => m.id)).toEqual(['1', '2']);
+    expect(peekCachedMessages('idb-chat-mirror')?.map((m) => m.id)).toEqual(['1', '2']);
   });
 });

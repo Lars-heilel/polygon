@@ -15,3 +15,9 @@ export const senderKeyDistributionSchema = z.object({
   wrappedChainKey: z.string().min(1),
 });
 export type SenderKeyDistribution = z.infer<typeof senderKeyDistributionSchema>;
+
+export const rotateSenderKeySchema = z.object({
+  chatId: z.uuid(),
+  removedDeviceIds: z.array(z.uuid()).optional(),
+});
+export type RotateSenderKeyInput = z.infer<typeof rotateSenderKeySchema>;

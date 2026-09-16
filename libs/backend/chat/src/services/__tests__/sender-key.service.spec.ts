@@ -82,4 +82,19 @@ describe('SenderKeyService', () => {
     await expect(svc.getLatestChainId(CHAT_ID, SENDER_DEVICE_ID)).resolves.toBe(CHAIN_KEY_ID);
     await expect(svc.getLatestChainId(CHAT_ID, 'unknown-sender')).resolves.toBeNull();
   });
+
+  it('treats an empty distribution batch as a no-op', async () => {
+    const svc = await service();
+
+    await expect(svc.distributeShares([])).resolves.toEqual([]);
+  });
+
+  it('mints a new chain id on rotation with no removed devices', async () => {
+    const svc = await service();
+
+    const rotated = await svc.rotateChain(CHAT_ID, []);
+
+    expect(rotated.chainKeyId).toBeDefined();
+    expect(typeof rotated.chainKeyId).toBe('string');
+  });
 });

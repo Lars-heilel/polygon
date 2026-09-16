@@ -322,7 +322,17 @@ describe('ChatGatewayController', () => {
 
   it('revokes a device by proxying DEVICE_REVOKE', async () => {
     const ctx = controller();
-    ctx.chatClient.send.mockReturnValue(of({ revoked: true }));
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.DEVICE_GET) {
+        return of({
+          deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+          userId: 'user-1',
+          identityKey: 'aWtlaQ==',
+          registrationId: 7,
+        });
+      }
+      return of({ revoked: true });
+    });
 
     await ctx.controller.revokeDevice(
       { sub: 'user-1' } as never,
@@ -362,6 +372,17 @@ describe('ChatGatewayController', () => {
     const ctx = controller();
     const logger = { debug: jest.fn(), error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     Object.defineProperty(ctx.controller, 'logger', { value: logger });
+    ctx.chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === CHAT_PATTERNS.DEVICE_GET) {
+        return of({
+          deviceId: 'device-secret-id',
+          userId: 'user-secret-id',
+          identityKey: 'aWtlaQ==',
+          registrationId: 7,
+        });
+      }
+      return of({ id: 'message-1' });
+    });
 
     await ctx.controller.registerDevice(
       { sub: 'user-secret-id' } as never,

@@ -78,12 +78,40 @@ export interface OwnDeviceKeyRefs {
   identityPrivate: CryptoKey;
   signedPrekeyPrivate: CryptoKey;
   oneTimePrivate?: CryptoKey;
+  /**
+   * Private halves of the published one-time prekeys, keyed by their public
+   * base64. The sender mixes dh3 into first-contact chains, so the recipient
+   * must retain every private until its prekey is consumed (consume-once:
+   * each entry is deleted after first use).
+   */
+  oneTimePrivates?: Map<string, CryptoKey>;
 }
 
 let ownDeviceKeys: OwnDeviceKeyRefs | null = null;
 
 export function registerOwnDeviceKeys(keys: OwnDeviceKeyRefs): void {
   ownDeviceKeys = keys;
+}
+
+/** Public base64 ids of the retained one-time private halves (presence only). */
+export function listOwnOneTimePublicKeys(): string[] {
+  return [...(ownDeviceKeys?.oneTimePrivates?.keys() ?? [])];
+}
+
+/** Peek at a retained one-time private half without consuming it. */
+export function getOwnOneTimePrivate(publicB64: string): CryptoKey | undefined {
+  return ownDeviceKeys?.oneTimePrivates?.get(publicB64);
+}
+
+/**
+ * Consume-once take: returns the private half for a published one-time
+ * public key and deletes it so it can never be reused.
+ */
+export function consumeOwnOneTimePrivate(publicB64: string): CryptoKey | undefined {
+  const privates = ownDeviceKeys?.oneTimePrivates;
+  const key = privates?.get(publicB64);
+  if (key) privates?.delete(publicB64);
+  return key;
 }
 
 /**

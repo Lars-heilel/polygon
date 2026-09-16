@@ -209,8 +209,9 @@ export async function getOrInitSession(theirBundle: PrekeyBundleRecord): Promise
 export async function getOrInitReceiveSession(
   envelope: MessageEnvelope,
   keys: ReceiveSessionKeys,
+  cacheTag = '',
 ): Promise<RatchetSession> {
-  const cacheKey = `${envelope.senderDeviceId}:${envelope.ephemeralKey}`;
+  const cacheKey = `${envelope.senderDeviceId}:${envelope.ephemeralKey}:${cacheTag}`;
   const cached = receiveSessionsByEphemeral.get(cacheKey);
   if (cached) return cached;
   const session = await createRecipientSession({
@@ -226,4 +227,9 @@ export async function getOrInitReceiveSession(
 
 export function listSessionDeviceIds(): string[] {
   return [...sendSessionsByDeviceId.keys()];
+}
+
+/** Reuse an established 1:1 send session without consuming a new bundle. */
+export function getCachedSendSession(deviceId: string): RatchetSession | null {
+  return sendSessionsByDeviceId.get(deviceId) ?? null;
 }

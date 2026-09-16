@@ -131,4 +131,132 @@ describe('ChatGatewayController sender-key distribution', () => {
       chatId: CHAT_ID,
     });
   });
+
+  it('registers a device for a fresh device id', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(of(null)).mockReturnValueOnce(of({ ok: true }));
+    const dto = { deviceId: DEVICE_ID, identityKey: 'aWtlaQ==', registrationId: 7 };
+
+    await controller.registerDevice({ sub: 'user-1' } as never, dto as never);
+
+    expect(chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DEVICE_GET, {
+      deviceId: DEVICE_ID,
+    });
+    expect(chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DEVICE_REGISTER, {
+      userId: 'user-1',
+      ...dto,
+    });
+  });
+
+  it('rejects device registration for a foreign device with 403 and no DEVICE_REGISTER call', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(
+      of({ deviceId: DEVICE_ID, userId: 'user-2', identityKey: 'aWtlaQ==', registrationId: 7 }),
+    );
+    const dto = { deviceId: DEVICE_ID, identityKey: 'aWtlaQ==', registrationId: 7 };
+
+    await expect(
+      controller.registerDevice({ sub: 'user-1' } as never, dto as never),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const registerCalls = chatClient.send.mock.calls.filter(
+      ([pattern]) => pattern === CHAT_PATTERNS.DEVICE_REGISTER,
+    );
+    expect(registerCalls).toHaveLength(0);
+  });
+
+  it('revokes a device owned by the caller', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send
+      .mockReturnValueOnce(
+        of({ deviceId: DEVICE_ID, userId: 'user-1', identityKey: 'aWtlaQ==', registrationId: 7 }),
+      )
+      .mockReturnValueOnce(of({ ok: true }));
+
+    await controller.revokeDevice({ sub: 'user-1' } as never, DEVICE_ID);
+
+    expect(chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DEVICE_REVOKE, {
+      deviceId: DEVICE_ID,
+      userId: 'user-1',
+    });
+  });
+
+  it('rejects device revocation for a foreign device with 403 and no DEVICE_REVOKE call', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(
+      of({ deviceId: DEVICE_ID, userId: 'user-2', identityKey: 'aWtlaQ==', registrationId: 7 }),
+    );
+
+    await expect(
+      controller.revokeDevice({ sub: 'user-1' } as never, DEVICE_ID),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const revokeCalls = chatClient.send.mock.calls.filter(
+      ([pattern]) => pattern === CHAT_PATTERNS.DEVICE_REVOKE,
+    );
+    expect(revokeCalls).toHaveLength(0);
+  });
+
+  it('rejects device revocation for an unknown device with 403 and no DEVICE_REVOKE call', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(of(null));
+
+    await expect(
+      controller.revokeDevice({ sub: 'user-1' } as never, DEVICE_ID),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const revokeCalls = chatClient.send.mock.calls.filter(
+      ([pattern]) => pattern === CHAT_PATTERNS.DEVICE_REVOKE,
+    );
+    expect(revokeCalls).toHaveLength(0);
+  });
+
+  it('rotates the sender-key chain for a chat admin', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send
+      .mockReturnValueOnce(of(true))
+      .mockReturnValueOnce(of([{ userId: 'user-1', role: 'ADMIN' }]))
+      .mockReturnValueOnce(of({ chainKeyId: 'new-chain' }));
+
+    await controller.rotateSenderKey({ sub: 'user-1' } as never, CHAT_ID, {} as never);
+
+    expect(chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+      chatId: CHAT_ID,
+      userId: 'user-1',
+    });
+    expect(chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.SENDER_KEY_ROTATE, {
+      chatId: CHAT_ID,
+      removedDeviceIds: [],
+    });
+  });
+
+  it('rejects rotation for a non-admin member with 403 and no SENDER_KEY_ROTATE call', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send
+      .mockReturnValueOnce(of(true))
+      .mockReturnValueOnce(of([{ userId: 'user-1', role: 'MEMBER' }]));
+
+    await expect(
+      controller.rotateSenderKey({ sub: 'user-1' } as never, CHAT_ID, {} as never),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const rotateCalls = chatClient.send.mock.calls.filter(
+      ([pattern]) => pattern === CHAT_PATTERNS.SENDER_KEY_ROTATE,
+    );
+    expect(rotateCalls).toHaveLength(0);
+  });
+
+  it('rejects rotation for a non-member with 403 and no SENDER_KEY_ROTATE call', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(of(false));
+
+    await expect(
+      controller.rotateSenderKey({ sub: 'user-1' } as never, CHAT_ID, {} as never),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const rotateCalls = chatClient.send.mock.calls.filter(
+      ([pattern]) => pattern === CHAT_PATTERNS.SENDER_KEY_ROTATE,
+    );
+    expect(rotateCalls).toHaveLength(0);
+  });
 });

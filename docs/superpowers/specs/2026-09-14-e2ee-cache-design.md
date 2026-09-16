@@ -30,7 +30,7 @@ Decisions: X3DH + Double Ratchet обязательны, бэкенд пашет
 - `device`: `userId, deviceId, identityKey, registrationId`.
 - `prekeyBundle`: `identityKey, signedPrekey + signature, oneTimePrekey`.
 - `envelope` (1:1): `senderDeviceId, recipientDeviceId, ciphertext, iv,
-  keyVersion/counter, ratchetHeader`.
+keyVersion/counter, ratchetHeader`.
 - `groupEnvelope`: `senderDeviceId, chainKeyId, counter, ciphertext, iv`.
 - `senderKeyDistribution`: `chainKey, keyId`, для каждого recipient-device
   зашифрованная его 1:1-сессией.
@@ -61,7 +61,7 @@ Decisions: X3DH + Double Ratchet обязательны, бэкенд пашет
 - `prekeys.publish / prekeys.consume`
 - `senderKey.distribute / senderKey.rotate`
 - `message.sendEnvelope` — принимает только ciphertext + membership-check
-  + запись; чтения содержимого нет.
+  - запись; чтения содержимого нет.
 
 Gateway (тонкий прокси + оркестрация, `controllers: []` в apps):
 
@@ -71,6 +71,11 @@ Gateway (тонкий прокси + оркестрация, `controllers: []` �
 - Offline-push деградирует до «Новое сообщение» (без body).
 - Поиск по тексту сообщений и link-preview для шифрочатов отключаются.
 - Ротация при kick/leave: `senderKey.rotate` + revoke shares ушедшего.
+  Инвариант (inherent): отозваны только shares удалённого устройства под
+  старым chain — остальные участники сохраняют свои shares, поэтому старая
+  история остаётся читаемой для них; новые сообщения идут под новым chain,
+  shares которого ушедший не получает. HTTP-доступ к ротации:
+  `POST chats/:id/sender-keys/rotate` (только ADMIN чата).
 - Guards порядок: Throttler → Session/Jwt → ActiveAccount → Roles.
 - Ошибки: сервисы кидают RPC `{ message, status }`, gateway мапит в HttpException.
 
@@ -82,9 +87,9 @@ Gateway (тонкий прокси + оркестрация, `controllers: []` �
   state. Non-extractable identity/device ключи в IndexedDB, sessions и
   sender-chains в отдельных stores. Крипта — свой код на
   WebCrypto (AES-GCM + X25519/HKDF); если потянем внешнюю libsignal-зависимость
-  >30KB — только отдельным пакетом с единственным entry + потребление через
-  `lazy()`, ноль статических импортёров в eager-графе (проверка visualizer +
-  Network).
+  > 30KB — только отдельным пакетом с единственным entry + потребление через
+  > `lazy()`, ноль статических импортёров в eager-графе (проверка visualizer +
+  > Network).
 - **`@org/message-cache`** — idb-обёртка: stores `messages` (индекс
   `chatId + createdAt`), `chats-meta` (`lastSync/sinceId`), LRU-вычистка
   (лимит ~200 сообщений на чат).
@@ -114,5 +119,45 @@ Gateway (тонкий прокси + оркестрация, `controllers: []` �
   без живого брокера/БД/Redis в юнит-прогоне.
 - Verify: `npm exec nx -- affected --target=test`, `npm run format:check`,
   visualizer/Network-чек чанков.
-- Фазы: 1) контракты + бэкенд devices/prekeys; 2) crypto-пакет + 1:1;
-  3) sender-keys + группы + ротация; 4) message-cache + delta.
+- Фазы: 1) контракты + бэкенд devices/prekeys; 2) crypto-пакет + 1:1; 3) sender-keys + группы + ротация; 4) message-cache + delta.
+
+## 6. Known limitations & follow-ups (accepted, not silently blessed)
+
+- **(i) Нет DH/symmetric ratchet — только per-message HKDF-separation.**
+  Current behavior: каждая пара устройств деривирует message-key через HKDF
+  от статичного chain-key с 4-байтным counter-salt; chain-key никогда не
+  продвигается и не выполняет DH-шагов. Компрометация chain-key раскрывает все
+  прошлые и будущие сообщения пары (нет forward secrecy / post-compromise
+  security), несмотря на формулировки раздела 1.
+  Risk accepted: настоящий Double Ratchet (skipped-keys, out-of-order,
+  DH-step каждые N сообщений) — отдельный проект; текущая схема даёт
+  разделение ключей на сообщение, но не более.
+  Follow-up: спроектировать и внедрить DH-ratchet + symmetric ratchet с
+  обработкой пропущенных/переупорядоченных счётчиков; обновить раздел 1.
+- **(ii) Подписи signed-prekey публикуются, но не проверяются.**
+  Current behavior: клиент публикует `signedPrekeySignature` как плейсхолдер
+  `'c2ln'` (ключи ECDH подписывать не умеют); сервер и получатели принимают
+  bundle без проверки. Злоумышленник, способный писать в реестр prekeys,
+  может подменить материал установки сессии.
+  Risk accepted: setup-аутентификация отложена до выбора схемы подписи.
+  Follow-up: выбрать схему подписи (отдельная Ed25519-идентичность устройства
+  либо подпись через существующий session/auth-канал), проверять подпись при
+  `PREKEYS_CONSUME` на клиенте и/или при `PREKEYS_PUBLISH` на сервере;
+  заменить плейсхолдер `'c2ln'`.
+- **(iii) Late-joiner share catch-up не определён.**
+  Current behavior: `SenderKeyShare` хранятся на сервере, но HTTP-контракта
+  «отдай мне недостающие shares для chainKeyId» нет; клиент, вступивший в чат
+  позже (или пропустивший distribution), не может расшифровать групповую
+  историю и видит плейсхолдер «Не удалось расшифровать» с retry.
+  Risk accepted: догоняющая раздача — отдельный контракт.
+  Follow-up: определить catch-up контракт (клиент запрашивает недостающие
+  shares по chainKeyId; отправитель перераздаёт при join), покрыть спеками.
+- **(iv) Миграция + live-smoke deploy gate.**
+  Current behavior: новые Prisma-модели (`Device`, `OneTimePrekey`,
+  `SignedPrekey`, `SenderKeyShare`, `MessageEnvelope`, `Chat.e2eeEnabled`)
+  требуют миграции `polygon_chat`; в этом окружении нет живой БД, миграция не
+  прогонялась.
+  Risk accepted: мерж запрещён до прогона миграции и живого smoke-теста.
+  Follow-up (deploy gate): применить миграцию, затем прогнать
+  register→publish→consume→send→delta end-to-end на живой связке
+  gateway + chat-service + клиент.

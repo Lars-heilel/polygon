@@ -53,6 +53,10 @@ export class SenderKeyService implements ISenderKeyService {
   }
 
   async distributeShares(inputs: SenderKeyDistribution[]): Promise<SenderKeyDistribution[]> {
+    if (inputs.length === 0) {
+      this.logger.log({ eventType: 'senderkey_distribute_done', emptyBatch: true });
+      return [];
+    }
     const stored: SenderKeyDistribution[] = [];
     for (const input of inputs) {
       stored.push(await this.distributeShare(input));
@@ -72,6 +76,13 @@ export class SenderKeyService implements ISenderKeyService {
     return this.repo.findLatestChainId(chatId, senderDeviceId);
   }
 
+  /**
+   * Mint a fresh chain id and revoke old shares for removed devices only.
+   * Remaining members keep their existing shares, so old history stays
+   * readable to them. An empty `removedDeviceIds` list is valid proactive
+   * rotation (e.g. scheduled re-key): no shares are revoked, only the new
+   * chain id is minted for redistribution.
+   */
   async rotateChain(
     chatId: string,
     removedDeviceIds: string[] = [],

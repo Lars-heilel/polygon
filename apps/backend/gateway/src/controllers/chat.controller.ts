@@ -8,6 +8,7 @@ import {
   Inject,
   Logger,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -36,6 +37,7 @@ import {
   type PreparedForwardMessage,
   PublishPrekeysDto,
   RegisterDeviceDto,
+  RotateSenderKeyDto,
   SendMessageDto,
 } from '@org/chat';
 import type {
@@ -121,6 +123,14 @@ export class ChatGatewayController {
       hasUserId: !!user.sub,
       hasDeviceId: !!dto.deviceId,
     });
+    // A device id already owned by another user must not be re-registered
+    // (first enrollment has no record yet and passes through).
+    const existing = await this.send<DeviceRecord | null>(
+      this.chatClient.send(CHAT_PATTERNS.DEVICE_GET, { deviceId: dto.deviceId }),
+    );
+    if (existing && existing.userId !== user.sub) {
+      throw new HttpException('Not the owner of this device', 403);
+    }
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.DEVICE_REGISTER, {
         userId: user.sub,
@@ -136,12 +146,21 @@ export class ChatGatewayController {
   @ApiParam({ name: 'id', description: 'Device UUID' })
   @ApiResponse({ status: 200, description: 'Revocation result' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  async revokeDevice(@CurrentUser() user: JwtPayload, @Param('id') deviceId: string) {
+  async revokeDevice(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) deviceId: string,
+  ) {
     this.logger.log({
       eventType: 'device_revoke_requested',
       hasUserId: !!user.sub,
       hasDeviceId: !!deviceId,
     });
+    const device = await this.send<DeviceRecord | null>(
+      this.chatClient.send(CHAT_PATTERNS.DEVICE_GET, { deviceId }),
+    );
+    if (!device || device.userId !== user.sub) {
+      throw new HttpException('Not the owner of this device', 403);
+    }
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.DEVICE_REVOKE, {
         deviceId,
@@ -155,7 +174,10 @@ export class ChatGatewayController {
   @ApiParam({ name: 'id', description: 'Device UUID' })
   @ApiResponse({ status: 200, description: 'Prekey bundle or null' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  async consumePrekeys(@CurrentUser() user: JwtPayload, @Param('id') deviceId: string) {
+  async consumePrekeys(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) deviceId: string,
+  ) {
     this.logger.log({
       eventType: 'prekeys_consume_requested',
       hasUserId: !!user.sub,
@@ -198,7 +220,7 @@ export class ChatGatewayController {
   @ApiResponse({ status: 403, description: 'Not the owner of this device' })
   async publishPrekeys(
     @CurrentUser() user: JwtPayload,
-    @Param('id') deviceId: string,
+    @Param('id', new ParseUUIDPipe()) deviceId: string,
     @Body() dto: PublishPrekeysDto,
   ) {
     this.logger.log({
@@ -251,6 +273,46 @@ export class ChatGatewayController {
     // The URL `:id` is the source of truth — a mismatched body chatId must
     // not bypass the membership check above.
     return this.send(this.chatClient.send(CHAT_PATTERNS.SENDER_KEY_DISTRIBUTE, { ...dto, chatId }));
+  }
+
+  @Post(':id/sender-keys/rotate')
+  @ApiOperation({ summary: 'Rotate the sender-key chain for a chat (chat admins only)' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiResponse({ status: 201, description: 'New chain key id' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not a chat admin' })
+  async rotateSenderKey(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) chatId: string,
+    @Body() dto: RotateSenderKeyDto,
+  ) {
+    this.logger.log({
+      eventType: 'senderkey_rotate_requested',
+      hasUserId: !!user.sub,
+      hasChatId: !!chatId,
+    });
+    const isMember = await this.send<boolean>(
+      this.chatClient.send(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId,
+        userId: user.sub,
+      }),
+    );
+    if (!isMember) {
+      throw new HttpException('Not a member of this chat', 403);
+    }
+    const members = await this.send<{ userId: string; role: string }[]>(
+      this.chatClient.send(CHAT_PATTERNS.GET_MEMBERS, { chatId }),
+    );
+    const self = members.find((m) => m.userId === user.sub);
+    if (!self || self.role !== 'ADMIN') {
+      throw new HttpException('Not a chat admin', 403);
+    }
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.SENDER_KEY_ROTATE, {
+        chatId,
+        removedDeviceIds: dto.removedDeviceIds ?? [],
+      }),
+    );
   }
 
   @Get()

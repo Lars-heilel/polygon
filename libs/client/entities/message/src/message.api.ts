@@ -25,6 +25,7 @@ import {
 } from './message-cache.js';
 import { decryptIncomingMessage } from './message-e2ee.js';
 import { normalizeMessage } from './message-normalizer.js';
+import { compareMessagesByCreatedAt } from './message-sort.js';
 import type { Message, MessagePage, RawMessage, RawMessagePage } from './message.types.js';
 
 export type { Message, MessagePage, RawMessage, RawMessagePage };
@@ -67,7 +68,7 @@ export const messageApi = {
       method: 'PATCH',
       body: JSON.stringify({ text }),
     });
-    return normalizeMessage(raw);
+    return decryptIncomingMessage(raw);
   },
 
   async deleteMessage(
@@ -134,10 +135,7 @@ export function pickNewestSync(
   if (messages.length === 0) return null;
   let newest = messages[0];
   for (const message of messages) {
-    if (
-      message.createdAt.localeCompare(newest.createdAt) > 0 ||
-      (message.createdAt === newest.createdAt && message.id.localeCompare(newest.id) > 0)
-    ) {
+    if (compareMessagesByCreatedAt(message, newest) > 0) {
       newest = message;
     }
   }

@@ -2,11 +2,14 @@ import type { GroupMessageEnvelope, MessageEnvelope } from '@org/common';
 import {
   E2EE_DECRYPT_FAILED,
   type RatchetSession,
+  consumeOwnOneTimePrivate,
   decryptFromDevice,
   decryptFromGroup,
   getActiveDeviceId,
   getOrInitReceiveSession,
   getOwnDeviceKeys,
+  getOwnOneTimePrivate,
+  listOwnOneTimePublicKeys,
 } from '@org/crypto-e2ee';
 import { frontendLog } from '@org/shared';
 
@@ -20,11 +23,52 @@ export async function defaultSessionResolver(
 ): Promise<RatchetSession | null> {
   const own = getOwnDeviceKeys();
   if (!own) throw new Error('E2EE_NO_OWN_KEYS');
-  return getOrInitReceiveSession(envelope, {
-    identityPrivate: own.identityPrivate,
-    signedPrekeyPrivate: own.signedPrekeyPrivate,
-    oneTimePrivate: own.oneTimePrivate,
-  });
+  // The sender mixes dh3 from exactly one consumed one-time prekey, but the
+  // envelope does not say which. Trial-derive per retained private half and
+  // keep the session whose chain actually decrypts this envelope; the used
+  // private is consumed (deleted) once. Signed-only fallback comes last.
+  // Each candidate is cache-tagged by its one-time public id so trials never
+  // poison each other's cached receive session.
+  const pubs = listOwnOneTimePublicKeys();
+  for (const pub of pubs) {
+    const oneTimePrivate = getOwnOneTimePrivate(pub);
+    try {
+      const session = await getOrInitReceiveSession(
+        envelope,
+        {
+          identityPrivate: own.identityPrivate,
+          signedPrekeyPrivate: own.signedPrekeyPrivate,
+          oneTimePrivate,
+        },
+        pub,
+      );
+      // Proof of correctness: the chain must decrypt this exact envelope.
+      await decryptFromDevice(envelope, session);
+      consumeOwnOneTimePrivate(pub);
+      return session;
+    } catch {
+      // Wrong half (or undecryptable) — try the next candidate.
+    }
+  }
+  if (own.oneTimePrivate) {
+    return getOrInitReceiveSession(
+      envelope,
+      {
+        identityPrivate: own.identityPrivate,
+        signedPrekeyPrivate: own.signedPrekeyPrivate,
+        oneTimePrivate: own.oneTimePrivate,
+      },
+      'legacy-single',
+    );
+  }
+  return getOrInitReceiveSession(
+    envelope,
+    {
+      identityPrivate: own.identityPrivate,
+      signedPrekeyPrivate: own.signedPrekeyPrivate,
+    },
+    'signed-only',
+  );
 }
 
 /**

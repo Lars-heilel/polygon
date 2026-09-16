@@ -13,6 +13,7 @@ import type {
   Chat,
   ChatMediaFilter,
   ChatMember,
+  ChatRole,
   DeviceRecord,
   GroupMessageEnvelope,
   Message,
@@ -969,9 +970,9 @@ export class ChatService implements IChatService {
     return member !== null;
   }
 
-  async getMembers(chatId: string): Promise<{ userId: string }[]> {
+  async getMembers(chatId: string): Promise<{ userId: string; role: ChatRole }[]> {
     const members = await this.repo.findMembersByChat(chatId);
-    return members.map((m) => ({ userId: m.userId }));
+    return members.map((m) => ({ userId: m.userId, role: m.role }));
   }
 
   async getChatDevices(chatId: string, userId: string): Promise<DeviceRecord[]> {

@@ -1,5 +1,6 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 
+import { compareMessagesByCreatedAt } from '../message-sort.js';
 import type { Message } from '../message.types.js';
 
 interface ChatCacheSchema extends DBSchema {
@@ -18,14 +19,10 @@ let lazyDb: Promise<IDBPDatabase<ChatCacheSchema>> | null = null;
 const memoryMirror = new Map<string, Message[]>();
 const MIRROR_KEEP = 200;
 
-function compareByCreatedAt(a: Message, b: Message): number {
-  return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
-}
-
 function mirrorWrite(chatId: string, messages: Message[]): void {
   const byId = new Map((memoryMirror.get(chatId) ?? []).map((m) => [m.id, m]));
   for (const message of messages) byId.set(message.id, message);
-  memoryMirror.set(chatId, [...byId.values()].sort(compareByCreatedAt).slice(-MIRROR_KEEP));
+  memoryMirror.set(chatId, [...byId.values()].sort(compareMessagesByCreatedAt).slice(-MIRROR_KEEP));
 }
 
 function mirrorDelete(chatId: string, messageId: string): void {
@@ -74,7 +71,7 @@ export async function writeMessagesToCache(chatId: string, messages: Message[]):
 export async function readCachedMessages(chatId: string, limit = 200): Promise<Message[]> {
   const db = await getDb();
   const all = await db.getAllFromIndex('messages', 'by-chat', chatId);
-  const sorted = all.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-limit);
+  const sorted = all.sort(compareMessagesByCreatedAt).slice(-limit);
   mirrorWrite(chatId, sorted);
   return sorted;
 }
@@ -90,12 +87,12 @@ export async function deleteCachedMessage(chatId: string, messageId: string): Pr
 export async function evictOldMessages(chatId: string, keep = 200): Promise<void> {
   const mirrored = memoryMirror.get(chatId);
   if (mirrored && mirrored.length > keep) {
-    memoryMirror.set(chatId, [...mirrored].sort(compareByCreatedAt).slice(-keep));
+    memoryMirror.set(chatId, [...mirrored].sort(compareMessagesByCreatedAt).slice(-keep));
   }
   const db = await getDb();
   const all = await db.getAllFromIndex('messages', 'by-chat', chatId);
   if (all.length <= keep) return;
-  const sorted = all.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const sorted = all.sort(compareMessagesByCreatedAt);
   const tx = db.transaction('messages', 'readwrite');
   await Promise.all(sorted.slice(0, all.length - keep).map((m) => tx.store.delete(m.id)));
   await tx.done;

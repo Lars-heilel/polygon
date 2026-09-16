@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import type {
   Chat,
   ChatMember,
+  ChatRole,
   DeviceRecord,
   GroupMessageEnvelope,
   Message,
@@ -245,7 +246,9 @@ export class ChatController implements IChatController, ISenderKeyController {
   }
 
   @MessagePattern(CHAT_PATTERNS.GET_MEMBERS)
-  getMembers(@Payload() payload: { chatId: string }): Promise<{ userId: string }[]> {
+  getMembers(
+    @Payload() payload: { chatId: string },
+  ): Promise<{ userId: string; role: ChatRole }[]> {
     return this.chatService.getMembers(payload.chatId);
   }
 
