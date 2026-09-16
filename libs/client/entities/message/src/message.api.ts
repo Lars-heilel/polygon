@@ -12,6 +12,7 @@ import {
 import {
   evictOldMessages,
   getLastSync,
+  peekCachedMessages,
   readCachedMessages,
   setLastSync,
   writeMessagesToCache,
@@ -94,6 +95,11 @@ export const messageApi = {
 
 export function useInfiniteMessagesQuery(chatId: string) {
   const queryClient = useQueryClient();
+  // `placeholderData` is omitted from suspense options in TanStack v5, so
+  // instant render comes from sync `initialData` (in-memory mirror of the
+  // IndexedDB cache). The mirror is cold right after reload — the async
+  // `syncChatDelta` seed below remains the fallback for that case.
+  const initialCached = peekCachedMessages(chatId);
   const query = useSuspenseInfiniteQuery({
     queryKey: ['messages', chatId],
     queryFn: ({ pageParam }) => messageApi.getMessages(chatId, pageParam),
@@ -101,6 +107,15 @@ export function useInfiniteMessagesQuery(chatId: string) {
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 15_000,
     gcTime: 10 * 60_000,
+    ...(initialCached
+      ? {
+          initialData: {
+            pages: [{ messages: initialCached, nextCursor: null }],
+            pageParams: [undefined],
+          },
+          initialDataUpdatedAt: Date.now(),
+        }
+      : {}),
   });
   useEffect(() => {
     void syncChatDelta(chatId, queryClient).catch(() => undefined);
@@ -109,11 +124,32 @@ export function useInfiniteMessagesQuery(chatId: string) {
 }
 
 /**
- * Cold-start + delta-sync: seed `['messages', chatId]` from the IndexedDB
- * cache so the list renders instantly, then merge the server delta
- * (`getLastSync` → `getDelta` → decrypt → patch pages → rewrite cache).
- * `initialData` cannot be async for suspense queries, so the seed is applied
- * imperatively when the query is still empty.
+ * Newest-message sync cursor: `createdAt` max with `id` as tiebreak.
+ * Page order is not chronological (multi-page + delta appends), so the last
+ * array element must never be used as `since` — it can regress.
+ */
+export function pickNewestSync(
+  messages: Pick<Message, 'createdAt' | 'id'>[],
+): { since: string; sinceId: string } | null {
+  if (messages.length === 0) return null;
+  let newest = messages[0];
+  for (const message of messages) {
+    if (
+      message.createdAt.localeCompare(newest.createdAt) > 0 ||
+      (message.createdAt === newest.createdAt && message.id.localeCompare(newest.id) > 0)
+    ) {
+      newest = message;
+    }
+  }
+  return { since: newest.createdAt, sinceId: newest.id };
+}
+
+/**
+ * Cold-start + delta-sync: `useInfiniteMessagesQuery` seeds sync `initialData`
+ * from the in-memory mirror so the list renders instantly; this function then
+ * merges the server delta (`getLastSync` → `getDelta` → decrypt → patch pages
+ * → rewrite cache) and covers the post-reload case where the mirror is cold
+ * (async IndexedDB seed applied imperatively when the query is still empty).
  */
 export async function syncChatDelta(
   chatId: string,
@@ -133,11 +169,9 @@ export async function syncChatDelta(
     if (messages.length > 0) {
       await writeMessagesToCache(chatId, messages).catch(() => undefined);
       await evictOldMessages(chatId).catch(() => undefined);
-      const newest = messages[messages.length - 1];
+      const newest = pickNewestSync(messages);
       if (newest) {
-        await setLastSync(chatId, { since: newest.createdAt, sinceId: newest.id }).catch(
-          () => undefined,
-        );
+        await setLastSync(chatId, newest).catch(() => undefined);
       }
     }
     return;
@@ -163,11 +197,9 @@ export async function syncChatDelta(
   if (merged.length > 0) {
     await writeMessagesToCache(chatId, merged).catch(() => undefined);
     await evictOldMessages(chatId).catch(() => undefined);
-    const newest = merged[merged.length - 1];
+    const newest = pickNewestSync(merged);
     if (newest) {
-      await setLastSync(chatId, { since: newest.createdAt, sinceId: newest.id }).catch(
-        () => undefined,
-      );
+      await setLastSync(chatId, newest).catch(() => undefined);
     }
   }
 }

@@ -20,6 +20,7 @@ export const CHAT_PATTERNS = {
   GET_MESSAGES_DELTA: 'chat.getMessagesDelta',
   DEVICE_REGISTER: 'chat.deviceRegister',
   DEVICE_REVOKE: 'chat.deviceRevoke',
+  DEVICE_GET: 'chat.deviceGet',
   PREKEYS_PUBLISH: 'chat.prekeysPublish',
   PREKEYS_CONSUME: 'chat.prekeysConsume',
   GET_CHAT_DEVICES: 'chat.getChatDevices',

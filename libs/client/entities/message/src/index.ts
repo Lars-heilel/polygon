@@ -34,6 +34,7 @@ export {
   deleteCachedMessage,
   evictOldMessages,
   getLastSync,
+  peekCachedMessages,
   readCachedMessages,
   setLastSync,
   writeMessagesToCache,

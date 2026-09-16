@@ -93,10 +93,22 @@ export function useChatSocket(chatId: string) {
   }, [chatId]);
 
   useEffect(() => {
+    // Undecryptable live payloads are skipped (no cache write): the retry
+    // action and the next delta sync recover them once keys arrive. Caching
+    // a placeholder here could overwrite a decryptable entry on update.
+    const skipUndecryptable = (message: Message, raw: RawMessage): boolean => {
+      if (!message.undecryptable) return false;
+      frontendLog('warn', 'ChatSocket', 'live_message_undecryptable_skipped', {
+        hasChatId: !!raw.chatId,
+        hasMessageId: !!raw.id,
+      });
+      return true;
+    };
     const onCacheNewMessage = (raw: RawMessage) => {
       if (!raw || raw.chatId !== chatIdRef.current) return;
       void decryptIncomingMessage(raw)
         .then((message) => {
+          if (skipUndecryptable(message, raw)) return;
           queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', message.chatId], (old) =>
             appendMessageToPages<InfiniteData<MessagePage>, Message>(old, message),
           );
@@ -113,6 +125,7 @@ export function useChatSocket(chatId: string) {
       if (!raw || raw.chatId !== chatIdRef.current) return;
       void decryptIncomingMessage(raw)
         .then((message) => {
+          if (skipUndecryptable(message, raw)) return;
           queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', message.chatId], (old) =>
             updateMessageInPages<InfiniteData<MessagePage>, Message>(old, message),
           );

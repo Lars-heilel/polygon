@@ -138,6 +138,7 @@ export interface IE2eeKeyRepository {
 export interface IE2eeKeyService {
   registerDevice(input: RegisterDeviceInput): Promise<DeviceRecord>;
   revokeDevice(deviceId: string): Promise<void>;
+  getDevice(deviceId: string): Promise<DeviceRecord | null>;
   publishPrekeys(input: PublishPrekeysInput): Promise<void>;
   consumePrekeyBundle(deviceId: string): Promise<PrekeyBundleRecord | null>;
 }

@@ -36,6 +36,7 @@ describe('ChatController', () => {
     e2eeKeyService = {
       registerDevice: jest.fn(),
       revokeDevice: jest.fn(),
+      getDevice: jest.fn(),
       publishPrekeys: jest.fn(),
       consumePrekeyBundle: jest.fn(),
     };
@@ -174,6 +175,19 @@ describe('ChatController', () => {
     await expect(controller.consumePrekeyBundle({ deviceId: device.deviceId })).resolves.toEqual(
       expect.objectContaining({ deviceId: device.deviceId, oneTimePrekey: 'b3Rw' }),
     );
+  });
+
+  it('delegates device lookup to the e2ee key service', async () => {
+    const device = {
+      userId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c0',
+      deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      identityKey: 'aWtlaQ==',
+      registrationId: 7,
+    };
+    e2eeKeyService.getDevice.mockResolvedValue(device);
+
+    await expect(controller.getDevice({ deviceId: device.deviceId })).resolves.toEqual(device);
+    expect(e2eeKeyService.getDevice).toHaveBeenCalledWith(device.deviceId);
   });
   it('delegates forward preparation and cloning to the service', async () => {
     service.prepareForwardMessages.mockResolvedValue([{ messageId: 'message-1' }] as never);

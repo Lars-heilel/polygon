@@ -60,4 +60,13 @@ describe('E2eeKeyService', () => {
     expect(second?.oneTimePrekey).toBeNull();
     expect(second?.signedPrekey).toBe('c3Bn');
   });
+
+  it('returns the registered device and null for unknown devices', async () => {
+    const svc = await service();
+    await svc.registerDevice({ ...DEVICE });
+    await expect(svc.getDevice(DEVICE.deviceId)).resolves.toEqual(
+      expect.objectContaining({ deviceId: DEVICE.deviceId, userId: DEVICE.userId }),
+    );
+    await expect(svc.getDevice('0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c9')).resolves.toBeNull();
+  });
 });

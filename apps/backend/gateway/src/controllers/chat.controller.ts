@@ -38,7 +38,13 @@ import {
   RegisterDeviceDto,
   SendMessageDto,
 } from '@org/chat';
-import type { ForwardMessageInput, Message, MessagePage, UserPublic } from '@org/common';
+import type {
+  DeviceRecord,
+  ForwardMessageInput,
+  Message,
+  MessagePage,
+  UserPublic,
+} from '@org/common';
 import { API_ROUTES, chatMediaQuerySchema, messagesDeltaQuerySchema } from '@org/common';
 import {
   ActiveAccountGuard,
@@ -189,6 +195,7 @@ export class ChatGatewayController {
   @ApiParam({ name: 'id', description: 'Device UUID' })
   @ApiResponse({ status: 200, description: 'Publish result' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not the owner of this device' })
   async publishPrekeys(
     @CurrentUser() user: JwtPayload,
     @Param('id') deviceId: string,
@@ -199,6 +206,12 @@ export class ChatGatewayController {
       hasUserId: !!user.sub,
       hasDeviceId: !!deviceId,
     });
+    const device = await this.send<DeviceRecord | null>(
+      this.chatClient.send(CHAT_PATTERNS.DEVICE_GET, { deviceId }),
+    );
+    if (!device || device.userId !== user.sub) {
+      throw new HttpException('Not the owner of this device', 403);
+    }
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.PREKEYS_PUBLISH, {
         deviceId,
@@ -235,8 +248,12 @@ export class ChatGatewayController {
     if (!isMember) {
       throw new HttpException('Not a member of this chat', 403);
     }
-    return this.send(this.chatClient.send(CHAT_PATTERNS.SENDER_KEY_DISTRIBUTE, { ...dto }));
+    // The URL `:id` is the source of truth — a mismatched body chatId must
+    // not bypass the membership check above.
+    return this.send(this.chatClient.send(CHAT_PATTERNS.SENDER_KEY_DISTRIBUTE, { ...dto, chatId }));
   }
+
+  @Get()
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })

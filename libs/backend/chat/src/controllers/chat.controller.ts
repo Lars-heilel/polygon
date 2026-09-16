@@ -285,6 +285,15 @@ export class ChatController implements IChatController, ISenderKeyController {
     return this.e2eeKeyService.revokeDevice(payload.deviceId);
   }
 
+  @MessagePattern(CHAT_PATTERNS.DEVICE_GET)
+  getDevice(@Payload() payload: { deviceId: string }): Promise<DeviceRecord | null> {
+    this.logger.debug({
+      eventType: 'device_get_requested',
+      hasDeviceId: !!payload.deviceId,
+    });
+    return this.e2eeKeyService.getDevice(payload.deviceId);
+  }
+
   @MessagePattern(CHAT_PATTERNS.PREKEYS_PUBLISH)
   publishPrekeys(@Payload() payload: PublishPrekeysInput): Promise<void> {
     this.logger.debug({

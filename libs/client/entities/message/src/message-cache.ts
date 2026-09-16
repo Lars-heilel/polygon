@@ -3,6 +3,13 @@ type MessagePageLike<TMessage extends { id: string }> = {
   messages: TMessage[];
 };
 
+function hasMessageInPages<
+  TData extends { pages: MessagePageLike<TMessage>[]; pageParams: unknown[] },
+  TMessage extends { id: string },
+>(data: TData, messageId: string): boolean {
+  return data.pages.some((page) => page.messages.some((m) => m.id === messageId));
+}
+
 export function updateMessageInPages<
   TData extends { pages: MessagePageLike<TMessage>[]; pageParams: unknown[] },
   TMessage extends { id: string },
@@ -43,7 +50,12 @@ export function mergeDeltaIntoPages<
   let next = old;
   const deleted = new Set(deletedIds);
   for (const message of messages) {
-    next = appendMessageToPages(next, message);
+    // Upsert: delta edits must update the cached entry instead of being
+    // dropped by the duplicate-id guard in `appendMessageToPages`.
+    next =
+      next && hasMessageInPages(next, message.id)
+        ? updateMessageInPages(next, message)
+        : appendMessageToPages(next, message);
   }
   if (!next) return next;
   if (deleted.size === 0) return next;

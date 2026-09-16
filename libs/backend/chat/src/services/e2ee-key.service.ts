@@ -56,6 +56,17 @@ export class E2eeKeyService implements IE2eeKeyService {
     this.logger.log({ eventType: 'device_revoke_done', hasDeviceId: !!deviceId });
   }
 
+  async getDevice(deviceId: string): Promise<DeviceRecord | null> {
+    this.logger.log({ eventType: 'device_get_requested', hasDeviceId: !!deviceId });
+    const device = await this.repo.findDevice(deviceId);
+    this.logger.log({
+      eventType: 'device_get_done',
+      hasDeviceId: !!deviceId,
+      found: !!device,
+    });
+    return device;
+  }
+
   async publishPrekeys(input: PublishPrekeysInput): Promise<void> {
     this.logger.log({
       eventType: 'prekeys_publish_requested',

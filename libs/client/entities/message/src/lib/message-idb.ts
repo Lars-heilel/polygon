@@ -10,6 +10,40 @@ interface ChatCacheSchema extends DBSchema {
 let lazyDb: Promise<IDBPDatabase<ChatCacheSchema>> | null = null;
 
 /**
+ * Synchronous in-memory mirror of the IndexedDB cache. `initialData` for
+ * suspense queries must be sync, so `useInfiniteMessagesQuery` seeds from
+ * here (instant render when the mirror is warm); the async IndexedDB read in
+ * `syncChatDelta` remains the cold-start fallback after reload.
+ */
+const memoryMirror = new Map<string, Message[]>();
+const MIRROR_KEEP = 200;
+
+function compareByCreatedAt(a: Message, b: Message): number {
+  return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
+}
+
+function mirrorWrite(chatId: string, messages: Message[]): void {
+  const byId = new Map((memoryMirror.get(chatId) ?? []).map((m) => [m.id, m]));
+  for (const message of messages) byId.set(message.id, message);
+  memoryMirror.set(chatId, [...byId.values()].sort(compareByCreatedAt).slice(-MIRROR_KEEP));
+}
+
+function mirrorDelete(chatId: string, messageId: string): void {
+  const cached = memoryMirror.get(chatId);
+  if (cached)
+    memoryMirror.set(
+      chatId,
+      cached.filter((m) => m.id !== messageId),
+    );
+}
+
+/** Sync peek for `initialData`; `undefined` when the mirror is cold. */
+export function peekCachedMessages(chatId: string): Message[] | undefined {
+  const cached = memoryMirror.get(chatId);
+  return cached && cached.length > 0 ? [...cached] : undefined;
+}
+
+/**
  * Lazy `openDB`: module import must stay safe in unit tests (node/jsdom
  * without IndexedDB) — the connection opens on first cache use only.
  */
@@ -30,6 +64,7 @@ function getDb(): Promise<IDBPDatabase<ChatCacheSchema>> {
 }
 
 export async function writeMessagesToCache(chatId: string, messages: Message[]): Promise<void> {
+  mirrorWrite(chatId, messages);
   const db = await getDb();
   const tx = db.transaction('messages', 'readwrite');
   await Promise.all(messages.map((m) => tx.store.put({ ...m, chatId })));
@@ -39,10 +74,13 @@ export async function writeMessagesToCache(chatId: string, messages: Message[]):
 export async function readCachedMessages(chatId: string, limit = 200): Promise<Message[]> {
   const db = await getDb();
   const all = await db.getAllFromIndex('messages', 'by-chat', chatId);
-  return all.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-limit);
+  const sorted = all.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-limit);
+  mirrorWrite(chatId, sorted);
+  return sorted;
 }
 
 export async function deleteCachedMessage(chatId: string, messageId: string): Promise<void> {
+  mirrorDelete(chatId, messageId);
   const db = await getDb();
   const existing = await db.get('messages', messageId);
   if (!existing || existing.chatId !== chatId) return;
@@ -50,6 +88,10 @@ export async function deleteCachedMessage(chatId: string, messageId: string): Pr
 }
 
 export async function evictOldMessages(chatId: string, keep = 200): Promise<void> {
+  const mirrored = memoryMirror.get(chatId);
+  if (mirrored && mirrored.length > keep) {
+    memoryMirror.set(chatId, [...mirrored].sort(compareByCreatedAt).slice(-keep));
+  }
   const db = await getDb();
   const all = await db.getAllFromIndex('messages', 'by-chat', chatId);
   if (all.length <= keep) return;
