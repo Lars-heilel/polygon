@@ -1,9 +1,10 @@
-import type { MessageEnvelope } from '@org/common';
+import type { GroupMessageEnvelope, MessageEnvelope } from '@org/common';
 import {
   E2EE_DECRYPT_FAILED,
   type RatchetSession,
   decryptFromDevice,
-  getOrCreateDeviceId,
+  decryptFromGroup,
+  getActiveDeviceId,
   getOrInitReceiveSession,
   getOwnDeviceKeys,
 } from '@org/crypto-e2ee';
@@ -26,17 +27,28 @@ export async function defaultSessionResolver(
   });
 }
 
+/**
+ * Retry action for the «Не удалось расшифровать» placeholder: re-runs
+ * key-fetch (consume bundle / re-fetch sender chain via the default resolver)
+ * + decrypt. Plaintext messages (no envelopes) are unaffected.
+ */
+export async function retryDecryptMessage(raw: RawMessage): Promise<Message> {
+  return decryptIncomingMessage(raw);
+}
+
 export async function decryptIncomingMessage(
   raw: RawMessage,
-  deviceId: string = getOrCreateDeviceId(),
+  deviceId?: string,
   resolveSession: SessionResolver = defaultSessionResolver,
 ): Promise<Message> {
   const base = normalizeMessage(raw);
+  const activeDeviceId = deviceId ?? resolveActiveDeviceId(raw.chatId);
   const envelope =
     raw.envelopes?.find(
-      (e): e is MessageEnvelope => 'recipientDeviceId' in e && e.recipientDeviceId === deviceId,
+      (e): e is MessageEnvelope =>
+        'recipientDeviceId' in e && e.recipientDeviceId === activeDeviceId,
     ) ?? null;
-  if (!envelope) return base;
+  if (!envelope) return decryptGroupEnvelope(raw, base);
   const session = await resolveSession(envelope);
   if (!session) throw new Error('E2EE_NO_SESSION');
   try {
@@ -49,7 +61,41 @@ export async function decryptIncomingMessage(
         hasMessageId: !!raw.id,
         hasSenderDeviceId: !!envelope.senderDeviceId,
       });
-      return { ...base, text: null, undecryptable: true };
+      return { ...base, text: null, undecryptable: true, raw };
+    }
+    throw err;
+  }
+}
+
+/** Enrolled device id is the primary path; random fallback logs a warn. */
+function resolveActiveDeviceId(chatId: string): string {
+  const active = getActiveDeviceId();
+  if (!active.enrolled) {
+    frontendLog('warn', 'MessageE2ee', 'e2ee_device_id_fallback', { hasChatId: !!chatId });
+  }
+  return active.deviceId;
+}
+
+/**
+ * Group envelopes carry no per-device recipient — decrypt via the sender
+ * chain lookup (memory, hydrated from IndexedDB after reload). Unknown
+ * chains render the undecryptable placeholder with the raw payload attached
+ * so the retry action can re-run key-fetch + decrypt.
+ */
+async function decryptGroupEnvelope(raw: RawMessage, base: Message): Promise<Message> {
+  const envelope = raw.envelopes?.find((e): e is GroupMessageEnvelope => 'chainKeyId' in e) ?? null;
+  if (!envelope) return base;
+  try {
+    const text = await decryptFromGroup(envelope);
+    return { ...base, text, hasLink: /https?:\/\/|www\./i.test(text) };
+  } catch (err) {
+    if (err instanceof Error && err.message === E2EE_DECRYPT_FAILED) {
+      frontendLog('warn', 'MessageE2ee', 'e2ee_group_decrypt_failed', {
+        hasChatId: !!raw.chatId,
+        hasMessageId: !!raw.id,
+        hasSenderDeviceId: !!envelope.senderDeviceId,
+      });
+      return { ...base, text: null, undecryptable: true, raw };
     }
     throw err;
   }

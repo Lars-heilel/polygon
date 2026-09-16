@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
   UseGuards,
@@ -27,10 +28,13 @@ import { SessionGuard } from '@org/auth';
 import {
   type CloneForwardMessageInput,
   CreateDirectChatDto,
+  CreateSelfChatDto,
   DeleteMessageDto,
+  DistributeSenderKeyDto,
   EditMessageDto,
   MarkChatReadDto,
   type PreparedForwardMessage,
+  PublishPrekeysDto,
   RegisterDeviceDto,
   SendMessageDto,
 } from '@org/chat';
@@ -75,19 +79,30 @@ export class ChatGatewayController {
       eventType: 'direct_chat_create_requested',
       hasUserId: !!user.sub,
       hasTargetUserId: !!dto.targetUserId,
+      hasE2eeEnabled: dto.e2eeEnabled !== undefined,
     });
     return this.send(
       this.chatClient.send(CHAT_PATTERNS.CREATE_DIRECT, {
         userId: user.sub,
         targetUserId: dto.targetUserId,
+        ...(dto.e2eeEnabled !== undefined ? { e2eeEnabled: dto.e2eeEnabled } : {}),
       }),
     );
   }
 
   @Post('self')
-  createSelf(@CurrentUser() user: JwtPayload) {
-    this.logger.log({ eventType: 'self_chat_create_requested', hasUserId: !!user.sub });
-    return this.send(this.chatClient.send(CHAT_PATTERNS.CREATE_SELF, { userId: user.sub }));
+  createSelf(@CurrentUser() user: JwtPayload, @Body() dto?: CreateSelfChatDto) {
+    this.logger.log({
+      eventType: 'self_chat_create_requested',
+      hasUserId: !!user.sub,
+      hasE2eeEnabled: dto?.e2eeEnabled !== undefined,
+    });
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.CREATE_SELF, {
+        userId: user.sub,
+        ...(dto?.e2eeEnabled !== undefined ? { e2eeEnabled: dto.e2eeEnabled } : {}),
+      }),
+    );
   }
 
   @Post('devices')
@@ -169,7 +184,59 @@ export class ChatGatewayController {
     );
   }
 
-  @Get()
+  @Put('devices/:id/prekeys')
+  @ApiOperation({ summary: 'Publish prekeys for a device (X3DH)' })
+  @ApiParam({ name: 'id', description: 'Device UUID' })
+  @ApiResponse({ status: 200, description: 'Publish result' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  async publishPrekeys(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') deviceId: string,
+    @Body() dto: PublishPrekeysDto,
+  ) {
+    this.logger.log({
+      eventType: 'prekeys_publish_requested',
+      hasUserId: !!user.sub,
+      hasDeviceId: !!deviceId,
+    });
+    return this.send(
+      this.chatClient.send(CHAT_PATTERNS.PREKEYS_PUBLISH, {
+        deviceId,
+        signedPrekey: dto.signedPrekey,
+        signedPrekeySignature: dto.signedPrekeySignature,
+        oneTimePrekeys: dto.oneTimePrekeys,
+      }),
+    );
+  }
+
+  @Post(':id/sender-keys')
+  @ApiOperation({ summary: 'Distribute a sender-key share to a chat member device' })
+  @ApiParam({ name: 'id', description: 'Chat UUID' })
+  @ApiResponse({ status: 201, description: 'Stored share' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not a member of this chat' })
+  async distributeSenderKey(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') chatId: string,
+    @Body() dto: DistributeSenderKeyDto,
+  ) {
+    this.logger.log({
+      eventType: 'senderkey_distribute_requested',
+      hasUserId: !!user.sub,
+      hasChatId: !!chatId,
+      hasRecipientDeviceId: !!dto.recipientDeviceId,
+    });
+    const isMember = await this.send<boolean>(
+      this.chatClient.send(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+        chatId,
+        userId: user.sub,
+      }),
+    );
+    if (!isMember) {
+      throw new HttpException('Not a member of this chat', 403);
+    }
+    return this.send(this.chatClient.send(CHAT_PATTERNS.SENDER_KEY_DISTRIBUTE, { ...dto }));
+  }
   @ApiOperation({ summary: 'Get all chats for current user' })
   @ApiResponse({ status: 200, description: 'Array of chat objects' })
   @ApiResponse({ status: 401, description: 'Not authenticated' })

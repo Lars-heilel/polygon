@@ -25,13 +25,16 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../../common/tsconfig.lib.json"
+      "path": "../../entities/user/tsconfig.lib.json"
     },
     {
       "path": "../../shared/tsconfig.lib.json"
     },
     {
-      "path": "../../entities/user/tsconfig.lib.json"
+      "path": "../../crypto-e2ee/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../common/tsconfig.lib.json"
     }
   ]
 }

@@ -21,6 +21,7 @@
     "@org/common": "*",
     "@org/crypto-e2ee": "*",
     "@org/shared": "*",
+    "idb": "*",
     "wavesurfer.js": "*"
   }
 }

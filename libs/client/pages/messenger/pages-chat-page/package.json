@@ -18,6 +18,14 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@org/features-user-profile": "*"
+    "@org/entities-chat": "*",
+    "@org/entities-message": "*",
+    "@org/entities-user": "*",
+    "@org/features-chat-socket": "*",
+    "@org/features-emoji": "*",
+    "@org/features-upload-avatar": "*",
+    "@org/features-user-profile": "*",
+    "@org/shared": "*",
+    "@tanstack/react-query": "*"
   }
 }

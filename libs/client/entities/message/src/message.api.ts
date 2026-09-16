@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
+
 import { API_ROUTES } from '@org/common';
-import { authedFetch } from '@org/shared';
+import { authedFetch, frontendLog } from '@org/shared';
 import {
   type InfiniteData,
   useMutation,
@@ -7,7 +9,19 @@ import {
   useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
 
-import { removeMessageFromPages, updateMessageInPages } from './message-cache.js';
+import {
+  evictOldMessages,
+  getLastSync,
+  readCachedMessages,
+  setLastSync,
+  writeMessagesToCache,
+} from './lib/message-idb.js';
+import {
+  appendMessageToPages,
+  mergeDeltaIntoPages,
+  removeMessageFromPages,
+  updateMessageInPages,
+} from './message-cache.js';
 import { decryptIncomingMessage } from './message-e2ee.js';
 import { normalizeMessage } from './message-normalizer.js';
 import type { Message, MessagePage, RawMessage, RawMessagePage } from './message.types.js';
@@ -79,7 +93,8 @@ export const messageApi = {
 };
 
 export function useInfiniteMessagesQuery(chatId: string) {
-  return useSuspenseInfiniteQuery({
+  const queryClient = useQueryClient();
+  const query = useSuspenseInfiniteQuery({
     queryKey: ['messages', chatId],
     queryFn: ({ pageParam }) => messageApi.getMessages(chatId, pageParam),
     initialPageParam: undefined as string | undefined,
@@ -87,6 +102,92 @@ export function useInfiniteMessagesQuery(chatId: string) {
     staleTime: 15_000,
     gcTime: 10 * 60_000,
   });
+  useEffect(() => {
+    void syncChatDelta(chatId, queryClient).catch(() => undefined);
+  }, [chatId, queryClient]);
+  return query;
+}
+
+/**
+ * Cold-start + delta-sync: seed `['messages', chatId]` from the IndexedDB
+ * cache so the list renders instantly, then merge the server delta
+ * (`getLastSync` → `getDelta` → decrypt → patch pages → rewrite cache).
+ * `initialData` cannot be async for suspense queries, so the seed is applied
+ * imperatively when the query is still empty.
+ */
+export async function syncChatDelta(
+  chatId: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+): Promise<void> {
+  const cached = await readCachedMessages(chatId).catch(() => [] as Message[]);
+  if (cached.length > 0) {
+    queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) => {
+      if (old && old.pages.some((p) => p.messages.length > 0)) return old;
+      return { pages: [{ messages: cached, nextCursor: null }], pageParams: [undefined] };
+    });
+  }
+  const lastSync = await getLastSync(chatId).catch(() => null);
+  if (!lastSync) {
+    const current = queryClient.getQueryData<InfiniteData<MessagePage>>(['messages', chatId]);
+    const messages = current?.pages.flatMap((p) => p.messages) ?? cached;
+    if (messages.length > 0) {
+      await writeMessagesToCache(chatId, messages).catch(() => undefined);
+      await evictOldMessages(chatId).catch(() => undefined);
+      const newest = messages[messages.length - 1];
+      if (newest) {
+        await setLastSync(chatId, { since: newest.createdAt, sinceId: newest.id }).catch(
+          () => undefined,
+        );
+      }
+    }
+    return;
+  }
+  let delta: { messages: Message[]; deletedIds: string[] };
+  try {
+    delta = await messageApi.getDelta(chatId, {
+      since: lastSync.since,
+      sinceId: lastSync.sinceId,
+    });
+  } catch (err) {
+    frontendLog('warn', 'MessageDelta', 'delta_sync_failed', { hasChatId: !!chatId });
+    throw err;
+  }
+  if (delta.messages.length === 0 && delta.deletedIds.length === 0) return;
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', chatId], (old) =>
+    mergeDeltaIntoPages(old, delta.messages, delta.deletedIds),
+  );
+  const merged =
+    queryClient
+      .getQueryData<InfiniteData<MessagePage>>(['messages', chatId])
+      ?.pages.flatMap((p) => p.messages) ?? [];
+  if (merged.length > 0) {
+    await writeMessagesToCache(chatId, merged).catch(() => undefined);
+    await evictOldMessages(chatId).catch(() => undefined);
+    const newest = merged[merged.length - 1];
+    if (newest) {
+      await setLastSync(chatId, { since: newest.createdAt, sinceId: newest.id }).catch(
+        () => undefined,
+      );
+    }
+  }
+}
+
+export function useChatDeltaSync(chatId: string): void {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    void syncChatDelta(chatId, queryClient).catch(() => undefined);
+  }, [chatId, queryClient]);
+}
+
+/** Append a live socket message to page 0 and persist it to the cache. */
+export function appendLiveMessage(
+  queryClient: ReturnType<typeof useQueryClient>,
+  message: Message,
+): void {
+  queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', message.chatId], (old) =>
+    appendMessageToPages(old, message),
+  );
+  void writeMessagesToCache(message.chatId, [message]).catch(() => undefined);
 }
 
 export function useEditMessageMutation(chatId: string) {

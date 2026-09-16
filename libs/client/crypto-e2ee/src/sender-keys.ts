@@ -11,6 +11,7 @@ import {
   decryptFromDevice,
   encryptToDevice,
 } from './ratchet-session.js';
+import { loadPersistedChain, persistChain, persistCurrentChain } from './sender-chain-store.js';
 
 export interface SenderKeyContext {
   chatId: string;
@@ -55,9 +56,18 @@ async function generateChainKey(): Promise<{ key: CryptoKey; raw: Uint8Array }> 
   return { key, raw };
 }
 
-function trackOwnedChain(chainKeyId: string, key: CryptoKey, raw: Uint8Array): void {
+function trackOwnedChain(
+  chatId: string,
+  chainKeyId: string,
+  key: CryptoKey,
+  raw: Uint8Array,
+): void {
   chainsByChainKeyId.set(chainKeyId, key);
   rawByChainKeyId.set(chainKeyId, raw);
+  // Mirror to IndexedDB so the chain survives reload; memory stays the
+  // synchronous source of truth (fallback in tests without IndexedDB).
+  void persistChain({ chainKeyId, chatId, chainKey: key }).catch(() => undefined);
+  void persistCurrentChain(chatId, chainKeyId).catch(() => undefined);
 }
 
 async function deriveGroupMessageKey(chainKey: CryptoKey, counter: number): Promise<CryptoKey> {
@@ -84,7 +94,7 @@ export async function createSenderKeyContext(chatId: string): Promise<SenderKeyC
     counter: 0,
   };
   currentByChatId.set(chatId, ctx);
-  trackOwnedChain(ctx.chainKeyId, key, raw);
+  trackOwnedChain(chatId, ctx.chainKeyId, key, raw);
   return ctx;
 }
 
@@ -134,9 +144,16 @@ export async function decryptWithChainKey(
 }
 
 export async function decryptFromGroup(envelope: GroupMessageEnvelope): Promise<string> {
-  const chainKey = chainsByChainKeyId.get(envelope.chainKeyId);
-  if (!chainKey) throw new Error(E2EE_DECRYPT_FAILED);
-  return decryptWithChainKey(envelope, chainKey);
+  const cached = chainsByChainKeyId.get(envelope.chainKeyId);
+  if (cached) return decryptWithChainKey(envelope, cached);
+  // Survives reload: received chains are mirrored to IndexedDB, so a cold
+  // start hydrates them here without any re-fetch.
+  const persisted = await loadPersistedChain(envelope.chainKeyId);
+  if (persisted) {
+    chainsByChainKeyId.set(envelope.chainKeyId, persisted.chainKey);
+    return decryptWithChainKey(envelope, persisted.chainKey);
+  }
+  throw new Error(E2EE_DECRYPT_FAILED);
 }
 
 /**
@@ -153,7 +170,7 @@ export async function rotateSenderKey(chatId: string): Promise<SenderKeyContext>
     counter: 0,
   };
   currentByChatId.set(chatId, ctx);
-  trackOwnedChain(ctx.chainKeyId, key, raw);
+  trackOwnedChain(chatId, ctx.chainKeyId, key, raw);
   return ctx;
 }
 
@@ -210,6 +227,11 @@ export async function unwrapChainKey(
     ['deriveKey'],
   );
   chainsByChainKeyId.set(payload.chainKeyId, chainKey);
+  // Received chains must survive reload: mirror to IndexedDB (no re-fetch
+  // dependency on cold start). Chat id is unknown at unwrap time.
+  void persistChain({ chainKeyId: payload.chainKeyId, chatId: null, chainKey }).catch(
+    () => undefined,
+  );
   return { chainKeyId: payload.chainKeyId, chainKey };
 }
 

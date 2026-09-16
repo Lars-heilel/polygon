@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_ROUTES, type MessageEnvelope, type PrekeyBundleRecord } from '@org/common';
 import {
   encryptToDevice,
-  getOrCreateDeviceId,
+  getActiveDeviceId,
   getOrInitSession,
   listSessionDeviceIds,
 } from '@org/crypto-e2ee';
@@ -305,8 +305,13 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
       type: 'TEXT',
     });
     try {
-      const senderDeviceId = getOrCreateDeviceId();
-      const envelopes = await buildMessageEnvelopes(trimmed, senderDeviceId);
+      const active = getActiveDeviceId();
+      if (!active.enrolled) {
+        frontendLog('warn', 'SendMessage', 'e2ee_device_id_fallback', {
+          hasChatId: !!chatId,
+        });
+      }
+      const envelopes = await buildMessageEnvelopes(trimmed, active.deviceId);
       if (envelopes.length > 0) {
         frontendLog('debug', 'SendMessage', 'message_send_encrypted', {
           hasChatId: !!chatId,

@@ -154,7 +154,7 @@ export class ChatPrismaRepository implements IChatRepository {
     return chat ? toChat(chat) : null;
   }
 
-  async createSelfChat(userId: string): Promise<Chat> {
+  async createSelfChat(userId: string, e2eeEnabled?: boolean): Promise<Chat> {
     try {
       return await this.prisma.$transaction(async (tx) => {
         const chat = await tx.chat.create({
@@ -162,6 +162,7 @@ export class ChatPrismaRepository implements IChatRepository {
             type: 'DIRECT',
             name: 'Личное',
             selfOwnerId: userId,
+            ...(e2eeEnabled !== undefined ? { e2eeEnabled } : {}),
             members: {
               create: { userId },
             },
@@ -227,6 +228,7 @@ export class ChatPrismaRepository implements IChatRepository {
     avatarUrl?: string | null;
     selfOwnerId?: string | null;
     directKey?: string | null;
+    e2eeEnabled?: boolean;
   }): Promise<Chat> {
     const chat = await this.prisma.chat.create({ data, select: CHAT_SELECT_FIELDS });
     return toChat(chat);

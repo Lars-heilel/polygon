@@ -16,5 +16,8 @@
       "scope:client"
     ]
   },
+  "dependencies": {
+    "idb": "*"
+  },
   "sideEffects": false
 }

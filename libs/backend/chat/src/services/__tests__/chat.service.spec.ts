@@ -975,7 +975,7 @@ describe('ChatService', () => {
     await expect(service.createSelfChat('user-1')).resolves.toEqual(existing);
 
     expect(repo.createSelfChat).toHaveBeenCalledTimes(1);
-    expect(repo.createSelfChat).toHaveBeenCalledWith('user-1');
+    expect(repo.createSelfChat).toHaveBeenCalledWith('user-1', undefined);
     expect(repo.createChat).not.toHaveBeenCalled();
     expect(repo.addChatMember).not.toHaveBeenCalled();
   });

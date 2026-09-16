@@ -89,7 +89,11 @@ export class ChatService implements IChatService {
     private readonly e2eeKeys?: IE2eeKeyRepository,
   ) {}
 
-  async createDirectChat(userId: string, targetUserId: string): Promise<Chat> {
+  async createDirectChat(
+    userId: string,
+    targetUserId: string,
+    e2eeEnabled?: boolean,
+  ): Promise<Chat> {
     const isSelfChat = targetUserId === userId;
     const existing = isSelfChat
       ? await this.repo.findSelfChat(userId)
@@ -97,7 +101,7 @@ export class ChatService implements IChatService {
     if (existing) return existing;
 
     if (isSelfChat) {
-      return this.repo.createSelfChat(userId);
+      return this.repo.createSelfChat(userId, e2eeEnabled);
     }
 
     const directKey = buildDirectKey(userId, targetUserId);
@@ -109,6 +113,7 @@ export class ChatService implements IChatService {
         type: 'DIRECT',
         name: null,
         directKey,
+        ...(e2eeEnabled !== undefined ? { e2eeEnabled } : {}),
       });
       await this.repo.addChatMember({ chatId: chat.id, userId });
       await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
@@ -138,9 +143,13 @@ export class ChatService implements IChatService {
     return this.repo.findChatsForUser(userId);
   }
 
-  async createSelfChat(userId: string): Promise<Chat> {
-    this.logger.log({ eventType: 'self_chat_create_requested', hasUserId: !!userId });
-    return this.createDirectChat(userId, userId);
+  async createSelfChat(userId: string, e2eeEnabled?: boolean): Promise<Chat> {
+    this.logger.log({
+      eventType: 'self_chat_create_requested',
+      hasUserId: !!userId,
+      hasE2eeEnabled: e2eeEnabled !== undefined,
+    });
+    return this.createDirectChat(userId, userId, e2eeEnabled);
   }
 
   async getMessages(

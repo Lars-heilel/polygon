@@ -127,6 +127,12 @@ export interface Message {
   forwardContext: MessageForwardContext | null;
   localStatus?: LocalMessageStatus;
   undecryptable?: boolean;
+  /**
+   * Raw server payload kept only on undecryptable envelope messages so the
+   * «Не удалось расшифровать» retry action can re-run key-fetch + decrypt.
+   * Never persisted for decryptable messages.
+   */
+  raw?: RawMessage | null;
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;

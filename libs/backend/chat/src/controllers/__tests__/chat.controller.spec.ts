@@ -56,7 +56,7 @@ describe('ChatController', () => {
 
     await expect(controller.createSelf({ userId: 'user-1' })).resolves.toEqual(chat);
 
-    expect(service.createSelfChat).toHaveBeenCalledWith('user-1');
+    expect(service.createSelfChat).toHaveBeenCalledWith('user-1', undefined);
   });
 
   it('delegates a read marker to the service', async () => {
@@ -218,7 +218,8 @@ describe('ChatController', () => {
     expect(service.getChatDevices).toHaveBeenCalledWith('chat-1', 'user-1');
   });
 
-  it('delegates sender-key distribution, rotation, and revocation', async () => {    const share = {
+  it('delegates sender-key distribution, rotation, and revocation', async () => {
+    const share = {
       chatId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c2',
       chainKeyId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c3',
       senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
@@ -256,11 +257,9 @@ describe('ChatController', () => {
       recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c4',
       wrappedChainKey: 'd3JhcHBlZA==',
     };
-    expect(() => unwired.distributeShare(share)).toThrow(
+    expect(() => unwired.distributeShare(share)).toThrow(expect.objectContaining({ status: 500 }));
+    expect(() => unwired.rotateChain({ chatId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c2' })).toThrow(
       expect.objectContaining({ status: 500 }),
     );
-    expect(() =>
-      unwired.rotateChain({ chatId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c2' }),
-    ).toThrow(expect.objectContaining({ status: 500 }));
   });
 });

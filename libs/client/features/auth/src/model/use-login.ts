@@ -5,6 +5,8 @@ import { ApiError, toast } from '@org/shared';
 import { useLocation, useNavigate } from 'react-router';
 import type { z } from 'zod';
 
+import { enrollDeviceAfterLogin } from './use-device-enrollment.js';
+
 type LoginValues = z.infer<typeof loginSchema>;
 type PostLoginRedirect = { type: 'internal'; to: string } | { type: 'external'; href: string };
 
@@ -21,6 +23,7 @@ export function useLogin() {
     try {
       await mutateAsync(values);
       setAuthenticated(true);
+      void enrollDeviceAfterLogin();
 
       const redirect = getPostLoginRedirect(location.search);
       if (redirect.type === 'external') {

@@ -57,6 +57,22 @@ export function getOrCreateDeviceId(): string {
   }
 }
 
+/**
+ * Persist the enrolled device id so `senderDeviceId` stays stable across
+ * reloads. The enrolled id is the primary path; the random
+ * `getOrCreateDeviceId` fallback remains only for the non-enrolled edge.
+ */
+export function rememberDeviceId(deviceId: string): void {
+  try {
+    (globalThis as { localStorage?: Storage }).localStorage?.setItem(
+      DEVICE_ID_STORAGE_KEY,
+      deviceId,
+    );
+  } catch {
+    // Best-effort only (private mode / no DOM).
+  }
+}
+
 export interface OwnDeviceKeyRefs {
   deviceId: string;
   identityPrivate: CryptoKey;
@@ -68,6 +84,17 @@ let ownDeviceKeys: OwnDeviceKeyRefs | null = null;
 
 export function registerOwnDeviceKeys(keys: OwnDeviceKeyRefs): void {
   ownDeviceKeys = keys;
+}
+
+/**
+ * Primary device-id path for `senderDeviceId`: the enrolled device id when
+ * the client enrolled at login, otherwise the random-`getOrCreateDeviceId`
+ * fallback for the non-enrolled edge (callers log a warn on fallback).
+ */
+export function getActiveDeviceId(): { deviceId: string; enrolled: boolean } {
+  const own = ownDeviceKeys?.deviceId;
+  if (own) return { deviceId: own, enrolled: true };
+  return { deviceId: getOrCreateDeviceId(), enrolled: false };
 }
 
 export function getOwnDeviceKeys(): OwnDeviceKeyRefs | null {

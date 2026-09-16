@@ -16,5 +16,11 @@
       "scope:client"
     ]
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@org/entities-chat": "*",
+    "@org/entities-message": "*",
+    "@org/shared": "*",
+    "@tanstack/react-query": "*"
+  }
 }

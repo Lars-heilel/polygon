@@ -6,13 +6,18 @@ import {
   MessageActionsMenu,
   MessageBubble,
   MessageContent,
+  UndecryptableMessage,
+  retryDecryptMessage,
+  updateMessageInPages,
   useDeleteMessageMutation,
   useInfiniteMessagesQuery,
+  writeMessagesToCache,
 } from '@org/entities-message';
-import type { Message } from '@org/entities-message';
+import type { Message, MessagePage } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import type { AudioTrack, VirtualFeedHandle } from '@org/shared';
-import { Button, Text, VirtualFeed, socket } from '@org/shared';
+import { Button, Text, VirtualFeed, queryClient, socket } from '@org/shared';
+import { type InfiniteData } from '@tanstack/react-query';
 
 import { DeleteMessageModal } from './delete-message-modal';
 import { ForwardMessageModal } from './forward-message-modal';
@@ -46,64 +51,95 @@ export function getMessageVirtualKey(msg: Pick<Message, 'id' | 'clientId'>): str
   return msg.clientId ? `client:${msg.clientId}` : `server:${msg.id}`;
 }
 
-export const ChatMessageRow = memo(({
-  msg,
-  isMine,
-  senderName,
-  senderAvatarUrl,
-  audioQueue,
-  audioQueueIndexByMessageId,
-  groupFlags,
-  onEditMessage,
-  onDeleteMessage,
-  onForwardMessage,
-}: ChatMessageRowProps) => {
-  const showAvatar = groupFlags?.showAvatar ?? true;
-  const showTime = groupFlags?.showTime ?? true;
-  const tight = groupFlags?.tight ?? false;
-  return (
-    <div
-      className={tight ? 'px-4 pb-1' : 'px-4 pb-3'}
-      data-testid="message-row"
-      data-message-id={msg.id}
-      data-message-client-id={msg.clientId ?? undefined}
-      data-message-virtual-key={getMessageVirtualKey(msg)}
-      data-message-type={msg.media?.category ?? msg.type}
-    >
-      <MessageBubble
-        message={msg}
-        isMine={isMine}
-        senderName={senderName}
-        senderAvatarUrl={senderAvatarUrl}
-        showAvatar={showAvatar}
-        showTime={showTime}
-        actionsSlot={
-          <MessageActionsMenu
-            message={msg}
-            isMine={isMine}
-            onEdit={(message) => onEditMessage?.(message)}
-            onForward={(message) => onForwardMessage?.(message)}
-            onDelete={(message) => onDeleteMessage?.(message)}
-          />
-        }
+export const ChatMessageRow = memo(
+  ({
+    msg,
+    isMine,
+    senderName,
+    senderAvatarUrl,
+    audioQueue,
+    audioQueueIndexByMessageId,
+    groupFlags,
+    onEditMessage,
+    onDeleteMessage,
+    onForwardMessage,
+  }: ChatMessageRowProps) => {
+    const showAvatar = groupFlags?.showAvatar ?? true;
+    const showTime = groupFlags?.showTime ?? true;
+    const tight = groupFlags?.tight ?? false;
+    const [isRetryingDecrypt, setIsRetryingDecrypt] = useState(false);
+    const handleRetryDecrypt = useCallback(async () => {
+      if (!msg.raw || isRetryingDecrypt) return;
+      setIsRetryingDecrypt(true);
+      try {
+        const decrypted = await retryDecryptMessage(msg.raw);
+        queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
+          updateMessageInPages<InfiniteData<MessagePage>, Message>(old, decrypted),
+        );
+        await writeMessagesToCache(msg.chatId, [decrypted]);
+      } catch {
+        // Placeholder stays; the next retry (or the next delta sync) recovers.
+      } finally {
+        setIsRetryingDecrypt(false);
+      }
+    }, [msg, isRetryingDecrypt]);
+    return (
+      <div
+        className={tight ? 'px-4 pb-1' : 'px-4 pb-3'}
+        data-testid="message-row"
+        data-message-id={msg.id}
+        data-message-client-id={msg.clientId ?? undefined}
+        data-message-virtual-key={getMessageVirtualKey(msg)}
+        data-message-type={msg.media?.category ?? msg.type}
       >
-        {msg.media ? (
-          <div className="space-y-2">
-            <FileMessage
+        <MessageBubble
+          message={msg}
+          isMine={isMine}
+          senderName={senderName}
+          senderAvatarUrl={senderAvatarUrl}
+          showAvatar={showAvatar}
+          showTime={showTime}
+          actionsSlot={
+            <MessageActionsMenu
               message={msg}
               isMine={isMine}
-              audioQueue={audioQueue}
-              audioQueueIndex={audioQueueIndexByMessageId.get(msg.id)}
+              onEdit={(message) => onEditMessage?.(message)}
+              onForward={(message) => onForwardMessage?.(message)}
+              onDelete={(message) => onDeleteMessage?.(message)}
             />
-            {msg.text ? <MessageContent text={msg.text} isMine={isMine} /> : null}
-          </div>
-        ) : (
-          <MessageContent text={msg.text ?? ''} isMine={isMine} />
-        )}
-      </MessageBubble>
-    </div>
-  );
-});
+          }
+        >
+          {msg.undecryptable ? (
+            <UndecryptableMessage
+              onRetry={handleRetryDecrypt}
+              isRetrying={isRetryingDecrypt}
+            />
+          ) : msg.media ? (
+            <div className="space-y-2">
+              <FileMessage
+                message={msg}
+                isMine={isMine}
+                audioQueue={audioQueue}
+                audioQueueIndex={audioQueueIndexByMessageId.get(msg.id)}
+              />
+              {msg.text ? (
+                <MessageContent
+                  text={msg.text}
+                  isMine={isMine}
+                />
+              ) : null}
+            </div>
+          ) : (
+            <MessageContent
+              text={msg.text ?? ''}
+              isMine={isMine}
+            />
+          )}
+        </MessageBubble>
+      </div>
+    );
+  },
+);
 
 const EmptyState = memo(() => (
   <div className="relative flex-1 h-full w-full overflow-hidden">
@@ -144,7 +180,7 @@ export const VirtualMessageList = memo(function MessageList({
   );
   const currentChat = useMemo(() => chats.find((c) => c.id === chatId), [chats, chatId]);
   const currentChatTitle = useMemo(
-    () => currentChat ? getChatDisplayName(currentChat, me.id) : undefined,
+    () => (currentChat ? getChatDisplayName(currentChat, me.id) : undefined),
     [currentChat, me.id],
   );
 
@@ -152,14 +188,15 @@ export const VirtualMessageList = memo(function MessageList({
     return new Map((currentChat?.members ?? []).map((m) => [m.userId, m.profile]));
   }, [currentChat]);
   const audioQueue = useMemo(
-    () => allMessages
-      .filter((msg) => msg.media?.category === 'AUDIO')
-      .map((msg) => ({
-        id: `audio-${msg.id}`,
-        url: msg.media?.contentUrl ?? '',
-        title: msg.media?.fileName ?? 'Audio',
-        subtitle: 'Audio file',
-      })),
+    () =>
+      allMessages
+        .filter((msg) => msg.media?.category === 'AUDIO')
+        .map((msg) => ({
+          id: `audio-${msg.id}`,
+          url: msg.media?.contentUrl ?? '',
+          title: msg.media?.fileName ?? 'Audio',
+          subtitle: 'Audio file',
+        })),
     [allMessages],
   );
   const audioQueueIndexByMessageId = useMemo(() => {
@@ -176,8 +213,8 @@ export const VirtualMessageList = memo(function MessageList({
   const groupFlagsByKey = useMemo(() => {
     const map = new Map<string, MessageGroupFlags>();
     const withinGap = (a: Message, b: Message) =>
-      a.senderId === b.senderId
-      && Math.abs(+new Date(a.createdAt) - +new Date(b.createdAt)) <= 5 * 60 * 1000;
+      a.senderId === b.senderId &&
+      Math.abs(+new Date(a.createdAt) - +new Date(b.createdAt)) <= 5 * 60 * 1000;
     allMessages.forEach((msg, index) => {
       const prevGrouped = index > 0 && withinGap(allMessages[index - 1], msg);
       const nextGrouped = index < allMessages.length - 1 && withinGap(msg, allMessages[index + 1]);
@@ -281,9 +318,9 @@ export const VirtualMessageList = memo(function MessageList({
         message={messagePendingForward}
         senderName={
           messagePendingForward
-            ? memberProfileMap.get(messagePendingForward.senderId)?.displayName
-              ?? memberProfileMap.get(messagePendingForward.senderId)?.name
-              ?? undefined
+            ? (memberProfileMap.get(messagePendingForward.senderId)?.displayName ??
+              memberProfileMap.get(messagePendingForward.senderId)?.name ??
+              undefined)
             : undefined
         }
         sourceChatTitle={currentChatTitle}

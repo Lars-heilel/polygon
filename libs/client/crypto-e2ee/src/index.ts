@@ -3,13 +3,21 @@ export {
   clearOwnDeviceKeys,
   exportPublicKey,
   generateDeviceKeys,
+  getActiveDeviceId,
   getOrCreateDeviceId,
   getOwnDeviceKeys,
   importPublicKey,
   registerOwnDeviceKeys,
+  rememberDeviceId,
   type DeviceKeyPairs,
   type OwnDeviceKeyRefs,
 } from './device-keys.js';
+export {
+  ENROLLMENT_ONE_TIME_PREKEY_COUNT,
+  ENROLLMENT_SIGNED_PREKEY_SIGNATURE,
+  prepareDeviceEnrollment,
+  type DeviceEnrollment,
+} from './device-enrollment.js';
 export {
   createRecipientSession,
   createSessionFromPrekey,
@@ -36,3 +44,8 @@ export {
   wrapChainKeyForDevice,
   type SenderKeyContext,
 } from './sender-keys.js';
+export {
+  clearPersistedChainsForTests,
+  loadPersistedChain,
+  persistChain,
+} from './sender-chain-store.js';

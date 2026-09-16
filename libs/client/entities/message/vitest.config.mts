@@ -6,7 +6,7 @@ const sourceAlias = (path: string) => fileURLToPath(new URL(path, import.meta.ur
 
 export default defineConfig({
   root: import.meta.dirname,
-  cacheDir: '../../../node_modules/.vite/libs/client/features/auth',
+  cacheDir: '../../../../node_modules/.vite/libs/client/entities/message',
   plugins: [react()],
   resolve: {
     conditions: ['@org/source'],
@@ -14,7 +14,6 @@ export default defineConfig({
       '@org/common': sourceAlias('../../../common/src/index.ts'),
       '@org/shared': sourceAlias('../../shared/src/index.ts'),
       '@org/crypto-e2ee': sourceAlias('../../crypto-e2ee/src/index.ts'),
-      '@org/entities-user': sourceAlias('../../entities/user/src/index.ts'),
     },
   },
   test: {

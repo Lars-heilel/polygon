@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Inject,
-  InternalServerErrorException,
-  Logger,
-  Optional,
-} from '@nestjs/common';
+import { Controller, Inject, InternalServerErrorException, Logger, Optional } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import type {
   Chat,
@@ -63,13 +57,19 @@ export class ChatController implements IChatController, ISenderKeyController {
   }
 
   @MessagePattern(CHAT_PATTERNS.CREATE_DIRECT)
-  createDirect(@Payload() payload: { userId: string; targetUserId: string }): Promise<Chat> {
-    return this.chatService.createDirectChat(payload.userId, payload.targetUserId);
+  createDirect(
+    @Payload() payload: { userId: string; targetUserId: string; e2eeEnabled?: boolean },
+  ): Promise<Chat> {
+    return this.chatService.createDirectChat(
+      payload.userId,
+      payload.targetUserId,
+      payload.e2eeEnabled,
+    );
   }
 
   @MessagePattern(CHAT_PATTERNS.CREATE_SELF)
-  createSelf(@Payload() payload: { userId: string }): Promise<Chat> {
-    return this.chatService.createSelfChat(payload.userId);
+  createSelf(@Payload() payload: { userId: string; e2eeEnabled?: boolean }): Promise<Chat> {
+    return this.chatService.createSelfChat(payload.userId, payload.e2eeEnabled);
   }
 
   @MessagePattern(CHAT_PATTERNS.GET_CHATS)

@@ -1,8 +1,19 @@
 import { useEffect, useRef } from 'react';
 
-import { chatApi, type Chat, useChatStore } from '@org/entities-chat';
-import type { Message } from '@org/entities-message';
+import { type Chat, chatApi, useChatStore } from '@org/entities-chat';
+import {
+  type Message,
+  type MessagePage,
+  type RawMessage,
+  appendMessageToPages,
+  decryptIncomingMessage,
+  deleteCachedMessage,
+  removeMessageFromPages,
+  updateMessageInPages,
+  writeMessagesToCache,
+} from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
+import type { InfiniteData } from '@tanstack/react-query';
 
 const MARK_READ_DEBOUNCE_MS = 1000;
 
@@ -78,6 +89,57 @@ export function useChatSocket(chatId: string) {
         clearTimeout(markReadTimerRef.current);
         markReadTimerRef.current = null;
       }
+    };
+  }, [chatId]);
+
+  useEffect(() => {
+    const onCacheNewMessage = (raw: RawMessage) => {
+      if (!raw || raw.chatId !== chatIdRef.current) return;
+      void decryptIncomingMessage(raw)
+        .then((message) => {
+          queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', message.chatId], (old) =>
+            appendMessageToPages<InfiniteData<MessagePage>, Message>(old, message),
+          );
+          return writeMessagesToCache(message.chatId, [message]);
+        })
+        .catch(() => {
+          frontendLog('warn', 'ChatSocket', 'live_message_decrypt_failed', {
+            hasChatId: !!raw.chatId,
+            hasMessageId: !!raw.id,
+          });
+        });
+    };
+    const onCacheUpdatedMessage = (raw: RawMessage) => {
+      if (!raw || raw.chatId !== chatIdRef.current) return;
+      void decryptIncomingMessage(raw)
+        .then((message) => {
+          queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', message.chatId], (old) =>
+            updateMessageInPages<InfiniteData<MessagePage>, Message>(old, message),
+          );
+          return writeMessagesToCache(message.chatId, [message]);
+        })
+        .catch(() => {
+          frontendLog('warn', 'ChatSocket', 'live_message_decrypt_failed', {
+            hasChatId: !!raw.chatId,
+            hasMessageId: !!raw.id,
+          });
+        });
+    };
+    const onCacheDeletedMessage = (payload: { chatId: string; messageId: string }) => {
+      if (!payload || payload.chatId !== chatIdRef.current) return;
+      queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', payload.chatId], (old) =>
+        removeMessageFromPages<InfiniteData<MessagePage>, Message>(old, payload.messageId),
+      );
+      void deleteCachedMessage(payload.chatId, payload.messageId).catch(() => undefined);
+    };
+    socket.on('message:new', onCacheNewMessage);
+    socket.on('message:updated', onCacheUpdatedMessage);
+    socket.on('message:deleted', onCacheDeletedMessage);
+
+    return () => {
+      socket.off('message:new', onCacheNewMessage);
+      socket.off('message:updated', onCacheUpdatedMessage);
+      socket.off('message:deleted', onCacheDeletedMessage);
     };
   }, [chatId]);
 }

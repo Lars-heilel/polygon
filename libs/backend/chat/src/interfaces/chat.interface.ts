@@ -175,7 +175,7 @@ export interface IChatRepository {
   findDirectChatBetween(userId1: string, userId2: string): Promise<Chat | null>;
   findDirectChatByKey(directKey: string): Promise<Chat | null>;
   findSelfChat(userId: string): Promise<Chat | null>;
-  createSelfChat(userId: string): Promise<Chat>;
+  createSelfChat(userId: string, e2eeEnabled?: boolean): Promise<Chat>;
   findChatsForUser(userId: string): Promise<ChatWithPreview[]>;
   createChat(data: {
     type: ChatType;
@@ -183,6 +183,7 @@ export interface IChatRepository {
     avatarUrl?: string | null;
     selfOwnerId?: string | null;
     directKey?: string | null;
+    e2eeEnabled?: boolean;
   }): Promise<Chat>;
   deleteChat(id: string): Promise<void>;
   findChatMember(chatId: string, userId: string): Promise<ChatMember | null>;
@@ -243,8 +244,8 @@ export interface IChatRepository {
 }
 
 export interface IChatService {
-  createDirectChat(userId: string, targetUserId: string): Promise<Chat>;
-  createSelfChat(userId: string): Promise<Chat>;
+  createDirectChat(userId: string, targetUserId: string, e2eeEnabled?: boolean): Promise<Chat>;
+  createSelfChat(userId: string, e2eeEnabled?: boolean): Promise<Chat>;
   getChats(userId: string): Promise<ChatWithPreview[]>;
   getMessages(
     chatId: string,
@@ -283,8 +284,12 @@ export interface IChatService {
 }
 
 export interface IChatController {
-  createDirect(payload: { userId: string; targetUserId: string }): Promise<Chat>;
-  createSelf(payload: { userId: string }): Promise<Chat>;
+  createDirect(payload: {
+    userId: string;
+    targetUserId: string;
+    e2eeEnabled?: boolean;
+  }): Promise<Chat>;
+  createSelf(payload: { userId: string; e2eeEnabled?: boolean }): Promise<Chat>;
   getChats(payload: { userId: string }): Promise<ChatWithPreview[]>;
   getMessages(payload: {
     chatId: string;
