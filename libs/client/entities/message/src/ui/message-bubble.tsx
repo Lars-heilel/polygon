@@ -64,7 +64,7 @@ export const MessageBubble = memo(function MessageBubble({
         data-testid="message-bubble"
         className={cn(
           'msg-bubble max-w-[min(82vw,32rem)] min-w-0',
-          isMine ? 'msg-bubble--mine' : 'msg-bubble--theirs bg-surface-elevated',
+          isMine ? 'msg-bubble--mine' : 'msg-bubble--theirs',
           isVisualMedia && 'msg-bubble--media relative',
           isEmojiOnly && 'msg-bubble--emoji-only',
           !isVisualMedia && !isEmojiOnly && 'px-4 py-2.5',

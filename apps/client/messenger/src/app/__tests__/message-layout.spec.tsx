@@ -206,4 +206,40 @@ describe('message layout', () => {
     expect(screen.getByText('22.07.2026 13:00')).toBeTruthy();
     expect(screen.queryByText('14.07.2026 13:00')).toBeNull();
   });
+
+  it('renders incoming emoji-only without surface background utility', () => {
+    render(
+      <MessageBubble
+        message={{ ...message, text: '😆' }}
+        isMine={false}
+        senderName="User"
+      >
+        <MessageContent text="😆" isMine={false} />
+      </MessageBubble>,
+    );
+
+    const bubble = screen.getByTestId('message-bubble');
+    expect(bubble.className).toContain('msg-bubble--emoji-only');
+    expect(bubble.className).toContain('msg-bubble--theirs');
+    // Regression: bg-surface-elevated utility (utilities layer) overrode
+    // .msg-bubble--emoji-only bg-transparent (components layer) for incoming messages.
+    expect(bubble.className).not.toContain('bg-surface-elevated');
+  });
+
+  it('keeps bubble padding for regular incoming text messages', () => {
+    render(
+      <MessageBubble
+        message={{ ...message, text: 'hello world' }}
+        isMine={false}
+        senderName="User"
+      >
+        <MessageContent text="hello world" isMine={false} />
+      </MessageBubble>,
+    );
+
+    const bubble = screen.getByTestId('message-bubble');
+    expect(bubble.className).not.toContain('msg-bubble--emoji-only');
+    expect(bubble.className).toContain('msg-bubble--theirs');
+    expect(bubble.className).toContain('px-4');
+  });
 });
