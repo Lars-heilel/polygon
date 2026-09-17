@@ -1,5 +1,4 @@
 import 'fake-indexeddb/auto';
-
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -13,11 +12,9 @@ import { generateDeviceKeys } from '../device-keys.js';
 
 async function testKeys() {
   const { identityKeyPair, signedPrekeyPair } = await generateDeviceKeys();
-  const oneTime = await crypto.subtle.generateKey(
-    { name: 'ECDH', namedCurve: 'P-256' },
-    true,
-    ['deriveBits'],
-  );
+  const oneTime = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
+    'deriveBits',
+  ]);
   return {
     deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
     identityPrivate: identityKeyPair.privateKey,
@@ -49,11 +46,9 @@ describe('device-key-store', () => {
     // Hydrated keys must be usable for real derivation.
     registerOwnDeviceKeys(loaded!);
     const { importPublicKey } = await import('../device-keys.js');
-    const peer = await crypto.subtle.generateKey(
-      { name: 'ECDH', namedCurve: 'P-256' },
-      true,
-      ['deriveBits'],
-    );
+    const peer = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
+      'deriveBits',
+    ]);
     const peerPub = await importPublicKey(
       Buffer.from(await crypto.subtle.exportKey('raw', peer.publicKey)).toString('base64'),
     );

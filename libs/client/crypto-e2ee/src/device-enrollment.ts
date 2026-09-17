@@ -1,3 +1,4 @@
+import { persistOwnDeviceKeys } from './device-key-store.js';
 import {
   exportPublicKey,
   generateDeviceKeys,
@@ -5,7 +6,6 @@ import {
   registerOwnDeviceKeys,
   rememberDeviceId,
 } from './device-keys.js';
-import { persistOwnDeviceKeys } from './device-key-store.js';
 
 export const ENROLLMENT_ONE_TIME_PREKEY_COUNT = 20;
 /** Placeholder signature: ECDH keys cannot sign; verify is skipped server-side. */

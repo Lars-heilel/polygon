@@ -1,5 +1,6 @@
 import { API_ROUTES, type DeviceRecord } from '@org/common';
 import {
+  type OwnDeviceKeyRefs,
   clearOwnDeviceKeys,
   clearPersistedDeviceKeys,
   getOwnDeviceKeys,
@@ -7,7 +8,6 @@ import {
   prepareDeviceEnrollment,
   registerOwnDeviceKeys,
   resetDeviceId,
-  type OwnDeviceKeyRefs,
 } from '@org/crypto-e2ee';
 import { authApi } from '@org/entities-user';
 import { ApiError, authedFetch, frontendLog, queryClient } from '@org/shared';

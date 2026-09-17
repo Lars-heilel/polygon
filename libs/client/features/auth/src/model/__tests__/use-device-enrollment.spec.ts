@@ -1,4 +1,8 @@
+import { ApiError } from '@org/shared';
+import { queryClient } from '@org/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ensureDeviceEnrolled } from '../use-device-enrollment.js';
 
 const cryptoMocks = vi.hoisted(() => ({
   getOwnDeviceKeys: vi.fn(),
@@ -27,11 +31,6 @@ vi.mock('@org/shared', async (importOriginal) => ({
   authedFetch: sharedMocks.authedFetch,
   frontendLog: vi.fn(),
 }));
-
-import { ApiError } from '@org/shared';
-import { queryClient } from '@org/shared';
-
-import { ensureDeviceEnrolled } from '../use-device-enrollment.js';
 
 const ME_ID = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c0';
 const DEVICE_ID = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1';
