@@ -182,7 +182,10 @@ export async function buildMessageEnvelopes(
   opts: { e2eeEnabled?: boolean } = {},
 ): Promise<MessageEnvelope[]> {
   const devices = await fetchChatDevices(chatId);
-  const recipients = devices.map((d) => d.deviceId).filter((id) => id !== senderDeviceId);
+  // NOTE: the sender's own device stays in the fan-out. Without a
+  // self-addressed envelope the sender can never read own history after
+  // a reload (or on another device) — the echo carries no plaintext.
+  const recipients = devices.map((d) => d.deviceId);
   const envelopes: MessageEnvelope[] = [];
   for (const deviceId of recipients) {
     const session = await sessionForRecipient(chatId, deviceId);
@@ -195,8 +198,10 @@ export async function buildMessageEnvelopes(
       });
     }
   }
-  // Fail closed in E2EE chats: no silent plaintext fallback downstream.
-  if (opts.e2eeEnabled && envelopes.length === 0) {
+  // Fail closed in E2EE chats: a self-only batch still strands the peer,
+  // so the gate counts envelopes for OTHER devices, not the sender's own.
+  const peerEnvelopes = envelopes.filter((e) => e.recipientDeviceId !== senderDeviceId);
+  if (opts.e2eeEnabled && peerEnvelopes.length === 0) {
     throw new Error(E2EE_NO_RECIPIENT_KEYS);
   }
   return envelopes;

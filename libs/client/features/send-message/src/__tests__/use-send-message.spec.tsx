@@ -156,8 +156,11 @@ describe('buildMessageEnvelopes', () => {
       (url as string).includes('/prekeys'),
     ).length;
 
-    expect(prekeyCallsAfterFirst).toBe(1);
-    expect(prekeyCallsAfterSecond).toBe(1);
+    // Two fetches on a fresh build: own bundle (null here, skipped) + peer.
+    // Second build reuses the cached peer session; only the missing own
+    // bundle is refetched.
+    expect(prekeyCallsAfterFirst).toBe(2);
+    expect(prekeyCallsAfterSecond).toBe(3);
   });
 
   it('throws E2EE_NO_RECIPIENT_KEYS for E2EE chats with no recipients', async () => {
@@ -306,5 +309,93 @@ describe('useSendMessage composer', () => {
         mockAuthedFetch.mock.calls.some(([url]) => (url as string).endsWith('/sender-keys')),
       ).toBe(true);
     });
+  });
+});
+
+describe('buildMessageEnvelopes self fan-out', () => {
+  const SELF = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9d1';
+  const PEER = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9d2';
+
+  async function enrollSelf() {
+    const identity = await genKey();
+    const signed = await genKey();
+    registerOwnDeviceKeys({
+      deviceId: SELF,
+      identityPrivate: identity.privateKey,
+      signedPrekeyPrivate: signed.privateKey,
+    });
+    return { identity, signed };
+  }
+
+  async function selfBundle(identity: CryptoKeyPair, signed: CryptoKeyPair) {
+    return {
+      deviceId: SELF,
+      identityKey: await exportPub(identity.publicKey),
+      signedPrekey: await exportPub(signed.publicKey),
+      signedPrekeySignature: 'c2ln',
+      oneTimePrekey: null,
+    };
+  }
+
+  it('addresses an envelope to the sender device so own history stays readable', async () => {
+    const self = await enrollSelf();
+    const peer = await makeRemoteDevice(PEER);
+    const bundles = new Map([
+      [SELF, await selfBundle(self.identity, self.signed)],
+      [peer.deviceId, await bundleFor(peer)],
+    ]);
+    routeFetch({
+      devices: [deviceRecord(SELF, 'user-1'), deviceRecord(peer.deviceId, 'user-2')],
+      bundles,
+      sharePosts: [],
+    });
+
+    const envelopes = await buildMessageEnvelopes('send-chat-self-1', 'hi self', SELF, {
+      e2eeEnabled: true,
+    });
+
+    expect(envelopes).toHaveLength(2);
+    const own = envelopes.find((e) => e.recipientDeviceId === SELF);
+    expect(own).toBeDefined();
+    const selfSession = await createRecipientSession({
+      ephemeralKeyB64: own?.ephemeralKey as string,
+      ownIdentityPrivate: self.identity.privateKey,
+      ownSignedPrekeyPrivate: self.signed.privateKey,
+      theirDeviceId: SELF,
+    });
+    await expect(decryptFromDevice(own!, selfSession)).resolves.toBe('hi self');
+  });
+
+  it('still throws E2EE_NO_RECIPIENT_KEYS when only self is reachable in an E2EE chat', async () => {
+    const self = await enrollSelf();
+    // Unique peer id: send sessions are cached per device module-wide.
+    const lonelyPeer = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9d3';
+    const bundles = new Map([[SELF, await selfBundle(self.identity, self.signed)]]);
+    routeFetch({
+      devices: [deviceRecord(SELF, 'user-1'), deviceRecord(lonelyPeer, 'user-2')],
+      bundles,
+      sharePosts: [],
+    });
+
+    await expect(
+      buildMessageEnvelopes('send-chat-self-2', 'hi', SELF, { e2eeEnabled: true }),
+    ).rejects.toThrow('E2EE_NO_RECIPIENT_KEYS');
+  });
+
+  it('resolves self-only in legacy chats without throwing', async () => {
+    const self = await enrollSelf();
+    // Unique peer id: send sessions are cached per device module-wide.
+    const legacyPeer = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9d4';
+    const bundles = new Map([[SELF, await selfBundle(self.identity, self.signed)]]);
+    routeFetch({
+      devices: [deviceRecord(SELF, 'user-1'), deviceRecord(legacyPeer, 'user-2')],
+      bundles,
+      sharePosts: [],
+    });
+
+    const envelopes = await buildMessageEnvelopes('send-chat-self-3', 'hi', SELF);
+
+    expect(envelopes).toHaveLength(1);
+    expect(envelopes[0]?.recipientDeviceId).toBe(SELF);
   });
 });
