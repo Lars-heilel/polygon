@@ -975,9 +975,25 @@ describe('ChatService', () => {
     await expect(service.createSelfChat('user-1')).resolves.toEqual(existing);
 
     expect(repo.createSelfChat).toHaveBeenCalledTimes(1);
-    expect(repo.createSelfChat).toHaveBeenCalledWith('user-1', undefined);
+    expect(repo.createSelfChat).toHaveBeenCalledWith('user-1', true);
     expect(repo.createChat).not.toHaveBeenCalled();
     expect(repo.addChatMember).not.toHaveBeenCalled();
+  });
+
+  it('creates self chats E2EE by default but respects explicit opt-out', async () => {
+    const repo = repoMock();
+    repo.findSelfChat.mockResolvedValue(null);
+    repo.createSelfChat.mockImplementation(async (_userId: string, flag?: boolean) => ({
+      id: 'chat-self',
+      e2eeEnabled: flag ?? true,
+    }));
+    const service = new ChatService(repo);
+
+    await service.createSelfChat('user-1');
+    expect(repo.createSelfChat).toHaveBeenLastCalledWith('user-1', true);
+
+    await service.createSelfChat('user-1', false);
+    expect(repo.createSelfChat).toHaveBeenLastCalledWith('user-1', false);
   });
 
   it('preserves forwarded source sender and original creation time', async () => {
@@ -1272,9 +1288,28 @@ describe('ChatService', () => {
     await service.createDirectChat('user-b', 'user-a');
 
     expect(repo.createChat).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'DIRECT', directKey: 'direct:user-a:user-b' }),
+      expect.objectContaining({
+        type: 'DIRECT',
+        directKey: 'direct:user-a:user-b',
+        e2eeEnabled: true,
+      }),
     );
     expect(repo.addChatMember).toHaveBeenCalledTimes(2);
+  });
+
+  it('respects explicit E2EE opt-out on direct chat creation', async () => {
+    const repo = repoMock();
+    repo.findDirectChatBetween.mockResolvedValue(null);
+    repo.findDirectChatByKey.mockResolvedValue(null);
+    repo.createChat.mockImplementation(async (data) => ({ id: 'chat-new', ...data }) as never);
+    repo.findChatById.mockResolvedValue({ id: 'chat-new' } as never);
+    const service = new ChatService(repo);
+
+    await service.createDirectChat('user-a', 'user-b', false);
+
+    expect(repo.createChat).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'DIRECT', e2eeEnabled: false }),
+    );
   });
 
   it('recovers the race winner on directKey conflict', async () => {

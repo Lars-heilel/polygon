@@ -35,10 +35,7 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../../libs/client/features/user-profile/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../libs/client/features/send-message/tsconfig.lib.json"
+      "path": "../../../libs/client/features/auth/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/pages/system/pages-not-found/tsconfig.lib.json"
@@ -54,9 +51,6 @@
     },
     {
       "path": "../../../libs/client/pages/system/pages-landing/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../libs/common/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/pages/auth/pages-reset-password/tsconfig.lib.json"
@@ -92,10 +86,19 @@
       "path": "../../../libs/client/pages/messenger/pages-chats-layout/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/client/features/notifications/tsconfig.lib.json"
+      "path": "../../../libs/common/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/entities/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/features/user-profile/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/features/send-message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/client/features/notifications/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/client/entities/message/tsconfig.lib.json"

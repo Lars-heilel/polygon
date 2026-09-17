@@ -121,10 +121,10 @@ describe('chat prisma schema id and type contract', () => {
     expect(modelBlock('Message')).toMatch(/@@index\(\[chatId.*createdAt.*id.*\]\)/);
   });
 
-  it('marks E2EE chats explicitly with a default-off flag', () => {
+  it('marks E2EE chats explicitly with a default-on flag', () => {
     const line = fieldLine(modelBlock('Chat'), 'e2eeEnabled');
     expect(line).toContain('Boolean');
-    expect(line).toContain('@default(false)');
+    expect(line).toContain('@default(true)');
   });
 
   it('stores one signed prekey per device for upsert-on-publish', () => {

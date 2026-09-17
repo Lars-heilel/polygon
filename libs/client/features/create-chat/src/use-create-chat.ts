@@ -8,12 +8,13 @@ import { useNavigate } from 'react-router';
 export function useCreateChat() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [e2eeEnabled, setE2eeEnabled] = useState(true);
   const { mutate: createChat, isPending } = useCreateDirectChatMutation();
   const search = useSearchUsers();
 
   const handleSelectUser = (targetUserId: string) => {
     createChat(
-      { targetUserId },
+      { targetUserId, e2eeEnabled },
       {
         onSuccess: (data: Chat) => {
           setIsOpen(false);
@@ -27,6 +28,8 @@ export function useCreateChat() {
   return {
     isOpen,
     setIsOpen,
+    e2eeEnabled,
+    setE2eeEnabled,
     searchQuery: search.inputValue,
     setSearchQuery: search.onChange,
     users: search.results,

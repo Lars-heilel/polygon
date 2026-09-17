@@ -22,6 +22,8 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
   const {
     isOpen: isCreateChatOpen,
     setIsOpen: setIsCreateChatOpen,
+    e2eeEnabled: isCreateChatE2eeEnabled,
+    setE2eeEnabled: setIsCreateChatE2eeEnabled,
     users,
     searchQuery: userSearchQuery,
     setSearchQuery: setUserSearchQuery,
@@ -134,6 +136,8 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
         onSearchChange={setUserSearchQuery}
         onSelectUser={handleSelectUser}
         isCreating={isCreating}
+        e2eeEnabled={isCreateChatE2eeEnabled}
+        onE2eeChange={setIsCreateChatE2eeEnabled}
       />
 
       {profileUserId && (

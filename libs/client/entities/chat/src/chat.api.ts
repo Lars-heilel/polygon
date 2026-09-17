@@ -30,7 +30,7 @@ export type Chat = Omit<ChatBase, 'createdAt' | 'updatedAt'> & {
 export const chatApi = {
   getChats: () => authedFetch<Chat[]>(API_ROUTES.chats.root),
 
-  createDirectChat: (body: { targetUserId: string }) =>
+  createDirectChat: (body: { targetUserId: string; e2eeEnabled?: boolean }) =>
     authedFetch<Chat>(API_ROUTES.chats.direct, {
       method: 'POST',
       body: JSON.stringify(body),

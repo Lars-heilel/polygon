@@ -1,4 +1,4 @@
-import { Avatar, Input, Modal, Text } from '@org/shared';
+import { Avatar, Input, Modal, Text, Toggle } from '@org/shared';
 
 interface User {
   id: string;
@@ -15,6 +15,8 @@ interface CreateChatModalProps {
   onSearchChange: (value: string) => void;
   onSelectUser: (userId: string) => void;
   isCreating?: boolean;
+  e2eeEnabled: boolean;
+  onE2eeChange: (enabled: boolean) => void;
 }
 
 export function CreateChatModal({
@@ -25,6 +27,8 @@ export function CreateChatModal({
   onSearchChange,
   onSelectUser,
   isCreating = false,
+  e2eeEnabled,
+  onE2eeChange,
 }: CreateChatModalProps) {
   return (
     <Modal
@@ -60,6 +64,29 @@ export function CreateChatModal({
       </div>
 
       <Modal.Body className="max-h-96 p-2">
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <div className="flex-1">
+            <Text
+              size="sm"
+              weight="medium"
+            >
+              End-to-end encryption
+            </Text>
+            <Text
+              size="xs"
+              color="muted"
+            >
+              Only you and the other person can read messages
+            </Text>
+          </div>
+          <Toggle
+            checked={e2eeEnabled}
+            onChange={onE2eeChange}
+            disabled={isCreating}
+            aria-label="End-to-end encryption"
+          />
+        </div>
+
         {users.map((user) => (
           <button
             key={user.id}

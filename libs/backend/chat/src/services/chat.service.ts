@@ -93,7 +93,7 @@ export class ChatService implements IChatService {
   async createDirectChat(
     userId: string,
     targetUserId: string,
-    e2eeEnabled?: boolean,
+    e2eeEnabled = true,
   ): Promise<Chat> {
     const isSelfChat = targetUserId === userId;
     const existing = isSelfChat
@@ -114,7 +114,7 @@ export class ChatService implements IChatService {
         type: 'DIRECT',
         name: null,
         directKey,
-        ...(e2eeEnabled !== undefined ? { e2eeEnabled } : {}),
+        e2eeEnabled,
       });
       await this.repo.addChatMember({ chatId: chat.id, userId });
       await this.repo.addChatMember({ chatId: chat.id, userId: targetUserId });
@@ -144,7 +144,7 @@ export class ChatService implements IChatService {
     return this.repo.findChatsForUser(userId);
   }
 
-  async createSelfChat(userId: string, e2eeEnabled?: boolean): Promise<Chat> {
+  async createSelfChat(userId: string, e2eeEnabled = true): Promise<Chat> {
     this.logger.log({
       eventType: 'self_chat_create_requested',
       hasUserId: !!userId,

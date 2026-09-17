@@ -141,6 +141,34 @@ export class ChatGatewayController {
     );
   }
 
+  @Get('devices/:id')
+  @ApiOperation({ summary: 'Get own E2EE device record (enrollment verify)' })
+  @ApiParam({ name: 'id', description: 'Device UUID' })
+  @ApiResponse({ status: 200, description: 'Device record' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Not the owner of this device' })
+  @ApiResponse({ status: 404, description: 'Device not enrolled' })
+  async getDevice(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', new ParseUUIDPipe()) deviceId: string,
+  ) {
+    this.logger.log({
+      eventType: 'device_get_requested',
+      hasUserId: !!user.sub,
+      hasDeviceId: !!deviceId,
+    });
+    const device = await this.send<DeviceRecord | null>(
+      this.chatClient.send(CHAT_PATTERNS.DEVICE_GET, { deviceId }),
+    );
+    if (!device) {
+      throw new HttpException('Device not enrolled', 404);
+    }
+    if (device.userId !== user.sub) {
+      throw new HttpException('Not the owner of this device', 403);
+    }
+    return device;
+  }
+
   @Delete('devices/:id')
   @ApiOperation({ summary: 'Revoke an E2EE device of the current user' })
   @ApiParam({ name: 'id', description: 'Device UUID' })

@@ -58,6 +58,21 @@ export function getOrCreateDeviceId(): string {
 }
 
 /**
+ * Drop the stored device id and mint a fresh one. Used when the stored id
+ * turned out to belong to another user (shared browser, stale storage) —
+ * reusing it would hit the server ownership guard.
+ */
+export function resetDeviceId(): string {
+  try {
+    const storage = (globalThis as { localStorage?: Storage }).localStorage;
+    const id = crypto.randomUUID();
+    storage?.setItem(DEVICE_ID_STORAGE_KEY, id);
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+/**
  * Persist the enrolled device id so `senderDeviceId` stays stable across
  * reloads. The enrolled id is the primary path; the random
  * `getOrCreateDeviceId` fallback remains only for the non-enrolled edge.

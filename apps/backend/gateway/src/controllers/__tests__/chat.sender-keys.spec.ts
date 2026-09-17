@@ -260,3 +260,58 @@ describe('ChatGatewayController sender-key distribution', () => {
     expect(rotateCalls).toHaveLength(0);
   });
 });
+
+describe('ChatGatewayController device verify', () => {
+  const DEVICE_ID = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1';
+
+  function setup() {
+    const chatClient = {
+      send: jest.fn(() => of({ ok: true })),
+    };
+    const controller = new ChatGatewayController(
+      chatClient as never,
+      { send: jest.fn(() => of([])) } as never,
+      {} as never,
+      {} as never,
+    );
+    return { chatClient, controller };
+  }
+
+  it('returns the device record for the owner', async () => {
+    const { chatClient, controller } = setup();
+    const record = {
+      deviceId: DEVICE_ID,
+      userId: 'user-1',
+      identityKey: 'aWtlaQ==',
+      registrationId: 7,
+    };
+    chatClient.send.mockReturnValueOnce(of(record));
+
+    await expect(
+      controller.getDevice({ sub: 'user-1' } as never, DEVICE_ID),
+    ).resolves.toEqual(record);
+    expect(chatClient.send).toHaveBeenCalledWith(CHAT_PATTERNS.DEVICE_GET, {
+      deviceId: DEVICE_ID,
+    });
+  });
+
+  it('rejects a foreign device with 403', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(
+      of({ deviceId: DEVICE_ID, userId: 'user-2', identityKey: 'aWtlaQ==', registrationId: 7 }),
+    );
+
+    await expect(
+      controller.getDevice({ sub: 'user-1' } as never, DEVICE_ID),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('rejects a missing device with 404', async () => {
+    const { chatClient, controller } = setup();
+    chatClient.send.mockReturnValueOnce(of(null));
+
+    await expect(
+      controller.getDevice({ sub: 'user-1' } as never, DEVICE_ID),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});

@@ -21,7 +21,7 @@ model Chat {
   avatarUrl     String?   @db.VarChar(2048) @map("avatar_url")
   selfOwnerId   String?   @unique @db.Uuid @map("self_owner_id")
   directKey     String?   @db.VarChar(128) @map("direct_key")
-  e2eeEnabled   Boolean   @default(false) @map("e2ee_enabled")
+  e2eeEnabled   Boolean   @default(true) @map("e2ee_enabled")
   lastMessageId BigInt?   @map("last_message_id")
   lastMessageAt DateTime? @db.Timestamptz(3) @map("last_message_at")
   createdAt     DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")

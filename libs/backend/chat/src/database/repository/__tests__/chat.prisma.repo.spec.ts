@@ -88,6 +88,7 @@ describe('ChatPrismaRepository', () => {
           type: 'DIRECT',
           name: 'Личное',
           selfOwnerId: 'user-1',
+          e2eeEnabled: true,
           members: { create: { userId: 'user-1' } },
         },
       }),

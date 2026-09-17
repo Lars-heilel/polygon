@@ -1,6 +1,7 @@
 import type { Chat } from '@org/entities-chat';
 import { useChatStore } from '@org/entities-chat';
 import { useSessionStore } from '@org/entities-user';
+import { ensureDeviceEnrolled } from '@org/features-auth';
 import { queryClient, socket } from '@org/shared';
 
 import { initChatSocketManager, resyncActiveChats } from './chat-socket-manager';
@@ -29,6 +30,10 @@ export function initSocketMiddleware(): () => void {
       if (isAuthenticated && !wasAuthenticated) {
         socket.connect();
         cleanupChatManager = initChatSocketManager();
+        // Covers password login, OAuth callback, and session restore:
+        // verifies the browser device against the server, enrolling fresh
+        // when the record is missing or belongs to another user.
+        void ensureDeviceEnrolled().catch(() => undefined);
       } else if (!isAuthenticated && wasAuthenticated) {
         cleanupChatManager?.();
         cleanupChatManager = null;

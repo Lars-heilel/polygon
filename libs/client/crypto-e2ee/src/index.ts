@@ -12,6 +12,7 @@ export {
   listOwnOneTimePublicKeys,
   registerOwnDeviceKeys,
   rememberDeviceId,
+  resetDeviceId,
   type DeviceKeyPairs,
   type OwnDeviceKeyRefs,
 } from './device-keys.js';
