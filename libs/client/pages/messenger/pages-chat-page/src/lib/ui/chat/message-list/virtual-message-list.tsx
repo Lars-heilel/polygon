@@ -51,6 +51,28 @@ export function getMessageVirtualKey(msg: Pick<Message, 'id' | 'clientId'>): str
   return msg.clientId ? `client:${msg.clientId}` : `server:${msg.id}`;
 }
 
+/**
+ * Collapse duplicate list entries by virtual key, keeping the LAST
+ * occurrence (freshest state: server echo over optimistic, decrypted over
+ * shell). Live upserts, delta merges, idb hydration, and page-boundary
+ * overlap can otherwise place the same message twice, which corrupts the
+ * virtualizer (duplicate keys → wrong rows, broken scroll).
+ */
+export function dedupeMessagesByKey<TMessage extends Pick<Message, 'id' | 'clientId'>>(
+  messages: TMessage[],
+): TMessage[] {
+  const seen = new Set<string>();
+  const deduped: TMessage[] = [];
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index] as TMessage;
+    const key = getMessageVirtualKey(message);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.unshift(message);
+  }
+  return deduped;
+}
+
 export const ChatMessageRow = memo(
   ({
     msg,
@@ -174,10 +196,10 @@ export const VirtualMessageList = memo(function MessageList({
   const feedRef = useRef<VirtualFeedHandle>(null);
   const deleteMessage = useDeleteMessageMutation(chatId);
 
-  const allMessages = useMemo(
-    () => [...infiniteData.pages].reverse().flatMap((p) => p.messages),
-    [infiniteData.pages],
-  );
+  const allMessages = useMemo(() => {
+    const flat = [...infiniteData.pages].reverse().flatMap((p) => p.messages);
+    return dedupeMessagesByKey(flat);
+  }, [infiniteData.pages]);
   const currentChat = useMemo(() => chats.find((c) => c.id === chatId), [chats, chatId]);
   const currentChatTitle = useMemo(
     () => (currentChat ? getChatDisplayName(currentChat, me.id) : undefined),
