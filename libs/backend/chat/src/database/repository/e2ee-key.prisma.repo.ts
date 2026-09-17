@@ -113,8 +113,13 @@ export class E2eeKeyPrismaRepository implements IE2eeKeyRepository {
   }
 
   async addOneTimePrekeys(deviceId: string, prekeys: string[]): Promise<void> {
+    // Replace semantics: a publish supersedes every previous generation.
+    // Stale rows would otherwise be dealt to senders while the matching
+    // private halves are long gone from the device (permanent
+    // E2EE_DECRYPT_FAILED with no recovery path).
     if (prekeys.length === 0) return;
     try {
+      await this.prisma.oneTimePrekey.deleteMany({ where: { deviceId } });
       await this.prisma.oneTimePrekey.createMany({
         data: prekeys.map((prekey) => ({ deviceId, prekey, consumed: false })),
       });

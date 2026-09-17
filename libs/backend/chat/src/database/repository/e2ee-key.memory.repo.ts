@@ -48,9 +48,9 @@ export class InMemoryE2eeKeyRepository implements IE2eeKeyRepository {
   }
 
   async addOneTimePrekeys(deviceId: string, prekeys: string[]): Promise<void> {
-    const existing = this.oneTimePrekeys.get(deviceId) ?? [];
-    existing.push(...prekeys);
-    this.oneTimePrekeys.set(deviceId, existing);
+    // Replace semantics (mirrors the Prisma repo): a publish retires the
+    // previous generation so stale keys are never dealt.
+    this.oneTimePrekeys.set(deviceId, [...prekeys]);
   }
 
   async consumeOneTimePrekey(deviceId: string): Promise<string | null> {

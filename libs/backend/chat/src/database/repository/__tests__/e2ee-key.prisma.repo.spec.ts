@@ -112,3 +112,37 @@ describe('E2eeKeyPrismaRepository one-time prekey claim', () => {
     await expect(repository.findDevicesByUserIds([])).resolves.toEqual([]);
   });
 });
+
+describe('E2eeKeyPrismaRepository one-time prekey rotation', () => {
+  const oneTimePrekey = {
+    createMany: jest.fn(),
+    deleteMany: jest.fn(),
+    findFirst: jest.fn(),
+    updateMany: jest.fn(),
+  };
+  const prisma = {
+    device: { upsert: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), deleteMany: jest.fn() },
+    signedPrekey: { upsert: jest.fn(), findUnique: jest.fn(), deleteMany: jest.fn() },
+    oneTimePrekey,
+  };
+  const repository = new E2eeKeyPrismaRepository(prisma as unknown as PrismaService);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('retires the previous generation on publish so stale keys are never dealt', async () => {
+    await repository.addOneTimePrekeys('device-1', ['otp-new-1', 'otp-new-2']);
+
+    expect(oneTimePrekey.deleteMany).toHaveBeenCalledWith({ where: { deviceId: 'device-1' } });
+    expect(oneTimePrekey.createMany).toHaveBeenCalledWith({
+      data: [
+        { deviceId: 'device-1', prekey: 'otp-new-1', consumed: false },
+        { deviceId: 'device-1', prekey: 'otp-new-2', consumed: false },
+      ],
+    });
+    expect(oneTimePrekey.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+      oneTimePrekey.createMany.mock.invocationCallOrder[0],
+    );
+  });
+});
