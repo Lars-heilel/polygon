@@ -19,6 +19,7 @@ export {
 export {
   decryptIncomingMessage,
   defaultSessionResolver,
+  E2EE_DECRYPT_FAILED,
   retryDecryptMessage,
   type SessionResolver,
 } from './message-e2ee.js';

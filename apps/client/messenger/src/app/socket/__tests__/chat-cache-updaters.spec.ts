@@ -27,7 +27,16 @@ describe('chat socket cache updaters', () => {
     const page = {
       pageParams: [undefined],
       pages: [
-        { messages: [{ id: 'message-1', clientId: null, chatId: 'chat-2', createdAt: '2026-07-14T09:00:00.000Z' }] },
+        {
+          messages: [
+            {
+              id: 'message-1',
+              clientId: null,
+              chatId: 'chat-2',
+              createdAt: '2026-07-14T09:00:00.000Z',
+            },
+          ],
+        },
       ],
     };
 
@@ -53,14 +62,19 @@ describe('chat socket cache updaters', () => {
       createdAt: '2026-07-14T10:00:01.000Z',
     };
 
-    const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
+    const next = upsertMessageIntoPages(
+      { pageParams: [undefined], pages: [{ messages: [optimistic] }] },
+      serverMessage,
+    );
 
     expect(next?.pages[0].messages).toHaveLength(1);
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      id: 'server-message-1',
-      clientId: 'client-1',
-      localStatus: 'sent',
-    }));
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        id: 'server-message-1',
+        clientId: 'client-1',
+        localStatus: 'sent',
+      }),
+    );
   });
 
   it('normalizes raw forwarded socket messages before inserting them', () => {
@@ -99,17 +113,45 @@ describe('chat socket cache updaters', () => {
 
     const next = upsertMessageIntoPages(page, rawForwardedMessage);
 
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      forwardContext: expect.objectContaining({
-        originalAuthor: expect.objectContaining({ displayNameSnapshot: 'Alice A.' }),
-        preview: expect.objectContaining({ text: 'source text' }),
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        forwardContext: expect.objectContaining({
+          originalAuthor: expect.objectContaining({ displayNameSnapshot: 'Alice A.' }),
+          preview: expect.objectContaining({ text: 'source text' }),
+        }),
       }),
-    }));
+    );
   });
 
   it('does NOT absorb foreign message with same text into pending', () => {
-    const old = { pageParams: [undefined], pages: [{ messages: [{ id: 'client:k1', clientId: 'k1', chatId: 'c1', senderId: 'me', type: 'TEXT', text: 'hello', createdAt: 't0', localStatus: 'sending' as const }] }] };
-    const foreign = { id: 'srv-9', clientId: null, chatId: 'c1', senderId: 'other', type: 'TEXT', text: 'hello', createdAt: 't1' };
+    const old = {
+      pageParams: [undefined],
+      pages: [
+        {
+          messages: [
+            {
+              id: 'client:k1',
+              clientId: 'k1',
+              chatId: 'c1',
+              senderId: 'me',
+              type: 'TEXT',
+              text: 'hello',
+              createdAt: 't0',
+              localStatus: 'sending' as const,
+            },
+          ],
+        },
+      ],
+    };
+    const foreign = {
+      id: 'srv-9',
+      clientId: null,
+      chatId: 'c1',
+      senderId: 'other',
+      type: 'TEXT',
+      text: 'hello',
+      createdAt: 't1',
+    };
     const next = upsertMessageIntoPages(old, foreign);
     expect(next?.pages[0].messages).toHaveLength(2);
     expect(next?.pages[0].messages[0].localStatus).toBe('sending');
@@ -138,13 +180,18 @@ describe('chat socket cache updaters', () => {
       createdAt: '2026-07-14T10:00:01.000Z',
     };
 
-    const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
+    const next = upsertMessageIntoPages(
+      { pageParams: [undefined], pages: [{ messages: [optimistic] }] },
+      serverMessage,
+    );
 
     expect(next?.pages[0].messages).toHaveLength(2);
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      clientId: 'client-1',
-      localStatus: 'sending',
-    }));
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        clientId: 'client-1',
+        localStatus: 'sending',
+      }),
+    );
   });
 
   it('does NOT absorb a file server echo that lost clientId into pending', () => {
@@ -170,13 +217,18 @@ describe('chat socket cache updaters', () => {
       createdAt: '2026-07-14T10:00:01.000Z',
     };
 
-    const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
+    const next = upsertMessageIntoPages(
+      { pageParams: [undefined], pages: [{ messages: [optimistic] }] },
+      serverMessage,
+    );
 
     expect(next?.pages[0].messages).toHaveLength(2);
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      clientId: 'client-1',
-      localStatus: 'sending',
-    }));
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        clientId: 'client-1',
+        localStatus: 'sending',
+      }),
+    );
   });
 
   it('does NOT absorb a file server echo that lost clientId into pending', () => {
@@ -202,13 +254,18 @@ describe('chat socket cache updaters', () => {
       createdAt: '2026-07-14T10:00:01.000Z',
     };
 
-    const next = upsertMessageIntoPages({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, serverMessage);
+    const next = upsertMessageIntoPages(
+      { pageParams: [undefined], pages: [{ messages: [optimistic] }] },
+      serverMessage,
+    );
 
     expect(next?.pages[0].messages).toHaveLength(2);
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      clientId: 'client-1',
-      localStatus: 'sending',
-    }));
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        clientId: 'client-1',
+        localStatus: 'sending',
+      }),
+    );
   });
 
   it('marks a matching optimistic message as failed by clientId', () => {
@@ -220,12 +277,17 @@ describe('chat socket cache updaters', () => {
       localStatus: 'sending' as const,
     };
 
-    const next = markMessageSendError({ pageParams: [undefined], pages: [{ messages: [optimistic] }] }, 'client-1');
+    const next = markMessageSendError(
+      { pageParams: [undefined], pages: [{ messages: [optimistic] }] },
+      'client-1',
+    );
 
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      clientId: 'client-1',
-      localStatus: 'error',
-    }));
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        clientId: 'client-1',
+        localStatus: 'error',
+      }),
+    );
   });
 
   it('updates lastMessage and sorts the changed chat by newest message time', () => {
@@ -233,7 +295,12 @@ describe('chat socket cache updaters', () => {
       {
         id: 'chat-1',
         updatedAt: '2026-07-14T09:30:00.000Z',
-        lastMessage: { id: 'old-1', clientId: null, chatId: 'chat-1', createdAt: '2026-07-14T09:30:00.000Z' },
+        lastMessage: {
+          id: 'old-1',
+          clientId: null,
+          chatId: 'chat-1',
+          createdAt: '2026-07-14T09:30:00.000Z',
+        },
       },
       {
         id: 'chat-2',
@@ -254,10 +321,20 @@ describe('chat socket cache updaters', () => {
       {
         id: 'chat-1',
         updatedAt: '2026-09-07T09:00:00.000Z',
-        lastMessage: { id: 'new-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T10:00:00.000Z' },
+        lastMessage: {
+          id: 'new-1',
+          clientId: null,
+          chatId: 'chat-1',
+          createdAt: '2026-09-07T10:00:00.000Z',
+        },
       },
     ];
-    const stale = { id: 'old-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T09:00:00.000Z' };
+    const stale = {
+      id: 'old-1',
+      clientId: null,
+      chatId: 'chat-1',
+      createdAt: '2026-09-07T09:00:00.000Z',
+    };
 
     const next = updateChatListLastMessage(chats, stale);
 
@@ -271,10 +348,20 @@ describe('chat socket cache updaters', () => {
       {
         id: 'chat-1',
         updatedAt: '2026-09-07T09:00:00.000Z',
-        lastMessage: { id: 'old-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T09:00:00.000Z' },
+        lastMessage: {
+          id: 'old-1',
+          clientId: null,
+          chatId: 'chat-1',
+          createdAt: '2026-09-07T09:00:00.000Z',
+        },
       },
     ];
-    const fresh = { id: 'new-1', clientId: null, chatId: 'chat-1', createdAt: '2026-09-07T10:00:00.000Z' };
+    const fresh = {
+      id: 'new-1',
+      clientId: null,
+      chatId: 'chat-1',
+      createdAt: '2026-09-07T10:00:00.000Z',
+    };
 
     const next = updateChatListLastMessage(chats, fresh);
 
@@ -309,8 +396,20 @@ describe('chat socket cache updaters', () => {
       pages: [
         {
           messages: [
-            { id: 'message-1', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:00:00.000Z', text: 'before' },
-            { id: 'message-2', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:01:00.000Z', text: 'keep' },
+            {
+              id: 'message-1',
+              clientId: null,
+              chatId: 'chat-1',
+              createdAt: '2026-07-22T10:00:00.000Z',
+              text: 'before',
+            },
+            {
+              id: 'message-2',
+              clientId: null,
+              chatId: 'chat-1',
+              createdAt: '2026-07-22T10:01:00.000Z',
+              text: 'keep',
+            },
           ],
         },
       ],
@@ -374,13 +473,15 @@ describe('chat socket cache updaters', () => {
       },
     });
 
-    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({
-      text: 'edited forwarded copy',
-      forwardContext: expect.objectContaining({
-        originalAuthor: expect.objectContaining({ displayNameSnapshot: 'Alice A.' }),
-        preview: expect.objectContaining({ text: 'source text' }),
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({
+        text: 'edited forwarded copy',
+        forwardContext: expect.objectContaining({
+          originalAuthor: expect.objectContaining({ displayNameSnapshot: 'Alice A.' }),
+          preview: expect.objectContaining({ text: 'source text' }),
+        }),
       }),
-    }));
+    );
   });
 
   it('removes deleted and hidden messages from pages', () => {
@@ -389,8 +490,18 @@ describe('chat socket cache updaters', () => {
       pages: [
         {
           messages: [
-            { id: 'message-1', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:00:00.000Z' },
-            { id: 'message-2', clientId: null, chatId: 'chat-1', createdAt: '2026-07-22T10:01:00.000Z' },
+            {
+              id: 'message-1',
+              clientId: null,
+              chatId: 'chat-1',
+              createdAt: '2026-07-22T10:00:00.000Z',
+            },
+            {
+              id: 'message-2',
+              clientId: null,
+              chatId: 'chat-1',
+              createdAt: '2026-07-22T10:01:00.000Z',
+            },
           ],
         },
       ],
@@ -398,6 +509,72 @@ describe('chat socket cache updaters', () => {
 
     const next = removeMessageFromPages(page, 'message-1');
 
-    expect(next?.pages[0].messages.map((message: { id: string }) => message.id)).toEqual(['message-2']);
+    expect(next?.pages[0].messages.map((message: { id: string }) => message.id)).toEqual([
+      'message-2',
+    ]);
+  });
+});
+
+describe('E2EE live merge (text preservation)', () => {
+  const pageOf = (messages: unknown[]) => ({ pageParams: [undefined], pages: [{ messages }] });
+
+  it('preserves optimistic text when the server echo carries no text', () => {
+    const optimistic = {
+      id: 'client-temp-1',
+      clientId: 'client-1',
+      chatId: 'chat-2',
+      createdAt: '2026-07-14T10:00:00.000Z',
+      text: 'hi',
+      localStatus: 'sending' as const,
+    };
+    const echo = {
+      id: 'server-message-1',
+      clientId: 'client-1',
+      chatId: 'chat-2',
+      createdAt: '2026-07-14T10:00:01.000Z',
+      text: null,
+    };
+
+    const next = upsertMessageIntoPages(pageOf([optimistic]), echo);
+
+    expect(next?.pages[0].messages).toHaveLength(1);
+    expect(next?.pages[0].messages[0]).toEqual(
+      expect.objectContaining({ id: 'server-message-1', text: 'hi', localStatus: 'sent' }),
+    );
+  });
+
+  it('adopts decrypted text over a placeholder shell', () => {
+    const shell = {
+      id: 'server-message-1',
+      clientId: null,
+      chatId: 'chat-2',
+      createdAt: '2026-07-14T10:00:01.000Z',
+      text: null,
+    };
+    const decrypted = {
+      id: 'server-message-1',
+      clientId: null,
+      chatId: 'chat-2',
+      createdAt: '2026-07-14T10:00:01.000Z',
+      text: 'hi',
+    };
+
+    const next = upsertMessageIntoPages(pageOf([shell]), decrypted);
+
+    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({ text: 'hi' }));
+  });
+
+  it('preserves decrypted text when an update shell carries no text', () => {
+    const decrypted = {
+      id: 'server-message-1',
+      chatId: 'chat-2',
+      createdAt: '2026-07-14T10:00:01.000Z',
+      text: 'hi',
+    };
+    const shell = { id: 'server-message-1', text: null };
+
+    const next = updateMessageInPages(pageOf([decrypted]), shell);
+
+    expect(next?.pages[0].messages[0]).toEqual(expect.objectContaining({ text: 'hi' }));
   });
 });

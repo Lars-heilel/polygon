@@ -1,8 +1,8 @@
 import type { Chat } from '@org/entities-chat';
 import { chatApi, useChatStore } from '@org/entities-chat';
 import { usePresenceStore } from '@org/entities-chat';
-import type { Message, MessagePage } from '@org/entities-message';
-import { messageApi } from '@org/entities-message';
+import type { Message, MessagePage, RawMessage } from '@org/entities-message';
+import { decryptIncomingMessage, messageApi } from '@org/entities-message';
 import { frontendLog, queryClient, socket } from '@org/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { unstable_batchedUpdates } from 'react-dom';
@@ -21,7 +21,40 @@ function getCurrentUserId(): string | null {
   return queryClient.getQueryData<{ id: string }>(['me'])?.id ?? null;
 }
 
-function handleNewMessage(msg: Message) {
+/**
+ * Live payloads carry envelopes, not plaintext: decrypt BEFORE touching the
+ * cache. Upserting the raw shell first would plant a text-less entry that
+ * the append-dedupe then protects from the decrypted result — the exact
+ * shape of "messages visible only after refresh". Plaintext (envelope-less)
+ * messages pass through untouched. `decryptIncomingMessage` itself returns
+ * the retryable placeholder on E2EE_DECRYPT_FAILED.
+ */
+async function resolveLiveMessage(raw: RawMessage): Promise<Message> {
+  return decryptIncomingMessage(raw);
+}
+
+function handleNewMessage(raw: RawMessage) {
+  void resolveLiveMessage(raw)
+    .then((msg) => {
+      appendLiveMessage(msg);
+    })
+    .catch(() => {
+      // No keys yet (E2EE_NO_OWN_KEYS) or transient failure: keep the raw
+      // shell so the message is at least visible; decrypt lands on retry
+      // or the next delta sync. Never lose a message on decrypt errors.
+      appendRawShell(raw);
+    });
+}
+
+function appendRawShell(raw: RawMessage) {
+  frontendLog('debug', 'ChatSocket', 'message_received_raw', {
+    hasChatId: !!raw.chatId,
+    hasMessageId: !!raw.id,
+  });
+  appendLiveMessage(raw as unknown as Message);
+}
+
+function appendLiveMessage(msg: Message) {
   frontendLog('debug', 'ChatSocket', 'message_received', {
     hasChatId: !!msg.chatId,
     hasMessageId: !!msg.id,
@@ -88,13 +121,31 @@ function handleMessageSendError(payload: MessageSendErrorPayload) {
   );
 }
 
-function handleMessageUpdated(msg: Message) {
+function handleMessageUpdated(raw: RawMessage) {
   frontendLog('debug', 'ChatSocket', 'message_updated', {
-    hasChatId: !!msg.chatId,
-    hasMessageId: !!msg.id,
-    type: msg.type,
+    hasChatId: !!raw.chatId,
+    hasMessageId: !!raw.id,
   });
 
+  void decryptIncomingMessage(raw)
+    .then((msg) => {
+      if (msg.undecryptable) {
+        // Never overwrite a readable entry with a placeholder live;
+        // retry and delta sync recover it once keys arrive.
+        frontendLog('warn', 'ChatSocket', 'live_message_undecryptable_skipped', {
+          hasChatId: !!raw.chatId,
+          hasMessageId: !!raw.id,
+        });
+        return;
+      }
+      applyMessageUpdated(msg);
+    })
+    .catch(() => {
+      applyMessageUpdated(raw as unknown as Message);
+    });
+}
+
+function applyMessageUpdated(msg: Message) {
   queryClient.setQueryData<InfiniteData<MessagePage>>(['messages', msg.chatId], (old) =>
     updateMessageInPages(old, msg),
   );

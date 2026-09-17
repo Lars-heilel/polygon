@@ -18,6 +18,9 @@ import type { Message, RawMessage } from './message.types.js';
 
 export type SessionResolver = (envelope: MessageEnvelope) => Promise<RatchetSession | null>;
 
+// Re-exported so socket layers can classify failures without importing crypto.
+export { E2EE_DECRYPT_FAILED };
+
 export async function defaultSessionResolver(
   envelope: MessageEnvelope,
 ): Promise<RatchetSession | null> {

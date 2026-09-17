@@ -1,4 +1,4 @@
-import { normalizeMessage, type RawMessage } from '@org/entities-message';
+import { type RawMessage, normalizeMessage } from '@org/entities-message';
 
 type MessageLike = {
   id: string;
@@ -26,11 +26,27 @@ type ChatWithUnreadLike = ChatLike & {
   unreadCount?: number;
 };
 
+/**
+ * A server echo / raw socket shell carries `text: null` for E2EE messages
+ * (ciphertext lives in envelopes). Blindly spreading it over the cached
+ * entry would erase optimistic plaintext or already-decrypted text, so a
+ * missing incoming text never overwrites a present one. Incoming text
+ * always wins (decrypted arriving after a placeholder, real edits).
+ */
+function mergePreservingText<
+  TExisting extends { text?: string | null },
+  TIncoming extends { text?: string | null },
+>(existing: TExisting, incoming: TIncoming): TExisting & TIncoming {
+  return {
+    ...existing,
+    ...incoming,
+    text: incoming.text ?? existing.text ?? null,
+  };
+}
+
 type MessagePatchLike = Partial<MessageLike> & Pick<MessageLike, 'id'>;
 
-export function upsertMessageIntoPages<
-  TData extends { pages: MessagePageLike[] },
->(
+export function upsertMessageIntoPages<TData extends { pages: MessagePageLike[] }>(
   old: TData | undefined,
   msg: MessageLike,
 ): TData | undefined {
@@ -51,8 +67,7 @@ export function upsertMessageIntoPages<
 
       replaced = true;
       return {
-        ...message,
-        ...normalizedMsg,
+        ...mergePreservingText(message, normalizedMsg),
         clientId: normalizedMsg.clientId ?? message.clientId ?? null,
         localStatus: 'sent' as const,
       };
@@ -70,15 +85,14 @@ export function upsertMessageIntoPages<
   return appendMessageToPages({ ...old, pages } as TData, normalizedMsg);
 }
 
-export function appendMessageToPages<
-  TData extends { pages: MessagePageLike[] },
->(
+export function appendMessageToPages<TData extends { pages: MessagePageLike[] }>(
   old: TData | undefined,
   msg: MessageLike,
 ): TData | undefined {
   if (!old) return old;
   const normalizedMsg = normalizeSocketMessage(msg);
-  if (old.pages.some((page) => page.messages.some((message) => message.id === normalizedMsg.id))) return old;
+  if (old.pages.some((page) => page.messages.some((message) => message.id === normalizedMsg.id)))
+    return old;
 
   return {
     ...old,
@@ -88,9 +102,7 @@ export function appendMessageToPages<
   } as TData;
 }
 
-export function markMessageSendError<
-  TData extends { pages: MessagePageLike[] },
->(
+export function markMessageSendError<TData extends { pages: MessagePageLike[] }>(
   old: TData | undefined,
   clientId: string,
 ): TData | undefined {
@@ -101,9 +113,7 @@ export function markMessageSendError<
     pages: old.pages.map((page) => ({
       ...page,
       messages: page.messages.map((message) =>
-        message.clientId === clientId
-          ? { ...message, localStatus: 'error' as const }
-          : message,
+        message.clientId === clientId ? { ...message, localStatus: 'error' as const } : message,
       ),
     })),
   } as TData;
@@ -112,10 +122,7 @@ export function markMessageSendError<
 export function updateMessageInPages<
   TData extends { pages: MessagePageLike[] },
   TMessage extends MessagePatchLike,
->(
-  old: TData | undefined,
-  msg: TMessage,
-): TData | undefined {
+>(old: TData | undefined, msg: TMessage): TData | undefined {
   if (!old) return old;
   const normalizedMsg = normalizeSocketMessage(msg);
 
@@ -124,15 +131,16 @@ export function updateMessageInPages<
     pages: old.pages.map((page) => ({
       ...page,
       messages: page.messages.map((message) =>
-        message.id === normalizedMsg.id ? { ...message, ...normalizedMsg } : message,
+        message.id === normalizedMsg.id ? mergePreservingText(message, normalizedMsg) : message,
       ),
     })),
   } as TData;
 }
 
-export function removeMessageFromPages<
-  TData extends { pages: MessagePageLike[] },
->(old: TData | undefined, messageId: string): TData | undefined {
+export function removeMessageFromPages<TData extends { pages: MessagePageLike[] }>(
+  old: TData | undefined,
+  messageId: string,
+): TData | undefined {
   if (!old) return old;
 
   return {
@@ -160,7 +168,7 @@ export function updateChatListLastMessage<TChat extends ChatLike, TMessage exten
     return chats ?? [];
   }
   const next = (chats ?? []).map((chat) =>
-    chat.id === normalizedMsg.chatId ? { ...chat, lastMessage: normalizedMsg } as TChat : chat,
+    chat.id === normalizedMsg.chatId ? ({ ...chat, lastMessage: normalizedMsg } as TChat) : chat,
   );
 
   next.sort((left, right) => {
@@ -187,24 +195,26 @@ function normalizeSocketMessage<TMessage extends MessagePatchLike>(msg: TMessage
   return normalizeMessage(msg) as unknown as TMessage;
 }
 
-function isRawSocketMessage(msg: Partial<MessageLike> & Pick<MessageLike, 'id'>): msg is RawMessage & MessageLike {
+function isRawSocketMessage(
+  msg: Partial<MessageLike> & Pick<MessageLike, 'id'>,
+): msg is RawMessage & MessageLike {
   if (
-    typeof msg.chatId !== 'string'
-    || typeof msg.senderId !== 'string'
-    || typeof msg.type !== 'string'
-    || !('updatedAt' in msg)
-    || !('editedAt' in msg)
-    || !('deletedAt' in msg)
-    || !('deletedById' in msg)
+    typeof msg.chatId !== 'string' ||
+    typeof msg.senderId !== 'string' ||
+    typeof msg.type !== 'string' ||
+    !('updatedAt' in msg) ||
+    !('editedAt' in msg) ||
+    !('deletedAt' in msg) ||
+    !('deletedById' in msg)
   ) {
     return false;
   }
 
   const forwardContext = (msg as { forwardContext?: unknown }).forwardContext;
   if (
-    forwardContext
-    && typeof forwardContext === 'object'
-    && 'originalAuthorNameSnapshot' in forwardContext
+    forwardContext &&
+    typeof forwardContext === 'object' &&
+    'originalAuthorNameSnapshot' in forwardContext
   ) {
     return true;
   }
