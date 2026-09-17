@@ -9,6 +9,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
+import { RpcException } from '@nestjs/microservices';
 import type {
   Chat,
   ChatMediaFilter,
@@ -304,7 +305,10 @@ export class ChatService implements IChatService {
           hasUserId: !!senderId,
           reason: 'e2ee_plaintext_fallback',
         });
-        throw new ForbiddenException(E2EE_NO_RECIPIENT_KEYS);
+        // RpcException (not HttpException): the microservices transport
+        // sanitizes non-Rpc errors to generic 500s, which would hide the
+        // fail-closed code from the Gateway and the client.
+        throw new RpcException({ message: E2EE_NO_RECIPIENT_KEYS, status: 403 });
       }
     }
 
@@ -1045,7 +1049,7 @@ export class ChatService implements IChatService {
       }
       const devices = await this.e2eeKeys.findDevicesByUserIds(members.map((m) => m.userId));
       if (devices.length === 0) {
-        throw new ForbiddenException(E2EE_NO_RECIPIENT_KEYS);
+        throw new RpcException({ message: E2EE_NO_RECIPIENT_KEYS, status: 403 });
       }
       for (const device of devices) {
         rows.push({

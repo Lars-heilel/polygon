@@ -829,8 +829,16 @@ export class ChatGatewayController {
     try {
       return await lastValueFrom(observable);
     } catch (err) {
-      const error = err as { statusCode?: number; message?: string };
-      throw new HttpException(error.message ?? 'Internal server error', error.statusCode ?? 500);
+      const error = err as { statusCode?: unknown; status?: unknown; message?: string };
+      // Services speak `{ message, status }` (RpcException); legacy shapes
+      // carry `statusCode`. Anything non-numeric maps to 500.
+      const status =
+        typeof error.statusCode === 'number'
+          ? error.statusCode
+          : typeof error.status === 'number'
+            ? error.status
+            : 500;
+      throw new HttpException(error.message ?? 'Internal server error', status);
     }
   }
 }

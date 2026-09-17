@@ -28,12 +28,14 @@ describe('E2eeKeyService', () => {
   it('returns a full bundle on first consume after publish', async () => {
     const svc = await service();
     await svc.registerDevice({ ...DEVICE });
-    await svc.publishPrekeys({
-      deviceId: DEVICE.deviceId,
-      signedPrekey: 'c3Bn',
-      signedPrekeySignature: 'c2ln',
-      oneTimePrekeys: ['b3Rw'],
-    });
+    await expect(
+      svc.publishPrekeys({
+        deviceId: DEVICE.deviceId,
+        signedPrekey: 'c3Bn',
+        signedPrekeySignature: 'c2ln',
+        oneTimePrekeys: ['b3Rw'],
+      }),
+    ).resolves.toEqual({ published: 1 });
     const bundle = await svc.consumePrekeyBundle(DEVICE.deviceId);
     expect(bundle).toEqual(
       expect.objectContaining({

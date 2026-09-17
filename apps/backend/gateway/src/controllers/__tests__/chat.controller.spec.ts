@@ -869,3 +869,55 @@ describe('ChatGatewayController', () => {
     ).toHaveLength(0);
   });
 });
+
+describe('ChatGatewayController RPC error mapping', () => {
+  function setup() {
+    const chatClient = {
+      send: jest.fn(() => of({ id: 'message-1' })),
+    };
+    const controller = new ChatGatewayController(
+      chatClient as never,
+      { send: jest.fn(() => of([])) } as never,
+      {} as never,
+      {} as never,
+    );
+    return { chatClient, controller };
+  }
+
+  it('maps service { message, status } errors to matching HTTP status with message', async () => {
+    const ctx = setup();
+    const { throwError } = await import('rxjs');
+    ctx.chatClient.send.mockReturnValueOnce(
+      throwError(() => ({ message: 'E2EE_NO_RECIPIENT_KEYS', status: 403 })),
+    );
+
+    const err = await ctx.controller
+      .revokeDevice({ sub: 'user-1' } as never, '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1')
+      .catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 403, message: 'E2EE_NO_RECIPIENT_KEYS' });
+  });
+
+  it('maps legacy { message, statusCode } errors as before', async () => {
+    const ctx = setup();
+    const { throwError } = await import('rxjs');
+    ctx.chatClient.send.mockReturnValueOnce(
+      throwError(() => ({ message: 'Conflict', statusCode: 409 })),
+    );
+
+    const err = await ctx.controller
+      .revokeDevice({ sub: 'user-1' } as never, '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1')
+      .catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 409, message: 'Conflict' });
+  });
+
+  it('maps shapeless errors to 500 without leaking details', async () => {
+    const ctx = setup();
+    const { throwError } = await import('rxjs');
+    ctx.chatClient.send.mockReturnValueOnce(throwError(() => ({ statusCode: 'error' })));
+
+    const err = await ctx.controller
+      .revokeDevice({ sub: 'user-1' } as never, '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1')
+      .catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 500, message: 'Internal server error' });
+  });
+});

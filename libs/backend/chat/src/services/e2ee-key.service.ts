@@ -50,10 +50,11 @@ export class E2eeKeyService implements IE2eeKeyService {
     return record;
   }
 
-  async revokeDevice(deviceId: string): Promise<void> {
+  async revokeDevice(deviceId: string): Promise<{ revoked: boolean }> {
     this.logger.log({ eventType: 'device_revoke_requested', hasDeviceId: !!deviceId });
     await this.repo.deleteDevice(deviceId);
     this.logger.log({ eventType: 'device_revoke_done', hasDeviceId: !!deviceId });
+    return { revoked: true };
   }
 
   async getDevice(deviceId: string): Promise<DeviceRecord | null> {
@@ -67,7 +68,7 @@ export class E2eeKeyService implements IE2eeKeyService {
     return device;
   }
 
-  async publishPrekeys(input: PublishPrekeysInput): Promise<void> {
+  async publishPrekeys(input: PublishPrekeysInput): Promise<{ published: number }> {
     this.logger.log({
       eventType: 'prekeys_publish_requested',
       hasDeviceId: !!input.deviceId,
@@ -87,6 +88,7 @@ export class E2eeKeyService implements IE2eeKeyService {
       hasDeviceId: !!parsed.deviceId,
       prekeyCount: parsed.oneTimePrekeys.length,
     });
+    return { published: parsed.oneTimePrekeys.length };
   }
 
   async consumePrekeyBundle(deviceId: string): Promise<PrekeyBundleRecord | null> {
