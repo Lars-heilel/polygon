@@ -5,6 +5,7 @@ import {
   prepareDeviceEnrollment,
   resetDeviceId,
 } from '@org/crypto-e2ee';
+import { authApi } from '@org/entities-user';
 import { ApiError, authedFetch, frontendLog, queryClient } from '@org/shared';
 
 let enrollInflight: Promise<void> | null = null;
@@ -28,8 +29,8 @@ export function ensureDeviceEnrolled(): Promise<void> {
 
 async function ensure(): Promise<void> {
   try {
-    const me = queryClient.getQueryData<{ id: string }>(['me']);
-    if (!me?.id) {
+    const userId = await resolveCurrentUserId();
+    if (!userId) {
       frontendLog('debug', 'DeviceEnrollment', 'device_ensure_skipped', {
         hasUser: false,
       });
@@ -38,7 +39,7 @@ async function ensure(): Promise<void> {
 
     const own = getOwnDeviceKeys();
     if (own) {
-      const verdict = await verifyOwnDevice(own.deviceId, me.id);
+      const verdict = await verifyOwnDevice(own.deviceId, userId);
       if (verdict === 'verified') return;
       if (verdict === 'transient') return;
       // 'missing' or 'foreign': drop stale keys and enroll fresh below.
@@ -49,6 +50,21 @@ async function ensure(): Promise<void> {
     await enrollDevice();
   } catch {
     frontendLog('warn', 'DeviceEnrollment', 'device_ensure_failed', {});
+  }
+}
+
+/**
+ * The ['me'] query may not have resolved yet when auth flips to true
+ * (AuthBootstrap uses a raw fetch), so fall back to a live call.
+ */
+async function resolveCurrentUserId(): Promise<string | null> {
+  const cached = queryClient.getQueryData<{ id: string }>(['me']);
+  if (cached?.id) return cached.id;
+  try {
+    const me = await authApi.me();
+    return me?.id ?? null;
+  } catch {
+    return null;
   }
 }
 

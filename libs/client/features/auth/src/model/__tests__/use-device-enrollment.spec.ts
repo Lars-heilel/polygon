@@ -11,7 +11,14 @@ const sharedMocks = vi.hoisted(() => ({
   authedFetch: vi.fn(),
 }));
 
+const userMocks = vi.hoisted(() => ({
+  me: vi.fn(),
+}));
+
 vi.mock('@org/crypto-e2ee', () => cryptoMocks);
+vi.mock('@org/entities-user', () => ({
+  authApi: { me: userMocks.me },
+}));
 vi.mock('@org/shared', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@org/shared')>()),
   authedFetch: sharedMocks.authedFetch,
@@ -48,6 +55,7 @@ function seedEnrollment() {
 beforeEach(() => {
   vi.clearAllMocks();
   queryClient.clear();
+  userMocks.me.mockResolvedValue(null);
   seedEnrollment();
 });
 
@@ -57,7 +65,21 @@ describe('ensureDeviceEnrolled', () => {
 
     await ensureDeviceEnrolled();
 
+    expect(userMocks.me).toHaveBeenCalled();
     expect(sharedMocks.authedFetch).not.toHaveBeenCalled();
+  });
+
+  it('resolves the user via live call when the cache is empty', async () => {
+    cryptoMocks.getOwnDeviceKeys.mockReturnValue(null);
+    userMocks.me.mockResolvedValueOnce({ id: ME_ID });
+    sharedMocks.authedFetch.mockResolvedValue(undefined);
+
+    await ensureDeviceEnrolled();
+
+    expect(sharedMocks.authedFetch).toHaveBeenCalledWith(
+      expect.stringContaining('chats/devices'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('verifies an enrolled device without re-registering', async () => {
