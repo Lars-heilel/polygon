@@ -5,6 +5,7 @@ import {
   registerOwnDeviceKeys,
   rememberDeviceId,
 } from './device-keys.js';
+import { persistOwnDeviceKeys } from './device-key-store.js';
 
 export const ENROLLMENT_ONE_TIME_PREKEY_COUNT = 20;
 /** Placeholder signature: ECDH keys cannot sign; verify is skipped server-side. */
@@ -42,6 +43,14 @@ export async function prepareDeviceEnrollment(): Promise<DeviceEnrollment> {
     oneTimePairs.map((pair, index) => [oneTimePublics[index] as string, pair.privateKey]),
   );
   registerOwnDeviceKeys({
+    deviceId,
+    identityPrivate: identityKeyPair.privateKey,
+    signedPrekeyPrivate: signedPrekeyPair.privateKey,
+    oneTimePrivates,
+  });
+  // Mirror to IndexedDB: module memory dies on reload, and without these
+  // privates the client can never decrypt again (E2EE_NO_OWN_KEYS).
+  await persistOwnDeviceKeys({
     deviceId,
     identityPrivate: identityKeyPair.privateKey,
     signedPrekeyPrivate: signedPrekeyPair.privateKey,

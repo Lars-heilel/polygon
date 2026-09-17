@@ -5,6 +5,9 @@ const cryptoMocks = vi.hoisted(() => ({
   clearOwnDeviceKeys: vi.fn(),
   resetDeviceId: vi.fn(() => 'fresh-device-id'),
   prepareDeviceEnrollment: vi.fn(),
+  loadPersistedDeviceKeys: vi.fn(),
+  registerOwnDeviceKeys: vi.fn(),
+  clearPersistedDeviceKeys: vi.fn(),
 }));
 
 const sharedMocks = vi.hoisted(() => ({
@@ -56,6 +59,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   queryClient.clear();
   userMocks.me.mockResolvedValue(null);
+  cryptoMocks.loadPersistedDeviceKeys.mockResolvedValue(null);
   seedEnrollment();
 });
 
@@ -132,6 +136,38 @@ describe('ensureDeviceEnrolled', () => {
       expect.any(String),
       expect.objectContaining({ method: 'POST' }),
     );
+  });
+
+  it('hydrates persisted keys after a reload instead of re-enrolling', async () => {
+    seedMe();
+    cryptoMocks.getOwnDeviceKeys.mockReturnValue(null);
+    cryptoMocks.loadPersistedDeviceKeys.mockResolvedValueOnce({ deviceId: DEVICE_ID });
+    sharedMocks.authedFetch.mockResolvedValueOnce({
+      deviceId: DEVICE_ID,
+      userId: ME_ID,
+      identityKey: 'aWtlaQ==',
+      registrationId: 7,
+    });
+
+    await ensureDeviceEnrolled();
+
+    expect(cryptoMocks.registerOwnDeviceKeys).toHaveBeenCalled();
+    const posts = sharedMocks.authedFetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+    expect(posts).toHaveLength(0);
+  });
+
+  it('enrolls fresh when verified by nothing recoverable (pre-fix client)', async () => {
+    seedMe();
+    cryptoMocks.getOwnDeviceKeys.mockReturnValue(null);
+    cryptoMocks.loadPersistedDeviceKeys.mockResolvedValueOnce(null);
+    sharedMocks.authedFetch.mockResolvedValue(undefined);
+
+    await ensureDeviceEnrolled();
+
+    const posts = sharedMocks.authedFetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+    const puts = sharedMocks.authedFetch.mock.calls.filter(([, init]) => init?.method === 'PUT');
+    expect(posts).toHaveLength(1);
+    expect(puts).toHaveLength(1);
   });
 
   it('enrolls directly when no local keys exist', async () => {

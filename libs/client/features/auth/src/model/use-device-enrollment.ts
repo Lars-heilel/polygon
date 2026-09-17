@@ -1,9 +1,13 @@
 import { API_ROUTES, type DeviceRecord } from '@org/common';
 import {
   clearOwnDeviceKeys,
+  clearPersistedDeviceKeys,
   getOwnDeviceKeys,
+  loadPersistedDeviceKeys,
   prepareDeviceEnrollment,
+  registerOwnDeviceKeys,
   resetDeviceId,
+  type OwnDeviceKeyRefs,
 } from '@org/crypto-e2ee';
 import { authApi } from '@org/entities-user';
 import { ApiError, authedFetch, frontendLog, queryClient } from '@org/shared';
@@ -37,13 +41,28 @@ async function ensure(): Promise<void> {
       return;
     }
 
-    const own = getOwnDeviceKeys();
+    let own = getOwnDeviceKeys();
+    if (!own) {
+      // Page reload wipes module memory: hydrate from IndexedDB before
+      // deciding anything. Without this the verify below passes on the
+      // server record while decryption stays impossible (E2EE_NO_OWN_KEYS).
+      own = await loadPersistedKeys();
+      if (own) {
+        registerOwnDeviceKeys(own);
+        frontendLog('debug', 'DeviceEnrollment', 'device_keys_hydrated', {
+          hasDeviceId: true,
+        });
+      }
+    }
     if (own) {
       const verdict = await verifyOwnDevice(own.deviceId, userId);
       if (verdict === 'verified') return;
       if (verdict === 'transient') return;
-      // 'missing' or 'foreign': drop stale keys and enroll fresh below.
+      // 'missing' or 'foreign': drop stale keys everywhere and enroll fresh
+      // below. A verified record with no recoverable keys (pre-fix client,
+      // wiped storage) lands here via the hydrate miss above.
       clearOwnDeviceKeys();
+      await clearPersistedKeys();
       if (verdict === 'foreign') resetDeviceId();
     }
 
@@ -69,6 +88,22 @@ async function resolveCurrentUserId(): Promise<string | null> {
 }
 
 type VerifyVerdict = 'verified' | 'missing' | 'foreign' | 'transient';
+
+async function loadPersistedKeys(): Promise<OwnDeviceKeyRefs | null> {
+  try {
+    return await loadPersistedDeviceKeys();
+  } catch {
+    return null;
+  }
+}
+
+async function clearPersistedKeys(): Promise<void> {
+  try {
+    await clearPersistedDeviceKeys();
+  } catch {
+    // Best-effort only.
+  }
+}
 
 async function verifyOwnDevice(deviceId: string, userId: string): Promise<VerifyVerdict> {
   try {

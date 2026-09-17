@@ -17,6 +17,12 @@ export {
   type OwnDeviceKeyRefs,
 } from './device-keys.js';
 export {
+  clearPersistedDeviceKeys,
+  clearPersistedDeviceKeysForTests,
+  loadPersistedDeviceKeys,
+  persistOwnDeviceKeys,
+} from './device-key-store.js';
+export {
   ENROLLMENT_ONE_TIME_PREKEY_COUNT,
   ENROLLMENT_SIGNED_PREKEY_SIGNATURE,
   prepareDeviceEnrollment,
