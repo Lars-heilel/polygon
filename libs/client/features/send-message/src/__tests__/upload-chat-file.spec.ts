@@ -50,7 +50,7 @@ describe('prepareFileForUpload', () => {
 
     expect(prepared.encrypted).toBe(true);
     expect(prepared.name).toBe('encrypted-file');
-    expect(prepared.mime).toBe('application/octet-stream');
+    expect(prepared.mime).toBe('image/png');
     expect(prepared.size).toBeGreaterThan(file.size);
     expect(prepared.contentKey).toBeDefined();
 

@@ -100,7 +100,7 @@ export interface PreparedFileUpload {
   blob: Blob;
   /** Name for init-upload (redacted when encrypted). */
   name: string;
-  /** Mime for init-upload (octet-stream when encrypted). */
+  /** Mime for init-upload (real: the server validates it against the category). */
   mime: string;
   /** Byte size of `blob`. */
   size: number;
@@ -111,8 +111,10 @@ export interface PreparedFileUpload {
 
 /**
  * Prepare a file for upload. In E2EE chats the bytes are AES-GCM encrypted
- * client-side and only ciphertext + redacted metadata reach the server; the
- * real name/mime stay local and travel inside message envelopes (`fileKeys`).
+ * client-side and only ciphertext reaches the server; the original name is
+ * redacted (it travels inside message envelopes instead). The real MIME
+ * type is still declared: the server validates it against the category,
+ * and it reveals nothing beyond the file kind (already visible as category).
  */
 export async function prepareFileForUpload(
   source: Blob,
@@ -137,7 +139,7 @@ export async function prepareFileForUpload(
       type: 'application/octet-stream',
     }),
     name: 'encrypted-file',
-    mime: 'application/octet-stream',
+    mime: opts.mime || 'application/octet-stream',
     size: encrypted.ciphertext.length,
     contentKey: { keyB64: encrypted.keyB64, ivB64: encrypted.ivB64 },
     encrypted: true,
