@@ -39,8 +39,6 @@ Developed by **Igor Shevchenko**.
 - Docker Compose: Postgres, Redis, MinIO, RabbitMQ, Meilisearch
 
 ## Documentation
-
-- [Features — detailed overview](docs/FEATURES.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development Guide](docs/DEVELOPMENT.md)
 - [Monorepo Gotchas](docs/MONOREPO_GOTCHAS.md)
