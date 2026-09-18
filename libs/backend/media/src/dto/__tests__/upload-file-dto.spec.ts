@@ -13,9 +13,9 @@ describe('uploadFileSchema', () => {
   });
 
   it('rejects a mismatched mime/category pair', () => {
-    expect(() =>
-      uploadFileSchema.parse({ ...base, mimeType: 'application/octet-stream' }),
-    ).toThrow(/MIME type does not match/);
+    expect(() => uploadFileSchema.parse({ ...base, mimeType: 'application/octet-stream' })).toThrow(
+      /MIME type does not match/,
+    );
   });
 
   it('accepts the encrypted-upload shape: redacted name, real mime', () => {
