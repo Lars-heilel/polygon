@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useGetChatsSuspenseQuery } from './chat.api';
 import { getMessagePreview } from './chat-preview';
 import { getChatDisplayName } from './chat.utils';
+import { previewWithDecryptedFallback, useDecryptedPreviews } from './use-decrypted-previews';
 import { usePresenceStore } from './presence.store';
 
 function getOtherUserInfo(
@@ -37,8 +38,18 @@ export function useChatList(myId: string) {
       .filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [chats, myId, onlineUsers, searchQuery]);
 
+  const decryptedPreviews = useDecryptedPreviews(chats);
+  const chatsWithPreviews = useMemo(
+    () =>
+      filteredChats.map((chat) => ({
+        ...chat,
+        lastMessage: previewWithDecryptedFallback(chat.id, chat.lastMessage, decryptedPreviews),
+      })),
+    [filteredChats, decryptedPreviews],
+  );
+
   return {
-    chats: filteredChats,
+    chats: chatsWithPreviews,
     searchQuery,
     setSearchQuery,
     selectedChatId,

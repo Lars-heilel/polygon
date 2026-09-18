@@ -142,7 +142,18 @@ export class ChatService implements IChatService {
 
   async getChats(userId: string): Promise<ChatWithPreview[]> {
     this.logger.log({ eventType: 'chat_list_requested', hasUserId: !!userId });
-    return this.repo.findChatsForUser(userId);
+    const chats = await this.repo.findChatsForUser(userId);
+    // E2EE chat-list previews: the client decrypts lastMessage text from
+    // these envelopes. Without them every encrypted chat falls back to the
+    // "attachment" preview after refresh.
+    const lastMessages = chats.map((chat) => chat.lastMessage).filter((m) => m !== null);
+    const attached = await this.attachEnvelopes(lastMessages, userId);
+    const envelopesById = new Map(attached.map((message) => [message.id, message]));
+    return chats.map((chat) => {
+      if (!chat.lastMessage) return chat;
+      const withEnvelopes = envelopesById.get(chat.lastMessage.id);
+      return withEnvelopes ? { ...chat, lastMessage: withEnvelopes } : chat;
+    });
   }
 
   async createSelfChat(userId: string, e2eeEnabled = true): Promise<Chat> {

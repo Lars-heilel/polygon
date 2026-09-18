@@ -22,6 +22,7 @@ export { ChatItem } from './ui/chat-item';
 
 export { getChatDisplayName } from './chat.utils';
 export { getMessagePreview } from './chat-preview';
+export { truncatePreviewText, useDecryptedPreviews } from './use-decrypted-previews';
 
 export { usePresenceStore } from './presence.store';
 

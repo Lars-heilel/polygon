@@ -1685,3 +1685,56 @@ describe('ChatService', () => {
     });
   });
 });
+
+describe('ChatService chat-list previews', () => {
+  const DEVICE_A = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9a1';
+  const ENVELOPE = {
+    senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+    recipientDeviceId: DEVICE_A,
+    ciphertext: 'Y2lwaGVy',
+    iv: 'aXY=',
+    keyVersion: 0,
+    ratchetHeader: 'cmF0Y2hldA==',
+    ephemeralKey: 'ZXBo',
+  };
+
+  function previewSetup() {
+    const repo = repoMock();
+    const e2eeKeys = {
+      findDevicesByUserIds: jest.fn(async () => [
+        { deviceId: DEVICE_A, userId: 'user-1', identityKey: 'a2V5', registrationId: 1 },
+      ]),
+    };
+    const service = new ChatService(repo, undefined, e2eeKeys as never);
+    return { repo, service };
+  }
+
+  it('attaches the requester envelopes to each chat lastMessage', async () => {
+    const { repo, service } = previewSetup();
+    repo.findChatsForUser.mockResolvedValue([
+      { id: 'chat-1', lastMessage: { id: '101', chatId: 'chat-1' } },
+      { id: 'chat-2', lastMessage: null },
+    ]);
+    repo.findEnvelopesForMessages.mockResolvedValue([
+      { messageId: '101', recipientDeviceId: DEVICE_A, envelopeJson: JSON.stringify(ENVELOPE) },
+    ]);
+
+    const chats = await service.getChats('user-1');
+
+    expect(repo.findEnvelopesForMessages).toHaveBeenCalledWith(['101'], [DEVICE_A]);
+    expect(chats[0].lastMessage.envelopes).toEqual([ENVELOPE]);
+    expect(chats[1].lastMessage).toBeNull();
+  });
+
+  it('leaves lastMessage untouched when the service has no device registry', async () => {
+    const repo = repoMock();
+    const service = new ChatService(repo);
+    const lastMessage = { id: '101', chatId: 'chat-1' };
+    repo.findChatsForUser.mockResolvedValue([{ id: 'chat-1', lastMessage }]);
+
+    const chats = await service.getChats('user-1');
+
+    expect(repo.findEnvelopesForMessages).not.toHaveBeenCalled();
+    expect(chats[0].lastMessage).toEqual(lastMessage);
+  });
+});
