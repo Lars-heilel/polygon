@@ -203,7 +203,10 @@ export class ChatService implements IChatService {
   ): Promise<MessagePage> {
     const member = await this.repo.findChatMember(chatId, userId);
     if (!member) throw new ForbiddenException('Not a member of this chat');
-    return this.repo.findMediaMessagesByChat(chatId, cursor, take, filter, userId);
+    const page = await this.repo.findMediaMessagesByChat(chatId, cursor, take, filter, userId);
+    // Profile media grid needs the same envelope join as the message list —
+    // otherwise encrypted thumbnails can never be decrypted client-side.
+    return { ...page, messages: await this.attachEnvelopes(page.messages, userId) };
   }
 
   async getMessageAttachmentForAccess(

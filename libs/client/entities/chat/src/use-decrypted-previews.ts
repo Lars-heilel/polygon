@@ -2,16 +2,20 @@ import { useEffect, useState } from 'react';
 
 import { type RawMessage, decryptIncomingMessage } from '@org/entities-message';
 
-import { getMessagePreview } from './chat-preview';
-
 export function truncatePreviewText(text: string): string {
   const trimmed = text.trim();
   return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
 }
 
+type PreviewMessageLike = {
+  id: string;
+  text?: string | null;
+  envelopes?: RawMessage['envelopes'];
+};
+
 type ChatPreviewSource = {
   id: string;
-  lastMessage?: (Partial<RawMessage> & { id: string }) | null;
+  lastMessage?: PreviewMessageLike | null;
 };
 
 /**

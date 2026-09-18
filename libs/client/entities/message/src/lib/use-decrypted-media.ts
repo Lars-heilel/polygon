@@ -5,6 +5,45 @@ import { frontendLog } from '@org/shared';
 
 import type { Message } from '../message.types.js';
 
+export interface ResolvedDecryptedMedia {
+  /** Blob URL (decrypted) or the direct server URL for legacy media. */
+  url: string;
+  fileName: string | null;
+  mime: string | null;
+}
+
+/**
+ * Imperative media resolver behind `useDecryptedMessageMedia`: fetches the
+ * content URL, decrypts through the envelope file key when present, and
+ * returns an object URL. Returns null when there is nothing to resolve
+ * (no URL) or the fetch/decrypt fails. Callers own revocation.
+ */
+export async function resolveDecryptedMediaUrl(
+  message: Message,
+): Promise<ResolvedDecryptedMedia | null> {
+  const contentUrl = message.media?.contentUrl ?? '';
+  if (!contentUrl) return null;
+  const entry =
+    message.fileKeys?.find((key) => message.media && key.mediaId === message.media.fileId) ??
+    null;
+  if (!entry) {
+    return {
+      url: contentUrl,
+      fileName: message.media?.fileName ?? null,
+      mime: message.media?.mime ?? null,
+    };
+  }
+  const res = await fetch(contentUrl);
+  if (!res.ok) throw new Error(`Media fetch failed: ${res.status}`);
+  const ciphertext = new Uint8Array(await res.arrayBuffer());
+  const plaintext = await decryptFileBytes(ciphertext, entry.key, entry.iv);
+  return {
+    url: URL.createObjectURL(new Blob([plaintext], { type: entry.mime })),
+    fileName: entry.fileName,
+    mime: entry.mime,
+  };
+}
+
 /**
  * Resolves a playable/downloadable URL for message media. Legacy
  * (non-encrypted) media returns the server content URL as-is. Encrypted
@@ -27,15 +66,11 @@ export function useDecryptedMessageMedia(message: Message): {
     if (!entry || !contentUrl) return;
     let alive = true;
     let url: string | null = null;
-    fetch(contentUrl)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Media fetch failed: ${res.status}`);
-        return new Uint8Array(await res.arrayBuffer());
-      })
-      .then(async (ciphertext) => decryptFileBytes(ciphertext, entry.key, entry.iv))
-      .then((plaintext) => {
+    resolveDecryptedMediaUrl(message)
+      .then((resolved) => {
         if (!alive) return;
-        url = URL.createObjectURL(new Blob([plaintext], { type: entry.mime }));
+        if (!resolved || resolved.url === contentUrl) return;
+        url = resolved.url;
         setBlobUrl(url);
       })
       .catch(() => {

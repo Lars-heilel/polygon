@@ -1738,3 +1738,49 @@ describe('ChatService chat-list previews', () => {
     expect(chats[0].lastMessage).toEqual(lastMessage);
   });
 });
+
+describe('ChatService media history', () => {
+  it('attaches the requester envelopes to media messages', async () => {
+    const repo = repoMock();
+    const e2eeKeys = {
+      findDevicesByUserIds: jest.fn(async () => [
+        {
+          deviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9a1',
+          userId: 'user-1',
+          identityKey: 'a2V5',
+          registrationId: 1,
+        },
+      ]),
+    };
+    const service = new ChatService(repo, undefined, e2eeKeys as never);
+    const envelope = {
+      senderDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9c1',
+      recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9a1',
+      ciphertext: 'Y2lwaGVy',
+      iv: 'aXY=',
+      keyVersion: 0,
+      ratchetHeader: 'cmF0Y2hldA==',
+      ephemeralKey: 'ZXBo',
+    };
+    repo.findChatMember.mockResolvedValue({ chatId: 'chat-1', userId: 'user-1' } as never);
+    repo.findMediaMessagesByChat.mockResolvedValue({
+      messages: [{ id: '101', chatId: 'chat-1' }],
+      nextCursor: null,
+    });
+    repo.findEnvelopesForMessages.mockResolvedValue([
+      {
+        messageId: '101',
+        recipientDeviceId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9a1',
+        envelopeJson: JSON.stringify(envelope),
+      },
+    ]);
+
+    const page = await service.getMediaMessages('chat-1', 'user-1', undefined, 50, 'IMAGE' as never);
+
+    expect(repo.findEnvelopesForMessages).toHaveBeenCalledWith(
+      ['101'],
+      ['0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9a1'],
+    );
+    expect(page.messages[0].envelopes).toEqual([envelope]);
+  });
+});

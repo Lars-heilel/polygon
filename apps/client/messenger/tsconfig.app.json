@@ -98,6 +98,9 @@
       "path": "../../../libs/client/features/send-message/tsconfig.lib.json"
     },
     {
+      "path": "../../../libs/client/crypto-e2ee/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/client/features/notifications/tsconfig.lib.json"
     },
     {

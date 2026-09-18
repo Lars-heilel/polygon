@@ -1,14 +1,15 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 import type { ChatMediaFilter } from '@org/common';
-import { FileMessage, LinkPreviewCard, MessageContent } from '@org/entities-message';
 import { useGetChatsSuspenseQuery } from '@org/entities-chat';
+import { FileMessage, LinkPreviewCard, MessageContent } from '@org/entities-message';
+import { resolveDecryptedMediaUrl, useDecryptedMessageMedia } from '@org/entities-message';
 import { useMeSuspenseQuery } from '@org/entities-user';
 import {
   MediaFrame,
   MediaViewer,
-  Spinner,
   type MediaViewerItem,
+  Spinner,
   Text,
   VirtualFeed,
   cn,
@@ -17,10 +18,10 @@ import {
 } from '@org/shared';
 
 import {
+  type ChatMediaEntry,
   buildChatMediaEntries,
   groupMediaEntriesByDate,
   useChatMediaMessages,
-  type ChatMediaEntry,
 } from '../api/use-chat-media.js';
 
 export interface ProfileMediaPanelProps {
@@ -36,11 +37,15 @@ const tabs: Array<{ key: ChatMediaFilter; label: string }> = [
   { key: 'LINK', label: 'Links' },
 ];
 
-export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: ProfileMediaPanelProps) {
+export const ProfileMediaPanel = memo(function ProfileMediaPanel({
+  chatId,
+}: ProfileMediaPanelProps) {
   const [activeTab, setActiveTab] = useState<ChatMediaFilter>('ALL');
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useChatMediaMessages(chatId, activeTab);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useChatMediaMessages(
+    chatId,
+    activeTab,
+  );
   const { data: me } = useMeSuspenseQuery();
   const { data: chats } = useGetChatsSuspenseQuery();
 
@@ -57,7 +62,7 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
 
   const groups = useMemo(() => groupMediaEntriesByDate(items), [items]);
   const flatItems = useMemo(() => flattenGroups(groups), [groups]);
-  const visualItems = useMemo(() => buildVisualViewerItems(items), [items]);
+  const visualItems = useDecryptedViewerItems(items);
 
   const openEntry = (entry: ChatMediaEntry) => {
     const nextIndex = visualItems.findIndex((visualItem) => visualItem.id === entry.id);
@@ -93,13 +98,24 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
           </div>
         ) : items.length === 0 ? (
           <div className="flex items-center justify-center py-16">
-            <Text size="sm" color="muted">Nothing yet</Text>
+            <Text
+              size="sm"
+              color="muted"
+            >
+              Nothing yet
+            </Text>
           </div>
         ) : (
           <VirtualFeed
             mode="forward"
             items={flatItems}
-            getKey={(item) => item.type === 'header' ? `header:${item.label}` : item.type === 'grid' ? `grid:${item.entries.map((entry) => entry.id).join(',')}` : `entry:${item.entry.id}`}
+            getKey={(item) =>
+              item.type === 'header'
+                ? `header:${item.label}`
+                : item.type === 'grid'
+                  ? `grid:${item.entries.map((entry) => entry.id).join(',')}`
+                  : `entry:${item.entry.id}`
+            }
             estimateItemHeight={180}
             hasNext={hasNextPage}
             isLoadingNext={isFetchingNextPage}
@@ -108,13 +124,13 @@ export const ProfileMediaPanel = memo(function ProfileMediaPanel({ chatId }: Pro
                 fetchNextPage();
               }
             }}
-            footer={isFetchingNextPage
-              ? (
+            footer={
+              isFetchingNextPage ? (
                 <div className="flex justify-center py-4">
                   <Spinner size="sm" />
                 </div>
-              )
-              : null}
+              ) : null
+            }
             renderItem={(item) => {
               if (item.type === 'header') {
                 return (
@@ -172,8 +188,10 @@ type FlatItem =
   | { type: 'entry'; entry: ChatMediaEntry };
 
 function isVisualEntry(entry: ChatMediaEntry): entry is VisualEntry {
-  return entry.kind === 'file'
-    && ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.media?.category ?? '');
+  return (
+    entry.kind === 'file' &&
+    ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.media?.category ?? '')
+  );
 }
 
 function flattenGroups(groups: Map<string, ChatMediaEntry[]>): FlatItem[] {
@@ -211,26 +229,46 @@ const MediaEntryCard = memo(function MediaEntryCard({
   senderName: string;
   onOpenViewer: () => void;
 }) {
-  const isVisualFile = entry.kind === 'file'
-    && ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.media?.category ?? '');
+  const isVisualFile =
+    entry.kind === 'file' &&
+    ['IMAGE', 'VIDEO', 'CIRCLE'].includes(entry.message.media?.category ?? '');
 
   return (
     <div className="mb-3 rounded-lg border border-border bg-surface p-3 shadow-[var(--shadow-surface)]">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <Text size="xs" weight="medium">{senderName}</Text>
-        <Text size="xs" color="muted">{formatTime(entry.message.createdAt)}</Text>
+        <Text
+          size="xs"
+          weight="medium"
+        >
+          {senderName}
+        </Text>
+        <Text
+          size="xs"
+          color="muted"
+        >
+          {formatTime(entry.message.createdAt)}
+        </Text>
       </div>
 
       {entry.kind === 'file' ? (
         <div className="space-y-2">
           {isVisualFile ? (
-            <VisualMediaPreview entry={entry} onOpenViewer={onOpenViewer} />
+            <VisualMediaPreview
+              entry={entry}
+              onOpenViewer={onOpenViewer}
+            />
           ) : (
-            <FileMessage message={entry.message} isMine={isMine} />
+            <FileMessage
+              message={entry.message}
+              isMine={isMine}
+            />
           )}
           {entry.message.text ? (
             <div className="rounded-md border border-border bg-surface-elevated p-2">
-              <MessageContent text={entry.message.text} isMine={false} />
+              <MessageContent
+                text={entry.message.text}
+                isMine={false}
+              />
             </div>
           ) : null}
         </div>
@@ -239,7 +277,10 @@ const MediaEntryCard = memo(function MediaEntryCard({
           <LinkPreviewCard url={entry.url} />
           {entry.message.text && !isSingleUrlText(entry.message.text, entry.url) ? (
             <div className="rounded-md border border-border bg-surface-elevated p-2">
-              <MessageContent text={entry.message.text} isMine={false} />
+              <MessageContent
+                text={entry.message.text}
+                isMine={false}
+              />
             </div>
           ) : null}
         </div>
@@ -255,17 +296,22 @@ const GridThumb = memo(function GridThumb({
   entry: Extract<ChatMediaEntry, { kind: 'file' }>;
   onOpen: () => void;
 }) {
-  const src = entry.message.media?.contentUrl ?? '';
-  const isVideo = entry.message.media?.category !== 'IMAGE';
+  const { message: view, isLoading } = useDecryptedMessageMedia(entry.message);
+  const src = view.media?.contentUrl ?? '';
+  const isVideo = view.media?.category !== 'IMAGE';
 
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`Open media ${entry.message.media?.fileName ?? 'file'}`}
+      aria-label={`Open media ${view.media?.fileName ?? 'file'}`}
       className="relative block aspect-square w-full overflow-hidden rounded-md bg-surface-elevated transition-opacity hover:opacity-90 focus:outline-none"
     >
-      {isVideo ? (
+      {isLoading ? (
+        <span className="flex h-full w-full items-center justify-center">
+          <span className="h-8 w-8 animate-pulse rounded-full bg-primary/15" />
+        </span>
+      ) : isVideo ? (
         <video
           src={src}
           className="h-full w-full object-cover"
@@ -274,15 +320,19 @@ const GridThumb = memo(function GridThumb({
       ) : (
         <img
           src={src}
-          alt={entry.message.media?.fileName ?? 'Image'}
+          alt={view.media?.fileName ?? 'Image'}
           className="h-full w-full object-cover"
           loading="lazy"
         />
       )}
-      {isVideo && (
+      {isVideo && !isLoading && (
         <span className="absolute inset-0 flex items-center justify-center">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60">
-            <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="ml-0.5 h-4 w-4 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           </span>
@@ -299,8 +349,9 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
   entry: Extract<ChatMediaEntry, { kind: 'file' }>;
   onOpenViewer: () => void;
 }) {
-  const src = entry.message.media?.contentUrl ?? '';
-  const isImage = entry.message.media?.category === 'IMAGE';
+  const { message: view, isLoading } = useDecryptedMessageMedia(entry.message);
+  const src = view.media?.contentUrl ?? '';
+  const isImage = view.media?.category === 'IMAGE';
 
   return (
     <button
@@ -308,17 +359,21 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
       onClick={onOpenViewer}
       className="block w-full overflow-hidden rounded-lg border border-border bg-surface-elevated text-left transition-colors hover:border-primary/60"
     >
-      {isImage ? (
+      {isLoading ? (
+        <span className="flex h-40 w-full items-center justify-center">
+          <span className="h-10 w-10 animate-pulse rounded-full bg-primary/15" />
+        </span>
+      ) : isImage ? (
         <MediaFrame
           data-testid="profile-media-frame"
-          width={entry.message.media?.width ?? null}
-          height={entry.message.media?.height ?? null}
+          width={view.media?.width ?? null}
+          height={view.media?.height ?? null}
           maxWidth={560}
           className="w-full"
         >
           <img
             src={src}
-            alt={entry.message.media?.fileName ?? 'Image'}
+            alt={view.media?.fileName ?? 'Image'}
             className="h-full w-full object-cover"
             loading="lazy"
           />
@@ -326,8 +381,8 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
       ) : (
         <MediaFrame
           data-testid="profile-media-frame"
-          width={entry.message.media?.width ?? null}
-          height={entry.message.media?.height ?? null}
+          width={view.media?.width ?? null}
+          height={view.media?.height ?? null}
           maxWidth={560}
           className="w-full"
         >
@@ -338,7 +393,11 @@ const VisualMediaPreview = memo(function VisualMediaPreview({
           />
           <div className="absolute inset-0 flex items-center justify-center bg-background/30">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface/90 text-text shadow-[var(--shadow-surface)]">
-              <svg className="ml-1 h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="ml-1 h-7 w-7"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
@@ -360,12 +419,68 @@ function buildVisualViewerItems(items: ChatMediaEntry[]): MediaViewerItem[] {
       return [];
     }
 
-    return [{
-      id: item.id,
-      type: category === 'IMAGE' ? 'image' : 'video',
-      src: item.message.media?.contentUrl ?? '',
-      alt: item.message.media?.fileName ?? 'Media',
-      label: item.message.media?.fileName ?? 'Media',
-    }];
+    return [
+      {
+        id: item.id,
+        type: category === 'IMAGE' ? 'image' : 'video',
+        src: item.message.media?.contentUrl ?? '',
+        alt: item.message.media?.fileName ?? 'Media',
+        label: item.message.media?.fileName ?? 'Media',
+      },
+    ];
   });
+}
+
+/**
+ * Viewer items with decrypted sources. Grid thumbs resolve their own URLs
+ * on render; the fullscreen viewer needs every source upfront, so this
+ * resolves all file entries once per items change (revoking stale blobs).
+ */
+export function useDecryptedViewerItems(items: ChatMediaEntry[]): MediaViewerItem[] {
+  const base = useMemo(() => buildVisualViewerItems(items), [items]);
+  const [overrides, setOverrides] = useState<Record<string, MediaViewerItem>>({});
+
+  useEffect(() => {
+    let alive = true;
+    const revoke: string[] = [];
+    void (async () => {
+      const next: Record<string, MediaViewerItem> = {};
+      await Promise.all(
+        items.flatMap((item) => {
+          if (item.kind !== 'file') return [];
+          return [
+            (async () => {
+              try {
+                const resolved = await resolveDecryptedMediaUrl(item.message);
+                if (!resolved || resolved.url === item.message.media?.contentUrl) return;
+                if (!alive) {
+                  URL.revokeObjectURL(resolved.url);
+                  return;
+                }
+                revoke.push(resolved.url);
+                next[item.id] = {
+                  id: item.id,
+                  type: (item.message.media?.category === 'IMAGE' ? 'image' : 'video') as
+                    | 'image'
+                    | 'video',
+                  src: resolved.url,
+                  alt: resolved.fileName ?? 'Media',
+                  label: resolved.fileName ?? 'Media',
+                };
+              } catch {
+                // Ciphertext tile stays; the grid shows the same fallback.
+              }
+            })(),
+          ];
+        }),
+      );
+      if (alive) setOverrides(next);
+    })();
+    return () => {
+      alive = false;
+      for (const url of revoke) URL.revokeObjectURL(url);
+    };
+  }, [items]);
+
+  return useMemo(() => base.map((item) => overrides[item.id] ?? item), [base, overrides]);
 }

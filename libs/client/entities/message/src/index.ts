@@ -31,7 +31,11 @@ export type {
   MessageMediaCategory,
 } from './message.types.js';
 export { normalizeMessage, normalizeMessagePage } from './message-normalizer.js';
-export { useDecryptedMessageMedia } from './lib/use-decrypted-media.js';
+export {
+  resolveDecryptedMediaUrl,
+  useDecryptedMessageMedia,
+  type ResolvedDecryptedMedia,
+} from './lib/use-decrypted-media.js';
 export {
   deleteCachedMessage,
   evictOldMessages,

@@ -78,7 +78,7 @@ export async function confirmChatFileUpload(fileId: string): Promise<ConfirmUplo
 }
 
 /** Read blob bytes where `Blob.arrayBuffer` may be missing (jsdom). */
-function readBlobBytes(source: Blob): Promise<Uint8Array> {
+function readBlobBytes(source: Blob): Promise<Uint8Array<ArrayBuffer>> {
   const direct = (source as Blob & { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer;
   if (typeof direct === 'function') {
     return direct.call(source).then((buffer) => new Uint8Array(buffer));
