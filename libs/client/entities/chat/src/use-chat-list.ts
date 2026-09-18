@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 
-import { useGetChatsSuspenseQuery } from './chat.api';
 import { getMessagePreview } from './chat-preview';
+import { useGetChatsSuspenseQuery } from './chat.api';
 import { getChatDisplayName } from './chat.utils';
-import { previewWithDecryptedFallback, useDecryptedPreviews } from './use-decrypted-previews';
 import { usePresenceStore } from './presence.store';
+import { previewWithDecryptedFallback, useDecryptedPreviews } from './use-decrypted-previews';
 
 function getOtherUserInfo(
   chat: { members: Array<{ userId: string; profile: { avatarUrl: string | null } | null }> },
   myId: string,
 ): { userId: string; avatarUrl: string | null } | null {
-  const member = chat.members.find((m) => m.userId !== myId) ?? chat.members.find((m) => m.userId === myId);
+  const member =
+    chat.members.find((m) => m.userId !== myId) ?? chat.members.find((m) => m.userId === myId);
   if (!member) return null;
   return { userId: member.userId, avatarUrl: member.profile?.avatarUrl ?? null };
 }

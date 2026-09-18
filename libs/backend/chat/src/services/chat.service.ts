@@ -91,11 +91,7 @@ export class ChatService implements IChatService {
     private readonly e2eeKeys?: IE2eeKeyRepository,
   ) {}
 
-  async createDirectChat(
-    userId: string,
-    targetUserId: string,
-    e2eeEnabled = true,
-  ): Promise<Chat> {
+  async createDirectChat(userId: string, targetUserId: string, e2eeEnabled = true): Promise<Chat> {
     const isSelfChat = targetUserId === userId;
     const existing = isSelfChat
       ? await this.repo.findSelfChat(userId)

@@ -1,11 +1,6 @@
+import { createSessionFromPrekey, encryptToDevice, registerOwnDeviceKeys } from '@org/crypto-e2ee';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-
-import {
-  createSessionFromPrekey,
-  encryptToDevice,
-  registerOwnDeviceKeys,
-} from '@org/crypto-e2ee';
 
 import { truncatePreviewText, useDecryptedPreviews } from '../use-decrypted-previews.js';
 

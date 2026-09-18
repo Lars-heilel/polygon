@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { decryptIncomingMessage, type RawMessage } from '@org/entities-message';
+import { type RawMessage, decryptIncomingMessage } from '@org/entities-message';
 
 import { getMessagePreview } from './chat-preview';
 
@@ -21,7 +21,9 @@ type ChatPreviewSource = {
  * wherever the local device holds the keys; everything else keeps the
  * fallback (including undecryptable and keyless states).
  */
-export function useDecryptedPreviews<TChat extends ChatPreviewSource>(chats: TChat[]): Record<string, string> {
+export function useDecryptedPreviews<TChat extends ChatPreviewSource>(
+  chats: TChat[],
+): Record<string, string> {
   const [previews, setPreviews] = useState<Record<string, string>>({});
 
   useEffect(() => {
