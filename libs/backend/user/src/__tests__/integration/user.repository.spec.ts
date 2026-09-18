@@ -5,7 +5,17 @@ import { PrismaService, UserPrismaRepository } from '../../database';
 import type { IUserRepository } from '../../interfaces/user.interface';
 import { mockUserInput } from '../fixtures/user.fixtures';
 
-describe('UserPrismaRepository (integration)', () => {
+/**
+ * DANGER: this suite writes to a REAL database (`deleteMany` in
+ * `beforeEach`). It runs only when USER_DATABASE_URL points at a database
+ * whose name marks it as a test DB (`*_test`). Against dev/prod it
+ * self-skips — a plain `nx test` must never wipe real users (this has
+ * happened: full-suite runs emptied the dev `users` table).
+ */
+const dbUrl = process.env['USER_DATABASE_URL'] ?? '';
+const describeIntegration = /_test($|[?/])/.test(dbUrl) ? describe : describe.skip;
+
+describeIntegration('UserPrismaRepository (integration)', () => {
   let repo: IUserRepository;
   let prisma: PrismaService;
 
