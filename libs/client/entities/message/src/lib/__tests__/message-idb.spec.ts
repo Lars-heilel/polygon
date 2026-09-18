@@ -50,3 +50,24 @@ describe('message-idb', () => {
     expect(peekCachedMessages('idb-chat-mirror')?.map((m) => m.id)).toEqual(['1', '2']);
   });
 });
+
+describe('message-idb placeholders', () => {
+  it('never persists undecryptable placeholders over readable entries', async () => {
+    await writeMessagesToCache('idb-chat-ph', [msg('1', '2026-09-14T10:00:00.000Z')]);
+    await writeMessagesToCache('idb-chat-ph', [
+      { ...msg('1', '2026-09-14T10:00:00.000Z'), text: null, undecryptable: true },
+    ]);
+    const back = await readCachedMessages('idb-chat-ph');
+    expect(back.map((m) => m.id)).toEqual(['1']);
+    expect(back[0]?.text).toBe('hi');
+    expect(peekCachedMessages('idb-chat-ph')?.[0]?.text).toBe('hi');
+  });
+
+  it('stores nothing when only placeholders arrive', async () => {
+    await writeMessagesToCache('idb-chat-ph-empty', [
+      { ...msg('9', '2026-09-14T10:00:00.000Z'), text: null, undecryptable: true },
+    ]);
+    expect(await readCachedMessages('idb-chat-ph-empty')).toEqual([]);
+    expect(peekCachedMessages('idb-chat-ph-empty')).toBeUndefined();
+  });
+});

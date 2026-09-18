@@ -182,6 +182,41 @@ describe('ensureDeviceEnrolled', () => {
     );
   });
 
+  it('refreshes server state once keys are ready (verified path)', async () => {
+    seedMe();
+    seedOwnKeys();
+    sharedMocks.authedFetch.mockResolvedValueOnce({
+      deviceId: DEVICE_ID,
+      userId: ME_ID,
+      identityKey: 'aWtlaQ==',
+      registrationId: 7,
+    });
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+
+    try {
+      await ensureDeviceEnrolled();
+
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['messages'] });
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['chats'] });
+    } finally {
+      invalidate.mockRestore();
+    }
+  });
+
+  it('refreshes server state after a fresh enrollment', async () => {
+    seedMe();
+    cryptoMocks.getOwnDeviceKeys.mockReturnValue(null);
+    sharedMocks.authedFetch.mockResolvedValue(undefined);
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+
+    try {
+      await ensureDeviceEnrolled();
+
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['messages'] });
+    } finally {
+      invalidate.mockRestore();
+    }
+  });
   it('does nothing on transient verify failures (no wipe, no enroll)', async () => {
     seedMe();
     seedOwnKeys();

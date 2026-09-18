@@ -56,7 +56,10 @@ async function ensure(): Promise<void> {
     }
     if (own) {
       const verdict = await verifyOwnDevice(own.deviceId, userId);
-      if (verdict === 'verified') return;
+      if (verdict === 'verified') {
+        await refreshServerState();
+        return;
+      }
       if (verdict === 'transient') return;
       // 'missing' or 'foreign': drop stale keys everywhere and enroll fresh
       // below. A verified record with no recoverable keys (pre-fix client,
@@ -67,8 +70,23 @@ async function ensure(): Promise<void> {
     }
 
     await enrollDevice();
+    await refreshServerState();
   } catch {
     frontendLog('warn', 'DeviceEnrollment', 'device_ensure_failed', {});
+  }
+}
+
+/**
+ * Message/chat queries that ran before the keys were ready resolved to
+ * placeholders. Re-run them now that decrypt can succeed — otherwise the
+ * UI stays stale until the next manual refresh.
+ */
+async function refreshServerState(): Promise<void> {
+  try {
+    await queryClient.invalidateQueries({ queryKey: ['messages'] });
+    await queryClient.invalidateQueries({ queryKey: ['chats'] });
+  } catch {
+    // Best-effort: stale data recovers on the next navigation/refresh.
   }
 }
 

@@ -61,10 +61,16 @@ function getDb(): Promise<IDBPDatabase<ChatCacheSchema>> {
 }
 
 export async function writeMessagesToCache(chatId: string, messages: Message[]): Promise<void> {
-  mirrorWrite(chatId, messages);
+  // Placeholders must never poison the cache: they carry no text and would
+  // overwrite readable entries (same id) in both the mirror and IndexedDB,
+  // sticking until the next cold start. Retry/decrypt recovers them through
+  // the query cache and delta sync instead.
+  const cacheable = messages.filter((m) => !m.undecryptable);
+  mirrorWrite(chatId, cacheable);
+  if (cacheable.length === 0) return;
   const db = await getDb();
   const tx = db.transaction('messages', 'readwrite');
-  await Promise.all(messages.map((m) => tx.store.put({ ...m, chatId })));
+  await Promise.all(cacheable.map((m) => tx.store.put({ ...m, chatId })));
   await tx.done;
 }
 
