@@ -308,7 +308,15 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
     const envelopes = Array.isArray(payload.envelopes) ? payload.envelopes : [];
     if (envelopes.length > 0) {
-      await this.handleEnvelopeSend(socket, userId, payload.chatId, payload.clientId, envelopes);
+      await this.handleEnvelopeSend(
+        socket,
+        userId,
+        payload.chatId,
+        payload.clientId,
+        envelopes,
+        payload.type,
+        payload.attachments,
+      );
       return;
     }
 
@@ -442,6 +450,8 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     chatId: string,
     clientId: string | null | undefined,
     envelopes: Array<MessageEnvelope | GroupMessageEnvelope>,
+    type?: string,
+    attachments?: SocketMessageAttachmentPayload[],
   ): Promise<void> {
     this.logger.debug({
       eventType: 'socket_envelope_send_requested',
@@ -501,9 +511,10 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
         chatId,
         clientId: clientId ?? null,
         senderId: userId,
-        type: 'TEXT',
+        type: type ?? 'TEXT',
         text: null,
         envelopes,
+        attachments: Array.isArray(attachments) ? attachments : [],
       }),
     ).catch((err: unknown) => {
       this.logger.error({

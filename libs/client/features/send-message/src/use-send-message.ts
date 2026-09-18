@@ -5,6 +5,7 @@ import {
   type Chat,
   type DeviceRecord,
   E2EE_NO_RECIPIENT_KEYS,
+  type EnvelopeFileKey,
   type GroupMessageEnvelope,
   type MessageEnvelope,
   type PrekeyBundleRecord,
@@ -35,6 +36,14 @@ export interface FileAttachment {
   fileSize: number;
   fileMime: string;
   fileCategory: string;
+  /**
+   * Present only when the file bytes were encrypted client-side before
+   * upload (E2EE chats). The key travels inside message envelopes
+   * (`fileKeys`), never to storage. Snapshots below are redacted then.
+   */
+  contentKey?: { keyB64: string; ivB64: string };
+  /** True when the uploaded bytes are ciphertext (redact metadata). */
+  encrypted?: boolean;
 }
 
 interface MessageAttachmentPayload {
@@ -80,12 +89,25 @@ function getKindFromCategory(category: string): Message['kind'] {
 }
 
 function createAttachmentPayload(file: FileAttachment): MessageAttachmentPayload {
+  const redacted = file.encrypted === true;
   return {
     mediaId: file.fileId,
-    fileNameSnapshot: file.fileName,
+    fileNameSnapshot: redacted ? null : file.fileName,
     fileSizeSnapshot: file.fileSize,
-    mimeSnapshot: file.fileMime,
+    mimeSnapshot: redacted ? null : file.fileMime,
     category: file.fileCategory,
+  };
+}
+
+/** Envelope file-key entry for one uploaded attachment (E2EE only). */
+function createEnvelopeFileKey(file: FileAttachment): EnvelopeFileKey | null {
+  if (!file.encrypted || !file.contentKey) return null;
+  return {
+    mediaId: file.fileId,
+    key: file.contentKey.keyB64,
+    iv: file.contentKey.ivB64,
+    fileName: file.fileName,
+    mime: file.fileMime,
   };
 }
 
@@ -179,7 +201,7 @@ export async function buildMessageEnvelopes(
   chatId: string,
   plaintext: string,
   senderDeviceId: string,
-  opts: { e2eeEnabled?: boolean } = {},
+  opts: { e2eeEnabled?: boolean; fileKeys?: EnvelopeFileKey[] } = {},
 ): Promise<MessageEnvelope[]> {
   const devices = await fetchChatDevices(chatId);
   // NOTE: the sender's own device stays in the fan-out. Without a
@@ -191,7 +213,8 @@ export async function buildMessageEnvelopes(
     const session = await sessionForRecipient(chatId, deviceId);
     if (!session) continue;
     try {
-      envelopes.push(await encryptToDevice(plaintext, session, senderDeviceId));
+      const envelope = await encryptToDevice(plaintext, session, senderDeviceId);
+      envelopes.push(opts.fileKeys?.length ? { ...envelope, fileKeys: opts.fileKeys } : envelope);
     } catch {
       frontendLog('warn', 'SendMessage', 'e2ee_encrypt_failed', {
         hasDeviceId: !!deviceId,
@@ -214,7 +237,7 @@ export async function buildGroupEnvelopes(
   chatId: string,
   plaintext: string,
   senderDeviceId: string,
-  opts: { e2eeEnabled?: boolean } = {},
+  opts: { e2eeEnabled?: boolean; fileKeys?: EnvelopeFileKey[] } = {},
 ): Promise<GroupMessageEnvelope[]> {
   const ctx = getCurrentSenderKeyContext(chatId) ?? (await createSenderKeyContext(chatId));
   const devices = await fetchChatDevices(chatId);
@@ -246,7 +269,11 @@ export async function buildGroupEnvelopes(
       });
     }
   }
-  return [await encryptForGroup(plaintext, ctx)];
+  return [
+    await encryptForGroup(plaintext, ctx).then((envelope) =>
+      opts.fileKeys?.length ? { ...envelope, fileKeys: opts.fileKeys } : envelope,
+    ),
+  ];
 }
 
 async function fetchChatDevices(chatId: string): Promise<DeviceRecord[]> {
@@ -376,13 +403,44 @@ export function useSendMessage(chatId: string | null, senderId: string | null = 
         type: getMessageTypeFromCategory(file.fileCategory),
       });
       try {
-        socket.emit('message:send', {
-          chatId,
-          clientId,
-          type: getMessageTypeFromCategory(file.fileCategory),
-          attachments: [attachment],
-        });
-      } catch {
+        const active = getActiveDeviceId();
+        const chat = queryClient.getQueryData<Chat[]>(['chats'])?.find((c) => c.id === chatId);
+        const e2eeEnabled = chat?.e2eeEnabled ?? false;
+        const fileKey = createEnvelopeFileKey(file);
+        if (e2eeEnabled) {
+          // File bytes are already ciphertext (encrypted at upload); the
+          // content key rides inside the envelopes. No key, no send.
+          if (!fileKey) throw new Error(E2EE_NO_RECIPIENT_KEYS);
+          const envelopes = await buildMessageEnvelopes(chatId, '', active.deviceId, {
+            e2eeEnabled,
+            fileKeys: [fileKey],
+          });
+          socket.emit('message:send', {
+            chatId,
+            clientId,
+            type: getMessageTypeFromCategory(file.fileCategory),
+            attachments: [attachment],
+            envelopes,
+          });
+        } else {
+          socket.emit('message:send', {
+            chatId,
+            clientId,
+            type: getMessageTypeFromCategory(file.fileCategory),
+            attachments: [attachment],
+          });
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message === E2EE_NO_RECIPIENT_KEYS) {
+          if (snapshot) queryClient.setQueryData(['messages', chatId], snapshot);
+          setSendError(E2EE_NO_RECIPIENT_KEYS);
+          frontendLog('warn', 'SendMessage', 'message_send_no_recipient_keys', {
+            hasChatId: !!chatId,
+            hasClientId: !!clientId,
+          });
+          stopTyping();
+          return;
+        }
         if (snapshot) queryClient.setQueryData(['messages', chatId], snapshot);
         frontendLog('warn', 'SendMessage', 'message_send_failed', {
           hasChatId: !!chatId,

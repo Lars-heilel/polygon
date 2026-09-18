@@ -2,7 +2,9 @@ import { useCallback, useRef, useState } from 'react';
 
 import {
   confirmChatFileUpload,
+  getChatE2eeEnabled,
   initChatFileUpload,
+  prepareFileForUpload,
   uploadFileToMinio,
 } from '../upload-chat-file.api';
 import type { FileAttachment } from '../use-send-message';
@@ -58,25 +60,32 @@ export function useVoiceRecorder(chatId: string, onReady: (attachment: FileAttac
 
   const uploadVoice = async (blob: Blob) => {
     const file = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+    const prepared = await prepareFileForUpload(file, {
+      name: file.name,
+      mime: file.type,
+      e2eeEnabled: getChatE2eeEnabled(chatId),
+    });
     const { fileId, presignedUrl } = await initChatFileUpload(
-      file.name,
-      file.type,
-      file.size,
+      prepared.name,
+      prepared.mime,
+      prepared.size,
       chatId,
       'VOICE',
     );
 
-    await uploadFileToMinio(presignedUrl, file);
+    await uploadFileToMinio(presignedUrl, prepared.blob);
     const confirmed = await confirmChatFileUpload(fileId);
 
     onReady({
       fileId: confirmed.id,
       fileBucket: confirmed.bucket,
       fileKey: confirmed.key,
-      fileName: confirmed.originalName,
+      fileName: file.name,
       fileSize: confirmed.size,
-      fileMime: confirmed.mimeType,
+      fileMime: file.type,
       fileCategory: 'VOICE',
+      contentKey: prepared.contentKey,
+      encrypted: prepared.encrypted,
     });
   };
 

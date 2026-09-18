@@ -399,3 +399,92 @@ describe('buildMessageEnvelopes self fan-out', () => {
     expect(envelopes[0]?.recipientDeviceId).toBe(SELF);
   });
 });
+
+describe('useSendMessage file branch (E2EE)', () => {
+  const PEER = '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9e1';
+  const FILE_CHAT = 'send-chat-file-e2ee';
+
+  function fileAttachment(overrides: Record<string, unknown> = {}) {
+    return {
+      fileId: '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9f1',
+      fileBucket: 'b',
+      fileKey: 'k',
+      fileName: 'photo.png',
+      fileSize: 10,
+      fileMime: 'image/png',
+      fileCategory: 'IMAGE',
+      ...overrides,
+    };
+  }
+
+  async function seedE2eeChat(id = FILE_CHAT) {
+    const peer = await makeRemoteDevice(PEER);
+    const bundles = new Map([[peer.deviceId, await bundleFor(peer)]]);
+    routeFetch({
+      devices: [deviceRecord(SENDER_DEVICE, 'user-1'), deviceRecord(peer.deviceId, 'user-2')],
+      bundles,
+      sharePosts: [],
+    });
+    seedChats([chatRecord({ id, type: 'DIRECT', e2eeEnabled: true })]);
+  }
+
+  it('emits envelopes carrying fileKeys for encrypted files', async () => {
+    await seedE2eeChat();
+    const { result } = renderHook(() => useSendMessage(FILE_CHAT, 'user-1'));
+    act(() => {
+      result.current.setFileAttachment(
+        fileAttachment({ encrypted: true, contentKey: { keyB64: 'a2V5', ivB64: 'aXY' } }),
+      );
+    });
+    await act(async () => {
+      await result.current.handleSend();
+    });
+
+    expect(result.current.sendError).toBeNull();
+    const payload = mockSocket.emit.mock.calls.find(([e]) => e === 'message:send')?.[1] as {
+      envelopes?: Array<{ fileKeys?: Array<{ mediaId: string }> }>;
+      attachments?: unknown[];
+    };
+    expect(payload?.envelopes?.length).toBeGreaterThan(0);
+    expect(payload?.envelopes?.[0]?.fileKeys?.[0]?.mediaId).toBe(
+      '0199a6c7-9b1e-7f3a-b2c4-d5e6f7a8b9f1',
+    );
+    expect(payload?.attachments).toHaveLength(1);
+  });
+
+  it('fails closed when the file was never encrypted', async () => {
+    await seedE2eeChat('send-chat-file-e2ee-nokey');
+    const { result } = renderHook(() => useSendMessage('send-chat-file-e2ee-nokey', 'user-1'));
+    act(() => {
+      result.current.setFileAttachment(fileAttachment());
+    });
+    await act(async () => {
+      await result.current.handleSend();
+    });
+
+    expect(result.current.sendError).toBe('E2EE_NO_RECIPIENT_KEYS');
+    expect(mockSocket.emit).not.toHaveBeenCalled();
+  });
+
+  it('keeps the legacy attachment emit for non-E2EE chats', async () => {
+    routeFetch({ devices: [], bundles: new Map(), sharePosts: [] });
+    seedChats([chatRecord({ id: 'send-chat-file-plain', type: 'DIRECT' })]);
+    const { result } = renderHook(() => useSendMessage('send-chat-file-plain', 'user-1'));
+    act(() => {
+      result.current.setFileAttachment(fileAttachment());
+    });
+    await act(async () => {
+      await result.current.handleSend();
+    });
+
+    expect(result.current.sendError).toBeNull();
+    expect(mockSocket.emit).toHaveBeenCalledWith(
+      'message:send',
+      expect.objectContaining({ attachments: expect.any(Array) }),
+    );
+    const payload = mockSocket.emit.mock.calls.find(([e]) => e === 'message:send')?.[1] as {
+      envelopes?: unknown;
+    };
+    expect(payload?.envelopes).toBeUndefined();
+  });
+});

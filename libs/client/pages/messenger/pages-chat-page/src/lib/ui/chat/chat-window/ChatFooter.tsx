@@ -8,7 +8,9 @@ import {
   type FileAttachment,
   confirmChatFileUpload,
   getCategoryFromMime,
+  getChatE2eeEnabled,
   initChatFileUpload,
+  prepareFileForUpload,
   uploadFileToMinio,
   useCircleRecorder,
   useSendMessage,
@@ -118,15 +120,21 @@ export const ChatFooter = memo(function ChatFooter({
 
       try {
         const category = getCategoryFromMime(file.type);
+        const e2eeEnabled = getChatE2eeEnabled(chatId);
+        const prepared = await prepareFileForUpload(file, {
+          name: file.name,
+          mime: file.type,
+          e2eeEnabled,
+        });
         const { fileId, presignedUrl } = await initChatFileUpload(
-          file.name,
-          file.type,
-          file.size,
+          prepared.name,
+          prepared.mime,
+          prepared.size,
           chatId,
           category,
         );
 
-        await uploadFileToMinio(presignedUrl, file, setUploadProgress);
+        await uploadFileToMinio(presignedUrl, prepared.blob, setUploadProgress);
 
         const confirmed = await confirmChatFileUpload(fileId);
 
@@ -134,10 +142,12 @@ export const ChatFooter = memo(function ChatFooter({
           fileId: confirmed.id,
           fileBucket: confirmed.bucket,
           fileKey: confirmed.key,
-          fileName: confirmed.originalName,
+          fileName: file.name,
           fileSize: confirmed.size,
-          fileMime: confirmed.mimeType,
+          fileMime: file.type,
           fileCategory: category,
+          contentKey: prepared.contentKey,
+          encrypted: prepared.encrypted,
         });
 
         setPendingFile(null);

@@ -1,5 +1,6 @@
 import { API_ROUTES } from '@org/common';
-import { authedFetch } from '@org/shared';
+import { encryptFileBytes } from '@org/crypto-e2ee';
+import { authedFetch, frontendLog, queryClient } from '@org/shared';
 
 interface InitUploadResponse {
   fileId: string;
@@ -45,7 +46,7 @@ export async function initChatFileUpload(
 
 export async function uploadFileToMinio(
   presignedUrl: string,
-  file: File,
+  file: File | Blob,
   onProgress?: (pct: number) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -74,6 +75,73 @@ export async function confirmChatFileUpload(fileId: string): Promise<ConfirmUplo
     method: 'POST',
     body: JSON.stringify({ fileId }),
   });
+}
+
+/** Read blob bytes where `Blob.arrayBuffer` may be missing (jsdom). */
+function readBlobBytes(source: Blob): Promise<Uint8Array> {
+  const direct = (source as Blob & { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer;
+  if (typeof direct === 'function') {
+    return direct.call(source).then((buffer) => new Uint8Array(buffer));
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error ?? new Error('Blob read failed'));
+    reader.readAsArrayBuffer(source);
+  });
+}
+export function getChatE2eeEnabled(chatId: string): boolean {
+  const chats = queryClient.getQueryData<Array<{ id: string; e2eeEnabled?: boolean }>>(['chats']);
+  return chats?.find((chat) => chat.id === chatId)?.e2eeEnabled ?? false;
+}
+
+export interface PreparedFileUpload {
+  /** Bytes to PUT to MinIO (ciphertext when encrypted). */
+  blob: Blob;
+  /** Name for init-upload (redacted when encrypted). */
+  name: string;
+  /** Mime for init-upload (octet-stream when encrypted). */
+  mime: string;
+  /** Byte size of `blob`. */
+  size: number;
+  /** Content key — travels inside message envelopes, never to storage. */
+  contentKey?: { keyB64: string; ivB64: string };
+  encrypted: boolean;
+}
+
+/**
+ * Prepare a file for upload. In E2EE chats the bytes are AES-GCM encrypted
+ * client-side and only ciphertext + redacted metadata reach the server; the
+ * real name/mime stay local and travel inside message envelopes (`fileKeys`).
+ */
+export async function prepareFileForUpload(
+  source: Blob,
+  opts: { name: string; mime: string; e2eeEnabled: boolean },
+): Promise<PreparedFileUpload> {
+  if (!opts.e2eeEnabled) {
+    return {
+      blob: source,
+      name: opts.name,
+      mime: opts.mime || 'application/octet-stream',
+      size: source.size,
+      encrypted: false,
+    };
+  }
+  const plaintext = await readBlobBytes(source);
+  const encrypted = await encryptFileBytes(plaintext);
+  frontendLog('debug', 'UploadChatFile', 'file_encrypted_for_upload', {
+    hasSize: plaintext.length > 0,
+  });
+  return {
+    blob: new Blob([encrypted.ciphertext as Uint8Array<ArrayBuffer>], {
+      type: 'application/octet-stream',
+    }),
+    name: 'encrypted-file',
+    mime: 'application/octet-stream',
+    size: encrypted.ciphertext.length,
+    contentKey: { keyB64: encrypted.keyB64, ivB64: encrypted.ivB64 },
+    encrypted: true,
+  };
 }
 
 export async function getChatFileUrl(fileId: string): Promise<{ url: string }> {

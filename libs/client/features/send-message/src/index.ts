@@ -7,6 +7,9 @@ export {
   uploadFileToMinio,
   confirmChatFileUpload,
   getChatFileUrl,
+  prepareFileForUpload,
+  getChatE2eeEnabled,
+  type PreparedFileUpload,
 } from './upload-chat-file.api';
 export { useVoiceRecorder } from './hooks/use-voice-recorder';
 export { useCircleRecorder } from './hooks/use-circle-recorder';

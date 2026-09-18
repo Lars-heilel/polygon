@@ -1,4 +1,9 @@
-import type { GroupMessageEnvelope, MessageEnvelope, MessageType } from '@org/common';
+import type {
+  EnvelopeFileKey,
+  GroupMessageEnvelope,
+  MessageEnvelope,
+  MessageType,
+} from '@org/common';
 
 export type MessageKind =
   | 'text'
@@ -133,6 +138,12 @@ export interface Message {
    * Never persisted for decryptable messages.
    */
   raw?: RawMessage | null;
+  /**
+   * Per-file content keys recovered from the decrypted envelope that
+   * addressed this device. Present only on messages whose attachments are
+   * stored as ciphertext — the media renderer decrypts through these.
+   */
+  fileKeys?: EnvelopeFileKey[];
   editedAt: string | null;
   deletedAt: string | null;
   deletedById: string | null;

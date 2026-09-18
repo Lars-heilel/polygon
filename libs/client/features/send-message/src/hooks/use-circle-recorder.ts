@@ -2,7 +2,9 @@ import { useCallback, useRef, useState } from 'react';
 
 import {
   confirmChatFileUpload,
+  getChatE2eeEnabled,
   initChatFileUpload,
+  prepareFileForUpload,
   uploadFileToMinio,
 } from '../upload-chat-file.api';
 import type { FileAttachment } from '../use-send-message';
@@ -41,66 +43,79 @@ export function useCircleRecorder(chatId: string, onReady: (attachment: FileAtta
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
-  const uploadCircle = useCallback(async (blob: Blob, mimeType: string) => {
-    const file = new File([blob], getCircleFileName(mimeType), { type: mimeType });
-    const { fileId, presignedUrl } = await initChatFileUpload(
-      file.name,
-      file.type,
-      file.size,
-      chatId,
-      'CIRCLE',
-    );
+  const uploadCircle = useCallback(
+    async (blob: Blob, mimeType: string) => {
+      const file = new File([blob], getCircleFileName(mimeType), { type: mimeType });
+      const prepared = await prepareFileForUpload(file, {
+        name: file.name,
+        mime: file.type,
+        e2eeEnabled: getChatE2eeEnabled(chatId),
+      });
+      const { fileId, presignedUrl } = await initChatFileUpload(
+        prepared.name,
+        prepared.mime,
+        prepared.size,
+        chatId,
+        'CIRCLE',
+      );
 
-    await uploadFileToMinio(presignedUrl, file);
-    const confirmed = await confirmChatFileUpload(fileId);
+      await uploadFileToMinio(presignedUrl, prepared.blob);
+      const confirmed = await confirmChatFileUpload(fileId);
 
-    onReady({
-      fileId: confirmed.id,
-      fileBucket: confirmed.bucket,
-      fileKey: confirmed.key,
-      fileName: confirmed.originalName,
-      fileSize: confirmed.size,
-      fileMime: confirmed.mimeType,
-      fileCategory: 'CIRCLE',
-    });
-  }, [chatId, onReady]);
+      onReady({
+        fileId: confirmed.id,
+        fileBucket: confirmed.bucket,
+        fileKey: confirmed.key,
+        fileName: file.name,
+        fileSize: confirmed.size,
+        fileMime: file.type,
+        fileCategory: 'CIRCLE',
+        contentKey: prepared.contentKey,
+        encrypted: prepared.encrypted,
+      });
+    },
+    [chatId, onReady],
+  );
 
-  const beginRecording = useCallback(async (facing: CameraFacing, resetDuration: boolean) => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: getVideoConstraints(facing),
-    });
-    const mimeType = getRecorderMimeType();
-    const recorder = new MediaRecorder(stream, { mimeType });
+  const beginRecording = useCallback(
+    async (facing: CameraFacing, resetDuration: boolean) => {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: getVideoConstraints(facing),
+      });
+      const mimeType = getRecorderMimeType();
+      const recorder = new MediaRecorder(stream, { mimeType });
 
-    streamRef.current = stream;
-    mimeTypeRef.current = mimeType;
-    setPreviewStream(stream);
-    setCameraFacing(getCameraFacingFromStream(stream, facing));
-    setCameraPreference(facing);
+      streamRef.current = stream;
+      mimeTypeRef.current = mimeType;
+      setPreviewStream(stream);
+      setCameraFacing(getCameraFacingFromStream(stream, facing));
+      setCameraPreference(facing);
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
 
-    recorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      mediaRecorderRef.current = null;
-      setPreviewStream(null);
-      setCameraFacing(null);
-      clearInterval(timerRef.current);
-      setDuration(0);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        mediaRecorderRef.current = null;
+        setPreviewStream(null);
+        setCameraFacing(null);
+        clearInterval(timerRef.current);
+        setDuration(0);
 
-      const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
-      await uploadCircle(blob, mimeTypeRef.current);
-    };
+        const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
+        await uploadCircle(blob, mimeTypeRef.current);
+      };
 
-    recorder.start();
-    mediaRecorderRef.current = recorder;
-    setIsRecording(true);
-    if (resetDuration) setDuration(0);
-  }, [uploadCircle]);
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      if (resetDuration) setDuration(0);
+    },
+    [uploadCircle],
+  );
 
   const start = useCallback(async () => {
     try {

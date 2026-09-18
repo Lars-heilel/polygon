@@ -56,6 +56,11 @@ export {
   type SenderKeyContext,
 } from './sender-keys.js';
 export {
+  decryptFileBytes,
+  encryptFileBytes,
+  type EncryptedFile,
+} from './file-crypto.js';
+export {
   clearPersistedChainsForTests,
   loadPersistedChain,
   persistChain,

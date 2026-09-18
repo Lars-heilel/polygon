@@ -100,7 +100,12 @@ export async function decryptIncomingMessage(
   if (!session) throw new Error('E2EE_NO_SESSION');
   try {
     const text = await decryptFromDevice(envelope, session);
-    return { ...base, text, hasLink: /https?:\/\/|www\./i.test(text) };
+    return {
+      ...base,
+      text,
+      hasLink: /https?:\/\/|www\./i.test(text),
+      fileKeys: envelope.fileKeys ?? undefined,
+    };
   } catch (err) {
     if (err instanceof Error && err.message === E2EE_DECRYPT_FAILED) {
       frontendLog('warn', 'MessageE2ee', 'e2ee_decrypt_failed', {
@@ -134,7 +139,12 @@ async function decryptGroupEnvelope(raw: RawMessage, base: Message): Promise<Mes
   if (!envelope) return base;
   try {
     const text = await decryptFromGroup(envelope);
-    return { ...base, text, hasLink: /https?:\/\/|www\./i.test(text) };
+    return {
+      ...base,
+      text,
+      hasLink: /https?:\/\/|www\./i.test(text),
+      fileKeys: envelope.fileKeys ?? undefined,
+    };
   } catch (err) {
     if (err instanceof Error && err.message === E2EE_DECRYPT_FAILED) {
       frontendLog('warn', 'MessageE2ee', 'e2ee_group_decrypt_failed', {

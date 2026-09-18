@@ -11,6 +11,7 @@ import {
 import type { AudioTrack } from '@org/shared';
 import type WaveSurfer from 'wavesurfer.js';
 
+import { useDecryptedMessageMedia } from '../lib/use-decrypted-media.js';
 import type { Message } from '../message.api.js';
 import { ImageLightbox } from './image-lightbox.js';
 
@@ -64,17 +65,33 @@ export const FileMessage = memo(function FileMessage({
   audioQueue,
   audioQueueIndex,
 }: FileMessageProps) {
-  const category = message.media?.category ?? null;
-  const mime = message.media?.mime ?? null;
-
-  if (!getMessageMediaUrl(message)) {
+  const { message: view, isLoading } = useDecryptedMessageMedia(message);
+  if (!getMessageMediaUrl(view) || isLoading) {
     return (
       <PendingFileMessage
-        message={message}
+        message={view}
         isMine={isMine}
       />
     );
   }
+  return (
+    <FileMessageContent
+      message={view}
+      isMine={isMine}
+      audioQueue={audioQueue}
+      audioQueueIndex={audioQueueIndex}
+    />
+  );
+});
+
+const FileMessageContent = memo(function FileMessageContent({
+  message,
+  isMine,
+  audioQueue,
+  audioQueueIndex,
+}: FileMessageProps) {
+  const category = message.media?.category ?? null;
+  const mime = message.media?.mime ?? null;
 
   if (category === 'VOICE') {
     return (
