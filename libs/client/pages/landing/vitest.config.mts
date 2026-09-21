@@ -6,13 +6,13 @@ const sourceAlias = (path: string) => fileURLToPath(new URL(path, import.meta.ur
 
 export default defineConfig({
   root: import.meta.dirname,
-  cacheDir: '../../../../../node_modules/.vite/libs/client/pages/system/pages-landing',
+  cacheDir: '../../../../node_modules/.vite/libs/client/pages/landing',
   plugins: [react()],
   resolve: {
     conditions: ['@org/source'],
     alias: {
-      '@org/common': sourceAlias('../../../../common/src/index.ts'),
-      '@org/shared': sourceAlias('../../../shared/src/index.ts'),
+      '@org/common': sourceAlias('../../../common/src/index.ts'),
+      '@org/shared': sourceAlias('../../shared/src/index.ts'),
     },
   },
   test: {

@@ -1,6 +1,9 @@
 import type { JSX } from 'react';
+
 import { Text } from '@org/shared';
-import { ArrowUpRight } from 'lucide-react';
+
+import { ArrowUpRightIcon } from './landing-icons';
+
 const GITHUB_URL = 'https://github.com/Lars-heilel/polygon';
 
 export function LandingFooter(): JSX.Element {
@@ -25,12 +28,11 @@ export function LandingFooter(): JSX.Element {
             className="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
           >
             GitHub
-            <ArrowUpRight
+            <ArrowUpRightIcon
               aria-hidden="true"
               className="h-4 w-4"
             />
           </a>
-        
         </nav>
       </div>
     </footer>

@@ -107,7 +107,7 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
 - Apps: `apps/client/messenger` (port 4200, Vite-proxy `/api` and `/socket.io` (ws) to Gateway `:3000` in dev);
 - Structure: Feature-Sliced Design across `libs/client/*` sliced packages (`@org/*`):
   `entities` (chat, message, user), `features` (auth, chat-socket, send-message, search,
-  notifications, …), `pages/*` (messenger, auth, system/landing), `layouts`, `shared`
+  notifications, …), `pages/*` (messenger, auth, system, landing), `layouts`, `shared`
   (api client, query client, socket singleton, UI kit). No `widgets/` layer.
 - State: Zustand (+persist/selectors) for ephemeral state (session, active chat, typing, presence,
   audio, notifications); single shared React Query client (`retry: 1`, `staleTime: 30s`) for server state.

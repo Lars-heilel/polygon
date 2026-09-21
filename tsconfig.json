@@ -151,7 +151,7 @@
       "path": "./libs/client/features/chat-media"
     },
     {
-      "path": "./libs/client/pages/system/pages-landing"
+      "path": "./libs/client/pages/landing"
     }
   ]
 }
