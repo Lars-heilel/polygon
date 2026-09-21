@@ -9,7 +9,6 @@ cookies/session enforcement, WebSocket rooms/presence, and read-through Redis ca
 ```mermaid
 flowchart LR
   M[Messenger 4200] --> G[Gateway 3000\nHTTP + Socket.IO]
-  A[Admin 4300] --> G
   G -->|auth_queue| AUTH[auth-service]
   G -->|user_queue| USER[user-service]
   G -->|chat_queue| CHAT[chat-service]
@@ -57,7 +56,7 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
 - Proxy idiom in every HTTP controller: `lastValueFrom(client.send(...))`, map RPC errors to
   `HttpException(message, status)`.
 - Controllers: `auth` (register/login/logout/refresh/verify/forgot/reset/OAuth/sessions),
-  `chats`, `users`, `media`, `search`, `notifications/push`, `admin` (creator/admin only),
+  `chats`, `users`, `media`, `search`, `notifications/push`,
   `frontend-error`.
 - Auth cookies: HttpOnly `access_token` + `refresh_token`, `SameSite=strict`, `secure` in prod only.
 - Chat reads use `GatewayChatCacheService`: read-through Redis `chat:list:{userId}` (30s) and
@@ -74,9 +73,9 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
   missing); `ActiveAccountGuard` checks Redis `ban:{userId}` (403 `ACCOUNT_BANNED`).
 - Refresh rotation: verify refresh JWT → look up by token hash → reuse detected ⇒ revoke-all → rotate
   hash + Redis TTL + `lastActiveAt`, set new cookies.
-- Logout/revoke/reset rotate through `auth.logout / revoke-session / revoke-all-sessions`; admin
-  ban sets the Redis ban marker, revokes sessions, and disconnects sockets via
-  `chatGateway.disconnectUser(targetId)`.
+- Logout/revoke/reset rotate through `auth.logout / revoke-session / revoke-all-sessions`.
+  Stored ban state is enforced at login (`assertAccountActive`) and per request
+  (`ActiveAccountGuard` checks Redis `ban:{userId}` → 403 `ACCOUNT_BANNED`).
 
 ## 5. Realtime and Events
 
@@ -105,11 +104,10 @@ guards, throttling (60s/100), and Swagger at `api/docs` (cookie auth `access_tok
 
 ## 7. Frontend
 
-- Apps: `apps/client/messenger` (port 4200) and `apps/client/admin` (port 4300, base `/admin/`);
-  both Vite-proxy `/api` and `/socket.io` (ws) to Gateway `:3000` in dev.
+- Apps: `apps/client/messenger` (port 4200, Vite-proxy `/api` and `/socket.io` (ws) to Gateway `:3000` in dev);
 - Structure: Feature-Sliced Design across `libs/client/*` sliced packages (`@org/*`):
-  `entities` (chat, message, user, admin), `features` (auth, chat-socket, send-message, search,
-  notifications, …), `pages/*` (messenger, auth, admin, system/landing), `layouts`, `shared`
+  `entities` (chat, message, user), `features` (auth, chat-socket, send-message, search,
+  notifications, …), `pages/*` (messenger, auth, system/landing), `layouts`, `shared`
   (api client, query client, socket singleton, UI kit). No `widgets/` layer.
 - State: Zustand (+persist/selectors) for ephemeral state (session, active chat, typing, presence,
   audio, notifications); single shared React Query client (`retry: 1`, `staleTime: 30s`) for server state.

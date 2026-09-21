@@ -110,45 +110,6 @@ describe('AuthPrismaRepository admin persistence', () => {
     expect(logPayload).toContain('hasError');
   });
 
-  it('atomically persists the ban and revokes every active SQL session', async () => {
-    const ban = {
-      isBanned: true,
-      bannedUntil: new Date('2026-07-09T12:00:00.000Z'),
-      banReason: 'Spam',
-      bannedAt: new Date('2026-07-08T12:00:00.000Z'),
-      bannedBy: 'actor',
-    };
-    credentials.update.mockReturnValueOnce('credentials-update');
-    session.updateMany.mockReturnValueOnce('sessions-update');
-
-    await repository.banAndRevokeAllSessions('target', ban);
-
-    expect(credentials.update).toHaveBeenCalledWith({
-      where: { id: 'target' },
-      data: ban,
-    });
-    expect(session.updateMany).toHaveBeenCalledWith({
-      where: { credentialsId: 'target', revokedAt: null },
-      data: { revokedAt: expect.any(Date) },
-    });
-    expect(prisma.$transaction).toHaveBeenCalledWith(['credentials-update', 'sessions-update']);
-  });
-
-  it('clears the active flag and all ban metadata', async () => {
-    await repository.clearBan('target');
-
-    expect(credentials.update).toHaveBeenCalledWith({
-      where: { id: 'target' },
-      data: {
-        isBanned: false,
-        bannedUntil: null,
-        banReason: null,
-        bannedAt: null,
-        bannedBy: null,
-      },
-    });
-  });
-
   it('normalizes only an expired, currently flagged temporary ban', async () => {
     const now = new Date('2026-07-08T12:00:00.000Z');
     credentials.updateMany.mockResolvedValue({ count: 1 });
@@ -183,27 +144,6 @@ describe('AuthPrismaRepository admin persistence', () => {
         bannedBy: true,
         oauthAccounts: { select: { provider: true } },
       },
-    });
-  });
-
-  it('lists active sessions with a safe DTO-compatible projection', async () => {
-    session.findMany.mockResolvedValue([]);
-
-    await repository.listAdminSessions('target');
-
-    expect(session.findMany).toHaveBeenCalledWith({
-      where: { credentialsId: 'target', revokedAt: null },
-      select: {
-        id: true,
-        device: true,
-        os: true,
-        browser: true,
-        ip: true,
-        country: true,
-        lastActiveAt: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
     });
   });
 

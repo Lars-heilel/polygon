@@ -59,10 +59,6 @@ export const router = createBrowserRouter([
                 return { element: <DesignSystemPage headerSlot={<ThemeToggle />} /> };
               },
             },
-            {
-              path: '/media-test',
-              lazy: () => import('@org/pages-media-test').then((m) => ({ Component: m.MediaTestPage })),
-            },
           ]
         : []),
 

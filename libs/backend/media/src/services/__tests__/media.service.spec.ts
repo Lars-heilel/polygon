@@ -6,7 +6,6 @@ jest.mock('@org/core', () => ({
   STORAGE_PROVIDER_TOKEN: Symbol('STORAGE_PROVIDER_TOKEN'),
   MEDIA_PATTERNS: {
     GET_FILE_CONTENT: 'media.getFileContent',
-    GET_ADMIN_AVATAR_HISTORY: 'media.admin.getAvatarHistory',
     CREATE_FILE: 'media.createFile',
     CREATE_REFERENCE: 'media.references.create',
     DELETE_REFERENCE: 'media.references.delete',

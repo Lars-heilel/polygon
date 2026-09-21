@@ -38,13 +38,6 @@ export const API_ROUTES = {
     chatHistory: (chatId: string) => `chats/${chatId}/media/history`,
     userAvatars: (userId: string) => `users/${userId}/avatars`,
   },
-  admin: {
-    users: 'admin/users',
-    user: (id: string) => `admin/users/${id}`,
-    sessions: (id: string) => `admin/users/${id}/sessions`,
-    session: (id: string, sessionId: string) => `admin/users/${id}/sessions/${sessionId}`,
-    ban: (id: string) => `admin/users/${id}/ban`,
-  },
 } as const;
 
 export const CLIENT_ROUTES = {
@@ -61,12 +54,6 @@ export const CLIENT_ROUTES = {
   chats: {
     root: '/chats',
     byId: (id: string) => `/chats/${id}`,
-  },
-  admin: {
-    root: '/admin',
-    users: '/admin/users',
-    user: (id: string) => `/admin/users/${id}`,
-    notFound: '/admin/404',
   },
   settings: '/settings',
 } as const;

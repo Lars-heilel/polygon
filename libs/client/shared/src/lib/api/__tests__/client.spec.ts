@@ -43,13 +43,7 @@ describe('apiFetch', () => {
     expect(fetchMock.mock.calls[0]?.[0]).not.toContain('/api//auth/login');
   });
 
-  it('uses the same-origin Vite proxy for split dev frontend apps', () => {
-    expect(
-      resolveApiBaseUrl(
-        { DEV: true, VITE_API_URL: 'http://localhost:3000/api' },
-        { hostname: 'localhost', port: '4300', protocol: 'http:' },
-      ),
-    ).toBe('/api');
+  it('uses the same-origin Vite proxy for the messenger dev app', () => {
     expect(
       resolveApiBaseUrl(
         { DEV: true, VITE_API_URL: 'http://localhost:3000/api' },

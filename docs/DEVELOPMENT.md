@@ -12,7 +12,7 @@
 - `apps/*` are **deployable entry points**: thin shells (Nest `main.ts` + module, Vite
   `main.tsx` + router/providers). No business logic lives here.
   - Backend: `apps/backend/gateway`, `apps/backend/{auth,user,chat,media,notification,search}-service`.
-  - Client: `apps/client/messenger` (4200), `apps/client/admin` (4300, base `/admin/`).
+  - Client: `apps/client/messenger` (4200).
 - `libs/*` are **reusable packages** with the real logic, one npm package per slice (`@org/*`):
   - `libs/backend/*` — service implementations (controllers, services, Prisma repos).
   - `libs/client/*` — FSD slices (`entities`, `features`, `pages/*`, `layouts`, `shared`).
@@ -207,9 +207,7 @@ Env without validation does not exist. A new variable is registered in four plac
 **Frontend** (`apps/client/<app>/src/app/config/env.ts`):
 
 1. A field in the local zod schema (`VITE_*` — only via `import.meta.env`, there is no other way).
-   The reference is messenger: `safeParse` + a clear dev error via `frontendLog`.
-   Known inconsistency: admin currently has no validation, only defaults — align it with
-   messenger when touching it.
+    The reference is messenger: `safeParse` + a clear dev error via `frontendLog`.
 2. A default at the consumption site (`?? '/api'`), so dev through the proxy works without
    extra keys.
 
@@ -221,7 +219,7 @@ outside the root).
 
 ```bash
 npm run dev:docker:up        # infra (postgres, redis, minio, rabbitmq, meilisearch)
-npm run dev:all              # gateway + messenger + admin + 6 services (parallel)
+npm run dev:all              # gateway + messenger + 6 services (parallel)
 npm run dev:all:skip-cache   # same, with dist cleanup + --skip-nx-cache
 npm run observability:up     # grafana, prometheus, loki, tempo, alloy + exporters
 
@@ -247,13 +245,13 @@ explicit and minimal ([cross-imports](https://feature-sliced.design/docs/guides/
 - **Across slices**: absolute package imports (`@org/shared`, `@org/entities-user`) through the
   slice's public API (`index.ts`) only. Deep imports into another slice's internals are forbidden
   (Nx boundary + review rule).
-- New apps assemble from existing slices: `messenger` and `admin` share `@org/shared`,
+- New apps assemble from existing slices: `messenger` shares `@org/shared`,
   `@org/entities-*`, `@org/common` and differ only in router/providers/pages.
 
 ### 10.1. Always Small Packages: Reuse Across Apps
 
 Always split into small packages — not for splitting's sake, but for reuse:
-messenger / admin / a future market assemble screens from the same `entities` / `features` /
+messenger / a future market assemble screens from the same `entities` / `features` /
 `shared`. Hence the rule: a package must be **app-agnostic** — zero imports from `apps/*`,
 only lower layers + common + its own deps in its own `package.json`. App-specific code lives in
 `apps/<app>` and `pages/<app>/` and never leaks into shared packages. Convention: `pages/<app>`
@@ -270,7 +268,7 @@ Everything reusable on the client lives here: UI kit, theme, api/socket/query pr
   `components/*.css` (bubbles, media-viewer, chat-header). Apps receive styles in one line:
 
 ```css
-/* apps/client/messenger/src/app/styles/global.css (same in admin) */
+/* apps/client/messenger/src/app/styles/global.css */
 @import '@org/shared/styles/global.css';
 ```
 

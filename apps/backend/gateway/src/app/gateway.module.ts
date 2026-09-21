@@ -38,7 +38,6 @@ import {
 } from '@org/core';
 
 import { AuthGatewayController } from '../controllers/auth.controller';
-import { AdminController } from '../controllers/admin.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
 
 import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';import { FrontendErrorController } from '../controllers/frontend-error.controller';
@@ -87,7 +86,6 @@ const rmqClient = (name: string, queue: string) => ({
     ]),
   ],
   controllers: [
-    AdminController,
     AuthGatewayController,
     MediaGatewayController,
     UserGatewayController,

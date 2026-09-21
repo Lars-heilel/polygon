@@ -14,9 +14,9 @@ describe('frontend error reporter', () => {
   it('posts frontend errors to the gateway intake endpoint', () => {
     const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 202 })));
     vi.stubGlobal('fetch', fetchMock);
-    configureFrontendErrorReporting('admin');
+    configureFrontendErrorReporting('messenger');
 
-    reportFrontendError(new Error('Exploded'), 'at AdminShell');
+    reportFrontendError(new Error('Exploded'), 'at MessengerShell');
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/observability/frontend-errors',
@@ -31,9 +31,9 @@ describe('frontend error reporter', () => {
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual(
       expect.objectContaining({
-        app: 'admin',
+        app: 'messenger',
         message: 'Exploded',
-        componentStack: 'at AdminShell',
+        componentStack: 'at MessengerShell',
         route: '/',
         userAgent: expect.any(String),
         timestamp: expect.any(String),

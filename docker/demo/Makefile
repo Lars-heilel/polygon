@@ -5,10 +5,8 @@ ENV_FILE := ../../.env.production
 
 build:
 	cd $(ROOT_DIR) && NODE_ENV=production NX_ISOLATE_PLUGINS=false npm exec nx -- build @org/messenger --mode production
-	cd $(ROOT_DIR) && NODE_ENV=production NX_ISOLATE_PLUGINS=false npm exec nx -- build @org/admin --mode production
-	mkdir -p nginx/html nginx/html/admin
+	mkdir -p nginx/html
 	cp -r $(ROOT_DIR)/apps/client/messenger/dist/* nginx/html/
-	cp -r $(ROOT_DIR)/apps/client/admin/dist/* nginx/html/admin/
 	docker compose --env-file $(ENV_FILE) build
 
 start:

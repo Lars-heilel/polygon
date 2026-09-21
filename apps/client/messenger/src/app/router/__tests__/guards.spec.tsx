@@ -39,7 +39,6 @@ function renderGuestRoute(initialPath: string) {
         children: [{ index: true, element: <div>Email verified page</div> }],
       },
       { path: CLIENT_ROUTES.chats.root, element: <div>Chats page</div> },
-      { path: CLIENT_ROUTES.admin.root, element: <div>Admin placeholder</div> },
     ],
     { initialEntries: [initialPath] },
   );
@@ -76,13 +75,11 @@ describe('auth route guards', () => {
     expect(await screen.findByText('Chats page')).toBeTruthy();
   });
 
-  it('resolves authenticated guest redirects back to the Admin app from login', () => {
-    expect(
-      getAuthenticatedGuestRedirect(
-        { pathname: CLIENT_ROUTES.auth.login, search: '?from=/admin/' },
-        'http://localhost:4200',
-      ),
-    ).toEqual({ type: 'external', href: 'http://localhost:4300/admin/' });
+  it('resolves authenticated guest redirects to chats', () => {
+    expect(getAuthenticatedGuestRedirect()).toEqual({
+      type: 'internal',
+      to: CLIENT_ROUTES.chats.root,
+    });
   });
 
   it('allows authenticated users to see the email-verified continuation page', async () => {

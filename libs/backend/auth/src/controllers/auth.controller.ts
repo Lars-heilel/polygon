@@ -1,8 +1,6 @@
 import { Controller, HttpException, Inject, Logger, UsePipes } from '@nestjs/common';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import {
-  type AdminBanRequest,
-  type AdminSessionsResponse,
   type CredentialsPayload,
   forgotPasswordSchema,
   loginSchema,
@@ -19,10 +17,9 @@ import { AUTH_PATTERNS, AUTH_SERVICE_TOKEN } from '@org/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import * as z from 'zod';
 
-import { AdminBanService } from '../admin/admin-ban.service';
 import { SessionResponse } from '../dto';
 import { RegisterDto } from '../dto/register.dto';
-import type { AuthAdminAccount, IAuthController, IAuthService } from '../interfaces/auth.interface';
+import type { IAuthController, IAuthService } from '../interfaces/auth.interface';
 
 const verifyEmailRpcPayloadSchema = verifyEmailQuerySchema.extend({
   clientMetadata: z.custom<ClientMetadata>().optional(),
@@ -67,7 +64,6 @@ export class AuthController implements IAuthController {
 
   constructor(
     @Inject(AUTH_SERVICE_TOKEN) private readonly authService: IAuthService,
-    private readonly adminService: AdminBanService,
   ) {}
 
   @MessagePattern(AUTH_PATTERNS.REGISTER)
@@ -237,50 +233,6 @@ export class AuthController implements IAuthController {
       'RPC [REVOKE_ALL_SESSIONS]: Payload diagnostic',
     );
     await this.rpc(() => this.authService.revokeAllSessions(dto.credentialsId, dto.currentSessionId));
-    return null;
-  }
-
-  @MessagePattern(AUTH_PATTERNS.GET_ADMIN_ACCOUNT)
-  async getAdminAccount(
-    @Payload() payload: { actorId: string; targetId: string },
-  ): Promise<AuthAdminAccount> {
-    return this.adminService.getAccount(payload.actorId, payload.targetId);
-  }
-
-  @MessagePattern(AUTH_PATTERNS.LIST_ADMIN_SESSIONS)
-  async listAdminSessions(
-    @Payload() payload: { actorId: string; targetId: string },
-  ): Promise<AdminSessionsResponse> {
-    return this.adminService.listSessions(payload.actorId, payload.targetId);
-  }
-
-  @MessagePattern(AUTH_PATTERNS.REVOKE_ADMIN_SESSION)
-  async revokeAdminSession(
-    @Payload() payload: { actorId: string; targetId: string; sessionId: string },
-  ): Promise<null> {
-    await this.adminService.revokeSession(payload.actorId, payload.targetId, payload.sessionId);
-    return null;
-  }
-
-  @MessagePattern(AUTH_PATTERNS.REVOKE_ALL_ADMIN_SESSIONS)
-  async revokeAllAdminSessions(
-    @Payload() payload: { actorId: string; targetId: string },
-  ): Promise<null> {
-    await this.adminService.revokeAllSessions(payload.actorId, payload.targetId);
-    return null;
-  }
-
-  @MessagePattern(AUTH_PATTERNS.BAN_ACCOUNT)
-  async banAccount(
-    @Payload() payload: { actorId: string; targetId: string; input: AdminBanRequest },
-  ): Promise<null> {
-    await this.adminService.ban(payload.actorId, payload.targetId, payload.input);
-    return null;
-  }
-
-  @MessagePattern(AUTH_PATTERNS.UNBAN_ACCOUNT)
-  async unbanAccount(@Payload() payload: { actorId: string; targetId: string }): Promise<null> {
-    await this.adminService.unban(payload.actorId, payload.targetId);
     return null;
   }
 

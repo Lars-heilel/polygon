@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 
 import { CLIENT_ROUTES } from '@org/common';
 import { selectIsAuthenticated, selectIsSessionLoading, useSessionStore } from '@org/entities-user';
@@ -13,35 +13,10 @@ function FullPageSpinner() {
   );
 }
 
-type AuthenticatedGuestRedirect =
-  | { type: 'internal'; to: string }
-  | { type: 'external'; href: string };
+type AuthenticatedGuestRedirect = { type: 'internal'; to: string };
 
-export function getAuthenticatedGuestRedirect(
-  location: Pick<Location, 'pathname' | 'search'>,
-  origin = window.location.origin,
-): AuthenticatedGuestRedirect {
-  const from = new URLSearchParams(location.search).get('from');
-
-  if (from === `${CLIENT_ROUTES.admin.root}/`) {
-    const url = new URL(from, origin);
-    if (url.port === '4200') {
-      url.port = '4300';
-      return { type: 'external', href: url.toString() };
-    }
-
-    return { type: 'external', href: from };
-  }
-
+export function getAuthenticatedGuestRedirect(): AuthenticatedGuestRedirect {
   return { type: 'internal', to: CLIENT_ROUTES.chats.root };
-}
-
-function ExternalRedirect({ href }: { href: string }) {
-  useEffect(() => {
-    window.location.assign(href);
-  }, [href]);
-
-  return <FullPageSpinner />;
 }
 
 export function GuestGuard() {
@@ -54,11 +29,7 @@ export function GuestGuard() {
   }
 
   if (isAuthenticated && location.pathname !== CLIENT_ROUTES.auth.emailVerified) {
-    const redirect = getAuthenticatedGuestRedirect(location);
-
-    if (redirect.type === 'external') {
-      return <ExternalRedirect href={redirect.href} />;
-    }
+    const redirect = getAuthenticatedGuestRedirect();
 
     return (
       <Navigate

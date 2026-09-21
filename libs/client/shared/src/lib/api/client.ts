@@ -9,7 +9,7 @@ interface ApiLocation {
   protocol: string;
 }
 
-const LOCAL_DEV_FRONTEND_PORTS = new Set(['4200', '4300']);
+const LOCAL_DEV_FRONTEND_PORTS = new Set(['4200']);
 
 export function resolveApiBaseUrl(
   env: ApiEnv = import.meta.env,

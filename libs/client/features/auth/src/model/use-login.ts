@@ -2,18 +2,17 @@ import { CLIENT_ROUTES } from '@org/common';
 import type { loginSchema } from '@org/common';
 import { useLoginMutation, useSessionStore } from '@org/entities-user';
 import { ApiError, toast } from '@org/shared';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import type { z } from 'zod';
 
 type LoginValues = z.infer<typeof loginSchema>;
-type PostLoginRedirect = { type: 'internal'; to: string } | { type: 'external'; href: string };
+type PostLoginRedirect = { type: 'internal'; to: string };
 
 const GENERIC_LOGIN_ERROR = 'Invalid email or password';
 const VERIFY_EMAIL_MESSAGE = 'Please verify your email before signing in';
 
 export function useLogin() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { mutateAsync, isPending } = useLoginMutation();
   const setAuthenticated = useSessionStore((s) => s.setAuthenticated);
 
@@ -22,11 +21,7 @@ export function useLogin() {
       await mutateAsync(values);
       setAuthenticated(true);
 
-      const redirect = getPostLoginRedirect(location.search);
-      if (redirect.type === 'external') {
-        window.location.assign(redirect.href);
-        return;
-      }
+      const redirect = getPostLoginRedirect();
 
       navigate(redirect.to);
     } catch (err) {
@@ -37,23 +32,7 @@ export function useLogin() {
   return { login, isPending };
 }
 
-export function getPostLoginRedirect(
-  search: string,
-  origin = window.location.origin,
-): PostLoginRedirect {
-  const from = new URLSearchParams(search).get('from');
-
-  if (from === `${CLIENT_ROUTES.admin.root}/`) {
-    const url = new URL(from, origin);
-
-    if (url.port === '4200') {
-      url.port = '4300';
-      return { type: 'external', href: url.toString() };
-    }
-
-    return { type: 'external', href: from };
-  }
-
+export function getPostLoginRedirect(): PostLoginRedirect {
   return { type: 'internal', to: CLIENT_ROUTES.chats.root };
 }
 

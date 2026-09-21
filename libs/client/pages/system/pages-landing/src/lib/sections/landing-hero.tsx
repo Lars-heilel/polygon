@@ -1,4 +1,6 @@
 import type { JSX } from 'react';
+
+import { CLIENT_ROUTES } from '@org/common';
 import { Heading, Text } from '@org/shared';
 import { Link } from 'react-router';
 
@@ -7,42 +9,38 @@ export function LandingHero(): JSX.Element {
     <section
       id="hero"
       aria-labelledby="landing-hero-title"
-      className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 md:py-16"
+      className="relative overflow-hidden"
     >
-      <Text
-        as="p"
-        size="sm"
-        color="muted"
-        className="uppercase tracking-wide"
-      >
-        Real-time messenger
-      </Text>
-      <Heading
-        level={1}
-        id="landing-hero-title"
-      >
-        Fast, private messenger for teams
-      </Heading>
-      <Text
-        size="lg"
-        color="muted"
-        className="max-w-xl"
-      >
-        Chats, media sharing and real-time updates in one clean app.
-      </Text>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          to="/chats"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-base font-medium text-white transition-colors hover:bg-primary-hover"
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent"
+      />
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col items-start gap-5 px-4 ">
+     
+        <Heading
+          level={1}
+          id="landing-hero-title"
+          className="max-w-2xl text-balance text-4xl leading-tight tracking-tight md:text-5xl"
         >
-          Open messenger
-        </Link>
-        <Link
-          to="/auth/login"
-          className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-5 py-2.5 text-base font-medium text-text transition-colors hover:bg-surface-elevated"
+        
+        </Heading>
+        <Text
+          size="lg"
+          color="muted"
+          className="max-w-xl"
         >
-          Sign in
-        </Link>
+          Polygon is a pet project by developer Igor Shevchenko for experimenting with architectures
+          and development approaches. Register to try the latest version — chat in real time and
+          exchange files.
+        </Text>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Link
+            to={CLIENT_ROUTES.chats.root}
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-medium text-white transition-colors hover:bg-primary-hover"
+          >
+            Start using
+          </Link>
+        </div>
       </div>
     </section>
   );
