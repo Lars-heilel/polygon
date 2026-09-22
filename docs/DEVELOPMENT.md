@@ -207,7 +207,7 @@ Env without validation does not exist. A new variable is registered in four plac
 **Frontend** (`apps/client/<app>/src/app/config/env.ts`):
 
 1. A field in the local zod schema (`VITE_*` — only via `import.meta.env`, there is no other way).
-    The reference is messenger: `safeParse` + a clear dev error via `frontendLog`.
+   The reference is messenger: `safeParse` + a clear dev error via `frontendLog`.
 2. A default at the consumption site (`?? '/api'`), so dev through the proxy works without
    extra keys.
 
@@ -459,5 +459,5 @@ Entry validation is `ZodValidationPipe` over common schemas (§4); validation er
   runtime flags or manual `if`s at call sites.
 - User-facing feedback is `toast`/`Toaster` (sonner) and `FormAlert` for forms; bare `console.*`
   must not appear in slices, only through the logger. Client log collection via the gateway
-  (`frontend-error`) is being removed as overengineering: extra traffic with no benefit, dev and
+  was removed as overengineering: extra traffic with no benefit, dev and
   server logs are enough.

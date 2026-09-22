@@ -1,7 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import { frontendLog } from '../../lib/hooks/use-logger';
-import { reportFrontendError } from '../../lib/observability/frontend-error-reporter';
 
 interface Props {
   children: ReactNode;
@@ -19,8 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { error };
   }
 
-  override componentDidCatch(error: Error, info: ErrorInfo) {
-    reportFrontendError(error, info.componentStack ?? undefined);
+  override componentDidCatch(_error: Error, info: ErrorInfo) {
     if (import.meta.env.DEV) {
       frontendLog('error', 'ErrorBoundary', 'render_failed', {
         hasError: true,

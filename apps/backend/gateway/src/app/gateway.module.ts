@@ -29,22 +29,21 @@ import {
   NOTIFICATION_QUEUE,
   ObservabilityModule,
   RolesGuard,
-  SESSION_CACHE_REPOSITORY_TOKEN,
   SEARCH_CLIENT_TOKEN,
   SEARCH_QUEUE,
   SERVICE_NAMES,
+  SESSION_CACHE_REPOSITORY_TOKEN,
   USER_CLIENT_TOKEN,
   USER_QUEUE,
 } from '@org/core';
 
+import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';
 import { AuthGatewayController } from '../controllers/auth.controller';
 import { ChatGatewayController } from '../controllers/chat.controller';
-
-import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';import { FrontendErrorController } from '../controllers/frontend-error.controller';
 import { MediaGatewayController } from '../controllers/media.controller';
+import { NotificationGatewayController } from '../controllers/notification.controller';
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
-import { NotificationGatewayController } from '../controllers/notification.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 
 const rmqClient = (name: string, queue: string) => ({
@@ -92,7 +91,6 @@ const rmqClient = (name: string, queue: string) => ({
     ChatGatewayController,
     SearchGatewayController,
     NotificationGatewayController,
-    FrontendErrorController,
   ],
   providers: [
     JwtGuard,

@@ -1,10 +1,5 @@
 export { apiFetch, ApiError } from './lib/api/client';
 export { authedFetch, configureAuthedFetch } from './lib/api/authed-fetch';
-export {
-  configureFrontendErrorReporting,
-  registerGlobalFrontendErrorHandlers,
-  reportFrontendError,
-} from './lib/observability/frontend-error-reporter';
 export { cn } from './lib/utils/cn';
 export {
   formatTime,
