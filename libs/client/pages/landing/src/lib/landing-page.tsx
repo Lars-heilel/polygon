@@ -1,10 +1,10 @@
 import type { JSX } from 'react';
 import { useEffect } from 'react';
 
-import { LandingFooter } from './sections/landing-footer';
-import { LandingHeader } from './sections/landing-header';
-import { LandingHero } from './sections/landing-hero';
-import { LandingStack } from './sections/landing-stack';
+import { LandingFooter } from './ui/sections/landing-footer';
+import { LandingHeader } from './ui/sections/landing-header';
+import { LandingHero } from './ui/sections/landing-hero';
+import { LandingStack } from './ui/sections/landing-stack';
 
 const ROBOTS_CONTENT = 'noindex, nofollow, noarchive';
 

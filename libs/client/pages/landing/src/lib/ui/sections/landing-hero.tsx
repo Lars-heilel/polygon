@@ -15,14 +15,13 @@ export function LandingHero(): JSX.Element {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent"
       />
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col items-start gap-5 px-4 ">
-     
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-12 md:py-16">
         <Heading
           level={1}
           id="landing-hero-title"
-          className="max-w-2xl text-balance text-4xl leading-tight tracking-tight md:text-5xl"
+          className="max-w-2xl text-balance text-4xl leading-tight tracking-tight text-text md:text-5xl"
         >
-        
+          Realtime chat and file sharing for experiments
         </Heading>
         <Text
           size="lg"

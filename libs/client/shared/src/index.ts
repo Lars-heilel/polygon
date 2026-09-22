@@ -15,6 +15,8 @@ export { Input } from './ui/input';
 export { Textarea } from './ui/textarea';
 export { Avatar } from './ui/avatar';
 export { Badge } from './ui/badge';
+export { BrandIcon } from './ui/brand-icon';
+export type { BrandIconProps } from './ui/brand-icon';
 export { Divider } from './ui/divider';
 export { Spinner } from './ui/spinner';
 export { Skeleton } from './ui/skeleton/skeleton';

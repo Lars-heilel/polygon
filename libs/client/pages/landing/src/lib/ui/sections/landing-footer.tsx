@@ -1,8 +1,8 @@
 import type { JSX } from 'react';
 
-import { Text } from '@org/shared';
+import { BrandIcon, Text } from '@org/shared';
 
-import { ArrowUpRightIcon } from './landing-icons';
+import githubUrl from '../icons/github.svg';
 
 const GITHUB_URL = 'https://github.com/Lars-heilel/polygon';
 
@@ -25,13 +25,15 @@ export function LandingFooter(): JSX.Element {
             href={GITHUB_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
+            aria-label="Polygon GitHub repository"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-base font-medium text-text transition-colors hover:border-primary/40 hover:text-primary"
           >
-            GitHub
-            <ArrowUpRightIcon
-              aria-hidden="true"
-              className="h-4 w-4"
+            <BrandIcon
+              src={githubUrl}
+              size="md"
             />
+            GitHub
+            <span aria-hidden="true">↗</span>
           </a>
         </nav>
       </div>

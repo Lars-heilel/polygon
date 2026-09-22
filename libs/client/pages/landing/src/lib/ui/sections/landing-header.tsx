@@ -1,8 +1,12 @@
 import type { JSX } from 'react';
 
 import { CLIENT_ROUTES } from '@org/common';
-import { Text } from '@org/shared';
+import { BrandIcon, Text } from '@org/shared';
 import { Link } from 'react-router';
+
+import githubUrl from '../icons/github.svg';
+
+const GITHUB_URL = 'https://github.com/Lars-heilel/polygon';
 
 export function LandingHeader(): JSX.Element {
   return (
@@ -15,20 +19,20 @@ export function LandingHeader(): JSX.Element {
       </a>
       <nav
         aria-label="Landing"
-        className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3"
+        className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 md:py-5"
       >
         <Link
           to="/landing"
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-3"
           aria-label="Polygon landing home"
         >
           <svg
-            width="28"
-            height="32"
+            width="32"
+            height="36"
             viewBox="0 0 60 100"
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
-            className="h-7 w-auto"
+            className="h-8 w-auto"
           >
             <defs>
               <linearGradient
@@ -61,14 +65,28 @@ export function LandingHeader(): JSX.Element {
           <Text
             as="span"
             weight="semibold"
+            className="text-lg"
           >
             Polygon
           </Text>
         </Link>
         <div className="flex items-center gap-3">
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Polygon GitHub repository"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+          >
+            <BrandIcon
+              src={githubUrl}
+              size="sm"
+            />
+            GitHub
+          </a>
           <Link
             to={CLIENT_ROUTES.auth.login}
-            className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             Sign in
           </Link>
