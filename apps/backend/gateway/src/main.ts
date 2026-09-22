@@ -34,6 +34,7 @@ async function bootstrap() {
   });
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform-Version');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     next();
   });
   app.use(cookieParser());
