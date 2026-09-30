@@ -2,18 +2,6 @@
 
 Developed by **Igor Shevchenko**.
 
-### Landing — Desktop
-
-<img src="docs/screenshots/app/landing.png" width="800" alt="Polygon landing — desktop" />
-
-### Messenger — Desktop
-
-<img src="docs/screenshots/app/messenger.png" width="800" alt="Polygon messenger — desktop, media and audio messages" />
-
-### Mobile
-
-<img src="docs/screenshots/app/mobile-messenger.png" width="280" alt="Polygon messenger — mobile, media and audio messages" />
-
 ## Tech Stack
 
 **Frontend (`apps/client/*`, `libs/client/*`)**
@@ -37,21 +25,15 @@ Developed by **Igor Shevchenko**.
 
 ### Landing
 
-<table>
-  <tr>
-    <td><img src="docs/screenshots/app/landing.png" width="700" alt="Polygon landing — desktop" /></td>
-    <td><img src="docs/screenshots/app/mobile-landing.png" width="220" alt="Polygon landing — mobile" /></td>
-  </tr>
-</table>
+<img src="docs/screenshots/app/landing.png" width="800" alt="Polygon landing — desktop" />
+
+<img src="docs/screenshots/app/mobile-landing.png" width="280" alt="Polygon landing — mobile" />
 
 ### Messenger
 
-<table>
-  <tr>
-    <td><img src="docs/screenshots/app/messenger.png" width="700" alt="Polygon messenger — desktop, media and audio messages" /></td>
-    <td><img src="docs/screenshots/app/mobile-messenger.png" width="220" alt="Polygon messenger — mobile, media and audio messages" /></td>
-  </tr>
-</table>
+<img src="docs/screenshots/app/messenger.png" width="800" alt="Polygon messenger — desktop, media and audio messages" />
+
+<img src="docs/screenshots/app/mobile-messenger.png" width="280" alt="Polygon messenger — mobile, media and audio messages" />
 
 ## Documentation
 
