@@ -4,7 +4,7 @@ Developed by **Igor Shevchenko**.
 
 ### Landing — Desktop
 
-![Polygon landing — desktop](docs/screenshots/app/lending.png)
+![Polygon landing — desktop](docs/screenshots/app/landing.png)
 
 ### Messenger — Desktop
 
@@ -14,7 +14,7 @@ Developed by **Igor Shevchenko**.
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/app/mobile-lending.png" width="280" alt="Polygon landing — mobile" /></td>
+    <td><img src="docs/screenshots/app/mobile-landing.png" width="280" alt="Polygon landing — mobile" /></td>
     <td><img src="docs/screenshots/app/mobile-messenger.png" width="280" alt="Polygon messenger — mobile, media and audio messages" /></td>
   </tr>
 </table>
