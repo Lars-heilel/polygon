@@ -55,3 +55,4 @@ export { MediaFrame } from './ui/media-frame';
 export type { MediaFrameProps } from './ui/media-frame';
 export { VirtualFeed } from './ui/virtual-feed';
 export type { VirtualFeedHandle, VirtualFeedProps } from './ui/virtual-feed';
+export { heroBackgroundUrl } from './assets/images';

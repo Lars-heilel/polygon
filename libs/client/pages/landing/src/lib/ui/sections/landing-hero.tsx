@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 
 import { CLIENT_ROUTES } from '@org/common';
-import { Heading, Text } from '@org/shared';
+import { Heading, Text, heroBackgroundUrl } from '@org/shared';
 import { Link } from 'react-router';
 
 export function LandingHero(): JSX.Element {
@@ -13,8 +13,16 @@ export function LandingHero(): JSX.Element {
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent"
-      />
+        className="pointer-events-none absolute inset-0"
+      >
+        <img
+          src={heroBackgroundUrl}
+          alt=""
+          loading="eager"
+          className="h-full w-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-linear-to-b via-surface/60 to-surface" />
+      </div>
       <div className="relative mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-12 md:py-16">
         <Heading
           level={1}
