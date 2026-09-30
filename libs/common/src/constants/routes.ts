@@ -42,6 +42,7 @@ export const API_ROUTES = {
 
 export const CLIENT_ROUTES = {
   root: '/',
+  landing: '/landing',
   auth: {
     root: '/auth',
     login: '/auth/login',
@@ -55,5 +56,11 @@ export const CLIENT_ROUTES = {
     root: '/chats',
     byId: (id: string) => `/chats/${id}`,
   },
-  settings: '/settings',
+  profile: {
+    root: '/profile',
+    edit: '/profile/edit',
+  },
+  settings: {
+    root: '/settings',
+  },
 } as const;
