@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 
-import { BrandIcon, Heading } from '@org/shared';
+import { BrandIcon, Heading, Text } from '@org/shared';
 
 import dockerUrl from '../icons/docker.svg';
 import meilisearchUrl from '../icons/meilisearch.svg';
@@ -56,20 +56,39 @@ const SHARED_TECHNOLOGIES: Technology[] = [
 
 export function LandingStack(): JSX.Element {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8  px-4 py-6 md:py-8">
-      <section
-        id="stack"
-        aria-labelledby="landing-stack-tech-title"
-        className="flex flex-col gap-6"
-      >
-        <div className="flex max-w-xl flex-col gap-2">
-          <Heading
-            level={2}
-            id="landing-stack-tech-title"
-          >
-            Tech Stack
-          </Heading>
-        </div>
+    <div className="relative overflow-hidden border-t border-border/60 bg-gradient-to-b from-primary/[0.07] via-transparent to-transparent">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"
+      />
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 md:py-14">
+        <section
+          id="stack"
+          aria-labelledby="landing-stack-tech-title"
+          className="flex flex-col gap-6"
+        >
+          <div className="flex max-w-xl flex-col gap-2">
+            <Text
+              size="sm"
+              color="primary"
+              weight="semibold"
+              className="uppercase tracking-widest"
+            >
+              Under the hood
+            </Text>
+            <Heading
+              level={2}
+              id="landing-stack-tech-title"
+            >
+              Tech Stack
+            </Heading>
+            <Text
+              size="md"
+              color="muted"
+            >
+              Everything Polygon is built with — from realtime transport to storage.
+            </Text>
+          </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           <StackGroup
             id="landing-stack-frontend-title"
@@ -87,7 +106,8 @@ export function LandingStack(): JSX.Element {
             items={SHARED_TECHNOLOGIES}
           />
         </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
@@ -114,7 +134,7 @@ function StackGroup({
           <li
             key={item.title}
             title={item.text}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary/40"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-3 py-1.5 text-sm font-medium text-text shadow-sm transition-all hover:-translate-y-px hover:border-primary/40 hover:bg-surface hover:shadow"
           >
             <BrandIcon
               src={item.src}

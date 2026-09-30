@@ -1,12 +1,8 @@
 import type { JSX } from 'react';
 
 import { CLIENT_ROUTES } from '@org/common';
-import { BrandIcon, Text } from '@org/shared';
+import { Text } from '@org/shared';
 import { Link } from 'react-router';
-
-import githubUrl from '../icons/github.svg';
-
-const GITHUB_URL = 'https://github.com/Lars-heilel/polygon';
 
 export function LandingHeader(): JSX.Element {
   return (
@@ -22,7 +18,7 @@ export function LandingHeader(): JSX.Element {
         className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 md:py-5"
       >
         <Link
-          to="/landing"
+          to={CLIENT_ROUTES.root}
           className="flex items-center gap-3"
           aria-label="Polygon landing home"
         >
@@ -71,19 +67,6 @@ export function LandingHeader(): JSX.Element {
           </Text>
         </Link>
         <div className="flex items-center gap-3">
-          <a
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Polygon GitHub repository"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-          >
-            <BrandIcon
-              src={githubUrl}
-              size="sm"
-            />
-            GitHub
-          </a>
           <Link
             to={CLIENT_ROUTES.auth.login}
             className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"

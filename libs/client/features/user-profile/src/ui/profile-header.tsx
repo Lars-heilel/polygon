@@ -50,7 +50,6 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 export const ProfileHeader = memo(function ProfileHeader({
   avatarUrl,
   displayName,
-  handleName,
   role,
   bio,
   email,
@@ -91,10 +90,10 @@ export const ProfileHeader = memo(function ProfileHeader({
           {displayName}
           {role === 'CREATOR' && <Badge variant="warning">Creator</Badge>}
         </Heading>
-        <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-text-muted">
+        {/* <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-text-muted">
           @{handleName}
           <CopyButton value={`@${handleName}`} label="Copy username" />
-        </span>
+        </span> */}
       </div>
 
       {bio && (
