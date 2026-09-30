@@ -13,11 +13,11 @@ export function useLogout() {
     mutate(undefined, {
       onSuccess: () => {
         setAuthenticated(false);
-        navigate(CLIENT_ROUTES.auth.login);
+        navigate(CLIENT_ROUTES.root);
       },
       onError: () => {
         setAuthenticated(false);
-        navigate(CLIENT_ROUTES.auth.login);
+        navigate(CLIENT_ROUTES.root);
       },
     });
   }, [mutate, navigate, setAuthenticated]);

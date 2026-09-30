@@ -1,9 +1,11 @@
 import { useState } from 'react';
+
+import { CLIENT_ROUTES } from '@org/common';
+import { Heading } from '@org/shared';
 import { useNavigate } from 'react-router';
 
 import { SettingsDevicesTab } from './settings-devices-tab';
 import { SettingsGeneralTab } from './settings-general-tab';
-import { Heading } from '@org/shared';
 
 type SettingsTab = 'general' | 'devices';
 
@@ -17,15 +19,30 @@ export function SettingsPage() {
     <div className="flex flex-col h-full bg-surface">
       <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
         <button
-          onClick={() => navigate('/chats')}
+          onClick={() => navigate(CLIENT_ROUTES.chats.root)}
           aria-label="Back"
           className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
         </button>
-        <Heading level={5} as="h2">Settings</Heading>
+        <Heading
+          level={5}
+          as="h2"
+        >
+          Settings
+        </Heading>
       </header>
 
       <div className="px-6 py-3 border-b border-border flex gap-4 shrink-0">

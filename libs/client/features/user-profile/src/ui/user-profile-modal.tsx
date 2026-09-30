@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { useCreateDirectChatMutation } from '@org/entities-chat';
+import { CLIENT_ROUTES } from '@org/common';
 import { Button, Modal, Skeleton, Text } from '@org/shared';
 import { useNavigate } from 'react-router';
 
@@ -36,7 +37,7 @@ export function UserProfileModal({
     try {
       const newChat = await createChat.mutateAsync({ targetUserId: userId });
       onClose();
-      navigate(`/chats/${newChat.id}`);
+      navigate(CLIENT_ROUTES.chats.byId(newChat.id));
     } catch {
       setCreatingChat(false);
     }

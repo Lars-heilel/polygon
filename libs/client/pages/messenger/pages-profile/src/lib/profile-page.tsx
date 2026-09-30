@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { CLIENT_ROUTES } from '@org/common';
 import { useMeQuery } from '@org/entities-user';
 import { AvatarCarousel } from '@org/features-upload-avatar';
 import { ProfileHeader } from '@org/features-user-profile';
@@ -20,7 +21,7 @@ export function ProfilePage() {
       <div className="flex flex-col h-full bg-surface">
         <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
           <button
-            onClick={() => navigate('/chats')}
+            onClick={() => navigate(CLIENT_ROUTES.chats.root)}
             aria-label="Back"
             className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
           >
@@ -85,13 +86,12 @@ export function ProfilePage() {
               actions={
                 <Button
                   className="mt-3 w-full max-w-xs"
-                  onClick={() => navigate('/chats/profile/edit')}
+                  onClick={() => navigate(CLIENT_ROUTES.profile.edit)}
                 >
                   Edit Profile
                 </Button>
               }
             />
-
           </div>
         </div>
       </div>

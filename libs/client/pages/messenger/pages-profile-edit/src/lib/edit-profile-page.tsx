@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { CLIENT_ROUTES } from '@org/common';
 import { authApi, useMeQuery } from '@org/entities-user';
 import { AvatarUploader } from '@org/features-upload-avatar';
 import { Avatar, Button, Heading, Input, Textarea, queryClient } from '@org/shared';
@@ -23,7 +24,7 @@ export function EditProfilePage() {
     try {
       await authApi.updateProfile({ displayName: displayName || undefined, bio: bio || undefined });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      navigate('/chats/profile');
+      navigate(CLIENT_ROUTES.profile.root);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save');
     } finally {
@@ -35,7 +36,7 @@ export function EditProfilePage() {
     <div className="flex flex-col h-full bg-surface">
       <header className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
         <button
-          onClick={() => navigate('/chats/profile')}
+          onClick={() => navigate(CLIENT_ROUTES.profile.root)}
           aria-label="Back"
           className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
         >
@@ -95,7 +96,7 @@ export function EditProfilePage() {
             <Button
               variant="ghost"
               className="flex-1"
-              onClick={() => navigate('/chats/profile')}
+              onClick={() => navigate(CLIENT_ROUTES.profile.root)}
             >
               Cancel
             </Button>

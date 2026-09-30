@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 
+import { CLIENT_ROUTES } from '@org/common';
 import {
   getChatDisplayName,
   useChatStore,
@@ -45,7 +46,7 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
         label="Back"
         size="md"
         variant="ghost"
-        onClick={() => navigate('/chats')}
+        onClick={() => navigate(CLIENT_ROUTES.chats.root)}
         className="md:hidden"
         icon={<BackIcon />}
       />
@@ -100,7 +101,12 @@ export const ChatHeader = memo(function ChatHeader({ chatId }: ChatHeaderProps) 
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
       )}

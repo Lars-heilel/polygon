@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { CLIENT_ROUTES } from '@org/common';
 import type { Chat } from '@org/entities-chat';
 import { useCreateDirectChatMutation } from '@org/entities-chat';
 import { useSearchUsers } from '@org/entities-user';
@@ -18,7 +19,7 @@ export function useCreateChat() {
         onSuccess: (data: Chat) => {
           setIsOpen(false);
           search.onChange('');
-          navigate(`/chats/${data.id}`);
+          navigate(CLIENT_ROUTES.chats.byId(data.id));
         },
       },
     );

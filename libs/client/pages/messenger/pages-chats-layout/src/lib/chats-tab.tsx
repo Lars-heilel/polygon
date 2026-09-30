@@ -1,13 +1,14 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router';
 
+import { CLIENT_ROUTES } from '@org/common';
 import { ChatItem } from '@org/entities-chat';
-import { useMeQuery, useSearchUsers } from '@org/entities-user';
 import { useChatList } from '@org/entities-chat';
-import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
+import { useMeQuery, useSearchUsers } from '@org/entities-user';
+import { CreateChatModal, useCreateChat } from '@org/features-create-chat';
 import { AvatarCarousel } from '@org/features-upload-avatar';
 import { UserProfileModal } from '@org/features-user-profile';
 import { Avatar, Input, Logo, Spinner, Text } from '@org/shared';
+import { useNavigate } from 'react-router';
 
 interface ChatsTabProps {
   selectedChatId?: string | null;
@@ -17,7 +18,11 @@ interface ChatsTabProps {
 export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
   const navigate = useNavigate();
   const { data: me } = useMeQuery();
-  const { chats, selectedChatId: internalSelectedChatId, setSelectedChatId } = useChatList(me?.id ?? '');
+  const {
+    chats,
+    selectedChatId: internalSelectedChatId,
+    setSelectedChatId,
+  } = useChatList(me?.id ?? '');
   const search = useSearchUsers();
   const {
     isOpen: isCreateChatOpen,
@@ -47,7 +52,7 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
       } else {
         setSelectedChatId(chatId);
       }
-      navigate(`/chats/${chatId}`);
+      navigate(CLIENT_ROUTES.chats.byId(chatId));
     },
     [onSelectChat, setSelectedChatId, navigate],
   );
@@ -65,8 +70,18 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
           placeholder="Search chats..."
           size="sm"
           leftIcon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           }
         />
@@ -81,7 +96,11 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
               </div>
             )}
             {!search.isLoading && search.results.length === 0 && (
-              <Text size="sm" color="muted" className="text-center py-4">
+              <Text
+                size="sm"
+                color="muted"
+                className="text-center py-4"
+              >
                 No users found
               </Text>
             )}
@@ -97,10 +116,18 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
                   size="sm"
                 />
                 <div className="min-w-0">
-                  <Text size="sm" weight="medium" className="truncate">
+                  <Text
+                    size="sm"
+                    weight="medium"
+                    className="truncate"
+                  >
                     {user.displayName ?? user.name}
                   </Text>
-                  <Text size="xs" color="muted" className="truncate">
+                  <Text
+                    size="xs"
+                    color="muted"
+                    className="truncate"
+                  >
                     @{user.name}
                   </Text>
                 </div>
@@ -110,7 +137,11 @@ export function ChatsTab({ selectedChatId, onSelectChat }: ChatsTabProps) {
         ) : (
           <>
             {chats.length === 0 && (
-              <Text size="sm" color="muted" className="text-center py-4">
+              <Text
+                size="sm"
+                color="muted"
+                className="text-center py-4"
+              >
                 No chats yet
               </Text>
             )}

@@ -28,13 +28,19 @@
       "path": "../../../features/chat-socket/tsconfig.lib.json"
     },
     {
-      "path": "../../../entities/message/tsconfig.lib.json"
-    },
-    {
       "path": "../../../features/send-message/tsconfig.lib.json"
     },
     {
       "path": "../../../features/emoji/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../entities/message/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../common/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../features/upload-avatar/tsconfig.lib.json"
     },
     {
       "path": "../../../entities/user/tsconfig.lib.json"
@@ -44,9 +50,6 @@
     },
     {
       "path": "../../../shared/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../features/upload-avatar/tsconfig.lib.json"
     },
     {
       "path": "../../../features/user-profile/tsconfig.lib.json"

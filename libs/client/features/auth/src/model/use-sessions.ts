@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CLIENT_ROUTES } from '@org/common';
 import { authApi, useSessionStore } from '@org/entities-user';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 
 export function useSessions() {
@@ -20,7 +21,7 @@ export function useSessions() {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       if (sessionId === currentSessionId) {
         setAuthenticated(false);
-        navigate('/auth/login');
+        navigate(CLIENT_ROUTES.auth.login);
       }
     },
   });

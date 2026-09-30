@@ -2,17 +2,17 @@ import { CLIENT_ROUTES } from '@org/common';
 import type { loginSchema } from '@org/common';
 import { useLoginMutation, useSessionStore } from '@org/entities-user';
 import { ApiError, toast } from '@org/shared';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import type { z } from 'zod';
 
 type LoginValues = z.infer<typeof loginSchema>;
-type PostLoginRedirect = { type: 'internal'; to: string };
 
 const GENERIC_LOGIN_ERROR = 'Invalid email or password';
 const VERIFY_EMAIL_MESSAGE = 'Please verify your email before signing in';
 
 export function useLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { mutateAsync, isPending } = useLoginMutation();
   const setAuthenticated = useSessionStore((s) => s.setAuthenticated);
 
@@ -21,9 +21,7 @@ export function useLogin() {
       await mutateAsync(values);
       setAuthenticated(true);
 
-      const redirect = getPostLoginRedirect();
-
-      navigate(redirect.to);
+      navigate(getPostLoginRedirect(getLocationFromState(location.state)));
     } catch (err) {
       toast.error(getLoginErrorMessage(err));
     }
@@ -32,8 +30,28 @@ export function useLogin() {
   return { login, isPending };
 }
 
-export function getPostLoginRedirect(): PostLoginRedirect {
-  return { type: 'internal', to: CLIENT_ROUTES.chats.root };
+function getLocationFromState(state: unknown): string | undefined {
+  if (typeof state !== 'object' || state === null || !('from' in state)) {
+    return undefined;
+  }
+  const from = (state as { from?: unknown }).from;
+  if (typeof from === 'object' && from !== null && 'pathname' in from) {
+    const { pathname } = from as { pathname?: unknown };
+    return typeof pathname === 'string' ? pathname : undefined;
+  }
+  return undefined;
+}
+
+export function getPostLoginRedirect(fromPathname?: string): string {
+  if (
+    typeof fromPathname === 'string' &&
+    fromPathname.startsWith('/') &&
+    !fromPathname.startsWith('//') &&
+    !fromPathname.startsWith(CLIENT_ROUTES.auth.root)
+  ) {
+    return fromPathname;
+  }
+  return CLIENT_ROUTES.chats.root;
 }
 
 function getLoginErrorMessage(err: unknown): string {

@@ -1,14 +1,12 @@
-
-
-
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
 
+import { CLIENT_ROUTES } from '@org/common';
 import { useMessageNotification } from '@org/features-notifications';
 import { MobileLayout } from '@org/layouts-mobile';
 import { SidebarLayout } from '@org/layouts-sidebar';
-import { ChatsTab } from './chats-tab';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 
+import { ChatsTab } from './chats-tab';
 import { ChatListSidebar } from './ui/sidebar';
 
 function useIsMobile() {
@@ -36,7 +34,7 @@ export function ChatsLayout() {
   const handleSelectChat = useCallback(
     (chatId: string) => {
       setSelectedChatId(chatId);
-      navigate(`/chats/${chatId}`);
+      navigate(CLIENT_ROUTES.chats.byId(chatId));
     },
     [navigate],
   );
@@ -45,14 +43,10 @@ export function ChatsLayout() {
     setIsSidebarOpen((prev) => !prev);
   }, []);
 
-  const isIndexRoute = location.pathname === '/chats';
+  const isIndexRoute = location.pathname === CLIENT_ROUTES.chats.root;
 
   if (isMobile) {
-    return (
-      <MobileLayout>
-        {isIndexRoute ? <ChatsTab /> : <Outlet />}
-      </MobileLayout>
-    );
+    return <MobileLayout>{isIndexRoute ? <ChatsTab /> : <Outlet />}</MobileLayout>;
   }
 
   return (

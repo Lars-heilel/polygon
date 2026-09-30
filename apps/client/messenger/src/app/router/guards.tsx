@@ -13,10 +13,15 @@ function FullPageSpinner() {
   );
 }
 
-type AuthenticatedGuestRedirect = { type: 'internal'; to: string };
+// Token-link pages a signed-in user must still be able to open
+// (e.g. clicking a reset link while already authenticated).
+const AUTHENTICATED_GUEST_ALLOWLIST = new Set([
+  CLIENT_ROUTES.auth.emailVerified,
+  CLIENT_ROUTES.auth.resetPassword,
+]);
 
-export function getAuthenticatedGuestRedirect(): AuthenticatedGuestRedirect {
-  return { type: 'internal', to: CLIENT_ROUTES.chats.root };
+export function getAuthenticatedGuestRedirect(): string {
+  return CLIENT_ROUTES.chats.root;
 }
 
 export function GuestGuard() {
@@ -28,18 +33,20 @@ export function GuestGuard() {
     return <FullPageSpinner />;
   }
 
-  if (isAuthenticated && location.pathname !== CLIENT_ROUTES.auth.emailVerified) {
-    const redirect = getAuthenticatedGuestRedirect();
-
+  if (isAuthenticated && !AUTHENTICATED_GUEST_ALLOWLIST.has(location.pathname)) {
     return (
       <Navigate
-        to={redirect.to}
+        to={getAuthenticatedGuestRedirect()}
         replace
       />
     );
   }
 
-  return <Outlet />;
+  return (
+    <Suspense fallback={<FullPageSpinner />}>
+      <Outlet />
+    </Suspense>
+  );
 }
 
 export function AppGuard() {

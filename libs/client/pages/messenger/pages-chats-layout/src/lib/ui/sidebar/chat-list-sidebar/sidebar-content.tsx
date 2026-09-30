@@ -1,15 +1,15 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router';
 
+import { CLIENT_ROUTES } from '@org/common';
 import { ChatItem } from '@org/entities-chat';
+import { useChatList } from '@org/entities-chat';
 import { useMeQuery, useSearchUsers } from '@org/entities-user';
-
+import { CreateChatModal, useCreateChat } from '@org/features-create-chat';
+import { AvatarCarousel } from '@org/features-upload-avatar';
 import { UserProfileModal } from '@org/features-user-profile';
 import { Avatar, Badge, IconButton, Input, Spinner, Text } from '@org/shared';
+import { useNavigate } from 'react-router';
 
-import { useChatList } from '@org/entities-chat';
-import { useCreateChat, CreateChatModal } from '@org/features-create-chat';
-import { AvatarCarousel } from '@org/features-upload-avatar';
 import { SidebarHeader } from '../sidebar-header';
 
 interface SidebarContentProps {
@@ -18,14 +18,14 @@ interface SidebarContentProps {
   onMenuClick: () => void;
 }
 
-export function SidebarContent({
-  selectedChatId,
-  onSelectChat,
-  onMenuClick,
-}: SidebarContentProps) {
+export function SidebarContent({ selectedChatId, onSelectChat, onMenuClick }: SidebarContentProps) {
   const navigate = useNavigate();
   const { data: me } = useMeQuery();
-  const { chats, selectedChatId: internalSelectedChatId, setSelectedChatId } = useChatList(me?.id ?? '');
+  const {
+    chats,
+    selectedChatId: internalSelectedChatId,
+    setSelectedChatId,
+  } = useChatList(me?.id ?? '');
   const search = useSearchUsers();
   const {
     isOpen: isCreateChatOpen,
@@ -67,8 +67,18 @@ export function SidebarContent({
           placeholder="Search chats..."
           size="sm"
           leftIcon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           }
         />
@@ -146,12 +156,20 @@ export function SidebarContent({
 
       <div className="border-t border-border p-3 flex items-center gap-2 shrink-0">
         <button
-          onClick={() => navigate('/chats/profile')}
+          onClick={() => navigate(CLIENT_ROUTES.profile.root)}
           className="flex items-center gap-2 p-2 hover:bg-surface-elevated rounded-lg transition-colors flex-1"
         >
-          <Avatar src={me?.avatarUrl ?? undefined} name={displayName} size="sm" />
+          <Avatar
+            src={me?.avatarUrl ?? undefined}
+            name={displayName}
+            size="sm"
+          />
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <Text size="sm" weight="medium" className="truncate">
+            <Text
+              size="sm"
+              weight="medium"
+              className="truncate"
+            >
               {displayName}
             </Text>
             {me?.role === 'CREATOR' && (
@@ -170,7 +188,7 @@ export function SidebarContent({
           label="Settings"
           size="md"
           variant="ghost"
-          onClick={() => navigate('/chats/settings')}
+          onClick={() => navigate(CLIENT_ROUTES.settings.root)}
           icon={<SettingsIcon />}
         />
       </div>

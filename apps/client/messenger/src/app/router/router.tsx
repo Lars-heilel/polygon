@@ -1,3 +1,4 @@
+import { CLIENT_ROUTES } from '@org/common';
 import { Navigate, createBrowserRouter } from 'react-router';
 
 import { appRoutes } from './app.routes';
@@ -7,7 +8,7 @@ import { RouteError } from './route-error';
 
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: CLIENT_ROUTES.root,
     errorElement: <RouteError />,
     children: [
       // Guest routes (landing, login, register, etc.)
@@ -16,17 +17,16 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            lazy: () =>
-              import('@org/pages-landing').then((m) => ({ Component: m.LandingPage })),
+            lazy: () => import('@org/pages-landing').then((m) => ({ Component: m.LandingPage })),
           },
           {
-            path: '/auth',
+            path: CLIENT_ROUTES.auth.root,
             children: [
               {
                 index: true,
                 element: (
                   <Navigate
-                    to="/auth/login"
+                    to={CLIENT_ROUTES.auth.login}
                     replace
                   />
                 ),
@@ -37,13 +37,18 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // Public landing (share-by-link only, noindex)
+      // Legacy share-by-link path, canonical is `/` (see GuestGuard index).
       {
-        path: '/landing',
-        lazy: () => import('@org/pages-landing').then((m) => ({ Component: m.LandingPage })),
+        path: CLIENT_ROUTES.landing,
+        element: (
+          <Navigate
+            to={CLIENT_ROUTES.root}
+            replace
+          />
+        ),
       },
 
-      // Authenticated routes (chats, chat page)
+      // Authenticated routes (chats, profile, settings)
       { element: <AppGuard />, children: appRoutes },
 
       // Dev-only pages

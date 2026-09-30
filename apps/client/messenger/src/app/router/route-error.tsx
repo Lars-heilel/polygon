@@ -1,8 +1,10 @@
+import { CLIENT_ROUTES } from '@org/common';
 import { Button, StatusScreen } from '@org/shared';
-import { isRouteErrorResponse, useRouteError } from 'react-router';
+import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router';
 
 export function RouteError() {
   const error = useRouteError();
+  const navigate = useNavigate();
 
   let title: string;
   let description: string;
@@ -25,7 +27,7 @@ export function RouteError() {
         title={title}
         description={description}
       >
-        <Button onClick={() => window.location.assign('/')}>Go to home</Button>
+        <Button onClick={() => navigate(CLIENT_ROUTES.root)}>Go to home</Button>
       </StatusScreen>
     </div>
   );

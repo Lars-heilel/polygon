@@ -1,7 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
-
 import { CLIENT_ROUTES } from '@org/common';
+import { render, screen } from '@testing-library/react';
+import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { AppGuard, GuestGuard, getAuthenticatedGuestRedirect } from '../guards';
 
@@ -37,6 +36,11 @@ function renderGuestRoute(initialPath: string) {
         path: CLIENT_ROUTES.auth.emailVerified,
         element: <GuestGuard />,
         children: [{ index: true, element: <div>Email verified page</div> }],
+      },
+      {
+        path: CLIENT_ROUTES.auth.resetPassword,
+        element: <GuestGuard />,
+        children: [{ index: true, element: <div>Reset password page</div> }],
       },
       { path: CLIENT_ROUTES.chats.root, element: <div>Chats page</div> },
     ],
@@ -76,10 +80,7 @@ describe('auth route guards', () => {
   });
 
   it('resolves authenticated guest redirects to chats', () => {
-    expect(getAuthenticatedGuestRedirect()).toEqual({
-      type: 'internal',
-      to: CLIENT_ROUTES.chats.root,
-    });
+    expect(getAuthenticatedGuestRedirect()).toBe(CLIENT_ROUTES.chats.root);
   });
 
   it('allows authenticated users to see the email-verified continuation page', async () => {
@@ -88,6 +89,14 @@ describe('auth route guards', () => {
     renderGuestRoute(CLIENT_ROUTES.auth.emailVerified);
 
     expect(await screen.findByText('Email verified page')).toBeTruthy();
+  });
+
+  it('allows authenticated users to open reset-password from a mail link', async () => {
+    setSessionState({ isAuthenticated: true });
+
+    renderGuestRoute(CLIENT_ROUTES.auth.resetPassword);
+
+    expect(await screen.findByText('Reset password page')).toBeTruthy();
   });
 
   it('redirects unauthenticated users from protected routes to login', async () => {

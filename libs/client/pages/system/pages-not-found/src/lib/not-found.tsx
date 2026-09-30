@@ -1,3 +1,4 @@
+import { CLIENT_ROUTES } from '@org/common';
 import { Heading, Text } from '@org/shared';
 import { Link } from 'react-router';
 
@@ -19,7 +20,7 @@ export function NotFoundPage() {
         The page you're looking for doesn't exist or has been moved.
       </Text>
       <Link
-        to="/"
+        to={CLIENT_ROUTES.root}
         className="mt-2 bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
       >
         Back to home
