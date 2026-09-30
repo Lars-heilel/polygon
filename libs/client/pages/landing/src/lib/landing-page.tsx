@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { LandingFooter } from './ui/sections/landing-footer';
 import { LandingHeader } from './ui/sections/landing-header';
 import { LandingHero } from './ui/sections/landing-hero';
+import { LandingScreenshots } from './ui/sections/landing-screenshots';
 import { LandingStack } from './ui/sections/landing-stack';
 
 const ROBOTS_CONTENT = 'noindex, nofollow, noarchive';
@@ -43,6 +44,7 @@ export function LandingPage(): JSX.Element {
         className="flex w-full flex-1 flex-col"
       >
         <LandingHero />
+        <LandingScreenshots />
         <LandingStack />
       </main>
       <LandingFooter />
