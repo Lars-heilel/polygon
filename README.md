@@ -4,23 +4,11 @@ Developed by **Igor Shevchenko**.
 
 ## Tech Stack
 
-**Frontend (`apps/client/*`, `libs/client/*`)**
+> Everything Polygon is built with — from realtime transport to storage.
 
-- React 19 + Vite 7 SPA, React Router 7, Zustand, TanStack Query / Virtual
-- Tailwind CSS v4, Socket.IO client, Storybook, Vitest / Jest
-
-**Backend (`apps/backend/*`, `libs/backend/*`)**
-
-- NestJS 11 API Gateway + microservices: auth, user, chat, media, notification, search
-- Database-per-service via Prisma + PostgreSQL , Redis
-- RabbitMQ events, Socket.IO WebSockets, MinIO media storage, Meilisearch
-- OpenTelemetry + Pino logging, Swagger docs, Jest / Supertest
-
-**Platform / Workspace**
-
-- Nx 22 monorepo, TypeScript, ESLint + Prettier
-- Docker Compose: Postgres, Redis, MinIO, RabbitMQ, Meilisearch
-
+| Frontend | Backend | Shared |
+| :--- | :--- | :--- |
+| • **React** — UI library<br>• **Vite** — Build tool<br>• **Zustand** — Client state<br>• **Tailwind CSS** — Styling<br>• **React Router** — Routing<br>• **TanStack Query** — Server state | • **NestJS** — API framework<br>• **PostgreSQL** — Database<br>• **Prisma ORM** — ORM<br>• **Redis** — Cache<br>• **RabbitMQ** — Message broker<br>• **MinIO** — S3-compatible files<br>• **Meilisearch** — Search engine | • **TypeScript** — Language<br>• **Zod** — Contracts<br>• **Docker** — Containers<br>• **Monorepo Nx** — Monorepo<br>• **Socket.IO** — Realtime transport |
 ## Screenshots
 
 > 📱 All screens, including mobile views, are available in the [docs/screenshots/app](docs/screenshots/app) folder.
