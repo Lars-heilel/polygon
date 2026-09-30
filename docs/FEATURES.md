@@ -60,6 +60,107 @@ What you can do:
 
 Bottom line: plain sign-up with emails, password reset, sign-in with Google/GitHub, plus proper multi-device — sit wherever you want and close any single device on demand.
 
+## Messenger
+
+Plain chat with one person, like in any messenger. No reload button — new messages just appear by themselves.
+
+How it feels: you open a chat → you write → the other person answers → their bubble pops up right away, you don't need to refresh anything. Opened the chat — it counts as read.
+
+### Missed messages and notifications
+
+You don't need to sit in every chat. The list on the left always shows who wrote last and when, and if you missed something — a blue circle with a number.
+
+![Unread counter and last message](screenshots/feature/chat/missed-message-counter-and-last-message.png)
+
+How it feels:
+
+- you're looking at this exact chat — the message just appears, quietly, no sound, no popup;
+- you're in another chat — that other chat jumps up, the number grows (1, 2, …), you hear a sound and on computer you also get a small popup with the name and the start of the text;
+- you open that chat — the number disappears.
+
+A few simple rules:
+
+- no popup for your own messages;
+- no popup if you're already looking at this chat;
+- on the phone there's no popup at all — only sound and the number, so it doesn't cover the screen;
+- sounds and popups can be turned off in Settings.
+- if you allow notifications in the browser — they'll come even with the tab closed, like a normal app.
+
+### Files in chat
+
+It's not text-only: photos, videos, voice messages and links show right inside the chat.
+
+![File types in chat](screenshots/feature/chat/file-type-in-chat.png)
+
+What you'll see:
+
+- photo — big picture, press to look closer;
+- video — picture with a play button;
+- link from YouTube — pretty card with cover and title;
+- voice message — round button with waves and length, like 0:05.
+
+How it feels: press the paperclip → pick a file → it sends → the other person sees it right away.
+
+### All files in one place: Photo, Video, Audio, Docs, Links
+
+Everything ever sent in this chat is saved under the person's profile, in the Media tab. Handy when you don't want to scroll up for half a year.
+
+![Media tabs](screenshots/feature/chat/file-tabs.png)
+
+Tabs on top:
+
+- All — everything mixed by date;
+- Photo — only pictures;
+- Video — only videos;
+- Audio — voice messages and music;
+- Docs — files and documents;
+- Links — all links from the chat, like YouTube videos.
+
+How it feels: press a tab → you see only that kind → press a picture → it opens big → scroll down for older stuff. If there's nothing yet — it just says so.
+
+### Music player
+
+Music doesn't stop if you scroll. Press play — and a thin player sticks to the top of the chat.
+
+![Audio player](screenshots/feature/chat/audio-player.png)
+
+There you see the song name, pause button, a strip you can drag, time from start and till the end, buttons for prev/next song and a cross to close.
+
+How it feels:
+
+- press play on any song — the strip appears and music starts;
+- you can switch to the next song without searching the chat;
+- press again — pause, press once more — keeps playing from the same place;
+- press the cross — music stops and the strip goes away.
+
+### Smiles (on computer only)
+
+Next to the message box there's a smile face. Press it — a big window with smiles opens.
+
+![Emoji picker](screenshots/feature/chat/emoji.png)
+
+How it feels: press the smile → pick from the list or type in the search what you want → the smile jumps into your message → press Enter to send. If you send only smiles with no words — they show up big, with no bubble.
+
+This button is on computer only. On the phone it's hidden on purpose — the phone already has smiles in its own keyboard, so we don't take up extra space.
+
+Bottom line: messages arrive instantly, missed ones show as a number with sound and a popup, files show right in the chat, all photos and music can be found under tabs, music plays in its own strip, and smiles are one click away on computer.
+
+## Profile
+
+Your card and other people's cards. Press your name at the bottom left — you see yourself: photo, name, short bio, email.
+
+How it feels: press Edit Profile → change the photo, name and bio → Save. Press the photo → you see your old photos too.
+
+Someone else's card opens from the chat top: photo, name, bio, plus two tabs — Profile and Media. There's also a Send message button — handy to start a chat from search.
+
+## Settings
+
+Two tabs, nothing extra.
+
+General — three switches: notifications (popups even with closed tab), sound, and dark mode. Turned off once — quiet everywhere.
+
+Devices — the same "my devices" list as in Auth: where you're logged in, which one is this, kick any single one or all others at once.
+
 ## Search
 
 Classic user search: start typing a name in the search bar — and you get matching people right away.
