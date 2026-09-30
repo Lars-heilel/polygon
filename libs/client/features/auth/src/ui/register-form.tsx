@@ -43,6 +43,7 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
           {...register('username')}
           label="Username"
           placeholder="john_doe"
+          type="text"
           error={errors.username?.message}
           autoComplete="username"
         />

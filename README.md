@@ -34,7 +34,7 @@ Developed by **Igor Shevchenko**.
 [<img src="docs/screenshots/app/messenger.png" width="800" alt="Polygon messenger — desktop, media and audio messages" />](docs/screenshots/app/messenger.png)
 
 ## Documentation
-
+- [Features](docs/feature.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development Guide](docs/DEVELOPMENT.md)
 - [Monorepo Gotchas](docs/MONOREPO_GOTCHAS.md)
