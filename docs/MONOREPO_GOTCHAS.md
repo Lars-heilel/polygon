@@ -1,11 +1,12 @@
-# Подводные камни монорепо
+# Monorepo Gotchas & Pitfalls
 
-Неочевидное, о которое уже спотыкались. Прочитать до того, как чинить сборку «в лоб».
+Non-obvious issues we've already tripped over. Read this before trying to brute-force a broken build.
 
-## 1. Tailwind v4 `@source`: стили слайсов не генерируются сами
+---
 
-Tailwind v4 сканирует только файлы, покрытые `@source`. Единая точка — `theme.css` в shared
-(`libs/client/shared/src/styles/theme.css`):
+## 1. Tailwind v4 `@source`: Slice Styles Are Not Generated Automatically
+
+Tailwind v4 only scans files covered by `@source`. The single source of truth is `theme.css` in shared (`libs/client/shared/src/styles/theme.css`):
 
 ```css
 @import 'tailwindcss';
@@ -13,63 +14,59 @@ Tailwind v4 сканирует только файлы, покрытые `@sourc
 @source "../../../../../libs/client/**/*.{ts,tsx}";
 ```
 
-Симптом: классы из нового слайса молча не работают (в dev и в build). Лечение — не копировать
-CSS по приложениям, а проверить, что слайс попадает под эти два `@source`. Стили приложений —
-только реэкспорт shared (см. DEVELOPMENT §10.1).
+**Symptom:** Classes from a newly added slice silently fail to apply (in both dev and build).  
+**Fix:** Do not duplicate CSS across individual apps. Instead, make sure the slice matches these two `@source` glob patterns. App-level styles should only re-export from shared (see `DEVELOPMENT §10.1`).
 
-## 2. Vite dev-proxy и `VITE_*` из process.env
+---
 
-Клиент ходит в gateway через proxy (`apps/client/messenger/vite.config.mts`):
+## 2. Vite Dev Proxy and `VITE_*` from `process.env`
 
-- `/api → http://localhost:3000`, `/socket.io → http://localhost:3000` с `ws: true`
-  (в `server` и в `preview` — оба места).
+The client routes traffic to the gateway via proxy (`apps/client/messenger/vite.config.mts`):
 
-Нюанс: Nx грузит корневой `.env` в `process.env` до Vite, а Vite отдаёт приоритет `process.env`
-перед файлом окружения по `mode` — в итоге `.env.production` не перебивает `.env`. Поэтому
-в конфиге явно удаляются `VITE_API_URL` / `VITE_SOCKET_URL`:
+- `/api → http://localhost:3000`, `/socket.io → http://localhost:3000` with `ws: true` (configured for both `server` and `preview`).
+
+**The catch:** Nx loads the root `.env` into `process.env` *before* Vite initializes, and Vite gives priority to `process.env` over mode-specific environment files. As a result, `.env.production` does not override `.env`. Because of this, `VITE_API_URL` and `VITE_SOCKET_URL` are explicitly removed in the Vite configuration:
 
 ```ts
 delete process.env['VITE_API_URL'];
 delete process.env['VITE_SOCKET_URL'];
 ```
 
-Симптом: прод-превью стучится в `localhost:3000`. Не чинить URL руками — проверить этот блок
-и `envDir: repoRoot`.
+**Symptom:** Production preview attempts to connect to `localhost:3000`. Do not patch URLs manually—check this config block and verify `envDir: repoRoot`.
 
-## 3. Env валидируется схемой: запуск не из корня падает
+---
 
-`env.schema.ts` валидирует окружение строго (порты — числа, URL — строки). dotenv ищет `.env`
-от cwd. Запуск jest/vitest с cwd внутри либы → `.env` не найден → стена ошибок вида:
+## 3. Strict Schema Validation for Env: Running Outside the Root Fails
+
+`env.schema.ts` enforces strict validation (ports must be numbers, URLs must be strings). `dotenv` resolves `.env` relative to the current working directory (`cwd`). Running Jest or Vitest from inside a library directory means `.env` won't be found, leading to a wall of errors:
 
 ```
 CHAT_PORT: Invalid input: expected number, received NaN
 APP_URL: Invalid input: expected string, received undefined
 ```
 
-Это не баг кода. Тесты гонять только через nx из корня (`npm exec nx -- test ...`), прямой
-`npx jest` внутри пакета — лишь с выставленным cwd в корень. То же касается `prisma.config.ts`:
-он резолвит `.env` / `.env.test` / `.env.production` по `NODE_ENV` от корня либы
-(`join(__dirname, '../../../...')`) — перекладывать `__dirname`-пути при рефакторинге нельзя.
+**This is not a code bug.** Always run tests via Nx from the workspace root (`npm exec nx -- test ...`). If running `npx jest` directly inside a package, make sure the `cwd` is explicitly pointed to the root.
 
-## 4. MSW в зависимостях, но в клиенте не используется
+The same rule applies to `prisma.config.ts`: it resolves `.env` / `.env.test` / `.env.production` based on `NODE_ENV` relative to the library root (`join(__dirname, '../../../...')`)—do not break or alter these `__dirname` paths during refactoring.
 
-`msw` висит в корневом `package.json`, однако ни одного хендлера/воркера в `apps/client` и
-`libs/client` нет — и это намеренно. Сетевой слой мокается стабами `authedFetch`/socket
-(`test-stubs/shared.tsx`), а не перехватом HTTP. Не заводить MSW-хендлеры «по привычке»:
-два механизма моков сети в одном репо разъедутся при первом же рефакторе API-клиента.
+---
 
-## 5. Gateway-тесты: supertest поверх мокнутых RMQ-клиентов
+## 4. MSW is in Dependencies, but Not Used on the Client
 
-Паттерн (`auth.http.spec.ts` и соседи): поднимается настоящее Nest-приложение через
-`@nestjs/testing` + `supertest`, а RMQ-клиенты подменяются моками `{ send: jest.fn() }`
-(`of(...)` на успех, `throwError(...)` на RPC-ошибку). Фильтры (`GatewayHttpExceptionFilter`,
-`ZodValidationExceptionFilter`) и cookie-парсер — настоящие, поэтому спеки проверяют реальный
-HTTP-контракт: статусы, `set-cookie`, тело 400 с полями.
+While `msw` is declared in the root `package.json`, there are zero handlers or workers in `apps/client` and `libs/client`—and this is by design.
 
-Правила:
+The network layer is mocked using `authedFetch`/socket stubs (`test-stubs/shared.tsx`) instead of network request interception. Do not start adding MSW handlers "out of habit": maintaining two separate network mocking strategies in the same repository will inevitably drift apart and break during the first API client refactoring.
 
-- Мокать границу транспорта (ClientProxy), а не контроллер — иначе тестируется мок, а не код.
-- Живые брокер/БД/Redis в юнит-прогоне запрещены; для этого есть `*-e2e` проекты, исключённые
-  из `test`-таргета в `nx.json`.
-- Куки в supertest проверять через `set-cookie`-хелпер (пример — `getSetCookieHeaders`),
-  а не строковым `toContain`: атрибуты `HttpOnly/SameSite` важны.
+---
+
+## 5. Gateway Tests: Supertest on Top of Mocked RMQ Clients
+
+The established pattern (`auth.http.spec.ts` and related test files): a real NestJS app is bootstrapped via `@nestjs/testing` + `supertest`, while RMQ clients are replaced with `{ send: jest.fn() }` mocks (`of(...)` for success, `throwError(...)` for RPC errors).
+
+Exception filters (`GatewayHttpExceptionFilter`, `ZodValidationExceptionFilter`) and the cookie parser remain real. This ensures test specs validate the actual HTTP contract: status codes, `set-cookie` headers, and 400 validation error payloads.
+
+**Rules:**
+
+- Mock the transport boundary (`ClientProxy`), never the controller itself—otherwise, you are testing your mocks instead of your code.
+- Live brokers, databases, and Redis instances are forbidden in unit test runs. Use the dedicated `*-e2e` projects instead, which are excluded from the default `test` target in `nx.json`.
+- When asserting cookies in Supertest, always use a `set-cookie` parsing helper (e.g., `getSetCookieHeaders`) instead of a simple string `.toContain()`: the `HttpOnly` and `SameSite` flags matter.
