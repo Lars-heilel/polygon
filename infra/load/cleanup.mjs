@@ -7,5 +7,5 @@ if (!fs.existsSync(path)) {
   console.log(JSON.stringify({ eventType: 'load_cleanup_done', count: 0 }));
   process.exit(0);
 }
-fs.rmSync(path);
+fs.rmSync(path, { force: true });
 console.log(JSON.stringify({ eventType: 'load_cleanup_done', removedTokensFile: true }));
