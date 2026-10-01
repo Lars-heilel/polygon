@@ -45,6 +45,9 @@ export default function () {
   let gotNew = false;
   let gotError = '';
   let connected = false;
+  let joinedAck = false;
+  let ackTimeout = false;
+  let sent = false;
 
   const url = `${BASE}/socket.io/?EIO=4&transport=websocket`;
   const res = ws.connect(url, { headers: { Cookie: token.cookie } }, function (socket) {
@@ -62,17 +65,41 @@ export default function () {
         return;
       }
 
-      // namespace connected -> join chat first; send the message after a
-      // short delay so the async server-side join (CHECK_MEMBERSHIP RPC +
-      // socket.join) lands before SEND_MESSAGE broadcasts to the room.
-      // Without the delay the sender is not yet in `chat:${chatId}` and
-      // misses its own `message:new` (no error, but no broadcast either).
+      const sendText = function () {
+        if (sent) return;
+        sent = true;
+        socket.send(`42["message:send",${JSON.stringify({ chatId, type: 'TEXT', text })}]`);
+      };
+
+      // server ack for `chat:join` (see chat.socket-gateway handleJoin);
+      // send only once the sender is in `chat:${chatId}` so it gets its
+      // own `message:new` broadcast.
+      if (msg.includes('chat:joined')) {
+        joinedAck = true;
+        sendText();
+        return;
+      }
+
+      // namespace connected -> join chat, then wait for the ack above.
+      // Race note: handleJoin drops the join silently when it lands before
+      // async handleConnection sets socket.data['userId'], so resend the
+      // join every 1s while no ack (server logs chat_joined only on success).
+      // Fallback: if no ack within 5s, send anyway and flag ackTimeout.
       if (msg.startsWith('40')) {
         connected = true;
-        socket.send(`42["chat:join",${JSON.stringify({ chatId })}]`);
+        const joinFrame = `42["chat:join",${JSON.stringify({ chatId })}]`;
+        socket.send(joinFrame);
+        [1000, 2000, 3000, 4000].forEach(function (delay) {
+          socket.setTimeout(function () {
+            if (!joinedAck && !sent) socket.send(joinFrame);
+          }, delay);
+        });
         socket.setTimeout(function () {
-          socket.send(`42["message:send",${JSON.stringify({ chatId, type: 'TEXT', text })}]`);
-        }, 500);
+          if (!sent) {
+            ackTimeout = true;
+            sendText();
+          }
+        }, 5000);
         return;
       }
 
@@ -100,11 +127,13 @@ export default function () {
 
     socket.setTimeout(function () {
       socket.close();
-    }, 5000);
+    }, 10000);
   });
 
   check(res, { 'ws connected': (r) => r && r.status === 101 });
   check({ connected }, { 'socket.io namespace connected': (o) => o.connected });
+  check({ joinedAck }, { 'join-ack received': (o) => o.joinedAck });
+  check({ sent }, { 'message sent (ack or fallback)': (o) => o.sent });
   check({ gotError }, { 'no ws errors': (o) => !o.gotError });
   check({ gotNew }, { 'message:new received': (o) => o.gotNew });
 

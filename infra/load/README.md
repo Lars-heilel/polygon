@@ -5,6 +5,7 @@
 Смотреть: Grafana `:3009` дашборд `polygon-backend-overview`, Prometheus `:9090`.
 Throttle: замер 1 как есть (100/60с), замер 2 с поднятым лимитом только на время прогона.
 Сиды: `node infra/load/seed.mjs`, чистка `node infra/load/cleanup.mjs`.
+SEED_N=1000: ~15 мин из-за anon-лимита 100/мин, паузы автоматические.
 
 ## Results 2026-10-01
 

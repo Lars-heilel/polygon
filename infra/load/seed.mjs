@@ -59,6 +59,10 @@ if (LOGIN_ONLY) {
     }
     users.push({ email, password: PASS, username });
     log({ eventType: 'load_seed_registered', hasEmail: true, index: i });
+    if ((i + 1) % 80 === 0) {
+      console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+      await new Promise((r) => setTimeout(r, 65000));
+    }
   }
 }
 
@@ -74,7 +78,8 @@ log({
 
 // Phase 3: login + self-chat loop, saving { email, cookie, chatId }.
 const out = [];
-for (const u of users) {
+for (let i = 0; i < users.length; i++) {
+  const u = users[i];
   let cookie = null;
   let chatId = null;
   try {
@@ -86,11 +91,19 @@ for (const u of users) {
     if (login.status === 401) {
       log({ eventType: 'load_seed_login_blocked', hasEmail: true, hasCookie: false });
       out.push({ email: u.email, password: u.password, cookie, chatId });
+      if ((i + 1) % 80 === 0) {
+        console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+        await new Promise((r) => setTimeout(r, 65000));
+      }
       continue;
     }
     if (!login.ok) {
       log({ eventType: 'load_seed_login_error', hasEmail: true, status: login.status });
       out.push({ email: u.email, password: u.password, cookie, chatId });
+      if ((i + 1) % 80 === 0) {
+        console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+        await new Promise((r) => setTimeout(r, 65000));
+      }
       continue;
     }
     const rawCookies =
@@ -102,12 +115,20 @@ for (const u of users) {
   } catch {
     log({ eventType: 'load_seed_login_error', hasEmail: true, status: 'fetch_failed' });
     out.push({ email: u.email, password: u.password, cookie, chatId });
+    if ((i + 1) % 80 === 0) {
+      console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+      await new Promise((r) => setTimeout(r, 65000));
+    }
     continue;
   }
 
   if (!cookie) {
     log({ eventType: 'load_seed_self_chat_skipped', hasCookie: false });
     out.push({ email: u.email, password: u.password, cookie, chatId });
+    if ((i + 1) % 80 === 0) {
+      console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+      await new Promise((r) => setTimeout(r, 65000));
+    }
     continue;
   }
   try {
@@ -118,6 +139,10 @@ for (const u of users) {
     if (!self.ok) {
       log({ eventType: 'load_seed_self_chat_error', hasCookie: !!cookie, status: self.status });
       out.push({ email: u.email, password: u.password, cookie, chatId });
+      if ((i + 1) % 80 === 0) {
+        console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+        await new Promise((r) => setTimeout(r, 65000));
+      }
       continue;
     }
     const body = await self.json().catch(() => null);
@@ -127,6 +152,10 @@ for (const u of users) {
     log({ eventType: 'load_seed_self_chat_error', hasCookie: !!cookie, status: 'fetch_failed' });
   }
   out.push({ email: u.email, password: u.password, cookie, chatId });
+  if ((i + 1) % 80 === 0) {
+    console.log(JSON.stringify({ eventType: 'load_seed_throttle_pause', done: i + 1 }));
+    await new Promise((r) => setTimeout(r, 65000));
+  }
 }
 
 fs.writeFileSync(OUT_PATH, JSON.stringify(out, null, 2));
