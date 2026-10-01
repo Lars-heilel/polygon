@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { chatListKey, chatMsgsKey } from '@org/chat';
 import type { MessagePage } from '@org/common';
 import { REDIS_CLIENT } from '@org/core';
-import { chatListKey, chatMsgsKey } from '@org/chat';
 import type Redis from 'ioredis';
 
 /**
@@ -92,6 +92,24 @@ export class GatewayChatCacheService {
       this.logger.debug('gateway_chat_pages_invalidated hasChatId=true');
     } catch {
       /* skip */
+    }
+  }
+
+  async isMemberCached(chatId: string, userId: string): Promise<boolean | null> {
+    try {
+      const raw = await this.redis.get(`membership:${chatId}:${userId}`);
+      if (!raw) return null;
+      return true;
+    } catch {
+      return null;
+    }
+  }
+
+  async setMemberCached(chatId: string, userId: string, ttlSec: number): Promise<void> {
+    try {
+      await this.redis.set(`membership:${chatId}:${userId}`, '1', 'EX', ttlSec);
+    } catch {
+      /* Redis unavailable — caller falls back to RPC */
     }
   }
 }
