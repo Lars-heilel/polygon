@@ -25,6 +25,12 @@ export const envSchema = z.object({
   JWT_ACCESS_TOKEN_EXPIRES: z.coerce.number(),
   JWT_REFRESH_TOKEN_EXPIRES: z.coerce.number(),
 
+  // Throttle / WS limits (single-node phase 1)
+  THROTTLE_ANON_LIMIT: z.coerce.number().int().min(1),
+  THROTTLE_USER_LIMIT: z.coerce.number().int().min(1),
+  WS_SEND_LIMIT_PER_MIN: z.coerce.number().int().min(1),
+  MEMBERSHIP_CACHE_TTL_SEC: z.coerce.number().int().min(5),
+
   // RabbitMQ
   RABBITMQ_URL: z.url(),
 
