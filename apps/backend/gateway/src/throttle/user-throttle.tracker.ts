@@ -1,7 +1,4 @@
-export function throttleTracker(req: {
-  headers?: { cookie?: string };
-  ip?: string;
-}): string {
+export function throttleTracker(req: { headers?: { cookie?: string }; ip?: string }): string {
   const ip = req.ip ?? 'unknown';
   const cookie = req.headers?.cookie ?? '';
   const token = cookie
