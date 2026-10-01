@@ -71,6 +71,17 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     return `typing:${chatId}:${userId}`;
   }
 
+  private async waitForUserId(socket: Socket, timeoutMs: number): Promise<string | undefined> {
+    const start = Date.now();
+    for (;;) {
+      const userId = socket.data['userId'] as string | undefined;
+      if (userId) return userId;
+      if (!socket.connected) return undefined;
+      if (Date.now() - start > timeoutMs) return undefined;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  }
+
   private async markOnline(userId: string, socketId: string): Promise<void> {
     await this.redis.sadd(this.presenceKey(userId), socketId).catch(() => undefined);
     await this.redis.expire(this.presenceKey(userId), 120).catch(() => undefined);
@@ -232,15 +243,33 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
   @SubscribeMessage('chat:join')
   async handleJoin(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
-    const userId = socket.data['userId'] as string;
-    if (!userId) return;
-
-    const isMember = await lastValueFrom(
-      this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+    let userId = socket.data['userId'] as string | undefined;
+    if (!userId) {
+      userId = await this.waitForUserId(socket, 5000);
+    }
+    if (!userId) {
+      this.logger.warn({ eventType: 'socket_join_denied', hasChatId: !!payload.chatId });
+      socket.emit('chat:join:error', {
+        code: 'UNAUTHORIZED',
+        message: 'Not authenticated',
         chatId: payload.chatId,
-        userId,
-      }),
-    ).catch(() => false);
+      });
+      return;
+    }
+
+    const ttlSec = this.config.getOrThrow('MEMBERSHIP_CACHE_TTL_SEC', { infer: true });
+    let isMember = await this.chatCache.isMemberCached(payload.chatId, userId);
+    if (isMember === null) {
+      isMember = await lastValueFrom(
+        this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+          chatId: payload.chatId,
+          userId,
+        }),
+      ).catch(() => false);
+      if (isMember) {
+        await this.chatCache.setMemberCached(payload.chatId, userId, ttlSec);
+      }
+    }
 
     if (isMember) {
       await socket.join(`chat:${payload.chatId}`);

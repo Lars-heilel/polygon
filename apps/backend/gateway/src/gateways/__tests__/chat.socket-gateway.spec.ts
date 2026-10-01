@@ -692,4 +692,25 @@ describe('ChatSocketGateway ban enforcement', () => {
 
     expect(joinSocket.emit).toHaveBeenCalledWith('chat:joined', { chatId: 'c1' });
   });
+
+  it('waits for connection setup instead of dropping early join', async () => {
+    chatClient.send.mockReturnValue(of(true));
+    const early = makeSocket();
+    (early as unknown as Record<string, unknown>)['connected'] = true;
+    early.data = {};
+    const joinPromise = gateway.handleJoin(early as never, { chatId: 'c1' });
+    (early.data as Record<string, string>)['userId'] = 'u1';
+    await joinPromise;
+    expect(early.emit).toHaveBeenCalledWith('chat:joined', { chatId: 'c1' });
+  });
+
+  it('emits chat:join:error when user never authenticates', async () => {
+    const anon = makeSocket();
+    anon.data = {};
+    await gateway.handleJoin(anon as never, { chatId: 'c1' });
+    expect(anon.emit).toHaveBeenCalledWith(
+      'chat:join:error',
+      expect.objectContaining({ code: 'UNAUTHORIZED', chatId: 'c1' }),
+    );
+  });
 });
