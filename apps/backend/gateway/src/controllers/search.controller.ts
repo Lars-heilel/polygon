@@ -15,12 +15,14 @@ import {
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, lastValueFrom } from 'rxjs';
 
+import { USER_THROTTLE } from '../throttle/throttle-limits';
+
 @ApiTags('search')
 @ApiCookieAuth('access_token')
 @Controller('search')
-// keep in sync with THROTTLE_USER_LIMIT
+// keep in sync with THROTTLE_USER_LIMIT (USER_THROTTLE source of truth, env must match)
 @Throttle({
-  default: { limit: 300, ttl: 60000 },
+  default: USER_THROTTLE,
 })
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class SearchGatewayController {

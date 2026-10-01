@@ -6,12 +6,14 @@ import { ConfigService } from '@nestjs/config';
 import { SessionGuard } from '@org/auth';
 import { ActiveAccountGuard, CurrentUser, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
 
+import { USER_THROTTLE } from '../throttle/throttle-limits';
+
 @ApiTags('notifications')
 @ApiCookieAuth('access_token')
 @Controller('notifications/push')
-// keep in sync with THROTTLE_USER_LIMIT
+// keep in sync with THROTTLE_USER_LIMIT (USER_THROTTLE source of truth, env must match)
 @Throttle({
-  default: { limit: 300, ttl: 60000 },
+  default: USER_THROTTLE,
 })
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class NotificationGatewayController {

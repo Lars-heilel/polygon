@@ -45,6 +45,7 @@ import { NotificationGatewayController } from '../controllers/notification.contr
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
+import { USER_THROTTLE } from '../throttle/throttle-limits';
 import { throttleTracker } from '../throttle/user-throttle.tracker';
 
 const rmqClient = (name: string, queue: string) => ({
@@ -71,16 +72,21 @@ const rmqClient = (name: string, queue: string) => ({
     ThrottlerModule.forRootAsync({
       imports: [CoreConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService<Env, true>) => ({
-        throttlers: [
-          {
-            ttl: 60000,
-            limit: config.getOrThrow('THROTTLE_ANON_LIMIT', { infer: true }),
-          },
-        ],
-        getTracker: (req: Record<string, unknown>) =>
-          throttleTracker(req as { headers?: { cookie?: string }; ip?: string }),
-      }),
+      useFactory: (config: ConfigService<Env, true>) => {
+        if (config.getOrThrow('THROTTLE_USER_LIMIT', { infer: true }) !== USER_THROTTLE.limit) {
+          throw new Error('THROTTLE_USER_LIMIT drifted from USER_THROTTLE.limit');
+        }
+        return {
+          throttlers: [
+            {
+              ttl: 60000,
+              limit: config.getOrThrow('THROTTLE_ANON_LIMIT', { infer: true }),
+            },
+          ],
+          getTracker: (req: Record<string, unknown>) =>
+            throttleTracker(req as { headers?: { cookie?: string }; ip?: string }),
+        };
+      },
     }),
     ClientsModule.registerAsync([
       rmqClient(AUTH_CLIENT_TOKEN, AUTH_QUEUE),

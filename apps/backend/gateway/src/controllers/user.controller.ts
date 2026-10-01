@@ -30,12 +30,14 @@ import {
 import { UpdateUserDto } from '@org/user';
 import { Observable, lastValueFrom } from 'rxjs';
 
+import { USER_THROTTLE } from '../throttle/throttle-limits';
+
 @ApiTags('users')
 @ApiCookieAuth('access_token')
 @Controller('users')
-// keep in sync with THROTTLE_USER_LIMIT
+// keep in sync with THROTTLE_USER_LIMIT (USER_THROTTLE source of truth, env must match)
 @Throttle({
-  default: { limit: 300, ttl: 60000 },
+  default: USER_THROTTLE,
 })
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class UserGatewayController {

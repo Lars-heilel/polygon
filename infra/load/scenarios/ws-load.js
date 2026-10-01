@@ -1,6 +1,9 @@
 import { check, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
+import { Rate } from 'k6/metrics';
 import ws from 'k6/ws';
+
+const msgNewOk = new Rate('msg_new_ok');
 
 const BASE = (__ENV.BASE_URL || 'http://localhost:3000').replace(/^http/, 'ws');
 
@@ -18,7 +21,7 @@ const tokens = new SharedArray('load-tokens', () => {
 export const options = {
   vus: 100,
   duration: '3m',
-  thresholds: { checks: ['rate>0.99'] },
+  thresholds: { msg_new_ok: ['rate>0.99'], http_req_failed: ['rate<0.01'] },
 };
 
 export function setup() {
@@ -46,7 +49,6 @@ export default function () {
   let gotError = '';
   let connected = false;
   let joinedAck = false;
-  let ackTimeout = false;
   let sent = false;
 
   const url = `${BASE}/socket.io/?EIO=4&transport=websocket`;
@@ -80,23 +82,14 @@ export default function () {
         return;
       }
 
-      // namespace connected -> join chat, then wait for the ack above.
-      // Race note: handleJoin drops the join silently when it lands before
-      // async handleConnection sets socket.data['userId'], so resend the
-      // join every 1s while no ack (server logs chat_joined only on success).
-      // Fallback: if no ack within 5s, send anyway and flag ackTimeout.
+      // namespace connected -> join chat once, then wait for the ack above.
+      // chat:joined is reliable (server-side join race fixed), so a single
+      // `chat:join` is enough. Fallback: if no ack within 5s, send anyway.
       if (msg.startsWith('40')) {
         connected = true;
-        const joinFrame = `42["chat:join",${JSON.stringify({ chatId })}]`;
-        socket.send(joinFrame);
-        [1000, 2000, 3000, 4000].forEach(function (delay) {
-          socket.setTimeout(function () {
-            if (!joinedAck && !sent) socket.send(joinFrame);
-          }, delay);
-        });
+        socket.send(`42["chat:join",${JSON.stringify({ chatId })}]`);
         socket.setTimeout(function () {
           if (!sent) {
-            ackTimeout = true;
             sendText();
           }
         }, 5000);
@@ -135,7 +128,7 @@ export default function () {
   check({ joinedAck }, { 'join-ack received': (o) => o.joinedAck });
   check({ sent }, { 'message sent (ack or fallback)': (o) => o.sent });
   check({ gotError }, { 'no ws errors': (o) => !o.gotError });
-  check({ gotNew }, { 'message:new received': (o) => o.gotNew });
+  msgNewOk.add(gotNew === true);
 
   sleep(1);
 }

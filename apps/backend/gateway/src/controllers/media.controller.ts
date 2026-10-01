@@ -40,10 +40,12 @@ import {
 import type { IStorageProvider } from '@org/core';
 import type { FileCategory, LinkPreview } from '@org/common';
 
+import { USER_THROTTLE } from '../throttle/throttle-limits';
+
 @Controller()
-// keep in sync with THROTTLE_USER_LIMIT
+// keep in sync with THROTTLE_USER_LIMIT (USER_THROTTLE source of truth, env must match)
 @Throttle({
-  default: { limit: 300, ttl: 60000 },
+  default: USER_THROTTLE,
 })
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class MediaGatewayController {
