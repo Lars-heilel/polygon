@@ -45,6 +45,7 @@ import { NotificationGatewayController } from '../controllers/notification.contr
 import { SearchGatewayController } from '../controllers/search.controller';
 import { UserGatewayController } from '../controllers/user.controller';
 import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
+import { throttleTracker } from '../throttle/user-throttle.tracker';
 
 const rmqClient = (name: string, queue: string) => ({
   name,
@@ -67,13 +68,19 @@ const rmqClient = (name: string, queue: string) => ({
     CoreStorageModule,
     CoreTokenModule,
     CoreRedisModule,
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 100,
-        },
-      ],
+    ThrottlerModule.forRootAsync({
+      imports: [CoreConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => ({
+        throttlers: [
+          {
+            ttl: 60000,
+            limit: config.getOrThrow('THROTTLE_ANON_LIMIT', { infer: true }),
+          },
+        ],
+        getTracker: (req: Record<string, unknown>) =>
+          throttleTracker(req as { headers?: { cookie?: string }; ip?: string }),
+      }),
     }),
     ClientsModule.registerAsync([
       rmqClient(AUTH_CLIENT_TOKEN, AUTH_QUEUE),

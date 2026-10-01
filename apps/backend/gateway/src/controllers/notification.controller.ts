@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Logger, Post, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { SessionGuard } from '@org/auth';
 import { ActiveAccountGuard, CurrentUser, NOTIFICATION_CLIENT_TOKEN, NOTIFICATION_EVENTS, type Env, type JwtPayload } from '@org/core';
@@ -8,6 +9,10 @@ import { ActiveAccountGuard, CurrentUser, NOTIFICATION_CLIENT_TOKEN, NOTIFICATIO
 @ApiTags('notifications')
 @ApiCookieAuth('access_token')
 @Controller('notifications/push')
+// keep in sync with THROTTLE_USER_LIMIT
+@Throttle({
+  default: { limit: 300, ttl: 60000 },
+})
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class NotificationGatewayController {
   private readonly logger = new Logger(NotificationGatewayController.name);

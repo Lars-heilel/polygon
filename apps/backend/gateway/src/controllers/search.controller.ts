@@ -1,6 +1,7 @@
 import { Controller, Get, HttpException, Inject, Post, Query, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { SessionGuard } from '@org/auth';
 import type { UserPublic, UserSearchResult } from '@org/common';
 import { searchUsersQuerySchema } from '@org/common';
@@ -17,6 +18,10 @@ import { Observable, lastValueFrom } from 'rxjs';
 @ApiTags('search')
 @ApiCookieAuth('access_token')
 @Controller('search')
+// keep in sync with THROTTLE_USER_LIMIT
+@Throttle({
+  default: { limit: 300, ttl: 60000 },
+})
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class SearchGatewayController {
   constructor(

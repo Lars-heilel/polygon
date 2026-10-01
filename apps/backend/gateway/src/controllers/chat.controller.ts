@@ -23,6 +23,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   CreateDirectChatDto,
   DeleteMessageDto,
@@ -54,6 +55,10 @@ import { ChatSocketGateway } from '../gateways/chat.socket-gateway';
 @ApiTags('chats')
 @ApiCookieAuth('access_token')
 @Controller('chats')
+// keep in sync with THROTTLE_USER_LIMIT
+@Throttle({
+  default: { limit: 300, ttl: 60000 },
+})
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class ChatGatewayController {
   private readonly logger = new Logger(ChatGatewayController.name);

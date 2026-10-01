@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   SessionGuard,
 } from '@org/auth';
@@ -32,6 +33,10 @@ import { Observable, lastValueFrom } from 'rxjs';
 @ApiTags('users')
 @ApiCookieAuth('access_token')
 @Controller('users')
+// keep in sync with THROTTLE_USER_LIMIT
+@Throttle({
+  default: { limit: 300, ttl: 60000 },
+})
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class UserGatewayController {
   private readonly logger = new Logger(UserGatewayController.name);

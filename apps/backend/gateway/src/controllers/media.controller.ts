@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
@@ -40,6 +41,10 @@ import type { IStorageProvider } from '@org/core';
 import type { FileCategory, LinkPreview } from '@org/common';
 
 @Controller()
+// keep in sync with THROTTLE_USER_LIMIT
+@Throttle({
+  default: { limit: 300, ttl: 60000 },
+})
 @UseGuards(SessionGuard, ActiveAccountGuard)
 export class MediaGatewayController {
   private readonly logger = new Logger(MediaGatewayController.name);
