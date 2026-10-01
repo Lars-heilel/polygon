@@ -25,6 +25,10 @@ export function setup() {
   if (!tokens || tokens.length === 0) {
     throw new Error('load tokens empty: run node infra/load/seed.mjs first');
   }
+  if (tokens.some((t) => !t.cookie || !t.chatId))
+    throw new Error(
+      'load tokens invalid (missing cookie/chatId): re-run seed verify step (node infra/load/seed.mjs)',
+    );
   return {};
 }
 
@@ -34,7 +38,7 @@ export function setup() {
 //   per sendMessageSchema (TEXT requires text).
 // Success = `message:new` received; `message:send:error` counts as error.
 export default function () {
-  const token = tokens[__VU % tokens.length];
+  const token = tokens[(__VU - 1) % tokens.length];
   const chatId = token.chatId;
   const text = `load ${__VU}-${__ITER}`;
 
@@ -101,7 +105,7 @@ export default function () {
 
   check(res, { 'ws connected': (r) => r && r.status === 101 });
   check({ connected }, { 'socket.io namespace connected': (o) => o.connected });
-  check({ gotError }, { 'no message:send:error': (o) => !o.gotError });
+  check({ gotError }, { 'no ws errors': (o) => !o.gotError });
   check({ gotNew }, { 'message:new received': (o) => o.gotNew });
 
   sleep(1);

@@ -32,6 +32,10 @@ export function setup() {
   if (!tokens || tokens.length === 0) {
     throw new Error('load tokens empty: run node infra/load/seed.mjs first');
   }
+  if (tokens.some((t) => !t.cookie || !t.chatId))
+    throw new Error(
+      'load tokens invalid (missing cookie/chatId): re-run seed verify step (node infra/load/seed.mjs)',
+    );
   return {};
 }
 
@@ -40,7 +44,7 @@ export function setup() {
 // under the gateway throttle (100 req / 60s) so smoke stays green;
 // full stages still saturate the gateway and trip thresholds by design.
 export default function () {
-  const token = tokens[__VU % tokens.length];
+  const token = tokens[(__VU - 1) % tokens.length];
   const chatId = token.chatId;
   const headers = { Cookie: token.cookie };
 
@@ -62,12 +66,13 @@ export default function () {
     const res = http.post(
       `${BASE}/api/chats/${chatId}/messages`,
       JSON.stringify({ type: 'TEXT', text: 'load hello' }),
-      { headers: { Cookie: token.cookie, 'Content-Type': 'application/json' } },
+      { headers: { ...headers, 'Content-Type': 'application/json' } },
     );
     check(res, {
       'POST messages 201': (r) => r.status === 201,
     });
   } else {
+    // search has no X-Cache, status only.
     const res = http.get(`${BASE}/api/search/users?q=load&limit=20`, { headers });
     check(res, {
       'GET search/users 200': (r) => r.status === 200,
