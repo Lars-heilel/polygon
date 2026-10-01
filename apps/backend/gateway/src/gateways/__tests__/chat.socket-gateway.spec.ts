@@ -79,6 +79,7 @@ describe('ChatSocketGateway ban enforcement', () => {
     banMarkers: BanMarkersMock,
     redis: unknown,
     chatCache: unknown,
+    config: unknown,
   ) => ChatSocketGatewayUnderTest;
 
   let ChatSocketGateway: ChatSocketGatewayConstructor;
@@ -112,6 +113,7 @@ describe('ChatSocketGateway ban enforcement', () => {
       scard: jest.fn(async (key: string) => sets.get(key)?.size ?? 0),
       exists: jest.fn(async (key: string) => ((sets.get(key)?.size ?? 0) > 0 || strings.has(key) ? 1 : 0)),
       expire: jest.fn(async () => 1),
+      incr: jest.fn(async () => 1),
       set: jest.fn(async (key: string, value: string) => {
         strings.set(key, value);
         return 'OK';
@@ -138,10 +140,20 @@ describe('ChatSocketGateway ban enforcement', () => {
       getMessagesPage: jest.fn(async () => null),
       setMessagesPage: jest.fn(async () => undefined),
       invalidateChatPages: jest.fn(async () => undefined),
+      isMemberCached: jest.fn(async () => null),
+      setMemberCached: jest.fn(async () => undefined),
     };
   }
 
   type ChatCacheMock = ReturnType<typeof makeChatCache>;
+
+  const config = {
+    getOrThrow: jest.fn((key: string) => {
+      if (key === 'WS_SEND_LIMIT_PER_MIN') return 30;
+      if (key === 'MEMBERSHIP_CACHE_TTL_SEC') return 45;
+      throw new Error(key);
+    }),
+  };
 
   let gateway: ChatSocketGatewayUnderTest;
   let redis: RedisMock;
@@ -213,6 +225,7 @@ describe('ChatSocketGateway ban enforcement', () => {
       banMarkers,
       redis,
       chatCache,
+      config,
     );
     (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
       sockets: { sockets: new Map() },
@@ -637,5 +650,46 @@ describe('ChatSocketGateway ban enforcement', () => {
       chatId: 'chat-1',
       messageId: 'message-1',
     });
+  });
+
+  it('uses cached membership without RPC', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    chatCache.isMemberCached.mockResolvedValue(true);
+    chatClient.send.mockImplementation((pattern: string) => {
+      if (pattern === 'chat.getMembers') return of([{ userId: 'user-1' }]);
+      return of({ id: 'message-1', chatId: 'c1', text: 'hi' });
+    });
+    userClient.send.mockReturnValue(of({ name: 'Sender', displayName: null }));
+
+    await gateway.handleSendMessage(socket as never, { chatId: 'c1', type: 'TEXT', text: 'hi' });
+
+    expect(chatCache.isMemberCached).toHaveBeenCalledWith('c1', 'user-1');
+    expect(chatClient.send).not.toHaveBeenCalledWith('chat.checkMembership', expect.anything());
+    expect(chatCache.setMemberCached).not.toHaveBeenCalled();
+  });
+
+  it('rate-limits senders over WS_SEND_LIMIT_PER_MIN', async () => {
+    const socket = makeSocket();
+    (socket.data as Record<string, string>)['userId'] = 'user-1';
+    redis.incr.mockResolvedValue(31);
+
+    await gateway.handleSendMessage(socket as never, { chatId: 'c1', type: 'TEXT', text: 'hi' });
+
+    expect(socket.emit).toHaveBeenCalledWith(
+      'message:send:error',
+      expect.objectContaining({ code: 'RATE_LIMITED', chatId: 'c1' }),
+    );
+    expect(chatClient.send).not.toHaveBeenCalled();
+  });
+
+  it('emits chat:joined after successful join', async () => {
+    const joinSocket = makeSocket();
+    (joinSocket.data as Record<string, string>)['userId'] = 'user-1';
+    chatClient.send.mockReturnValue(of(true));
+
+    await gateway.handleJoin(joinSocket as never, { chatId: 'c1' });
+
+    expect(joinSocket.emit).toHaveBeenCalledWith('chat:joined', { chatId: 'c1' });
   });
 });

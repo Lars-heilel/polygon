@@ -1,4 +1,5 @@
 import { Inject, Logger } from '@nestjs/common';
+import type { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ConnectedSocket,
@@ -13,6 +14,7 @@ import {
   BanMarkerRepository,
   CHAT_CLIENT_TOKEN,
   CHAT_PATTERNS,
+  type Env,
   NOTIFICATION_CLIENT_TOKEN,
   NOTIFICATION_EVENTS,
   REDIS_CLIENT,
@@ -58,6 +60,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     private readonly banMarkers: BanMarkerRepository,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly chatCache: GatewayChatCacheService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   private presenceKey(userId: string): string {
@@ -241,6 +244,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
     if (isMember) {
       await socket.join(`chat:${payload.chatId}`);
+      socket.emit('chat:joined', { chatId: payload.chatId });
       this.logger.log({
         eventType: 'chat_joined',
         hasUserId: !!userId,
@@ -304,6 +308,28 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
 
+    // fixed 60s window, approximate by design
+    const sendKey = `ws_send:${userId}`;
+    const sends = await this.redis.incr(sendKey).catch(() => 0);
+    if (sends === 1) {
+      await this.redis.expire(sendKey, 60).catch(() => undefined);
+    }
+    const sendLimit = this.config.getOrThrow('WS_SEND_LIMIT_PER_MIN', { infer: true });
+    if (sends > sendLimit) {
+      this.logger.warn({
+        eventType: 'socket_message_send_rate_limited',
+        hasUserId: !!userId,
+        hasChatId: !!payload.chatId,
+      });
+      socket.emit('message:send:error', {
+        code: 'RATE_LIMITED',
+        message: 'Too many messages, slow down',
+        chatId: payload.chatId,
+        clientId: payload.clientId ?? null,
+      });
+      return;
+    }
+
     this.logger.debug({
       eventType: 'socket_message_send_requested',
       hasUserId: !!userId,
@@ -345,12 +371,19 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
       return;
     }
 
-    const isMember = await lastValueFrom(
-      this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
-        chatId: payload.chatId,
-        userId,
-      }),
-    ).catch(() => false);
+    const ttlSec = this.config.getOrThrow('MEMBERSHIP_CACHE_TTL_SEC', { infer: true });
+    let isMember = await this.chatCache.isMemberCached(payload.chatId, userId);
+    if (isMember === null) {
+      isMember = await lastValueFrom(
+        this.chatClient.send<boolean>(CHAT_PATTERNS.CHECK_MEMBERSHIP, {
+          chatId: payload.chatId,
+          userId,
+        }),
+      ).catch(() => false);
+      if (isMember) {
+        await this.chatCache.setMemberCached(payload.chatId, userId, ttlSec);
+      }
+    }
 
     if (!isMember) {
       this.logger.warn({
