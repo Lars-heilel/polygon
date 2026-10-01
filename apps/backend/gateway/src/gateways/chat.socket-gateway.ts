@@ -10,6 +10,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { sendMessageSchema } from '@org/common';
 import {
   BanMarkerRepository,
   CHAT_CLIENT_TOKEN,
@@ -22,10 +23,10 @@ import {
   USER_CLIENT_TOKEN,
   USER_PATTERNS,
 } from '@org/core';
-import { sendMessageSchema } from '@org/common';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
 import { lastValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
-import type Redis from 'ioredis';
 
 import { GatewayChatCacheService } from '../cache/gateway-chat-cache.service';
 
@@ -69,6 +70,18 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
 
   private typingKey(chatId: string, userId: string): string {
     return `typing:${chatId}:${userId}`;
+  }
+
+  async afterInit(server: Server): Promise<void> {
+    const host = this.config.getOrThrow('REDIS_HOST', { infer: true });
+    const port = this.config.getOrThrow('REDIS_PORT', { infer: true });
+    const password = this.config.getOrThrow('REDIS_PASSWORD', { infer: true });
+    const opts = { host, port, ...(password ? { password } : {}) };
+    const pub = new Redis(opts);
+    const sub = new Redis(opts);
+    await Promise.all([pub.connect().catch(() => undefined), sub.connect().catch(() => undefined)]);
+    server.adapter(createAdapter(pub, sub));
+    this.logger.log({ eventType: 'socket_redis_adapter_ready', hasHost: !!host });
   }
 
   private async waitForUserId(socket: Socket, timeoutMs: number): Promise<string | undefined> {
@@ -156,6 +169,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     sockets.add(socket.id);
     this.userSockets.set(userId, sockets);
 
+    await socket.join(`user:${userId}`).catch(() => undefined);
     await this.markOnline(userId, socket.id);
     await this.rejoinChats(socket, userId);
   }
@@ -229,13 +243,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   disconnectUser(userId: string): void {
-    const sockets = this.userSockets.get(userId);
-    if (!sockets) return;
-
-    for (const socketId of sockets) {
-      this.server.sockets.sockets.get(socketId)?.disconnect(true);
-    }
-
+    this.server.in(`user:${userId}`).disconnectSockets(true);
     this.userSockets.delete(userId);
     this.userChats.delete(userId);
     this.redis.del(this.presenceKey(userId)).catch(() => undefined);
@@ -557,17 +565,25 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   @SubscribeMessage('typing:start')
-  async handleTypingStart(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
+  async handleTypingStart(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatId: string },
+  ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
-    await this.redis.set(this.typingKey(payload.chatId, userId), '1', 'EX', 3).catch(() => undefined);
+    await this.redis
+      .set(this.typingKey(payload.chatId, userId), '1', 'EX', 3)
+      .catch(() => undefined);
     this.server
       .to(`chat:${payload.chatId}`)
       .emit('user:typing', { userId, chatId: payload.chatId, isTyping: true });
   }
 
   @SubscribeMessage('typing:stop')
-  async handleTypingStop(@ConnectedSocket() socket: Socket, @MessageBody() payload: { chatId: string }) {
+  async handleTypingStop(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatId: string },
+  ) {
     const userId = socket.data['userId'] as string | undefined;
     if (!userId) return;
     await this.redis.del(this.typingKey(payload.chatId, userId)).catch(() => undefined);
@@ -589,16 +605,15 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   emitToUser(userId: string, event: string, payload: unknown): void {
-    const sockets = this.userSockets.get(userId);
-    if (!sockets) return;
-
-    for (const socketId of sockets) {
-      this.server.to(socketId).emit(event, payload);
-    }
+    this.server.to(`user:${userId}`).emit(event, payload);
   }
 }
 
-function getMessagePreview(message: { text?: string | null; fileCategory?: unknown; fileName?: unknown }): string {
+function getMessagePreview(message: {
+  text?: string | null;
+  fileCategory?: unknown;
+  fileName?: unknown;
+}): string {
   const text = typeof message.text === 'string' ? message.text.trim() : '';
   if (text) {
     return text.length > 100 ? `${text.slice(0, 100)}…` : text;

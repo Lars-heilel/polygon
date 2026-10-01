@@ -8,8 +8,16 @@ function makeSocket(cookie = 'access_token=token') {
     data: {},
     emit: jest.fn(),
     disconnect: jest.fn(),
-    join: jest.fn(),
-    leave: jest.fn(),
+    join: jest.fn(async () => undefined),
+    leave: jest.fn(async () => undefined),
+  };
+}
+
+function makeServer() {
+  return {
+    sockets: { sockets: new Map() },
+    to: jest.fn(() => ({ emit: jest.fn() })),
+    in: jest.fn(() => ({ disconnectSockets: jest.fn() })),
   };
 }
 
@@ -284,26 +292,23 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(await gateway.isUserOnline('user-1')).toBe(false);
   });
 
-  it('disconnectUser disconnects every registered socket and removes the map entry', async () => {
+  it('disconnectUser disconnects the user room and clears local state', async () => {
     const firstSocket = makeSocket();
     firstSocket.id = 'socket-1';
     const secondSocket = makeSocket();
     secondSocket.id = 'socket-2';
-    const serverSockets = new Map<string, unknown>([
-      [firstSocket.id, firstSocket],
-      [secondSocket.id, secondSocket],
-    ]);
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> } } }).server = {
-      sockets: { sockets: serverSockets },
-    };
+    const server = makeServer();
+    const disconnectSockets = jest.fn();
+    server.in.mockReturnValue({ disconnectSockets });
+    (gateway as unknown as { server: unknown }).server = server;
 
     await gateway.handleConnection(firstSocket as never);
     await gateway.handleConnection(secondSocket as never);
 
     gateway.disconnectUser('user-1');
 
-    expect(firstSocket.disconnect).toHaveBeenCalledWith(true);
-    expect(secondSocket.disconnect).toHaveBeenCalledWith(true);
+    expect(server.in).toHaveBeenCalledWith('user:user-1');
+    expect(disconnectSockets).toHaveBeenCalledWith(true);
     expect(await gateway.isUserOnline('user-1')).toBe(false);
   });
 
@@ -628,24 +633,25 @@ describe('ChatSocketGateway ban enforcement', () => {
     expect(chatCache.invalidateChatList).toHaveBeenCalledWith('user-2');
   });
 
-  it('emits targeted events to every socket for one user', async () => {
+  it('emits targeted events to the user room (cross-worker via redis adapter)', async () => {
     const firstSocket = makeSocket();
     firstSocket.id = 'socket-1';
     const secondSocket = makeSocket();
     secondSocket.id = 'socket-2';
     const emit = jest.fn();
     const to = jest.fn(() => ({ emit }));
-    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock } }).server = {
+    (gateway as unknown as { server: { sockets: { sockets: Map<string, unknown> }; to: jest.Mock; in: jest.Mock } }).server = {
       sockets: { sockets: new Map() },
       to,
+      in: jest.fn(() => ({ disconnectSockets: jest.fn() })),
     };
 
     await gateway.handleConnection(firstSocket as never);
     await gateway.handleConnection(secondSocket as never);
+    expect(firstSocket.join).toHaveBeenCalledWith('user:user-1');
     gateway.emitToUser('user-1', 'message:hidden', { chatId: 'chat-1', messageId: 'message-1' });
 
-    expect(to).toHaveBeenCalledWith('socket-1');
-    expect(to).toHaveBeenCalledWith('socket-2');
+    expect(to).toHaveBeenCalledWith('user:user-1');
     expect(emit).toHaveBeenCalledWith('message:hidden', {
       chatId: 'chat-1',
       messageId: 'message-1',

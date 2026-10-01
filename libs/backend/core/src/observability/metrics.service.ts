@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom-client';
+import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 
 import { OBSERVABILITY_SERVICE_NAME } from './observability.constants';
 
@@ -67,5 +67,9 @@ export class MetricsService {
 
   async metrics(): Promise<string> {
     return this.registry.metrics();
+  }
+
+  async metricsJson(): Promise<object[]> {
+    return this.registry.getMetricsAsJSON() as unknown as object[];
   }
 }

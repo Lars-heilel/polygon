@@ -1,5 +1,5 @@
-import { OBSERVABILITY_SERVICE_NAME } from '../observability.constants';
 import { MetricsService } from '../metrics.service';
+import { OBSERVABILITY_SERVICE_NAME } from '../observability.constants';
 
 describe('MetricsService', () => {
   it('records HTTP request totals and duration buckets in Prometheus format', async () => {
@@ -28,6 +28,18 @@ describe('MetricsService', () => {
     await expect(service.metrics()).resolves.toContain(
       'polygon_websocket_connections{service="gateway"} 7',
     );
+  });
+
+  it('exposes JSON snapshots for cluster aggregation', async () => {
+    const service = new MetricsService('gateway');
+
+    service.recordHttpRequest('GET', '/api/users/:id', 200, 0.123);
+
+    const json = await service.metricsJson();
+    const names = json.map((m) => (m as { name: string }).name);
+
+    expect(names).toContain('polygon_http_requests_total');
+    expect(names).toContain('polygon_http_request_duration_seconds');
   });
 
   it('uses the observability service-name provider token', () => {

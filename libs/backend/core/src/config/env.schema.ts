@@ -58,6 +58,8 @@ export const envSchema = z.object({
 
   // Ports (per service)
   GATEWAY_PORT: z.coerce.number(),
+  GATEWAY_WORKERS: z.coerce.number().int().min(0).default(0),
+  GATEWAY_METRICS_PORT: z.coerce.number().int().min(1).default(3100),
   AUTH_PORT: z.coerce.number(),
   USER_PORT: z.coerce.number(),
   CHAT_PORT: z.coerce.number(),
