@@ -62,3 +62,20 @@ the 15-мин token TTL (parallel login, multi-IP, or longer-lived load-test tok
 worker on each WS connect (`join` is sync void in socket.io 4.8; the async mock hid it) —
 removed `.catch`, mocks made sync. Without it the cluster crash-looped and no WS measurement
 was possible.
+
+## Results 2026-10-02 (task 7, uuid/PG18 verification on PG18, 133052 msgs)
+
+Message storage post-uuid (no pre-change baseline was recorded — current sizes + math only):
+total 28 MB (heap 16 MB, indexes 12 MB); pkey 4120 kB, chat_created_id 7680 kB,
+deleted_at 912 kB, chat_client partial 16 kB. uuid 16 B vs CUID text ~26 B ≈ 10 B saved
+per uuid column value (~30 B/row over id/chat_id/sender_id ≈ ~4 MB at 133k rows, estimate).
+Stack rebuilt from HEAD (`f7bb561`) — primary + 6 workers, 6/6 services, seed 50/50 login refresh.
+
+| stage | VU | RPS | p95 | err | note |
+| ----- | -- | --- | --- | --- | ---- |
+| smoke http | 5 | 2.41 | 247.83ms (p90 89.85ms) | 0% (115/115 checks) | GREEN. POST 201 + round-trip over uuid schema — protocol compat confirmed; stack left running on fresh dists |
+
+Backend regression green (common 4, auth-lib 92, core 42, user-lib 11, media-lib 12,
+chat-lib 57, gateway 91; *-service apps no tests). Pre-existing reds untouched by phase:
+messenger UI drift (11), shared virtual-feed localStorage env (4), backend
+notification/search targets fail on zero tests (missing --passWithNoTests).
