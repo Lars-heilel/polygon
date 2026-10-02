@@ -444,6 +444,16 @@ Entry validation is `ZodValidationPipe` over common schemas (§4); validation er
   (`noUnusedLocals` etc. — see `tsconfig.base.json`). Imports are sorted
   (`@trivago/prettier-plugin-sort-imports`). New behavior without a spec gets returned from review.
 
+### 12.1. Test databases
+
+Integration specs (`__tests__/integration/`, e.g. `user.repository.spec.ts` with its
+`deleteMany` setup) must never touch dev data. Each service has a dedicated test database —
+`polygon_auth_test`, `polygon_user_test`, `polygon_chat_test`, `polygon_media_test`,
+`polygon_notification_test` — created once per machine (see task-5 report for the `psql`
+one-liner). The `*_DATABASE_URL` values in the gitignored `.env.test` point at them
+(`NODE_ENV=test` selects that file in `resolveEnvFile()` and `prisma.config.ts`); run
+migrations per lib with `NODE_ENV=test prisma migrate deploy` before the first test run.
+
 ## 13. Logging (draft)
 
 - **Backend — Pino** (`nestjs-pino`, `ObservabilityModule.forService(...)` in every entry module):
