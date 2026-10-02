@@ -31,12 +31,12 @@ enum MessageType {
 }
 
 model Chat {
-  id          String   @id @default(uuid())
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   type        ChatType @map("type")
   name        String?  @map("name")
   avatarUrl   String?  @map("avatar_url")
-  selfOwnerId String?  @unique @map("self_owner_id")
-  lastMessageId String?   @map("last_message_id")
+  selfOwnerId String?  @unique @map("self_owner_id") @db.Uuid
+  lastMessageId String?   @map("last_message_id") @db.Uuid
   lastMessageAt DateTime? @map("last_message_at")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -49,11 +49,11 @@ model Chat {
 }
 
 model ChatMember {
-  chatId            String    @map("chat_id")
-  userId            String    @map("user_id")
+  chatId            String    @map("chat_id") @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
   role              ChatRole  @default(MEMBER) @map("role")
   joinedAt          DateTime  @default(now()) @map("joined_at")
-  lastReadMessageId String?   @map("last_read_message_id")
+  lastReadMessageId String?   @map("last_read_message_id") @db.Uuid
   lastReadAt        DateTime? @map("last_read_at")
 
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
@@ -64,15 +64,15 @@ model ChatMember {
 }
 
 model Message {
-  id              String      @id @default(uuid())
+  id              String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
   clientId        String?     @map("client_id")
-  chatId          String      @map("chat_id")
-  senderId        String      @map("sender_id")
+  chatId          String      @map("chat_id") @db.Uuid
+  senderId        String      @map("sender_id") @db.Uuid
   type            MessageType @default(TEXT) @map("type")
   text            String?     @map("text")
   editedAt        DateTime?   @map("edited_at")
   deletedAt       DateTime?   @map("deleted_at")
-  deletedById     String?     @map("deleted_by_id")
+  deletedById     String?     @map("deleted_by_id") @db.Uuid
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
@@ -87,9 +87,9 @@ model Message {
 }
 
 model MessageAttachment {
-  id               String   @id @default(uuid())
-  messageId        String   @map("message_id")
-  mediaId          String   @map("media_id")
+  id               String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  messageId        String   @map("message_id") @db.Uuid
+  mediaId          String   @map("media_id") @db.Uuid
   fileNameSnapshot String?  @map("file_name_snapshot")
   fileSizeSnapshot Int?     @map("file_size_snapshot")
   mimeSnapshot     String?  @map("mime_snapshot")
@@ -104,10 +104,10 @@ model MessageAttachment {
 }
 
 model MessageForwardContext {
-  messageId                         String      @id @map("message_id")
-  originalMessageId                 String?     @map("original_message_id")
-  originalChatId                    String?     @map("original_chat_id")
-  originalAuthorId                  String      @map("original_author_id")
+  messageId                         String      @id @map("message_id") @db.Uuid
+  originalMessageId                 String?     @map("original_message_id") @db.Uuid
+  originalChatId                    String?     @map("original_chat_id") @db.Uuid
+  originalAuthorId                  String      @map("original_author_id") @db.Uuid
   originalAuthorNameSnapshot        String      @map("original_author_name_snapshot")
   originalAuthorDisplayNameSnapshot String?     @map("original_author_display_name_snapshot")
   originalMessageCreatedAt          DateTime    @map("original_message_created_at")
@@ -125,8 +125,8 @@ model MessageForwardContext {
 }
 
 model MessageDeletion {
-  messageId String   @map("message_id")
-  userId    String   @map("user_id")
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   deletedAt DateTime @default(now()) @map("deleted_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
