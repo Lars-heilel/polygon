@@ -8,8 +8,10 @@ function makeSocket(cookie = 'access_token=token') {
     data: {},
     emit: jest.fn(),
     disconnect: jest.fn(),
-    join: jest.fn(async () => undefined),
-    leave: jest.fn(async () => undefined),
+    // socket.io join/leave are sync void — mocks must NOT return Promises,
+    // otherwise they hide .catch()-on-void crashes (cluster worker crash-loop).
+    join: jest.fn(() => undefined),
+    leave: jest.fn(() => undefined),
   };
 }
 

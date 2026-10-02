@@ -169,7 +169,9 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
     sockets.add(socket.id);
     this.userSockets.set(userId, sockets);
 
-    await socket.join(`user:${userId}`).catch(() => undefined);
+    // socket.io Socket.join is sync void (not a Promise) — never .catch() it:
+    // that threw TypeError per connection and crash-looped cluster workers.
+    socket.join(`user:${userId}`);
     await this.markOnline(userId, socket.id);
     await this.rejoinChats(socket, userId);
   }
