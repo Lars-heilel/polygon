@@ -144,12 +144,10 @@ export interface IChatRepository {
   updateMessageText(messageId: string, text: string): Promise<Message>;
   deleteMessageForEveryone(messageId: string, userId: string): Promise<Message>;
   hideMessageForUser(messageId: string, userId: string): Promise<void>;
-  countUnreadMessages(
-    chatId: string,
+  countUnreadForChats(
+    reads: { chatId: string; lastReadAt: Date | null; lastReadMessageId: string | null }[],
     userId: string,
-    lastReadAt?: Date | null,
-    lastReadMessageId?: string | null,
-  ): Promise<number>;
+  ): Promise<Map<string, number>>;
   markChatRead(chatId: string, userId: string, messageId?: string | null): Promise<ChatMember>;
 }
 

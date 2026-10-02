@@ -39,7 +39,7 @@ function repoMock(): jest.Mocked<IChatRepository> {
     updateMessageText: jest.fn(),
     deleteMessageForEveryone: jest.fn(),
     hideMessageForUser: jest.fn(),
-    countUnreadMessages: jest.fn(),
+    countUnreadForChats: jest.fn(),
     markChatRead: jest.fn(),
   };
 }

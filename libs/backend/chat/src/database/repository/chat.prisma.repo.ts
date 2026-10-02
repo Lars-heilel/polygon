@@ -104,23 +104,23 @@ export class ChatPrismaRepository implements IChatRepository {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return Promise.all(
-      chats.map(async ({ messages, ...chat }) => {
+    const unreadCounts = await this.countUnreadForChats(
+      chats.map((chat) => {
         const ownMember = chat.members.find((member) => member.userId === userId);
-        const unreadCount = await this.countUnreadMessages(
-          chat.id,
-          userId,
-          ownMember?.lastReadAt ?? null,
-          ownMember?.lastReadMessageId ?? null,
-        );
-
         return {
-          ...chat,
-          lastMessage: messages[0] ?? null,
-          unreadCount,
+          chatId: chat.id,
+          lastReadAt: ownMember?.lastReadAt ?? null,
+          lastReadMessageId: ownMember?.lastReadMessageId ?? null,
         };
       }),
+      userId,
     );
+
+    return chats.map(({ messages, ...chat }) => ({
+      ...chat,
+      lastMessage: messages[0] ?? null,
+      unreadCount: unreadCounts.get(chat.id) ?? 0,
+    }));
   }
 
   async createChat(data: {
@@ -422,30 +422,38 @@ export class ChatPrismaRepository implements IChatRepository {
     }
   }
 
-  async countUnreadMessages(
-    chatId: string,
+  async countUnreadForChats(
+    reads: { chatId: string; lastReadAt: Date | null; lastReadMessageId: string | null }[],
     userId: string,
-    lastReadAt?: Date | null,
-    lastReadMessageId?: string | null,
-  ): Promise<number> {
-    return this.prisma.message.count({
-      where: {
-        chatId,
-        senderId: { not: userId },
-        deletedAt: null,
-        deletions: { none: { userId } },
-        ...(lastReadAt
-          ? {
-              OR: [
-                { createdAt: { gt: lastReadAt } },
-                ...(lastReadMessageId
-                  ? [{ createdAt: lastReadAt, id: { gt: lastReadMessageId } }]
-                  : []),
-              ],
-            }
-          : {}),
-      },
-    });
+  ): Promise<Map<string, number>> {
+    if (reads.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<Array<{ chatId: string; unread: number }>>`
+      SELECT c.chat_id AS "chatId", COUNT(m.id)::int AS "unread"
+      FROM unnest(
+        ${reads.map((r) => r.chatId)}::uuid[],
+        ${reads.map((r) => r.lastReadAt)}::timestamp[],
+        ${reads.map((r) => r.lastReadMessageId)}::uuid[]
+      ) AS c(chat_id, last_read_at, last_read_msg_id)
+      LEFT JOIN "Message" m ON m.chat_id = c.chat_id
+        AND m.sender_id <> ${userId}::uuid
+        AND m.deleted_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM message_deletions d WHERE d.message_id = m.id AND d.user_id = ${userId}::uuid
+        )
+        AND (
+          c.last_read_at IS NULL
+          OR m.created_at > c.last_read_at
+          OR (
+            m.created_at = c.last_read_at
+            AND c.last_read_msg_id IS NOT NULL
+            AND m.id > c.last_read_msg_id
+          )
+        )
+      GROUP BY c.chat_id`;
+    const map = new Map<string, number>();
+    for (const r of reads) map.set(r.chatId, 0);
+    for (const row of rows) map.set(row.chatId, Number(row.unread));
+    return map;
   }
 
   async markChatRead(

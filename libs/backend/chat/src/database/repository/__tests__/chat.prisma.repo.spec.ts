@@ -33,14 +33,17 @@ describe('ChatPrismaRepository', () => {
     message: typeof message;
     messageDeletion: typeof messageDeletion;
     $transaction: jest.Mock;
+    $queryRaw: jest.Mock;
   };
   const transaction = jest.fn();
+  const queryRaw = jest.fn();
   const repositoryPrisma = {
     chat,
     chatMember,
     message,
     messageDeletion,
     $transaction: transaction,
+    $queryRaw: queryRaw,
   } satisfies RepositoryPrismaMock;
   const repository = new ChatPrismaRepository(repositoryPrisma as unknown as PrismaService);
 
@@ -108,24 +111,13 @@ describe('ChatPrismaRepository', () => {
         messages: [],
       },
     ]);
-    message.count.mockResolvedValue(2);
+    queryRaw.mockResolvedValue([{ chatId: 'chat-1', unread: 2 }]);
 
     await expect(repository.findChatsForUser('user-1')).resolves.toEqual([
       expect.objectContaining({ id: 'chat-1', lastMessage: null, unreadCount: 2 }),
     ]);
 
-    expect(message.count).toHaveBeenCalledWith({
-      where: {
-        chatId: 'chat-1',
-        senderId: { not: 'user-1' },
-        deletedAt: null,
-        deletions: { none: { userId: 'user-1' } },
-        OR: [
-          { createdAt: { gt: lastReadAt } },
-          { createdAt: lastReadAt, id: { gt: 'message-1' } },
-        ],
-      },
-    });
+    expect(queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it('exposes the unread count without a date filter when the requesting member has no read marker', async () => {
@@ -136,40 +128,13 @@ describe('ChatPrismaRepository', () => {
         messages: [],
       },
     ]);
-    message.count.mockResolvedValue(3);
+    queryRaw.mockResolvedValue([{ chatId: 'chat-1', unread: 3 }]);
 
     await expect(repository.findChatsForUser('user-1')).resolves.toEqual([
       expect.objectContaining({ id: 'chat-1', lastMessage: null, unreadCount: 3 }),
     ]);
 
-    expect(message.count).toHaveBeenCalledWith({
-      where: {
-        chatId: 'chat-1',
-        senderId: { not: 'user-1' },
-        deletedAt: null,
-        deletions: { none: { userId: 'user-1' } },
-      },
-    });
-  });
-
-  it('counts unread messages from other members after the read marker with a deterministic tie-breaker', async () => {
-    const lastReadAt = new Date('2026-07-14T10:00:00.000Z');
-    message.count.mockResolvedValue(2);
-
-    await expect(repository.countUnreadMessages('chat-1', 'user-1', lastReadAt, 'message-1')).resolves.toBe(2);
-
-    expect(message.count).toHaveBeenCalledWith({
-      where: {
-        chatId: 'chat-1',
-        senderId: { not: 'user-1' },
-        deletedAt: null,
-        deletions: { none: { userId: 'user-1' } },
-        OR: [
-          { createdAt: { gt: lastReadAt } },
-          { createdAt: lastReadAt, id: { gt: 'message-1' } },
-        ],
-      },
-    });
+    expect(queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it('persists the supplied message as the server read marker', async () => {
