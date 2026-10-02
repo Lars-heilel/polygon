@@ -8,8 +8,8 @@ datasource db {
 }
 
 model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId    String   @db.Uuid
   endpoint  String
   p256dh    String
   auth      String
