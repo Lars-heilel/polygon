@@ -28,16 +28,16 @@ enum MediaReferenceOwnerType {
 }
 
 model File {
-  id           String       @id @default(uuid()) @map("id")
+  id           String       @id @default(dbgenerated("uuidv7()")) @db.Uuid @map("id")
   bucket       String       @map("bucket")
   key          String       @unique @map("key")
   originalName String       @map("original_name")
   mimeType     String       @map("mime_type")
   size         Int          @map("size")
   url          String?      @map("url")
-  uploaderId   String?      @map("uploader_id")
+  uploaderId   String?      @db.Uuid @map("uploader_id")
   status       FileStatus   @default(PENDING) @map("status")
-  chatId       String?      @map("chat_id")
+  chatId       String?      @db.Uuid @map("chat_id")
   category     FileCategory @map("category")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
@@ -45,10 +45,10 @@ model File {
 }
 
 model MediaReference {
-  id        String                  @id @default(uuid())
-  fileId    String                  @map("file_id")
+  id        String                  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  fileId    String                  @db.Uuid @map("file_id")
   ownerType MediaReferenceOwnerType @map("owner_type")
-  ownerId   String                  @map("owner_id")
+  ownerId   String                  @db.Uuid @map("owner_id")
   createdAt DateTime                @default(now()) @map("created_at")
 
   file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
