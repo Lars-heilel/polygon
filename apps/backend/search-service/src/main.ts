@@ -18,6 +18,7 @@ async function bootstrap() {
 
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
   const RABBITMQ_URL = configService.get('RABBITMQ_URL', { infer: true });
+  const RABBITMQ_PREFETCH = configService.get('RABBITMQ_PREFETCH', { infer: true });
 
   app.connectMicroservice<MicroserviceOptions>(
     {
@@ -26,6 +27,7 @@ async function bootstrap() {
         urls: [RABBITMQ_URL],
         queue: SEARCH_QUEUE,
         queueOptions: { durable: true },
+        prefetchCount: RABBITMQ_PREFETCH,
       },
     },
     { inheritAppConfig: true },

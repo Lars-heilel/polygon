@@ -36,6 +36,7 @@ export const envSchema = z.object({
 
   // RabbitMQ
   RABBITMQ_URL: z.url(),
+  RABBITMQ_PREFETCH: z.coerce.number().int().min(0).default(200),
 
   // Redis
   REDIS_HOST: z.string().min(1),
