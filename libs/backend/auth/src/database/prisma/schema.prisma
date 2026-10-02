@@ -16,7 +16,7 @@ enum Role {
 }
 
 model Credentials {
-  id             String         @id @default(uuid()) @map("id")
+  id             String         @id @default(dbgenerated("uuidv7()")) @db.Uuid @map("id")
   email          String         @unique @map("email")
   role           Role           @default(USER) @map("role")
   passwordHash   String?        @map("password_hash")
@@ -27,7 +27,7 @@ model Credentials {
   bannedUntil    DateTime?      @map("banned_until")
   banReason      String?        @map("ban_reason")
   bannedAt       DateTime?      @map("banned_at")
-  bannedBy       String?        @map("banned_by")
+  bannedBy       String?        @db.Uuid @map("banned_by")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   refreshTokens  Session[]
@@ -35,11 +35,11 @@ model Credentials {
 }
 
 model OAuthAccount {
-  id            String      @id @default(uuid()) @map("id")
+  id            String      @id @default(dbgenerated("uuidv7()")) @db.Uuid @map("id")
   provider      String      @map("provider")
   providerId    String      @map("provider_id")
   credentials   Credentials @relation(fields: [credentialsId], references: [id], onDelete: Cascade)
-  credentialsId String      @map("credentials_id")
+  credentialsId String      @db.Uuid @map("credentials_id")
   createdAt     DateTime    @default(now()) @map("created_at")
 
   @@unique([provider, providerId])
@@ -47,9 +47,9 @@ model OAuthAccount {
 }
 
 model Session {
-  id            String    @id @default(uuid()) 
+  id            String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
   tokenHash     String    @unique           
-  credentialsId String
+  credentialsId String    @db.Uuid
   expiresAt     DateTime     
   revokedAt     DateTime?
   lastActiveAt  DateTime?
