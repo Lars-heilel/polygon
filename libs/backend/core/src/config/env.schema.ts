@@ -10,6 +10,9 @@ export const envSchema = z.object({
   NOTIFICATION_DATABASE_URL: z.url(),
   MEDIA_DATABASE_URL: z.url(),
 
+  PRISMA_POOL_MAX: z.coerce.number().int().min(5),
+  PRISMA_POOL_MAX_CHAT: z.coerce.number().int().min(5),
+
   // MinIO
   MINIO_ENDPOINT: z.string().min(1),
   MINIO_PORT: z.coerce.number().default(9000),

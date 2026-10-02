@@ -15,6 +15,7 @@ export class PrismaService extends PrismaClient {
     const isDev = config.get('NODE_ENV') !== 'production';
     const adapter = new PrismaPg({
       connectionString: config.get('MEDIA_DATABASE_URL', { infer: true }),
+      max: config.getOrThrow('PRISMA_POOL_MAX', { infer: true }),
     });
     super({
       adapter,
