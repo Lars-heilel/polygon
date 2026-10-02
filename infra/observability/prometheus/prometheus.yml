@@ -23,7 +23,7 @@ scrape_configs:
     static_configs:
       - targets:
           # keep in sync with GATEWAY_METRICS_PORT
-          - host.docker.internal:3100
+          - host.docker.internal:3110
         labels:
           stack: polygon
 

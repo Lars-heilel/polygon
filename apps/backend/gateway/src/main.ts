@@ -77,7 +77,7 @@ if (cluster.isPrimary) {
     logger.warn(`Gateway worker ${worker.process.pid} exited (${code}), reforking`);
     setTimeout(() => cluster.fork(), 2000);
   });
-  serveAggregatedMetrics(Number(process.env['GATEWAY_METRICS_PORT'] ?? 3100));
+  serveAggregatedMetrics(Number(process.env['GATEWAY_METRICS_PORT'] ?? 3110));
 } else {
   bootstrap().then((app) => {
     const metrics = app.get(MetricsService);

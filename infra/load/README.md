@@ -50,8 +50,8 @@ phase-1 `/tmp/opencode/http-paced.js` did not survive the box reboot — faithfu
 same 4-route mix + thresholds).
 Cross-worker script: `infra/load/xworker-check.mjs` (`node infra/load/xworker-check.mjs [rounds]`).
 
-Concerns for Plan 3: (1) `GATEWAY_METRICS_PORT` default 3100 collides with Loki (`:3100`) —
-aggregator was run on 3110 via env override; change the default + `prometheus.yml` target.
+Concerns for Plan 3: (1) `GATEWAY_METRICS_PORT` default was 3100, colliding with Loki (`:3100`) —
+aggregator was run on 3110 via env override; default + `prometheus.yml` target changed to 3110.
 (2) Gateway request-completed log prints full `set-cookie` incl. live JWT access/refresh tokens —
 secrets-in-logs violation, scrub `set-cookie`/`authorization` from the HTTP log middleware.
 (3) C2 scenario cadence (~28.6/min/user) sits inside the WS_SEND_LIMIT 30/min envelope —
