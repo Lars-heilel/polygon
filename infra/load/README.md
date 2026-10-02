@@ -71,11 +71,11 @@ deleted_at 912 kB, chat_client partial 16 kB. uuid 16 B vs CUID text ~26 B ≈ 1
 per uuid column value (~30 B/row over id/chat_id/sender_id ≈ ~4 MB at 133k rows, estimate).
 Stack rebuilt from HEAD (`f7bb561`) — primary + 6 workers, 6/6 services, seed 50/50 login refresh.
 
-| stage | VU | RPS | p95 | err | note |
-| ----- | -- | --- | --- | --- | ---- |
-| smoke http | 5 | 2.41 | 247.83ms (p90 89.85ms) | 0% (115/115 checks) | GREEN. POST 201 + round-trip over uuid schema — protocol compat confirmed; stack left running on fresh dists |
+| stage      | VU  | RPS  | p95                    | err                 | note                                                                                                         |
+| ---------- | --- | ---- | ---------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| smoke http | 5   | 2.41 | 247.83ms (p90 89.85ms) | 0% (115/115 checks) | GREEN. POST 201 + round-trip over uuid schema — protocol compat confirmed; stack left running on fresh dists |
 
 Backend regression green (common 4, auth-lib 92, core 42, user-lib 11, media-lib 12,
-chat-lib 57, gateway 91; *-service apps no tests). Pre-existing reds untouched by phase:
+chat-lib 57, gateway 91; \*-service apps no tests). Pre-existing reds untouched by phase:
 messenger UI drift (11), shared virtual-feed localStorage env (4), backend
 notification/search targets fail on zero tests (missing --passWithNoTests).
