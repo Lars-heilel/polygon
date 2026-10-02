@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User{
-  id          String   @id @map("id")
+  id          String   @id @db.Uuid @map("id")
   email       String   @unique @map("email")
   name        String   @map("name")
   displayName String?  @map("display_name")
