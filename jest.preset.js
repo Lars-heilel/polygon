@@ -1,3 +1,5 @@
+if (!process.env['NODE_ENV']) process.env['NODE_ENV'] = 'test';
+
 const nxPreset = require('@nx/jest/preset').default;
 
 module.exports = {

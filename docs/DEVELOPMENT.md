@@ -453,6 +453,8 @@ Integration specs (`__tests__/integration/`, e.g. `user.repository.spec.ts` with
 one-liner). The `*_DATABASE_URL` values in the gitignored `.env.test` point at them
 (`NODE_ENV=test` selects that file in `resolveEnvFile()` and `prisma.config.ts`); run
 migrations per lib with `NODE_ENV=test prisma migrate deploy` before the first test run.
+Bare `nx test` is safe: `jest.preset.js` defaults an unset `NODE_ENV` to `test`, so specs
+always read `.env.test` (an explicitly set value is left untouched).
 
 ## 13. Logging (draft)
 
