@@ -1,3 +1,4 @@
+# NOTE: no Alertmanager/receiver routing; alerts visible in Prometheus/Grafana UI only.
 groups:
   - name: polygon-service-health
     rules:
@@ -37,6 +38,7 @@ groups:
           summary: 'High p95 latency on gateway'
           description: 'Gateway p95 latency is above 0.5 seconds.'
 
+      # Follow-up: dead until guard-rejected 429s are recorded (MetricsInterceptor runs after guards).
       - alert: GatewayThrottleSpike
         expr: sum(rate(polygon_http_requests_total{service="gateway",status_code="429"}[5m])) / sum(rate(polygon_http_requests_total{service="gateway"}[5m])) > 0.05
         for: 2m
