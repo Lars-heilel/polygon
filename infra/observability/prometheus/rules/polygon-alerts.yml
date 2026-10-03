@@ -28,6 +28,42 @@ groups:
           summary: 'High p95 latency on {{ $labels.service }}'
           description: '{{ $labels.service }} p95 latency is above 1 second.'
 
+      - alert: GatewayHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(polygon_http_request_duration_seconds_bucket{service="gateway"}[5m])) by (le)) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High p95 latency on gateway'
+          description: 'Gateway p95 latency is above 0.5 seconds.'
+
+      - alert: GatewayThrottleSpike
+        expr: sum(rate(polygon_http_requests_total{service="gateway",status_code="429"}[5m])) / sum(rate(polygon_http_requests_total{service="gateway"}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Throttle spike on gateway'
+          description: 'More than 5% of gateway responses are 429 over the last 5 minutes.'
+
+      - alert: PostgresConnsHigh
+        expr: sum(pg_stat_activity_count) / sum(pg_settings_max_connections) > 0.7
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Postgres connections high'
+          description: 'Postgres connections are above 70% of max_connections.'
+
+      - alert: GatewayRSSHigh
+        expr: max(process_resident_memory_bytes{service="gateway"}) > 2000000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High gateway RSS memory'
+          description: 'Gateway resident memory is above 2GB.'
+
   - name: polygon-host-health
     rules:
       - alert: PolygonHostDiskAlmostFull
