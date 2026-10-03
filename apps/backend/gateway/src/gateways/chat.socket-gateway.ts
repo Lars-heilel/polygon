@@ -322,6 +322,7 @@ export class ChatSocketGateway implements OnGatewayConnection, OnGatewayDisconne
           this.userChats.delete(userId);
         }
       }
+      await this.chatCache.clearMemberCached(payload.chatId, userId);
     }
   }
 

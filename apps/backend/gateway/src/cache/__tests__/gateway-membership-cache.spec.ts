@@ -26,4 +26,16 @@ describe('GatewayChatCacheService membership', () => {
     } as never);
     await expect(failing.isMemberCached('c1', 'u1')).resolves.toBeNull();
   });
+
+  it('clears cached membership', async () => {
+    await svc.clearMemberCached('c1', 'u1');
+    expect(redis.del).toHaveBeenCalledWith('membership:c1:u1');
+  });
+
+  it('ignores redis failure on clear', async () => {
+    const failing = new GatewayChatCacheService({
+      del: () => Promise.reject(new Error('down')),
+    } as never);
+    await expect(failing.clearMemberCached('c1', 'u1')).resolves.toBeUndefined();
+  });
 });

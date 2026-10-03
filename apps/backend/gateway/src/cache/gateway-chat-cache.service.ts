@@ -112,4 +112,12 @@ export class GatewayChatCacheService {
       /* Redis unavailable — caller falls back to RPC */
     }
   }
+
+  async clearMemberCached(chatId: string, userId: string): Promise<void> {
+    try {
+      await this.redis.del(`membership:${chatId}:${userId}`);
+    } catch {
+      /* best-effort */
+    }
+  }
 }
