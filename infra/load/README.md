@@ -79,3 +79,40 @@ Backend regression green (common 4, auth-lib 92, core 42, user-lib 11, media-lib
 chat-lib 57, gateway 91; \*-service apps no tests). Pre-existing reds untouched by phase:
 messenger UI drift (11), shared virtual-feed localStorage env (4), backend
 notification/search targets fail on zero tests (missing --passWithNoTests).
+
+## Results 2026-10-03 (phase 3 task 8, acceptance C1 + C2, 1000 users)
+
+Stack: rebuilt all 7 dists from HEAD (`8169a09`, nx cache-restored then
+content-verified: `countUnreadForChats` in chat dist, `clearMemberCached` in
+gateway dist, `prefetchCount` bound), restarted from dist via
+`setsid node apps/backend/*/dist/main.js` (no `nx serve`). Gateway primary +
+6 workers (`availableParallelism()=12` minus 6, `GATEWAY_WORKERS=0`),
+`socket_redis_adapter_ready` 6/6, aggregator `127.0.0.1:3110/metrics` 200,
+`/other` → 404. Live TTL confirmed: `access_token Max-Age=3600`
+(refresh still 604800) — Task 4 value picked up by the fresh processes.
+
+Seed: `SEED_N=1000` register run (~35 мин: 1000×~1с bcrypt + 12×65с
+throttle-паузы) → verify SQL `UPDATE "Credentials" ... LIKE 'load\_%@'`
+(1050 rows: 1000 + 50 from an accidental bare `N=50` seed earlier, harmless
+orphans) → `SEED_LOGIN_ONLY=1` exit 0, **withCookies=1000/withChats=1000**
+(first cookies ~30 мин old at C1 start — inside the 3600с TTL, which is what
+makes an honest 1000-user run possible at all). SQL verify: `polygon_user`
+1052 rows (2 pre-existing + 1050 load), `polygon_chat` 1001 chats.
+
+Task 2 parked criteria (done here, live): `SHOW TimeZone` → **UTC** (all 5
+DBs default, recorded actual). Multi-chat `GET /api/chats` with mixed markers
+on one user — (a) `lastReadAt` NULL, (b) set + NULL `lastReadMessageId`
+(SQL-set to 2nd message `created_at`), (c) set + set (POST `:id/read`) —
+batch `unreadCount` **2/1/1, exact match** vs independent old-logic `COUNT(*)`
+SQL per chat. The `$queryRaw` uuid[]/timestamp[] null-mixed serialization path
+is exercised end-to-end (not just mocks).
+
+| stage | VU | RPS | p95 | err | note |
+| ----- | -- | --- | --- | --- | ---- |
+| C1 paced RATE=1000 / 5 мин (1000 users, 1:1) | 421–2000 | ~505 served (153547 done, 146459 dropped) | 7.29s | 3.76% (5774/153547) | Ц1 NOT MET. All failures = POST messages 500: chat-service Prisma `Unable to start a transaction in the given time` ×5774 (exact match). Reads 100% green (GET chats/messages/search checks all pass). Same single-box Postgres write saturation as phase 2, improved by pools+prefetch (err 3.76% vs 20.39%, served ~505 vs ~325 RPS) but not green. Confounds: same-box k6 CPU contention (dropped iters ~49%), read med ~5s suggests gateway queueing under 2000-VU bursts. |
+| C2 ws 1000 VU 1:1 / 3 мин (standard `ws-load.js` + `--vus 1000 --duration 3m`) | 1000 | 199.9 iters/s (36927 iters) | iter 6.18s; ws_connecting 92.82ms | msg_new_ok 56.92% (21022/36927) | Threshold NOT MET. 100% of the 15905 failures = the same tx-pool timeouts (chat log +15905 during the C2 window, exact match) surfacing as WS send errors — delivery path, not the WS_SEND_LIMIT throttle this time (per-user cadence ~12/мин, under the 30/мин limit; no rate-limit evidence in logs/metrics). |
+
+Phase verdict: Ц1 and Ц2 RED on single-box hardware (DB-write-bound, measured
+twice with exact error accounting). No code changed in this task — next plan
+is hardware/write-path (PG pool sizing, message-write path, or multi-box),
+code not rolled back.
